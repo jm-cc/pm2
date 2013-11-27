@@ -193,8 +193,9 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
   if(nm_session.p_core == NULL)
     {
       /* Initializes the global nmad core */
-      int fake_argc = 0;
-      int err = nm_core_init(&fake_argc, NULL, &nm_session.p_core);
+      int fake_argc = 1;
+      char*fake_argv[2] = { "nm_session", NULL };
+      int err = nm_core_init(&fake_argc, fake_argv, &nm_session.p_core);
       if(err != NM_ESUCCESS)
 	{
 	  fprintf(stderr, "# session: error %d while initializing nmad core.\n", err);

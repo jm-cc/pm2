@@ -166,7 +166,7 @@ static int nm_task_block_send(void*_pw)
     {
       piom_ltask_destroy(&p_pw->ltask);
       nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
-      nm_so_pw_free(p_pw);
+      nm_pw_ref_dec(p_pw);
     }
   else
     {

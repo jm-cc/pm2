@@ -254,13 +254,21 @@ static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p
      }
   p_pack->scheduled += len;
 }
-
-static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_pw)
+static inline void nm_pw_ref_inc(struct nm_pkt_wrap *p_pw)
 {
-  if(!(--p_pw->header_ref_count))
+  p_pw->ref_count++;
+}
+static inline void nm_pw_ref_dec(struct nm_pkt_wrap *p_pw)
+{
+  p_pw->ref_count--;
+  if(p_pw->ref_count <= 0)
     {
       nm_so_pw_free(p_pw);
     }
+}
+static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_pw)
+{
+  nm_pw_ref_dec(p_pw);
   return NM_ESUCCESS;
 }
 

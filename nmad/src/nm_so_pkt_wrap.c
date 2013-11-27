@@ -90,7 +90,8 @@ static inline void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->p_unpack = NULL;
   p_pw->chunk_offset = 0;
 
-  p_pw->header_ref_count = 0;
+  p_pw->ref_count = 0;
+  nm_pw_ref_inc(p_pw);
 
 #ifdef PIOMAN_POLL
   piom_ltask_init(&p_pw->ltask);

@@ -73,7 +73,7 @@ void nm_unexpected_clean(struct nm_core*p_core)
 #if(defined(PIOMAN_POLL))
   	    piom_ltask_completed(&chunk->p_pw->ltask);
 #else /* PIOMAN_POLL */
-	    nm_so_pw_free(chunk->p_pw);
+	    nm_pw_ref_dec(chunk->p_pw);
 #endif /* PIOMAN_POLL */
 	  }
 	  tbx_fast_list_del(&chunk->link);
@@ -239,7 +239,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
   chunk->p_gate = p_gate;
   chunk->seq = seq;
   chunk->tag = tag;
-  p_pw->header_ref_count++;
+  nm_pw_ref_inc(p_pw);
   nm_unexpected_mem_size++;
   if(nm_unexpected_mem_size > 32*1024)
     {
@@ -313,7 +313,7 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
 	}
       /* Decrement the packet wrapper reference counter. If no other
 	 chunks are still in use, the pw will be destroyed. */
-      nm_so_pw_dec_header_ref_count(chunk->p_pw);
+      nm_pw_ref_dec(chunk->p_pw);
 #warning Paulette: lock
       tbx_fast_list_del(&chunk->link);
       tbx_free(nm_unexpected_mem, chunk);
@@ -741,11 +741,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       struct nm_core*p_core = p_gate->p_core;
       struct iovec *vec = p_pw->v;
       void *ptr = vec->iov_base;
-      /* Each 'unread' header will increment this counter. When the
-	 counter will reach 0 again, the packet wrapper can (and will) be
-	 safely destroyed.
-	 Increment it here for our own use while processing the packet. */
-      p_pw->header_ref_count++;
       nm_len_t done = 0;
       while(done != -1)
 	{
@@ -754,7 +749,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	  done = nm_decode_header_chunk(p_core, ptr, p_pw, p_gate);
 	  ptr += done;
 	}
-      nm_so_pw_dec_header_ref_count(p_pw);
+      nm_pw_ref_dec(p_pw);
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {
@@ -763,7 +758,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       const nm_len_t len = p_pw->length;
       /* ** Large packet, data received directly in its final destination */
       nm_so_unpack_check_completion(p_core, p_unpack, len);
-      nm_so_pw_free(p_pw);
+      nm_pw_ref_dec(p_pw);
       nm_so_process_large_pending_recv(p_gate);
     }
 

@@ -127,8 +127,8 @@ struct nm_pkt_wrap
   /** IO vector. */
   struct iovec		*v;
   
-  /** number of references pointing to the header (when storing unexpected packets) */
-  int header_ref_count;
+  /** number of references pointing to the header */
+  int ref_count;
 
   /** link to insert the pw into a tbx_fast_list. A pw may be store either in:
    * out_list in strategy, pending_large_send in sender, pending_large_recv in receiver,

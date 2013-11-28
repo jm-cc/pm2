@@ -70,7 +70,6 @@ typedef struct piom_ltask_queue
 {
     struct piom_ltask_lfqueue_s       ltask_queue;
     volatile piom_ltask_queue_state_t state;
-    volatile int                      processing;
     piom_topo_obj_t                   binding;
     struct piom_ltask_queue          *parent;
 #ifdef PIOMAN_TRACE
@@ -355,7 +354,6 @@ static inline void __piom_init_queue(piom_ltask_queue_t*queue)
 {
     queue->state = PIOM_LTASK_QUEUE_STATE_NONE;
     piom_ltask_lfqueue_init(&queue->ltask_queue);
-    queue->processing = 0;
     queue->parent = NULL;
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
@@ -378,20 +376,11 @@ static inline struct piom_ltask*__piom_ltask_get_from_queue(piom_ltask_queue_t*q
 static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 {
     int success = 0;
-    if( (queue->processing) || 
-	( (queue->state != PIOM_LTASK_QUEUE_STATE_RUNNING)
-	  && (queue->state != PIOM_LTASK_QUEUE_STATE_STOPPING)) )
+    if((queue->state != PIOM_LTASK_QUEUE_STATE_RUNNING)
+       && (queue->state != PIOM_LTASK_QUEUE_STATE_STOPPING)) 
 	{
-	    /*	    piom_trace_queue_state(queue, "none"); */
 	    return NULL;
 	}
-    if(__sync_fetch_and_add(&queue->processing, 1) != 0)
-	{
-	    __sync_fetch_and_sub(&queue->processing, 1);
-	    /*	    piom_trace_queue_state(queue, "none"); */
-	    return NULL;
-	}
-    assert(queue->processing >= 1);
     struct piom_ltask *task = __piom_ltask_get_from_queue(queue);
     if(task)
 	{
@@ -455,7 +444,6 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 	{
 	    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
 	}
-    __sync_fetch_and_sub(&queue->processing, 1);
     if(success)
 	{
 	    piom_trace_queue_event(queue, PIOM_TRACE_EVENT_SUCCESS, task);

@@ -23,6 +23,9 @@ mpirun [<mpirun_option>...] <progname> [<option>...]
             Take the list of possible machines to run on from the
             file <file>.  This is a list of all available machines;
             use -np <np> to request a specific number of machines.
+    -nodelist <node>[,<node>...]
+            Take the list of possible machines to run on from the
+            comma-separated list of machines given.
     -np|-n <n>
             specify the number of processors to run on
     -v      Verbose - throw in some comments
@@ -30,6 +33,9 @@ mpirun [<mpirun_option>...] <progname> [<option>...]
     -debug  Start processes under the gdb debugger.
     -c      Starts each processus in a graphical console
     -p      Pause after program exit, do not close consoles
+    -D<label>=<value>
+            Define environment variable <label> with value <value> in 
+            each process base environnment.
 
 For advanced configuration, see padico-launch --help
 
@@ -38,9 +44,9 @@ which case it returns a non-zero status.
 
 Environment variables:
    - NMAD_DRIVER specifies the network driver to use. By default, the 
-     driver selected by nmad-driver-conf is used.
+     network is auto-detected.
    - NMAD_STRATEGY specifies the scheduler strategy to be used. By
-     default, the strategy selected with nmad-strategy-conf is used.
+     default, the strategy 'aggreg' is used.
 EOF
 }
 

@@ -111,7 +111,9 @@ int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw
     }
 
   nm_strat_try_and_commit(p_gate);
-  
+
+  nm_pw_ref_dec(p_pw);
+
   return NM_ESUCCESS;
 }
 
@@ -128,11 +130,10 @@ __inline__ void nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
 #ifdef PIOMAN_POLL
       piom_ltask_destroy(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
-      nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
 #ifdef NMAD_POLL
       tbx_fast_list_del(&p_pw->link);
 #endif /* NMAD_POLL */
-      nm_pw_ref_dec(p_pw);
+      nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
     }
   else if(err == -NM_EAGAIN)
     {
@@ -192,7 +193,6 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
       /* immediate succes, process request completion */
       NM_TRACEF("request completed immediately");
       nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
-      nm_pw_ref_dec(p_pw);
     }
   else
     {

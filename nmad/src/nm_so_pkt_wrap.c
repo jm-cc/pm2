@@ -26,13 +26,20 @@ PADICO_MODULE_HOOK(NewMad_Core);
 /** Fast packet allocator constant for initial number of entries. */
 #define INITIAL_PKT_NUM  8
 
-/** Allocator struct for headerless pkt wrapper.
+/** Allocator for headerless pkt wrapper.
  */
-static p_tbx_memory_t nm_so_pw_nohd_mem = NULL;
+PUK_ALLOCATOR_TYPE(nm_pw_nohd, struct nm_pkt_wrap);
+static nm_pw_nohd_allocator_t nm_pw_nohd_allocator = NULL;
 
-/** Allocator struct for pkt wrapper with contiguous data block.
+struct nm_pw_buf
+{
+  struct nm_pkt_wrap pw;
+  char buf[NM_SO_MAX_UNEXPECTED];
+};
+/** Allocator for pkt wrapper with contiguous data block.
  */
-static p_tbx_memory_t nm_so_pw_buf_mem = NULL;
+PUK_ALLOCATOR_TYPE(nm_pw_buf, struct nm_pw_buf);
+static nm_pw_buf_allocator_t nm_pw_buf_allocator = NULL;
 
 
 /** Initialize the fast allocator structs for SO pkt wrapper.
@@ -42,16 +49,8 @@ static p_tbx_memory_t nm_so_pw_buf_mem = NULL;
  */
 int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
 {
-  tbx_malloc_extended_init(&nm_so_pw_nohd_mem,
-			   sizeof(struct nm_pkt_wrap),
-			   INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/nohd", 
-			   1);
-
-  tbx_malloc_extended_init(&nm_so_pw_buf_mem,
-			   sizeof(struct nm_pkt_wrap) + NM_SO_MAX_UNEXPECTED,
-			   INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/buf", 
-			   1);
-
+  nm_pw_nohd_allocator = nm_pw_nohd_allocator_new(INITIAL_PKT_NUM);
+  nm_pw_buf_allocator = nm_pw_buf_allocator_new(INITIAL_PKT_NUM);
   return NM_ESUCCESS;
 }
 
@@ -61,9 +60,8 @@ int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
  */
 int nm_so_pw_exit()
 {
-  tbx_malloc_clean(nm_so_pw_nohd_mem);
-  tbx_malloc_clean(nm_so_pw_buf_mem);
-
+  nm_pw_nohd_allocator_delete(nm_pw_nohd_allocator);
+  nm_pw_buf_allocator_delete(nm_pw_buf_allocator);
   return NM_ESUCCESS;
 }
 
@@ -116,7 +114,7 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
   if(flags & NM_PW_BUFFER) 
     {
       /* full buffer as v[0]- used for short receive */
-      p_pw = tbx_malloc(nm_so_pw_buf_mem);
+      p_pw = (struct nm_pkt_wrap*)nm_pw_buf_malloc(nm_pw_buf_allocator);
       if (!p_pw)
 	{
 	  err = -NM_ENOMEM;
@@ -136,7 +134,7 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
   else if(flags & NM_PW_NOHEADER)
     {
       /* no header preallocated- used for large send/recv */
-      p_pw = tbx_malloc(nm_so_pw_nohd_mem);
+      p_pw = nm_pw_nohd_malloc(nm_pw_nohd_allocator);
       if (!p_pw)
 	{
 	  err = -NM_ENOMEM;
@@ -153,7 +151,7 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
   else if(flags & NM_PW_GLOBAL_HEADER)
     {
       /* global header preallocated as v[0]- used for short sends */
-      p_pw = tbx_malloc(nm_so_pw_buf_mem);
+      p_pw = (struct nm_pkt_wrap*)nm_pw_buf_malloc(nm_pw_buf_allocator);
       if (!p_pw)
 	{
 	  err = -NM_ENOMEM;
@@ -195,8 +193,6 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   int err;
   int flags = p_pw->flags;
 
-  nmad_lock_assert();
-  
   if(p_pw->flags & NM_PW_DYNAMIC_V0)
     {
       TBX_FREE(p_pw->v[0].iov_base);
@@ -219,13 +215,12 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   /* Finally clean packet wrapper itself */
   if((flags & NM_PW_BUFFER) || (flags & NM_PW_GLOBAL_HEADER))
     {
-      tbx_free(nm_so_pw_buf_mem, p_pw);
-      NM_TRACEF("pw %p is removed from nm_so_pw_buf_mem\n", p_pw);
+      nm_pw_buf_free(nm_pw_buf_allocator, (struct nm_pw_buf*)p_pw);
     }
-  else if(flags & NM_PW_NOHEADER) {
-    NM_TRACEF("pw %p is removed from nm_so_pw_nohd_mem\n", p_pw);
-    tbx_free(nm_so_pw_nohd_mem, p_pw);
-  }
+  else if(flags & NM_PW_NOHEADER)
+    {
+      nm_pw_nohd_free(nm_pw_nohd_allocator, p_pw);
+    }
 
   err = NM_ESUCCESS;
   return err;

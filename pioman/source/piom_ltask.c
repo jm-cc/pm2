@@ -332,14 +332,15 @@ static void piom_tasklet_unmask(void)
  */
 static inline piom_ltask_queue_t*__piom_get_queue(piom_topo_obj_t obj)
 {
-    assert(obj != NULL);
 #if defined(PIOMAN_TOPOLOGY_HWLOC)
+    assert(obj != NULL);
     while(obj != NULL && obj->userdata == NULL)
 	{
 	    obj = obj->parent;
 	}
     return (obj != NULL) ? obj->userdata : NULL;
 #elif defined(PIOMAN_TOPOLOGY_MARCEL)
+    assert(obj != NULL);
     return obj->ltask_data;
 #elif defined(PIOMAN_TOPOLOGY_NONE)
     return &global_queue;

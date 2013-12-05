@@ -92,6 +92,7 @@ struct piom_ltask
     piom_topo_obj_t binding;
     struct piom_ltask_queue*queue;     /**< current queue where ltask has been submitted */
     const char*name;                   /**< name given to the ltask, usefull for debug */
+    void (*destructor)(struct piom_ltask*);
 };
 
 
@@ -171,6 +172,7 @@ static inline void piom_ltask_create(struct piom_ltask *task,
     task->binding = binding;
     task->queue = NULL;
     task->name = NULL;
+    task->destructor = NULL;
     piom_cond_init(&task->done, 0);
 }
 
@@ -179,6 +181,13 @@ extern void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t fu
 static inline void piom_ltask_set_name(struct piom_ltask*ltask, const char*name)
 {
     ltask->name = name;
+}
+
+static inline void piom_ltask_set_destructor(struct piom_ltask*ltask, void(*destructor)(struct piom_ltask*))
+{
+    assert(ltask->destructor == NULL);
+    assert(ltask->options & PIOM_LTASK_OPTION_NOWAIT);
+    ltask->destructor = destructor;
 }
 
 /** suspend the ltask scheduling

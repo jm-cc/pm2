@@ -401,6 +401,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		    if(options & PIOM_LTASK_OPTION_DESTROY)
 			{
 			    /* ltask was destroyed by handler */
+			    task = NULL;
 			    piom_tasklet_unmask();
 			    success = 1;
 			}
@@ -421,7 +422,12 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		    else
 			{
 			    task->state = PIOM_LTASK_STATE_TERMINATED;
-			    piom_ltask_completed (task);
+			    piom_ltask_completed(task);
+			    if((task->options & PIOM_LTASK_OPTION_NOWAIT) && (task->destructor))
+				{
+				    (*task->destructor)(task);
+				}
+			    task = NULL;
 			    piom_tasklet_unmask();
 			    success = 1;
 			}
@@ -645,7 +651,7 @@ void piom_init_ltasks(void)
 #ifdef DEBUG
 			    char string[128];
 			    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask_topology, o, "#", 0);
-			    printf("# pioman: idle #%d on %s\n", i, string);
+			    fprintf(stderr, "# pioman: idle #%d on %s\n", i, string);
 #endif /* DEBUG */
 			    piom_ltask_queue_t*queue = __piom_get_queue(o);
 			    pthread_t idle_thread;

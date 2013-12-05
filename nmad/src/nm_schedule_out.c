@@ -128,20 +128,14 @@ __inline__ void nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
   if(err == NM_ESUCCESS)
     {
 #ifdef PIOMAN_POLL
-      piom_ltask_destroy(&p_pw->ltask);
+      piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
 #ifdef NMAD_POLL
       tbx_fast_list_del(&p_pw->link);
 #endif /* NMAD_POLL */
       nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
     }
-  else if(err == -NM_EAGAIN)
-    {
-#ifdef PIOMAN_POLL
-      nm_ltask_submit_poll_send(p_pw);
-#endif
-    }
-  else
+  else if(err != -NM_EAGAIN)
     {
       TBX_FAILUREF("poll_send failed- err = %d", err);
     }

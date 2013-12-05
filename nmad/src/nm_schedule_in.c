@@ -68,15 +68,9 @@ __inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
   if(err == NM_ESUCCESS)
     {
 #ifdef PIOMAN_POLL
-      piom_ltask_destroy(&p_pw->ltask);
+      piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
       err = nm_so_process_complete_recv(p_pw->p_drv->p_core, p_pw);
-    }
-  else if(err == -NM_EAGAIN)
-    {
-#ifdef PIOMAN_POLL
-      nm_ltask_submit_poll_recv(p_pw);      
-#endif /* PIOMAN_POLL */
     }
   else if(err == -NM_ECLOSED)
     {

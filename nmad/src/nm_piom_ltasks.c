@@ -101,10 +101,6 @@ static int nm_task_poll_recv(void*_pw)
       ret = nm_pw_poll_recv(p_pw);
       nmad_unlock();
     }
-  else
-    {
-      nm_ltask_submit_poll_recv(p_pw);
-    }
   return ret;
 }
 
@@ -143,10 +139,6 @@ static int nm_task_poll_send(void*_pw)
     {
       nm_pw_poll_send(p_pw);
       nmad_unlock();
-    }
-  else
-    {
-      nm_ltask_submit_poll_send(p_pw);
     }
   return NM_ESUCCESS;
 }
@@ -197,13 +189,20 @@ static int nm_task_offload(void* args)
   return 0;
 }
 
+static void nm_ltask_destructor(struct piom_ltask*p_ltask)
+{
+  struct nm_pkt_wrap*p_pw = tbx_container_of(p_ltask, struct nm_pkt_wrap, ltask);
+  nm_pw_ref_dec(p_pw);
+}
+
 void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
 {
   piom_topo_obj_t task_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_recv,  p_pw,
-		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
-		    task_binding);
+		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT, task_binding);
   piom_ltask_set_name(&p_pw->ltask, "nmad: poll_recv");
+  piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
+  nm_pw_ref_inc(p_pw);
   const struct nm_drv_iface_s*driver = p_pw->p_drv->driver;
   if(driver->capabilities.is_exportable && (driver->wait_recv_iov != NULL))
     {
@@ -215,10 +214,11 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
 void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
 {
   piom_topo_obj_t task_binding = nm_get_binding_policy(p_pw->p_drv);
-  piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw,
-		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
-		    task_binding);
+  piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw, 
+		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT, task_binding);
   piom_ltask_set_name(&p_pw->ltask, "nmad: poll_send");
+  piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
+  nm_pw_ref_inc(p_pw);
   assert(p_pw->p_gdrv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   if(r->driver->capabilities.is_exportable && (r->driver->wait_send_iov != NULL))

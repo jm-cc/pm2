@@ -833,7 +833,7 @@ void piom_ltask_wait_success(struct piom_ltask *task)
 void piom_ltask_wait(struct piom_ltask *task)
 {
     piom_ltask_wait_success(task);
-    while (!(task->state & PIOM_LTASK_STATE_TERMINATED))
+    while(!piom_ltask_state_test(task, PIOM_LTASK_STATE_TERMINATED))
 	{
 	    piom_ltask_schedule();
 	}
@@ -850,7 +850,7 @@ void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int
 void piom_ltask_mask(struct piom_ltask *task)
 {
     __sync_fetch_and_add(&task->masked, 1);
-    while(task->state & PIOM_LTASK_STATE_SCHEDULED)
+    while(piom_ltask_state_test(task, PIOM_LTASK_STATE_SCHEDULED))
 	{
 	    piom_ltask_schedule();
 	}
@@ -876,9 +876,9 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
     piom_ltask_state_set(ltask, PIOM_LTASK_STATE_CANCELLED);
     while(!found)
 	{
-	    while(ltask->state & PIOM_LTASK_STATE_BLOCKED)
+	    while(piom_ltask_state_test(ltask, PIOM_LTASK_STATE_BLOCKED))
 		{ }
-	    while(ltask->state & PIOM_LTASK_STATE_SCHEDULED)
+	    while(piom_ltask_state_test(ltask, PIOM_LTASK_STATE_SCHEDULED))
 		{ }
 	    struct piom_ltask_queue*queue = ltask->queue;
 	    if(queue)

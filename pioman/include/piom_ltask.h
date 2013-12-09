@@ -122,16 +122,6 @@ extern void piom_ltask_wait(struct piom_ltask *task);
 extern void piom_ltask_cancel(struct piom_ltask*task);
 
 
-/** Notify task completion. */
-static inline void piom_ltask_completed(struct piom_ltask *task)
-{
-    task->state |= PIOM_LTASK_STATE_SUCCESS;
-    if(!(task->options & PIOM_LTASK_OPTION_NOWAIT))
-	{
-	    piom_cond_signal(&task->done, PIOM_LTASK_STATE_SUCCESS);
-	}
-}
-
 static inline void piom_ltask_state_set(struct piom_ltask*ltask, piom_ltask_state_t state)
 {
     __sync_fetch_and_or(&ltask->state, state);
@@ -143,6 +133,17 @@ static inline void piom_ltask_state_unset(struct piom_ltask*ltask, piom_ltask_st
 static inline int piom_ltask_state_test(struct piom_ltask*ltask, piom_ltask_state_t state)
 {
     return ((ltask->state & state) != 0);
+}
+
+
+/** Notify task completion. */
+static inline void piom_ltask_completed(struct piom_ltask *task)
+{
+    piom_ltask_state_set(task, PIOM_LTASK_STATE_SUCCESS);
+    if(!(task->options & PIOM_LTASK_OPTION_NOWAIT))
+	{
+	    piom_cond_signal(&task->done, PIOM_LTASK_STATE_SUCCESS);
+	}
 }
 
 /**< Notify task destruction, if option DESTROY was set. */

@@ -112,13 +112,13 @@ static int nm_task_block_recv(void*_pw)
   if(err == NM_ESUCCESS)
     {
       nmad_lock();
-      piom_ltask_destroy(&p_pw->ltask);
+      piom_ltask_completed(&p_pw->ltask);
       nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
       nmad_unlock();
     }
   else if((p_pw->ltask.state & PIOM_LTASK_STATE_CANCELLED) || (err == -NM_ECLOSED))
     {
-      piom_ltask_destroy(&p_pw->ltask);
+      piom_ltask_completed(&p_pw->ltask);
       return NM_ESUCCESS;
     }
   else if(err == -NM_EAGAIN)
@@ -156,9 +156,8 @@ static int nm_task_block_send(void*_pw)
   nmad_lock();
   if(err == NM_ESUCCESS)
     {
-      piom_ltask_destroy(&p_pw->ltask);
+      piom_ltask_completed(&p_pw->ltask);
       nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
-      nm_pw_ref_dec(p_pw);
     }
   else
     {
@@ -231,9 +230,7 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
 void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv*p_drv)
 {
   piom_topo_obj_t task_binding = nm_get_binding_policy(p_drv);
-  piom_ltask_create(task, 
-		    &nm_task_post_on_drv,
-		    p_drv,
+  piom_ltask_create(task, &nm_task_post_on_drv, p_drv,
 		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT,
 		    task_binding);
   piom_ltask_set_name(task, "nmad: post_on_drv");
@@ -243,12 +240,12 @@ void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv*p_drv)
 void nm_ltask_submit_offload(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
 {
   piom_topo_obj_t task_binding = nm_get_binding_policy(p_pw->p_drv);
-  piom_ltask_create(task, 
-		    &nm_task_offload,
-		    p_pw,
-		    PIOM_LTASK_OPTION_ONESHOT, 
+  piom_ltask_create(task, &nm_task_offload, p_pw,
+		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_NOWAIT, 
 		    task_binding);
   piom_ltask_set_name(task, "nmad: offload");
+  piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
+  nm_pw_ref_inc(p_pw);
   piom_ltask_submit(task);	
 }
 

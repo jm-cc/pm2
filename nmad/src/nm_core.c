@@ -398,7 +398,7 @@ int nm_core_exit(nm_core_t p_core)
       while(p_pw != NULL)
 	{
 	  NM_TRACEF("extracting pw from post_recv_list\n");
-	  nm_so_pw_free(p_pw);
+	  nm_pw_ref_dec(p_pw);
 	  p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
 	}
     }
@@ -409,7 +409,7 @@ int nm_core_exit(nm_core_t p_core)
   tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_core->pending_recv_list, link)
     {
       NM_WARN("purging pw from pending_recv_list\n");
-      nm_so_pw_free(p_pw);
+      nm_pw_ref_dec(p_pw);
     }
 #endif /* NMAD_POLL */
   

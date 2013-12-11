@@ -239,8 +239,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
       nmad_unlock();
       nm_unlock_interface(p_core);
       piom_ltask_cancel(&p_drv->task);
-      nm_lock_interface(p_core);
-      nmad_lock();
 #endif /* PIOMAN_POLL */
       /* cancel any pending active recv request 
        */
@@ -253,11 +251,10 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	    p_drv->driver->cancel_recv_iov(NULL, p_pw);
 #if defined(NMAD_POLL)
 	  tbx_fast_list_del(&p_pw->link);
-	  nm_so_pw_free(p_pw);
 #else
 	  piom_ltask_cancel(&p_pw->ltask);
-	  nm_so_pw_free(p_pw);		  
 #endif
+	  nm_pw_ref_dec(p_pw);
 	}
 
       struct nm_gate*p_gate = NULL;
@@ -276,17 +273,21 @@ int nm_core_driver_exit(struct nm_core *p_core)
 
 #if defined(NMAD_POLL)
 		  tbx_fast_list_del(&p_pw->link);
-		  nm_so_pw_free(p_pw);
 #else
 		  piom_ltask_cancel(&p_pw->ltask);
-		  nm_so_pw_free(p_pw);		  
 #endif
+		  nm_pw_ref_dec(p_pw);
 		}
 	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 	      p_gdrv->active_recv[NM_TRK_SMALL] = 0;
 	    }
 	}
+#ifdef PIOMAN_POLL
+      nm_lock_interface(p_core);
+      nmad_lock();
+#endif
     }
+
   /* disconnect all gates */
   struct nm_gate*p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)

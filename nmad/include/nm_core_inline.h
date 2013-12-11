@@ -261,7 +261,8 @@ static inline void nm_pw_ref_inc(struct nm_pkt_wrap *p_pw)
 static inline void nm_pw_ref_dec(struct nm_pkt_wrap *p_pw)
 {
   p_pw->ref_count--;
-  if(p_pw->ref_count <= 0)
+  assert(p_pw->ref_count >= 0);
+  if(p_pw->ref_count == 0)
     {
       nm_so_pw_free(p_pw);
     }

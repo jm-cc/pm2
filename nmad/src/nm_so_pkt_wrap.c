@@ -211,6 +211,9 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
 #ifdef DEBUG
   /* make sure no one can use this pw anymore ! */
   memset(p_pw, 0, sizeof(struct nm_pkt_wrap));
+#ifdef PIOMAN_POLL
+  p_pw->ltask.state = PIOM_LTASK_STATE_DESTROYED;
+#endif
 #endif
   /* Finally clean packet wrapper itself */
   if((flags & NM_PW_BUFFER) || (flags & NM_PW_GLOBAL_HEADER))

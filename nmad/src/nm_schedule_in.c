@@ -87,7 +87,10 @@ __inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
 #ifdef NMAD_POLL
       tbx_fast_list_del(&p_pw->link);
 #endif /* NMAD_POLL */
-
+#ifdef PIOMAN_POLL
+      piom_ltask_completed(&p_pw->ltask);
+#endif /* PIOMAN_POLL */
+     
       nm_pw_ref_dec(p_pw);
     }
   else if (err != -NM_EAGAIN)

@@ -322,12 +322,10 @@ void nm_core_schedopt_disable(nm_core_t p_core)
   struct nm_drv*p_drv;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      piom_ltask_mask(&p_drv->task);
       piom_ltask_cancel(&p_drv->task);
       if(p_drv->p_in_rq)
 	{
 	  struct nm_pkt_wrap*p_pw = p_drv->p_in_rq;
-	  piom_ltask_mask(&p_pw->ltask);
 	  piom_ltask_cancel(&p_pw->ltask);
 	  if(p_pw->p_drv->driver->cancel_recv_iov)
 	    {
@@ -347,7 +345,6 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 	  struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
 	  if(p_pw != NULL)
 	    {
-	      piom_ltask_mask(&p_pw->ltask);
 	      piom_ltask_cancel(&p_pw->ltask);
 	      struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
 	      if(r->driver->cancel_recv_iov)

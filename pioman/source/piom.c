@@ -110,8 +110,6 @@ void pioman_exit(void)
  */
 int piom_check_polling(unsigned polling_point)
 {
-    int ret = 0;
-    void*task = piom_ltask_schedule();
-    ret = (task != NULL);
-    return ret;
+    piom_ltask_schedule();
+    return 1;
 }

@@ -32,7 +32,7 @@
 /** Try to schedule a task
  * Returns the task that have been scheduled (or NULL if no task)
  */
-TBX_INTERNAL void *piom_ltask_schedule(void);
+TBX_INTERNAL void piom_ltask_schedule(void);
 
 /** initialize ltask system */
 TBX_INTERNAL void piom_init_ltasks(void);

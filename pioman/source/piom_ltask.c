@@ -371,128 +371,132 @@ static inline void __piom_init_queue(piom_ltask_queue_t*queue)
  * Returns the task that have been scheduled (or NULL if no task)
  * If it returns a task, this task have been freed.
  */
-static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
+static inline void __piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int count)
 {
-    int success = 0, again = 0;
     if((queue->state != PIOM_LTASK_QUEUE_STATE_RUNNING)
        && (queue->state != PIOM_LTASK_QUEUE_STATE_STOPPING)) 
 	{
-	    return NULL;
+	    return;
 	}
 #ifdef PIOMAN_MULTITHREAD
     if(__sync_fetch_and_add(&queue->processing, 1) != 0)
 	{
 	    __sync_fetch_and_sub(&queue->processing, 1);
-	    return NULL;
+	    return;
 	}
 #endif /* PIOMAN_MULTITHREAD */
-    struct piom_ltask*task = piom_ltask_lfqueue_dequeue_single_reader(&queue->submit_queue);
-    if(task == NULL)
-	task = piom_ltask_lfqueue_dequeue_single_reader(&queue->ltask_queue);
-    piom_trace_queue_var(queue, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
-    if(task)
+    int i;
+    for(i = 0; i < count; i++)
 	{
-	    piom_trace_queue_state(queue, PIOM_TRACE_STATE_INIT);
-	    if(task->masked)
+	    int success = 0, again = 0;
+	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue_single_reader(&queue->submit_queue);
+	    if(task == NULL)
+		task = piom_ltask_lfqueue_dequeue_single_reader(&queue->ltask_queue);
+	    piom_trace_queue_var(queue, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
+	    if(task)
 		{
-		    /* re-submit to poll later when task will be unmasked  */
-		    again = 1;
-		    assert(task->state != PIOM_LTASK_STATE_NONE);
-		    assert(task->state != PIOM_LTASK_STATE_DESTROYED);
-		}
-	    else if(task->state == PIOM_LTASK_STATE_READY)
-		{
-		    /* wait is pending: poll */
-		    piom_ltask_state_set(task, PIOM_LTASK_STATE_SCHEDULED);
-		    piom_trace_queue_state(queue, PIOM_TRACE_STATE_POLL);
-		    piom_tasklet_mask();
-		    const int options = task->options;
-		    (*task->func_ptr)(task->data_ptr);
-		    const int state = task->state;
-		    if(options & PIOM_LTASK_OPTION_DESTROY)
+		    piom_trace_queue_state(queue, PIOM_TRACE_STATE_INIT);
+		    if(task->masked)
 			{
-			    /* ltask was destroyed by handler */
-			    task = NULL;
-			    piom_tasklet_unmask();
-			    success = 1;
+			    /* re-submit to poll later when task will be unmasked  */
+			    again = 1;
+			    assert(task->state != PIOM_LTASK_STATE_NONE);
+			    assert(task->state != PIOM_LTASK_STATE_DESTROYED);
 			}
-		    else if((options & PIOM_LTASK_OPTION_REPEAT) && !(state & PIOM_LTASK_STATE_SUCCESS))
+		    else if(task->state == PIOM_LTASK_STATE_READY)
 			{
-			    piom_ltask_state_unset(task, PIOM_LTASK_STATE_SCHEDULED);
-			    piom_tasklet_unmask();
-			    /* If another thread is currently stopping the queue don't repost the task */
-			    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
+			    /* wait is pending: poll */
+			    piom_ltask_state_set(task, PIOM_LTASK_STATE_SCHEDULED);
+			    piom_trace_queue_state(queue, PIOM_TRACE_STATE_POLL);
+			    piom_tasklet_mask();
+			    const int options = task->options;
+			    (*task->func_ptr)(task->data_ptr);
+			    const int state = task->state;
+			    if(options & PIOM_LTASK_OPTION_DESTROY)
 				{
-				    again = 1;
-				    assert(task->state != PIOM_LTASK_STATE_NONE);
-				    assert(task->state != PIOM_LTASK_STATE_DESTROYED);
-				    if(options & PIOM_LTASK_OPTION_BLOCKING)
+				    /* ltask was destroyed by handler */
+				    task = NULL;
+				    piom_tasklet_unmask();
+				    success = 1;
+				}
+			    else if((options & PIOM_LTASK_OPTION_REPEAT) && !(state & PIOM_LTASK_STATE_SUCCESS))
+				{
+				    piom_ltask_state_unset(task, PIOM_LTASK_STATE_SCHEDULED);
+				    piom_tasklet_unmask();
+				    /* If another thread is currently stopping the queue don't repost the task */
+				    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
 					{
-					    struct timespec t;
-					    clock_gettime(CLOCK_MONOTONIC, &t);
-					    const long d_usec = (t.tv_sec - task->origin.tv_sec) * 1000000 + (t.tv_nsec - task->origin.tv_nsec) / 1000;
-					    if(d_usec > task->blocking_delay)
+					    again = 1;
+					    assert(task->state != PIOM_LTASK_STATE_NONE);
+					    assert(task->state != PIOM_LTASK_STATE_DESTROYED);
+					    if(options & PIOM_LTASK_OPTION_BLOCKING)
 						{
-						    if(__piom_ltask_submit_in_lwp(task) == 0)
-							again = 0;
+						    struct timespec t;
+						    clock_gettime(CLOCK_MONOTONIC, &t);
+						    const long d_usec = (t.tv_sec - task->origin.tv_sec) * 1000000 + (t.tv_nsec - task->origin.tv_nsec) / 1000;
+						    if(d_usec > task->blocking_delay)
+							{
+							    if(__piom_ltask_submit_in_lwp(task) == 0)
+								again = 0;
+							}
 						}
+					}
+				    else
+					{
+					    fprintf(stderr, "PIOMan: WARNING- task %p is left uncompleted\n", task);
 					}
 				}
 			    else
 				{
-				    fprintf(stderr, "PIOMan: WARNING- task %p is left uncompleted\n", task);
+				    task->state = PIOM_LTASK_STATE_TERMINATED;
+				    piom_ltask_completed(task);
+				    if((task->options & PIOM_LTASK_OPTION_NOWAIT) && (task->destructor))
+					{
+					    (*task->destructor)(task);
+					}
+				    task = NULL;
+				    piom_tasklet_unmask();
+				    success = 1;
 				}
+			} 
+		    else if(piom_ltask_state_test(task, PIOM_LTASK_STATE_SUCCESS) ||
+			    piom_ltask_state_test(task, PIOM_LTASK_STATE_CANCELLED))
+			{
+			    success = 1;
+			    piom_ltask_state_set(task, PIOM_LTASK_STATE_TERMINATED);
 			}
 		    else
 			{
-			    task->state = PIOM_LTASK_STATE_TERMINATED;
-			    piom_ltask_completed(task);
-			    if((task->options & PIOM_LTASK_OPTION_NOWAIT) && (task->destructor))
-				{
-				    (*task->destructor)(task);
-				}
-			    task = NULL;
-			    piom_tasklet_unmask();
-			    success = 1;
+			    fprintf(stderr, "PIOMan: FATAL- wrong state %x for scheduled ltask.\n", task->state);
+			    abort();
 			}
-		} 
-	    else if(piom_ltask_state_test(task, PIOM_LTASK_STATE_SUCCESS) ||
-		    piom_ltask_state_test(task, PIOM_LTASK_STATE_CANCELLED))
-		{
-		    success = 1;
-		    piom_ltask_state_set(task, PIOM_LTASK_STATE_TERMINATED);
-		}
-	    else
-		{
-		    fprintf(stderr, "PIOMan: FATAL- wrong state %x for scheduled ltask.\n", task->state);
-		    abort();
-		}
-	    piom_trace_queue_state(queue, PIOM_TRACE_STATE_NONE);
-	    if(again)
-		{
-		    int rc = -1;
-		    while(rc != 0)
+		    piom_trace_queue_state(queue, PIOM_TRACE_STATE_NONE);
+		    if(again)
 			{
-			    assert(task->state != PIOM_LTASK_STATE_NONE);
-			    assert(task->state != PIOM_LTASK_STATE_DESTROYED);
-			    rc = piom_ltask_lfqueue_enqueue_single_writer(&queue->ltask_queue, task);
+			    int rc = -1;
+			    while(rc != 0)
+				{
+				    assert(task->state != PIOM_LTASK_STATE_NONE);
+				    assert(task->state != PIOM_LTASK_STATE_DESTROYED);
+				    rc = piom_ltask_lfqueue_enqueue_single_writer(&queue->ltask_queue, task);
+				}
 			}
 		}
-	}
-    /* no more task to run, set the queue as stopped */
-    if( (task == NULL) && 
-	(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING) )
-	{
-	    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
+	    /* no more task to run, set the queue as stopped */
+	    if( (task == NULL) && 
+		(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING) )
+		{
+		    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
+		    break;
+		}
+	    if(success)
+		{
+		    piom_trace_queue_event(queue, PIOM_TRACE_EVENT_SUCCESS, task);
+		}
 	}
 #ifdef PIOMAN_MULTITHREAD
     __sync_fetch_and_sub(&queue->processing, 1);
 #endif /* PIOMAN_MULTITHREAD */
-    if(success)
-	{
-	    piom_trace_queue_event(queue, PIOM_TRACE_EVENT_SUCCESS, task);
-	}
-    return task;
 }
 
 
@@ -503,7 +507,7 @@ static inline void __piom_exit_queue(piom_ltask_queue_t *queue)
     /* empty the list of tasks */
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
-	    __piom_ltask_queue_schedule (queue);
+	    __piom_ltask_queue_schedule(queue, 1);
 	}
 }
 
@@ -824,26 +828,20 @@ void piom_ltask_submit(struct piom_ltask *task)
     __piom_ltask_submit_in_queue(task, queue);
 }
 
-void*piom_ltask_schedule(void)
+void piom_ltask_schedule(void)
 {
-    struct piom_ltask*ltask = NULL;
     if(piom_ltask_initialized)
 	{
 	    piom_ltask_queue_t*queue = __piom_get_queue(piom_ltask_current_obj());
 	    while(queue != NULL)
 		{
-		    int hint = (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK;
-		    if(hint <= 0)
-			hint = 1;
-		    int i;
-		    for(i = 0; i < hint; i++)
-			{
-			    ltask = __piom_ltask_queue_schedule(queue);
-			}
+		    int hint1 = (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK;
+		    int hint2 = (PIOM_MAX_LTASK + queue->submit_queue._head - queue->submit_queue._tail) % PIOM_MAX_LTASK;
+		    const int hint = (hint1 > 0)?hint1:1 + (hint2 > 0)?hint2:1;
+		    __piom_ltask_queue_schedule(queue, hint);
 		    queue = queue->parent;
 		}
 	}
-    return ltask;
 }
 
 void piom_ltask_wait_success(struct piom_ltask *task)
@@ -900,7 +898,7 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
 	    __sync_fetch_and_sub(&ltask->masked, 1);
 	    while(!piom_ltask_state_test(ltask, PIOM_LTASK_STATE_TERMINATED))
 		{
-		    __piom_ltask_queue_schedule(queue);
+		    __piom_ltask_queue_schedule(queue, 1);
 		}
 	}
     ltask->state = PIOM_LTASK_STATE_TERMINATED;

@@ -124,11 +124,19 @@ extern void piom_ltask_cancel(struct piom_ltask*task);
 
 static inline void piom_ltask_state_set(struct piom_ltask*ltask, piom_ltask_state_t state)
 {
+#ifdef PIOMAN_MULTITHREAD
     __sync_fetch_and_or(&ltask->state, state);
+#else /* PIOMAN_MULTITHREAD */
+    ltask->state |= state;
+#endif /* PIOMAN_MULTITHREAD */
 }
 static inline void piom_ltask_state_unset(struct piom_ltask*ltask, piom_ltask_state_t state)
 {
+#ifdef PIOMAN_MULTITHREAD
     __sync_fetch_and_and(&ltask->state, ~state);
+#else /* PIOMAN_MULTITHREAD */
+    ltask->state &= ~state;
+#endif /* PIOMAN_MULTITHREAD */
 }
 static inline int piom_ltask_state_test(struct piom_ltask*ltask, piom_ltask_state_t state)
 {

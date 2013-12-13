@@ -379,12 +379,14 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 	{
 	    return NULL;
 	}
+#ifdef PIOMAN_MULTITHREAD
     if(__sync_fetch_and_add(&queue->processing, 1) != 0)
 	{
 	    __sync_fetch_and_sub(&queue->processing, 1);
 	    return NULL;
 	}
-    struct piom_ltask*task = piom_ltask_lfqueue_dequeue(&queue->submit_queue);
+#endif /* PIOMAN_MULTITHREAD */
+    struct piom_ltask*task = piom_ltask_lfqueue_dequeue_single_reader(&queue->submit_queue);
     if(task == NULL)
 	task = piom_ltask_lfqueue_dequeue_single_reader(&queue->ltask_queue);
     piom_trace_queue_var(queue, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
@@ -483,7 +485,9 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 	{
 	    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
 	}
+#ifdef PIOMAN_MULTITHREAD
     __sync_fetch_and_sub(&queue->processing, 1);
+#endif /* PIOMAN_MULTITHREAD */
     if(success)
 	{
 	    piom_trace_queue_event(queue, PIOM_TRACE_EVENT_SUCCESS, task);
@@ -835,11 +839,6 @@ void*piom_ltask_schedule(void)
 		    for(i = 0; i < hint; i++)
 			{
 			    ltask = __piom_ltask_queue_schedule(queue);
-			    if(ltask)
-				{
-				    /* break; */
-				}
-			    
 			}
 		    queue = queue->parent;
 		}

@@ -519,24 +519,34 @@ static void __piom_pthread_setname(const char*name)
 static void*__piom_ltask_timer_worker(void*_dummy)
 {
     const long timeslice_nsec = piom_parameters.timer_period * 1000;
-    const int policy = SCHED_OTHER;
-    const int prio = sched_get_priority_max(policy);
-    int rc = pthread_setschedprio(pthread_self(), prio);
-    if(rc != 0)
-	{
-	    fprintf(stderr, "# pioman: WARNING- timer thread could not get priority %d.\n", prio);
-	}
+    int policy = SCHED_OTHER;
+    const int max_prio = sched_get_priority_max(policy);
+    struct sched_param old_param;
+    pthread_getschedparam(pthread_self(), &policy, &old_param);
+    const int old_prio = old_param.sched_priority;
     __piom_pthread_setname("_pioman_timer");
+    int rc = pthread_setschedprio(pthread_self(), max_prio);
+    const int prio_enable = (rc == 0);
+    if(!prio_enable)
+	{
+           fprintf(stderr, "# pioman: WARNING- timer thread could not get priority %d.\n", max_prio);
+	}
     piom_ltask_queue_t*global_queue = __piom_get_queue(piom_topo_full);
     while(global_queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    struct timespec t = { .tv_sec = 0, .tv_nsec = timeslice_nsec };
 	    nanosleep(&t, NULL);
 	    piom_trace_queue_event(NULL, PIOM_TRACE_EVENT_TIMER_POLL, NULL);
+           if(prio_enable)
+               pthread_setschedprio(pthread_self(), old_prio);
 	    piom_check_polling(PIOM_POLL_AT_TIMER_SIG);
+           sched_yield();
+           if(prio_enable)
+               pthread_setschedprio(pthread_self(), max_prio);
 	}
     return NULL;
 }
+
 static void*__piom_ltask_idle_worker(void*_dummy)
 {
     piom_ltask_queue_t*queue = _dummy;

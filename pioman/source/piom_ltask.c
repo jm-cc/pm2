@@ -529,7 +529,7 @@ static void*__piom_ltask_timer_worker(void*_dummy)
     const int prio_enable = (rc == 0);
     if(!prio_enable)
 	{
-           fprintf(stderr, "# pioman: WARNING- timer thread could not get priority %d.\n", max_prio);
+	    fprintf(stderr, "# pioman: WARNING- timer thread could not get priority %d.\n", max_prio);
 	}
     piom_ltask_queue_t*global_queue = __piom_get_queue(piom_topo_full);
     while(global_queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
@@ -537,12 +537,12 @@ static void*__piom_ltask_timer_worker(void*_dummy)
 	    struct timespec t = { .tv_sec = 0, .tv_nsec = timeslice_nsec };
 	    nanosleep(&t, NULL);
 	    piom_trace_queue_event(NULL, PIOM_TRACE_EVENT_TIMER_POLL, NULL);
-           if(prio_enable)
-               pthread_setschedprio(pthread_self(), old_prio);
+	    if(prio_enable)
+		pthread_setschedprio(pthread_self(), old_prio);
 	    piom_check_polling(PIOM_POLL_AT_TIMER_SIG);
-           sched_yield();
-           if(prio_enable)
-               pthread_setschedprio(pthread_self(), max_prio);
+	    sched_yield();
+	    if(prio_enable)
+		pthread_setschedprio(pthread_self(), max_prio);
 	}
     return NULL;
 }
@@ -555,10 +555,27 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 	{
 	    piom_trace_queue_event(NULL, PIOM_TRACE_EVENT_IDLE_POLL, NULL);
 	    piom_check_polling(PIOM_POLL_AT_IDLE);
-	    if(piom_parameters.idle_granularity > 0)
-		usleep(piom_parameters.idle_granularity);
+	    if(piom_parameters.idle_granularity > 0 && piom_parameters.idle_granularity < 50)
+		{
+		    tbx_tick_t s1, s2;
+		    double d = 0.0;
+		    TBX_GET_TICK(s1);
+		    do
+			{
+			    sched_yield();
+			    TBX_GET_TICK(s2);
+			    d = TBX_TIMING_DELAY(s1, s2);
+			}
+		    while(d < piom_parameters.idle_granularity);
+		}
+	    else if(piom_parameters.idle_granularity > 0)
+		{
+		    usleep(piom_parameters.idle_granularity);
+		}
 	    else
-		sched_yield();
+		{
+		    sched_yield();
+		}
 	}
     return NULL;
 }

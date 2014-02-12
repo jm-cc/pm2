@@ -90,11 +90,11 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
   do
     {
       int i;
-      for(i = 0; i < piom_parameters.busy_wait_granularity ; i++)
+      for(i = 0; (piom_parameters.busy_wait_usec < 0) || (i < piom_parameters.busy_wait_granularity) ; i++)
 	{
 	  if(piom_cond_test(cond, mask))
 	    {
-	      /* consume the semaphore */
+	        /* consume the semaphore */
 	      piom_sem_P(&cond->sem);
 	      return;
 	    }

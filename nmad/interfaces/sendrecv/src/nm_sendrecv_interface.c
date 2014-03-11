@@ -174,6 +174,7 @@ extern int nm_sr_flush(struct nm_core *p_core)
 {
   int ret = NM_EAGAIN;
   struct nm_gate*p_gate = NULL;
+  nmad_lock();
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
@@ -181,6 +182,7 @@ extern int nm_sr_flush(struct nm_core *p_core)
 	  ret = nm_core_flush(p_gate);
 	}
     } 
+  nmad_unlock();
   return ret;
 }
 

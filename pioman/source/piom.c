@@ -20,10 +20,10 @@
 
 TBX_INTERNAL struct piom_parameters_s piom_parameters =
     {
-	.busy_wait_usec     = 5,
+	.busy_wait_usec     = 10,
 	.busy_wait_granularity = 100,
 	.enable_progression = 1,
-	.idle_granularity   = 5,
+	.idle_granularity   = 20,
 	.timer_period       = 4000,
 	.spare_lwp          = 0
     };
@@ -77,6 +77,7 @@ void pioman_init(int*argc, char**argv)
 	{
 	    piom_parameters.timer_period = -1;
 	    piom_parameters.idle_granularity = -1;
+	    piom_parameters.busy_wait_usec = -1;
 	}
     if(s_spare_lwp)
 	{

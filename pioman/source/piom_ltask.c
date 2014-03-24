@@ -514,7 +514,11 @@ static inline void __piom_exit_queue(piom_ltask_queue_t *queue)
 #ifdef PIOMAN_PTHREAD
 static void __piom_pthread_setname(const char*name)
 {
+#if defined(__GLIBC__) && defined(__GLIBC_MINOR__) && ((__GLIBC__ == 2 && __GLIBC_MINOR__ >= 12) || (__GLIBC__ > 2))
     pthread_setname_np(pthread_self(), name);
+#else
+#warning pthread_setname_np not available
+#endif
 }
 static void*__piom_ltask_timer_worker(void*_dummy)
 {

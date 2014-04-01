@@ -97,7 +97,10 @@ struct nm_gate
 
   /** NM core object. */
   struct nm_core *p_core;
-  
+
+#ifdef NMAD_TRACE
+  int trace_connections_id;
+#endif /* NMAD_TRACE */
 };
 
 

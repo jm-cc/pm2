@@ -17,10 +17,16 @@
 #include <sys/uio.h>
 #include <assert.h>
 
+#ifdef NMAD_TRACE
+#include <nm_trace.h>
+#endif /* NMAD_TRACE */
+
 #include <nm_private.h>
 
 #include <Padico/Module.h>
 PADICO_MODULE_BUILTIN(NewMad_Core, NULL, NULL, NULL);
+
+
 
 #ifdef PIOMAN
 #  ifdef FINE_GRAIN_LOCKING
@@ -273,6 +279,10 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 #endif	/* PIOM_POLL */
 #endif /* PIOMAN */
 
+#ifdef NMAD_TRACE
+  nm_trace_init();
+#endif /* NMAD_TRACE */
+  
   *pp_core = p_core;
 
   return err;
@@ -418,7 +428,12 @@ int nm_core_exit(nm_core_t p_core)
 
   nm_core_monitor_vect_destroy(&p_core->monitors);
 
+#ifdef NMAD_TRACE
+  nm_trace_exit();
+#endif /* NMAD_TRACE */
+
   nmad_unlock();
+
 
   nm_ns_exit(p_core);
   TBX_FREE(p_core);

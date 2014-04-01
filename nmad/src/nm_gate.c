@@ -15,6 +15,10 @@
 
 #include <nm_private.h>
 
+#ifdef NMAD_TRACE
+#include <nm_trace.h>
+#endif /* NMAD_TRACE */
+
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(NewMad_Core);
 
@@ -44,11 +48,16 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   TBX_INIT_FAST_LIST_HEAD(&p_gate->pending_large_recv);
   TBX_INIT_FAST_LIST_HEAD(&p_gate->pending_large_send);
 
+
   p_gate->strategy_instance = puk_adapter_instanciate(p_core->strategy_adapter);
   puk_instance_indirect_NewMad_Strategy(p_gate->strategy_instance, NULL,
 					&p_gate->strategy_receptacle);
 
   tbx_fast_list_add_tail(&p_gate->_link, &p_core->gate_list);
+
+#ifdef NMAD_TRACE
+  p_gate->trace_connections_id = nm_trace_connections_cpt++;
+#endif /* NMAD_TRACE */
 
   *pp_gate = p_gate;
   
@@ -106,6 +115,11 @@ int nm_core_gate_connect(struct nm_core	*p_core,
     }
   err = NM_ESUCCESS;
   p_gate->status = NM_GATE_STATUS_CONNECTED;
+
+#ifdef NMAD_TRACE
+  nmad_trace_container(TOPO_CONNECTION, NMAD_TRACE_EVENT_NEW_CONNECTION, p_gate->trace_connections_id);
+  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_NB_GDRV, nm_gdrv_vect_size(&(p_gate->gdrv_array)), p_gate->trace_connections_id);
+#endif /* NMAD_TRACE */
 
  out:
   return err;

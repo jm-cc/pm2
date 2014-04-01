@@ -88,6 +88,15 @@ AC_ARG_ENABLE(sampling,
 	      ],
 	      [])
 
+dnl -- NMAD_TRACE
+AC_ARG_ENABLE(trace,
+	      [  --enable-trace  Enable PAJE trace],
+	      [ if test $enableval = yes; then
+	            AC_DEFINE([NMAD_TRACE], 1, [enable trace])
+		    nmad_interfaces="${nmad_interfaces} trace"
+	        fi
+	      ],
+	      [])
 
 dnl -- DEBUG
 AC_ARG_ENABLE(debug,
@@ -116,6 +125,23 @@ dnl -- external packages
 dnl --------------------------------------------------------
 
 PKG_PROG_PKG_CONFIG
+
+dnl -- gtg
+AC_ARG_WITH([gtg],
+	[AS_HELP_STRING([--with-gtg], [build with GTG traces @<:@default=no@:>@] )])
+AC_MSG_CHECKING([for gtg])
+if test "x${with_gtg}" = "xyes"; then
+   AC_MSG_RESULT([yes])
+   PKG_CHECK_MODULES([gtg],    [ gtg ])
+else
+   AC_MSG_RESULT([no])
+   gtg_LIBS=
+   gtg_CFLAGS=
+fi
+   
+AC_SUBST([requires_gtg])
+AC_SUBST(with_gtg)
+
 
 dnl -- tbx
 PKG_CHECK_MODULES([tbx],    [ tbx ])
@@ -331,6 +357,7 @@ AC_ARG_ENABLE(mpi,
 	      [])
 
 
+
 dnl -- nmad content
 dnl --
 
@@ -380,9 +407,9 @@ for d in ${nmad_alldirs}; do
        NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} -I${nmad_srcdir}/${d}/include"
     fi
 done
-NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} ${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS}"
+NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} ${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS} ${gtg_CFLAGS}"
 
-NMAD_CORE_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${numa_LIBS} -lrt"
+NMAD_CORE_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${numa_LIBS} ${gtg_LIBS} -lrt"
 
 AC_SUBST(NMAD_CORE_CFLAGS)
 AC_SUBST(NMAD_CORE_LDFLAGS)

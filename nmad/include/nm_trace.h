@@ -12,6 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
+#ifdef NMAD_TRACE
 
 #ifndef NM_TRACE_H
 #define NM_TRACE_H
@@ -65,3 +66,4 @@ void nmad_trace_state(nm_trace_topo_t _topo, nm_trace_event_t _event, int _cpt_c
 void nmad_trace_event(nm_trace_topo_t _topo, nm_trace_event_t _event, void* _value, int _cpt_connections);
 
 #endif /* NM_TRACE_H */
+#endif /* NMAD_TRACE */

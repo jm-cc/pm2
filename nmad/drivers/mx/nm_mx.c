@@ -93,7 +93,7 @@ struct nm_mx_pkt_wrap
 {
   mx_endpoint_t *p_ep;
   mx_request_t rq;
-#ifdef PROFILE
+#ifdef PROFILE_NMAD
   int send_bool;
 #endif
 };
@@ -611,7 +611,7 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
   mx_return_t mx_ret = MX_SUCCESS;
   int err;
   p_pw->drv_priv = p_mx_pw;
-#ifdef PROFILE
+#ifdef PROFILE_NMAD
   p_mx_pw->send_bool = 1;
 #endif
   p_mx_pw->p_ep	= &(p_mx_drv->ep);
@@ -679,7 +679,7 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
       match_mask	= NM_MX_TRACK_MATCH_MASK;
       match_info	= NM_MX_MATCH_INFO(0, p_pw->trk_id);
     }
-#ifdef PROFILE
+#ifdef PROFILE_NMAD
   p_mx_pw->send_bool = 0;
 #endif
   
@@ -786,7 +786,7 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
   err = NM_ESUCCESS;
   
  out:
-#ifdef PROFILE
+#ifdef PROFILE_NMAD
   if (err == NM_ESUCCESS && !p_mx_pw->send_bool) {
     NMAD_EVENT_RCV_END(p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->length);
   }

@@ -37,7 +37,7 @@
 
 /* Profiling/post-portem analysis
  */
-#ifdef PROFILE
+#ifdef PROFILE_NMAD
 #  define FUT_NMAD_CODE			0xfe00
 
 #  define FUT_NMAD_EVENT0_CODE		FUT_NMAD_CODE + 0x00

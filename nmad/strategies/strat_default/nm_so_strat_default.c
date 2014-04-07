@@ -17,6 +17,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
+
 #include <nm_trace.h>
 
 #include <nm_private.h>
@@ -190,12 +191,12 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
  */
 static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
 {
-#ifdef PROFILE
+#ifdef PROFILE_NMAD
   static long double wait_time = 0.0;
   static int count = 0, send_count = 0;
   static long long int send_size = 0;
   static tbx_tick_t t_orig;
-#endif /* PROFILE */
+#endif /* PROFILE_NMAD */
   struct nm_so_strat_default*status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
 
@@ -220,7 +221,7 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
   if((p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
      !(tbx_fast_list_empty(out_list)))
     {
-#ifdef PROFILE
+#ifdef PROFILE_NMAD
       if(count != 0)
 	{
 	  tbx_tick_t t2;
@@ -235,7 +236,7 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
       count = 0;
       send_count++;
       send_size += p_so_pw->length;
-#endif /* PROFILE */
+#endif /* PROFILE_NMAD */
       struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
       tbx_fast_list_del(out_list->next);
       /* Post packet on track 0 */
@@ -251,13 +252,13 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
     }
   else if((p_gdrv->active_send[NM_TRK_SMALL] != 0) && !(tbx_fast_list_empty(out_list)))
     {
-#ifdef PROFILE
+#ifdef PROFILE_NMAD
       if(count == 0)
 	{
 	  TBX_GET_TICK(t_orig);
 	}
       count++;
-#endif /* PROFILE */
+#endif /* PROFILE_NMAD */
     }
   return NM_ESUCCESS;
 }

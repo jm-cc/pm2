@@ -13,8 +13,6 @@
  * General Public License for more details.
  */
 
-#ifdef NMAD_TRACE
-
 #include <nm_trace.h>
 #include <stdio.h>
 #include <GTG.h>
@@ -76,7 +74,8 @@ void nmad_trace_var(nm_trace_topo_t _topo, nm_trace_event_t  _event, int _value,
   nmad_trace_event(_topo, _event, value, _cpt_connections);
 }
 
-static void nmad_trace_flush()
+#ifdef NMAD_TRACE
+void nmad_trace_flush()
 {
 
   static int flushed = 0;
@@ -203,3 +202,4 @@ void nm_trace_exit()
 }
 
 #endif /* NMAD_TRACE */
+

@@ -12,13 +12,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
-#ifdef NMAD_TRACE
 
 #ifndef NM_TRACE_H
 #define NM_TRACE_H
-
-
-
 
 
 typedef int nm_trace_event_t;
@@ -59,11 +55,10 @@ static int nm_trace_connections_cpt = 0;
 
 void nm_trace_exit();
 void nm_trace_init();
-static void nmad_trace_flush();
+void nmad_trace_flush();
 void nmad_trace_container(nm_trace_topo_t _topo, nm_trace_event_t _event, int _cpt_connections);
 void nmad_trace_var(nm_trace_topo_t _topo, nm_trace_event_t  _event, int _value, int _cpt_connections);
 void nmad_trace_state(nm_trace_topo_t _topo, nm_trace_event_t _event, int _cpt_connections);
 void nmad_trace_event(nm_trace_topo_t _topo, nm_trace_event_t _event, void* _value, int _cpt_connections);
 
 #endif /* NM_TRACE_H */
-#endif /* NMAD_TRACE */

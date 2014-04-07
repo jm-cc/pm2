@@ -74,10 +74,10 @@ void nmad_trace_var(nm_trace_topo_t _topo, nm_trace_event_t  _event, int _value,
   nmad_trace_event(_topo, _event, value, _cpt_connections);
 }
 
-#ifdef NMAD_TRACE
+
 void nmad_trace_flush()
 {
-
+#ifdef NMAD_TRACE
   static int flushed = 0;
   if(flushed) return;
   flushed = 1;
@@ -156,10 +156,12 @@ void nmad_trace_flush()
 	  break;
 	}
     }
+#endif /* NMAD_TRACE */
 }
 
 void nm_trace_init()
 {
+#ifdef NMAD_TRACE
   /* Initialisation */
   char trace_name[256]; 
   char hostname[256];
@@ -192,14 +194,16 @@ void nm_trace_init()
   addContainer(0.0, "C_CORE", "Container_Core", "0", "C_CORE", "0"); 
   CHECK_RETURN (addContainer(0.0, "C_GLOBAL", "Container_Global", "C_CORE", "C_GLOBAL", "0")); 
   CHECK_RETURN (addContainer(0.0, "C_CONNECTIONS", "Container_Connections", "C_CORE", "C_CONNECTIONS", "0")); 
-  
+#endif /* NMAD_TRACE */
 }
 
 void nm_trace_exit()
 {
+#ifdef NMAD_TRACE
   nmad_trace_flush();
   CHECK_RETURN ( endTrace());
+#endif /* NMAD_TRACE */
 }
 
-#endif /* NMAD_TRACE */
+
 

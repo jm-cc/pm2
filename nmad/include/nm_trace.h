@@ -52,9 +52,8 @@ static int nm_trace_connections_cpt = 0;
 #define CHECK_RETURN(val) {if (val!=TRACE_SUCCESS){fprintf (stderr, "Function failed line %d. Leaving \n", __LINE__);exit (-1);}}
 
 
-
-void nm_trace_exit();
-void nm_trace_init();
+void nm_trace_exit() __attribute__((destructor));
+void nm_trace_init() __attribute__((constructor));
 void nmad_trace_flush();
 void nmad_trace_container(nm_trace_topo_t _topo, nm_trace_event_t _event, int _cpt_connections);
 void nmad_trace_var(nm_trace_topo_t _topo, nm_trace_event_t  _event, int _value, int _cpt_connections);

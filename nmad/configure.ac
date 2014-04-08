@@ -83,7 +83,6 @@ AC_ARG_ENABLE(sampling,
 	      [  --enable-sampling  Enable network sampling],
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([NMAD_SAMPLING], 1, [enable sampling])
-		    nmad_interfaces="${nmad_interfaces} sampling"
 	        fi
 	      ],
 	      [])
@@ -134,9 +133,8 @@ if test "x${with_gtg}" = "xyes"; then
    AC_MSG_RESULT([yes])
    PKG_CHECK_MODULES([gtg],    [ gtg ])
 else
-   AC_MSG_RESULT([no])
-   gtg_LIBS=
-   gtg_CFLAGS=
+   AC_MSG_RESULT([yes])
+   PKG_CHECK_MODULES([gtg],    [ gtg ])
 fi
    
 AC_SUBST([requires_gtg])

@@ -127,9 +127,13 @@ void nmad_trace_flush()
 	  _var = (uintptr_t)e->value;
 	  CHECK_RETURN(setVar(e->time, "Var_Nb_Gdrv", cont_name, _var));
 	  break;
+	case NMAD_TRACE_EVENT_Pw_Submited:
+	  CHECK_RETURN (addEvent(e->time, "Event_Pw_Submited", cont_name, NULL));
+	  break;
 	case NMAD_TRACE_EVENT_VAR_CO_Pw_Submitted_Size:
 	  _var = (uintptr_t)e->value;
 	  CHECK_RETURN(setVar(e->time, "Var_Pw_Submited_Size", cont_name, _var));
+	  CHECK_RETURN(subVar(e->time, "Var_Outlist_Pw_Size", cont_name, _var));
 	  break;
 	case NMAD_TRACE_EVENT_VAR_CO_Pw_Submitted_Seq:
 	  _var = (uintptr_t)e->value;
@@ -143,13 +147,25 @@ void nmad_trace_flush()
 	  _var = (uintptr_t)e->value;
 	  CHECK_RETURN(setVar(e->time, "Var_Gdrv_Profile_bandwidth", cont_name, _var));
 	  break;
-	case NMAD_TRACE_EVENT_VAR_CO_Outlist_Pw_Seq:
+	case NMAD_TRACE_EVENT_Pw_Outlist:
 	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN(setVar(e->time, "Var_Outlist_Pw_Seq", cont_name, _var));
+	  CHECK_RETURN (addEvent(e->time, "Event_Pw_Outlist", cont_name, NULL));
 	  break;
 	case NMAD_TRACE_EVENT_VAR_CO_Outlist_Pw_Size:
 	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN(setVar(e->time, "Var_Outlist_Pw_Size", cont_name, _var));
+	  CHECK_RETURN(addVar(e->time, "Var_Outlist_Pw_Size", cont_name, _var));
+	  break;
+	case NMAD_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw:
+	  _var = (uintptr_t)e->value;
+	  CHECK_RETURN(setVar(e->time, "Var_Outlist_Nb_Pw", cont_name, _var));
+	  break;
+	case NMAD_TRACE_EVENT_VAR_CO_Outlist_Smaller_Pw_Size:
+	  _var = (uintptr_t)e->value;
+	  CHECK_RETURN(setVar(e->time, "Var_Outlist_Smaller_Pw_Size", cont_name, _var));
+	  break;
+	case NMAD_TRACE_EVENT_VAR_CO_Outlist_Max_Remaining_Data_Area:
+	  _var = (uintptr_t)e->value;
+	  CHECK_RETURN(setVar(e->time, "Var_Outlist_Max_Remaining_Data_Area", cont_name, _var));
 	  break;
 	default:
 	  break;
@@ -176,6 +192,7 @@ void nm_trace_init()
   CHECK_RETURN (addContType ("Container_Connection", "Container_Connections", "Container_Connection"));
 
   CHECK_RETURN (addEventType ("Event_Try_And_Commit", "Container_Connection", "Event_Try_And_Commit"));
+  CHECK_RETURN (addEventType ("Event_Pw_Submited", "Container_Connection", "Event_Pw_Submited"));
 
   CHECK_RETURN (addVarType ("Var_Nb_Gdrv", "Var_Nb_Gdrv", "Container_Connection"));
 
@@ -184,8 +201,11 @@ void nm_trace_init()
   CHECK_RETURN (addVarType ("Var_Gdrv_Profile_Latency", "Var_Gdrv_Profile_Latency", "Container_Connection"));
   CHECK_RETURN (addVarType ("Var_Gdrv_Profile_bandwidth", "Var_Gdrv_Profile_bandwidth", "Container_Connection"));
 
-  CHECK_RETURN (addVarType ("Var_Outlist_Pw_Seq", "Var_Outlist_Pw_Seq", "Container_Connection"));
+
   CHECK_RETURN (addVarType ("Var_Outlist_Pw_Size", "Var_Outlist_Pw_Size", "Container_Connection"));
+  CHECK_RETURN (addVarType ("Var_Outlist_Nb_Pw", "Var_Outlist_Nb_Pw", "Container_Connection"));
+  CHECK_RETURN (addVarType ("Var_Outlist_Smaller_Pw_Size", "Var_Outlist_Smaller_Pw_Size", "Container_Connection"));
+  CHECK_RETURN (addVarType ("Var_Outlist_Max_Remaining_Data_Area", "Var_Outlist_Max_Remaining_Data_Area", "Container_Connection"));
 
   /* Init Container */
   addContainer(0.0, "C_CORE", "Container_Core", "0", "C_CORE", "0"); 

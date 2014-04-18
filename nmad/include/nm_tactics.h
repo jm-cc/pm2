@@ -78,9 +78,9 @@ static inline struct nm_pkt_wrap*nm_tactic_try_to_aggregate(struct tbx_fast_list
     {
       const nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
       const nm_len_t d_rlen = nm_so_pw_remaining_data(p_pw);
-      if((header_len + NM_SO_ALIGN_FRONTIER < h_rlen) && 
-	 (data_len + NM_SO_ALIGN_FRONTIER < d_rlen))
+      if(header_len + data_len + NM_SO_ALIGN_FRONTIER < d_rlen)
 	{
+	  assert(header_len + NM_SO_ALIGN_FRONTIER < h_rlen);
 	  return p_pw;
 	}
     }

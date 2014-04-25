@@ -118,7 +118,6 @@ int nm_core_gate_connect(struct nm_core	*p_core,
 
 #ifdef NMAD_TRACE
   nmad_trace_container(TOPO_CONNECTION, NMAD_TRACE_EVENT_NEW_CONNECTION, p_gate->trace_connections_id);
-  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_NB_GDRV, nm_gdrv_vect_size(&(p_gate->gdrv_array)), p_gate->trace_connections_id);
 #endif /* NMAD_TRACE */
 
  out:

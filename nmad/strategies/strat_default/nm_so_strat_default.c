@@ -210,6 +210,7 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
   struct tbx_fast_list_head *pos;
   struct nm_pkt_wrap *p_pw_trace;
   struct nm_pack_s*p_pack_trace;
+
   if (!tbx_fast_list_empty(out_list))
     {
       nmad_trace_event(TOPO_CONNECTION, NMAD_TRACE_EVENT_TRY_COMMIT, NULL, trace_co_id);
@@ -224,10 +225,11 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
 	    smaller_pw_size = p_pw_trace->length ;
 	  nb_pw++;
 	}
+      p_pw_trace = nm_l2so(out_list->next);
       nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw, nb_pw, trace_co_id);
       nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Outlist_Pw_Size, size_outlist, trace_co_id);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Outlist_Max_Remaining_Data_Area, max_reamaining_data_area, trace_co_id);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Outlist_Smaller_Pw_Size, smaller_pw_size, trace_co_id);
+      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Next_Pw_Size, p_pw_trace->length, trace_co_id);
+      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area, nm_so_pw_remaining_data(p_pw_trace), trace_co_id);
     }
 #endif
 
@@ -258,11 +260,10 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
       nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, p_drv);
 
 #ifdef NMAD_TRACE
-	  p_pack_trace = p_so_pw->completions[0].data.contrib.p_pack;
 	  nmad_trace_event(TOPO_CONNECTION, NMAD_TRACE_EVENT_Pw_Submited, NULL, trace_co_id);
 	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Pw_Submitted_Size, p_so_pw->length, trace_co_id);
-	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Latency, p_drv->profile.latency, trace_co_id);
-	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Bandwidth, p_drv->profile.bandwidth, trace_co_id);
+	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Latency, p_gdrv->p_drv->profile.latency, trace_co_id);
+	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Bandwidth, p_gdrv->p_drv->profile.bandwidth, trace_co_id);
 #endif
 
     }

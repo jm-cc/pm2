@@ -32,15 +32,19 @@ typedef nm_trace_event_t nm_trace_topo_t;
 
 #define NMAD_TRACE_EVENT_Pw_Outlist ((nm_trace_event_t)3)
 #define NMAD_TRACE_EVENT_VAR_CO_Outlist_Pw_Size ((nm_trace_event_t)4)
-#define NMAD_TRACE_EVENT_VAR_CO_Outlist_Max_Remaining_Data_Area ((nm_trace_event_t)5)
-#define NMAD_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw ((nm_trace_event_t)6)
-#define NMAD_TRACE_EVENT_VAR_CO_Outlist_Smaller_Pw_Size ((nm_trace_event_t)7)
+#define NMAD_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw ((nm_trace_event_t)5)
+#define NMAD_TRACE_EVENT_VAR_CO_Next_Pw_Size ((nm_trace_event_t)6)
+#define NMAD_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area ((nm_trace_event_t)7)
+#define NMAD_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Header_Area ((nm_trace_event_t)8)
 
-#define NMAD_TRACE_EVENT_Pw_Submited ((nm_trace_event_t)8)
-#define NMAD_TRACE_EVENT_VAR_CO_Pw_Submitted_Size ((nm_trace_event_t)9)
+
+
+#define NMAD_TRACE_EVENT_Pw_Submited ((nm_trace_event_t)9)
 #define NMAD_TRACE_EVENT_VAR_CO_Pw_Submitted_Seq ((nm_trace_event_t)10)
 #define NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Latency ((nm_trace_event_t)11)
 #define NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Bandwidth ((nm_trace_event_t)12)
+#define NMAD_TRACE_EVENT_VAR_CO_Pw_Submitted_Size ((nm_trace_event_t)13)
+
 
 
 

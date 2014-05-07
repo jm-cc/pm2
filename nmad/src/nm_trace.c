@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#ifdef NMAD_TRACE
+
 #include <nm_trace.h>
 #include <stdio.h>
 #include <GTG.h>
@@ -219,3 +221,4 @@ void nm_trace_exit()
 }
 
 
+#endif /* NMAD_TRACE */

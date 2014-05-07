@@ -135,8 +135,6 @@ if test "x${with_gtg}" = "xyes"; then
 else
    AC_MSG_RESULT([no])
 fi
-   
-AC_SUBST([requires_gtg])
 AC_SUBST(with_gtg)
 
 

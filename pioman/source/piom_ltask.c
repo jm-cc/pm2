@@ -82,6 +82,7 @@ typedef struct piom_ltask_queue
     const char                       *cont_name;
     struct piom_trace_queue_s         trace_info;
 #endif /* PIOMAN_TRACE */
+    int skip;
 } piom_ltask_queue_t;
 
 static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue);
@@ -530,8 +531,8 @@ static void*__piom_ltask_timer_worker(void*_dummy)
     const int old_prio = old_param.sched_priority;
     __piom_pthread_setname("_pioman_timer");
     int rc = pthread_setschedprio(pthread_self(), max_prio);
-    const int prio_enable = (rc == 0);
-    if(!prio_enable)
+    const int prio_enable = ((rc == 0) && (max_prio != old_prio));
+    if(rc != 0)
 	{
 	    fprintf(stderr, "# pioman: WARNING- timer thread could not get priority %d.\n", max_prio);
 	}
@@ -539,7 +540,7 @@ static void*__piom_ltask_timer_worker(void*_dummy)
     while(global_queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    struct timespec t = { .tv_sec = 0, .tv_nsec = timeslice_nsec };
-	    nanosleep(&t, NULL);
+	    clock_nanosleep(CLOCK_MONOTONIC, 0, &t, NULL);
 	    piom_trace_queue_event(NULL, PIOM_TRACE_EVENT_TIMER_POLL, NULL);
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), old_prio);
@@ -554,16 +555,31 @@ static void*__piom_ltask_timer_worker(void*_dummy)
 static void*__piom_ltask_idle_worker(void*_dummy)
 {
     piom_ltask_queue_t*queue = _dummy;
+    int policy = SCHED_OTHER;
+    const int min_prio = sched_get_priority_min(policy);
+    struct sched_param old_param;
+    pthread_getschedparam(pthread_self(), &policy, &old_param);
+    const int old_prio = old_param.sched_priority;
     __piom_pthread_setname("_pioman_idle");
+    int rc = pthread_setschedprio(pthread_self(), min_prio);
+    const int prio_enable = ((rc == 0) && (min_prio != old_prio));
+    if(rc != 0)
+	{
+	    fprintf(stderr, "# pioman: WARNING- idle thread could not get priority %d.\n", min_prio);
+	}
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
+	    tbx_tick_t s1, s2;
+	    TBX_GET_TICK(s1);
 	    piom_trace_queue_event(NULL, PIOM_TRACE_EVENT_IDLE_POLL, NULL);
+	    if(prio_enable)
+		pthread_setschedprio(pthread_self(), old_prio);
 	    piom_check_polling(PIOM_POLL_AT_IDLE);
+	    if(prio_enable)
+		pthread_setschedprio(pthread_self(), min_prio);
 	    if(piom_parameters.idle_granularity > 0 && piom_parameters.idle_granularity < 50)
 		{
-		    tbx_tick_t s1, s2;
 		    double d = 0.0;
-		    TBX_GET_TICK(s1);
 		    do
 			{
 			    sched_yield();
@@ -728,8 +744,13 @@ void piom_init_ltasks(void)
 #endif /* DEBUG */
 			    piom_ltask_queue_t*queue = __piom_get_queue(o);
 			    pthread_t idle_thread;
-			    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);
-			    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
+			    pthread_attr_t attr;
+			    pthread_attr_init(&attr);
+#ifdef SCHED_IDLE
+			    pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+			    pthread_attr_setschedpolicy(&attr, SCHED_IDLE);
+#endif /* SCHED_IDLE */
+			    pthread_create(&idle_thread, &attr, &__piom_ltask_idle_worker, queue);
 			    int rc = hwloc_set_thread_cpubind(__piom_ltask_topology, idle_thread, o->cpuset, HWLOC_CPUBIND_THREAD);
 			    if(rc != 0)
 				{
@@ -870,7 +891,15 @@ void piom_ltask_schedule(void)
 		    int hint2 = (PIOM_MAX_LTASK + queue->submit_queue._head - queue->submit_queue._tail) % PIOM_MAX_LTASK;
 		    const int hint = (hint1 > 0)?hint1:1 + (hint2 > 0)?hint2:1;
 		    __piom_ltask_queue_schedule(queue, hint);
-		    queue = queue->parent;
+#ifdef PIOMAN_TOPOLOGY_HWLOC
+		    if(queue->binding->type == HWLOC_OBJ_SOCKET)
+			{
+			    queue->skip ++;
+			    if(queue->skip % 32 != 0) queue = NULL; else queue = queue->parent;
+			}
+		    else
+#endif
+			queue = queue->parent;
 		}
 	}
 }

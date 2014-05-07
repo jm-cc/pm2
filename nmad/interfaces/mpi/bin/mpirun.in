@@ -23,7 +23,7 @@ mpirun [<mpirun_option>...] <progname> [<option>...]
             Take the list of possible machines to run on from the
             file <file>.  This is a list of all available machines;
             use -np <np> to request a specific number of machines.
-    -nodelist <node>[,<node>...]
+    -hosts <node>[,<node>...]
             Take the list of possible machines to run on from the
             comma-separated list of machines given.
     -np|-n <n>

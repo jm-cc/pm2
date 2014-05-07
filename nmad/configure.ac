@@ -133,8 +133,7 @@ if test "x${with_gtg}" = "xyes"; then
    AC_MSG_RESULT([yes])
    PKG_CHECK_MODULES([gtg],    [ gtg ])
 else
-   AC_MSG_RESULT([yes])
-   PKG_CHECK_MODULES([gtg],    [ gtg ])
+   AC_MSG_RESULT([no])
 fi
    
 AC_SUBST([requires_gtg])

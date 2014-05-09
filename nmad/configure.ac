@@ -83,6 +83,7 @@ AC_ARG_ENABLE(sampling,
 	      [  --enable-sampling  Enable network sampling],
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([NMAD_SAMPLING], 1, [enable sampling])
+		    nmad_interfaces="${nmad_interfaces} sampling"
 	        fi
 	      ],
 	      [])

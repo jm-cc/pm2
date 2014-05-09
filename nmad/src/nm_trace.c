@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#include <nm_private.h>
+
 #ifdef NMAD_TRACE
 
 #include <nm_trace.h>

@@ -31,9 +31,9 @@
 */
 
 #define LEN_DEFAULT     8 /* (128*1024) */
-#define WARMUPS_DEFAULT	0 /* 100 */
+#define WARMUPS_DEFAULT	10 /* 100 */
 #define LOOPS_DEFAULT	2000 /* 2000 */
-#define THREADS_DEFAULT 8
+#define THREADS_DEFAULT 32
 #define DATA_CONTROL_ACTIVATED 0
 
 static uint32_t	 len;

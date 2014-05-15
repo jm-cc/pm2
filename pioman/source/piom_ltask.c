@@ -871,7 +871,7 @@ static inline int __piom_ltask_submit_in_lwp(struct piom_ltask*task)
 void piom_ltask_submit(struct piom_ltask *task)
 {
     piom_ltask_queue_t *queue;
-    assert(task->state == PIOM_LTASK_STATE_NONE);
+    assert(task->state == PIOM_LTASK_STATE_NONE || (task->state & PIOM_LTASK_STATE_TERMINATED) );
     task->state = PIOM_LTASK_STATE_NONE;
     queue = __piom_get_queue(task->binding);
     assert(task != NULL);

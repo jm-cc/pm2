@@ -170,6 +170,7 @@ static void nm_ibverbs_bycopy_getprops(int index, struct nm_minidriver_propertie
 static void nm_ibverbs_bycopy_init(puk_context_t context, const void**drv_url, size_t*url_size)
 {
   const char*url = NULL;
+  assert(context != NULL);
   nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
   puk_context_putattr(context, "local_url", url);
   *drv_url = url;

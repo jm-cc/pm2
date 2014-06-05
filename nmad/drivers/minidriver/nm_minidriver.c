@@ -198,9 +198,9 @@ static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, 
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
   struct nm_minidriver_context_s*p_minidriver_context = puk_context_get_status(p_minidriver_drv->context);
-#ifndef __MIC
+#ifndef MCKERNEL
   srand48(getpid() * time(NULL));
-#endif /* __MIC__ */
+#endif /* MCKERNEL */
  
   /* open tracks */
   void*url_chunks = NULL;

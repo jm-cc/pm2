@@ -30,9 +30,9 @@
 #    include <hwloc.h>
 #    define PIOMAN_TOPOLOGY_HWLOC 1
 #  endif
-#  ifdef __MIC__
+#  ifdef MCKERNEL
 #    define PIOMAN_SEM_COND 1
-#  endif
+#  endif /* MCKERNEL */
 // #define PIOMAN_SEM_COND 1
 #  define PIOMAN_PTHREAD_SPINLOCK
 #elif defined(PIOMAN_MARCEL)

@@ -36,10 +36,6 @@
 
 #include <Padico/Module.h>
 
-#ifdef __MIC__
-#include <linux/netlink.h>
-#include <linux/rtnetlink.h>
-#endif /* __MIC__ */
 
 static int nm_cmdline_launcher_declare(void);
 

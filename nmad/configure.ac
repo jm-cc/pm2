@@ -175,7 +175,6 @@ if test "x${with_pioman}" = "xyes"; then
   else
      AC_MSG_RESULT([no])
   fi
-  nmad_examples="${nmad_examples} piom"
 else
   AC_MSG_RESULT([no])
   requires_pioman=
@@ -342,15 +341,15 @@ AC_ARG_ENABLE(mpi,
 	      [  --enable-mpi       Enable builtin MPI implementation Mad-MPI],
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
+                    nmad_enable_mpi=yes
 		    nmad_interfaces="${nmad_interfaces} mpi"
-		    nmad_examples="${nmad_examples} mpi/basics mpi/benchmarks"
 		    out_sh="${out_sh} interfaces/mpi/bin/mpirun interfaces/mpi/bin/mpicc interfaces/mpi/bin/mpicxx interfaces/mpi/bin/mpif77 interfaces/mpi/bin/mpif90"
-		    if test "x${nmad_target_fortran}" != "xnone"; then
-		        nmad_examples="${nmad_examples} mpi/fortran mpi/f90"
-		    fi
 	        fi
 	      ],
-	      [])
+	      [
+                nmad_enable_mpi=no
+	      ])
+AC_SUBST([nmad_enable_mpi])
 
 
 
@@ -360,7 +359,6 @@ dnl --
 nmad_drivers="${nmad_drivers} self local tcp minidriver"
 nmad_strategies="${nmad_strategies} default aggreg aggreg_extended aggreg_autoextended split_balance"
 nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session connector"
-nmad_examples="pack sendrecv lowlevel session ${nmad_examples}"
 
 nmad_alldirs=
 for d in ${nmad_drivers}; do
@@ -373,7 +371,6 @@ for i in ${nmad_interfaces}; do
     nmad_alldirs="${nmad_alldirs} interfaces/${i}"
 done
 AC_SUBST(nmad_alldirs)
-AC_SUBST(nmad_examples)
 
 dnl -- flags to use an installed nmad
 dnl --
@@ -420,10 +417,8 @@ for d in ${nmad_alldirs}; do
        out_mk="${out_mk} ${d}/Makefile"
     fi
 done
-for e in ${nmad_examples}; do
-    if test -r ${nmad_srcdir}/examples/${e}/Makefile.in; then
-       out_mk="${out_mk} examples/${e}/Makefile"
-    fi
+for e in `( cd ${nmad_srcdir}; find examples -name Makefile.in )`; do
+    out_mk="${out_mk} `echo ${e} | sed -e s/Makefile.in/Makefile/g`"
 done
 
 out_sh="${out_sh} interfaces/sampling/nmad-sample"

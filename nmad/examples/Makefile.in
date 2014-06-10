@@ -15,9 +15,22 @@ INSTALL_PREFIX := @nmad_root@
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
-SUBDIRS += @nmad_examples@
+EXAMPLE_DIRS = pack sendrecv lowlevel session
+ifeq (@with_pioman@,yes)
+  EXAMPLE_DIRS += piom
+  ifeq (@nmad_enable_mpi@,yes)
+    EXAMPLE_DIRS += mpi/pioman
+  endif
+endif
+ifeq (@nmad_enable_mpi@,yes)
+  EXAMPLE_DIRS += mpi/basics mpi/benchmarks
+  ifneq (@nmad_fortran_target@,none)
+    EXAMPLE_DIRS += mpi/fortran mpi/f90
+  endif
+endif
 
-EXAMPLE_DIRS := @nmad_examples@
+SUBDIRS += $(EXAMPLE_DIRS)
+
 
 include @puk_root@/etc/common_rules.mk
 

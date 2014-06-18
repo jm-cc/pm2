@@ -21,8 +21,9 @@
 
 #include "piom_helper.h"
 
-#define COUNT 200
-#define MAX_THREADS 64
+#define COUNT 100
+#define MAX_THREADS 128
+#define INTERLEAVE 1
 
 static int comp_double(const void*_a, const void*_b)
 {
@@ -59,7 +60,7 @@ int main(int argc, char**argv)
 
   if(is_server)
     {
-      printf("# threads | lat. (usec.)\t| min   \t| max\n");
+      printf("# threads | med. (usec.)\t| min   \t| max\n");
       int small = 1, rsmall = 0;
       double*lats = malloc(sizeof(double) * COUNT);
       int i, j, k;
@@ -70,15 +71,10 @@ int main(int argc, char**argv)
 	    {
 	      nm_sr_request_t sreqs[MAX_THREADS];
 	      nm_sr_request_t rreqs[MAX_THREADS];
-	      if((i == MAX_THREADS - 1) && (j == COUNT - 1))
-		{
-		  /* last round */
-		  small = 0xFF;
-		}
 	      TBX_GET_TICK(t1);
 	      for(k = 1; k <= i; k++)
 		{
-		  int tag = k;
+		  const int tag = (INTERLEAVE)? k : i;
 		  nm_sr_isend(p_session, p_gate, tag, &small, sizeof(small), &sreqs[k]);
 		  nm_sr_irecv(p_session, p_gate, tag, &rsmall, sizeof(rsmall), &rreqs[k]);
 		}
@@ -95,6 +91,13 @@ int main(int argc, char**argv)
 	  nm_examples_barrier(-1);
 	}
       free(lats);
+      small = 0xFF;
+      for(k = 1; k <= i; k++)
+	{
+	  nm_sr_request_t sreq;
+	  nm_sr_isend(p_session, p_gate, k, &small, sizeof(small), &sreq);
+	  nm_sr_swait(p_session, &sreq);
+	}
     }
   else
     {

@@ -1,0 +1,120 @@
+%EventDef PajeDefineContainerType 1
+% Alias string
+% ContainerType string
+% Name string
+%EndEventDef
+%EventDef PajeDefineStateType 3
+% Alias string
+% ContainerType string
+% Name string
+%EndEventDef
+%EventDef PajeDefineEventType 4
+% Alias string
+% ContainerType string
+% Name string
+%EndEventDef
+%EventDef PajeDefineEntityValue 6
+% Alias string
+% EntityType string
+% Name string
+% Color color
+%EndEventDef
+%EventDef PajeCreateContainer 7
+% Time date
+% Alias string
+% Type string
+% Container string
+% Name string
+%EndEventDef
+%EventDef PajeDestroyContainer 8
+% Time date
+% Name string
+% Type string
+%EndEventDef
+%EventDef PajeSetState 10
+% Time date
+% Type string
+% Container string
+% Value string
+%EndEventDef
+%EventDef PajePushState 11
+% Time date
+% Type string
+% Container string
+% Value string
+%EndEventDef
+%EventDef PajePopState 12
+% Time date
+% Type string
+% Container string
+%EndEventDef
+%EventDef PajeNewEvent 20
+% Time date
+% Type string
+% Container string
+% Value string
+%EndEventDef
+%EventDef PajeDefineLinkType 41
+% Alias string
+% Name string
+% ContainerType string
+% SourceContainerType string
+% DestContainerType string
+%EndEventDef
+%EventDef PajeStartLink 42
+% Time date
+% Type string
+% Container string
+% SourceContainer string
+% Value string
+% Key string
+%EndEventDef
+%EventDef PajeEndLink 43
+% Time date
+% Type string
+% Container string
+% DestContainer string
+% Value string
+% Key string
+%EndEventDef
+%EventDef PajeDefineVariableType 50
+% Alias string
+% Name string
+% ContainerType string
+%EndEventDef
+%EventDef PajeSetVariable 51
+% Time date
+% Type string
+% Container string
+% Value double
+%EndEventDef
+%EventDef PajeAddVariable 52
+% Time date
+% Type string
+% Container string
+% Value double
+%EndEventDef
+%EventDef PajeSubVariable 53
+% Time date
+% Type string
+% Container string
+% Value double
+%EndEventDef
+1 "Container_Core" "0" "Container_Core" 
+1 "Container_Global" "Container_Core" "Container_Global" 
+1 "Container_Connections" "Container_Core" "Container_Connections" 
+1 "Container_Connection" "Container_Connections" "Container_Connection" 
+4 "Event_Try_And_Commit" "Container_Connection" "Event_Try_And_Commit" 
+50 "Var_Outlist_Pw_Size" "Var_Outlist_Pw_Size" "Container_Connection" 
+50 "Var_Outlist_Nb_Pw" "Var_Outlist_Nb_Pw" "Container_Connection" 
+50 "Var_Next_Pw_Size" "Var_Next_Pw_Size" "Container_Connection" 
+50 "Var_Next_Pw_Remaining_Data_Area" "Var_Next_Pw_Remaining_Data_Area" "Container_Connection" 
+4 "Event_Pw_Submited" "Container_Connection" "Event_Pw_Submited" 
+50 "Var_Pw_Submited_Size" "Var_Pw_Submited_Size" "Container_Connection" 
+50 "Var_Gdrv_Profile_Latency" "Var_Gdrv_Profile_Latency" "Container_Connection" 
+50 "Var_Gdrv_Profile_bandwidth" "Var_Gdrv_Profile_bandwidth" "Container_Connection" 
+7 0.0000000000000e+00 "C_CORE" "Container_Core" "0" "C_CORE"
+7 0.0000000000000e+00 "C_GLOBAL" "Container_Global" "C_CORE" "C_GLOBAL"
+7 0.0000000000000e+00 "C_CONNECTIONS" "Container_Connections" "C_CORE" "C_CONNECTIONS"
+7 1.1098969400000e-01 "C_CONNECTION_0" "Container_Connection" "C_CONNECTIONS" "C_CONNECTION_0"
+7 1.1103621000000e-01 "C_CONNECTION_1" "Container_Connection" "C_CONNECTIONS" "C_CONNECTION_1"

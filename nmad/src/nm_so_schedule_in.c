@@ -41,7 +41,8 @@ struct nm_unexpected_s
 };
 
 /** fast allocator for struct nm_unexpected_s */
-static p_tbx_memory_t nm_unexpected_mem = NULL;
+PUK_ALLOCATOR_TYPE(nm_unexpected, struct nm_unexpected_s);
+static nm_unexpected_allocator_t nm_unexpected_allocator = NULL;
 
 /** size of memory used by unexpected */
 static size_t nm_unexpected_mem_size = 0;
@@ -50,12 +51,11 @@ static size_t nm_unexpected_mem_size = 0;
 
 static inline struct nm_unexpected_s*nm_unexpected_alloc(void)
 {
-  if(tbx_unlikely(nm_unexpected_mem == NULL))
+  if(tbx_unlikely(nm_unexpected_allocator == NULL))
     {
-      tbx_malloc_extended_init(&nm_unexpected_mem, sizeof(struct nm_unexpected_s),
-			       NM_UNEXPECTED_PREALLOC, "nmad/core/unexpected", 1);
+      nm_unexpected_allocator = nm_unexpected_allocator_new(NM_UNEXPECTED_PREALLOC);
     }
-  struct nm_unexpected_s*chunk = tbx_malloc(nm_unexpected_mem);
+  struct nm_unexpected_s*chunk = nm_unexpected_malloc(nm_unexpected_allocator);
   return chunk;
 }
 
@@ -77,11 +77,14 @@ void nm_unexpected_clean(struct nm_core*p_core)
 #endif /* PIOMAN_POLL */
 	  }
 	  tbx_fast_list_del(&chunk->link);
-	  tbx_free(nm_unexpected_mem, chunk);
+	  nm_unexpected_free(nm_unexpected_allocator, chunk);
 	}
     }
-  if(nm_unexpected_mem != NULL)
-    tbx_malloc_clean(nm_unexpected_mem);
+  if(nm_unexpected_allocator != NULL)
+    {
+      nm_unexpected_allocator_delete(nm_unexpected_allocator);
+      nm_unexpected_allocator = NULL;
+    }
 }
 
 /** Find an unexpected chunk that matches an unpack request [p_gate, seq, tag]
@@ -316,7 +319,7 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
       nm_pw_ref_dec(chunk->p_pw);
 #warning Paulette: lock
       tbx_fast_list_del(&chunk->link);
-      tbx_free(nm_unexpected_mem, chunk);
+      nm_unexpected_free(nm_unexpected_allocator, chunk);
       nm_unexpected_mem_size--;
       if(p_unpack->cumulated_len < p_unpack->expected_len)
 	chunk = nm_unexpected_find_matching(p_core, p_unpack);

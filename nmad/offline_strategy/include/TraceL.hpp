@@ -5,6 +5,9 @@
 #include <list>
 typedef int8_t nm_trk_id_t;
 
+#define NM_SO_ALIGN_TYPE      uint32_t
+#define NM_SO_ALIGN_FRONTIER  sizeof(NM_SO_ALIGN_TYPE)
+
 extern "C"
 {
 #include <tbx_fast_list.h>

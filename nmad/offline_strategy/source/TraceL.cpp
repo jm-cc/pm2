@@ -47,42 +47,48 @@ void TraceL::flush(struct nm_drv* p_drv, string f_name) {
 	       << last_try_and_commit.get_next_pw_size().to_string() << "\t" << last_try_and_commit.get_next_pw_remaining_data_area().to_string() 
 	       << "\t" ;
       
-      /* ---------------------------------- */
-      /* Print Current Try and commit value */
-      /* ---------------------------------- */
+	/* ---------------------------------- */
+	/* Print Current Try and commit value */
+	/* ---------------------------------- */
+	
+	myfile <<  e.get_outlist_nb_pw().to_string() << "\t" << e.get_outlist_size().to_string() << "\t"
+	       << e.get_next_pw_size().to_string() << "\t" << e.get_next_pw_remaining_data_area().to_string() << "\t" ;
+	
+	/* ---------------------------- */
+	/* Print last Pw Submited Value */
+	/* ---------------------------- */
+	
+	if (last_pw_submited.is_null())
+	  myfile << "-1\t-1\t-1\t" ;
+	else {
+	  myfile << last_pw_submited.get_pw_submited_size().to_string() << "\t" << last_pw_submited.get_gdrv_latency().to_string() << "\t"
+		 << last_pw_submited.get_gdrv_bandwidth().to_string() << "\t" ;
+	}
       
-      myfile <<  e.get_outlist_nb_pw().to_string() << "\t" << e.get_outlist_size().to_string() << "\t"
-	     << e.get_next_pw_size().to_string() << "\t" << e.get_next_pw_remaining_data_area().to_string() << "\t" ;
-      
-      /* ---------------------------- */
-      /* Print last Pw Submited Value */
-      /* ---------------------------- */
-      
-      if (last_pw_submited.is_null())
-	myfile << "\t-1\t-1\t-1\t" ;
-      else {
-	myfile << last_pw_submited.get_pw_submited_size().to_string() << "\t" << last_pw_submited.get_gdrv_latency().to_string() << "\t"
-	       << last_pw_submited.get_gdrv_bandwidth().to_string() << "\t" ;
+	/* --------------------- */
+	/* Print Aggreg Decision */
+	/* --------------------- */
+	/* TODO */
+	if (
+	    ( nm_ns_evaluate_transfer_time(p_drv, e.get_next_pw_size().get_value()) 
+	      + nm_ns_evaluate_transfer_time(p_drv, last_try_and_commit.get_next_pw_size().get_value()) )
+	    <=
+	    ( nm_ns_evaluate_transfer_time(p_drv, e.get_next_pw_size().get_value() + last_try_and_commit.get_next_pw_size().get_value()) )
+	    &&
+	    (
+	     (e.get_next_pw_size().get_value() + NM_SO_ALIGN_FRONTIER > last_try_and_commit.get_next_pw_remaining_data_area().get_value())
+	     ||
+	     (last_try_and_commit.get_next_pw_size().get_value() + NM_SO_ALIGN_FRONTIER > e.get_next_pw_remaining_data_area().get_value())
+	     )
+	    )
+	  myfile << "no" << '\n' ;
+	else
+	  myfile << "yes" << '\n';
+	
+	last_try_and_commit = e;
+	last_try_and_commit.set_flush_null(false);
+	is_last_event_try_and_commit = true;
       }
-      
-      /* --------------------- */
-      /* Print Aggreg Decision */
-      /* --------------------- */
-      /* TODO */
-      if (
-	  ( nm_ns_evaluate_transfer_time(p_drv, e.get_next_pw_size().get_value()) 
-	    + nm_ns_evaluate_transfer_time(p_drv, last_try_and_commit.get_next_pw_size().get_value()) )
-	  <=
-	  ( nm_ns_evaluate_transfer_time(p_drv, e.get_next_pw_size().get_value() + last_try_and_commit.get_next_pw_size().get_value()) )
-	  )
-	myfile << "no" << '\n' ;
-      else
-	myfile << "yes" << '\n';
-
-      last_try_and_commit = e;
-      last_try_and_commit.set_flush_null(false);
-      is_last_event_try_and_commit = true;
-    }
     else {
       if (last_try_and_commit.get_outlist_nb_pw().get_value() == 1)
 	last_try_and_commit.set_flush_null(true); 
@@ -90,10 +96,9 @@ void TraceL::flush(struct nm_drv* p_drv, string f_name) {
       last_pw_submited = e;
       last_pw_submited.set_flush_null(false);
     }
+    }
   }
 }
-
-
 
 
 void TraceL::finish(struct nm_drv* p_drv, string f_name) {

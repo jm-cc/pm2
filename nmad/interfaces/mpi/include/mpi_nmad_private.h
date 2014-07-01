@@ -112,8 +112,6 @@ typedef int MPI_Request_type;
 #define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
 #define MPI_REQUEST_CANCELLED ((MPI_Request_type)5)
 
-#define PREALLOCATED_MPI_REQUEST 128
-
 /** Internal communication request */
 typedef struct mpir_request_s {
   /* identifier of the request */
@@ -227,11 +225,6 @@ typedef struct mpir_datatype_s {
 /** Internal data */
 typedef struct mpir_internal_data_s
 {
-  /** allocator for MPI_Request */
-  p_tbx_memory_t request_mem;
-  /** maps MPI_Request to mpir_request_t* */
-  mpir_request_vect_t request_array;
-
   /** all the defined datatypes */
   mpir_datatype_t *datatypes[NUMBER_OF_DATATYPES];
   /** pool of ids of datatypes that can be created by end-users */

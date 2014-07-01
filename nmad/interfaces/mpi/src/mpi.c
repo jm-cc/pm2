@@ -28,54 +28,65 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 static puk_instance_t launcher_instance = NULL;
+
+/** internal MadMPI state, pointer shared accross files */
 static mpir_internal_data_t mpir_internal_data;
 
+/* Custom requests allocator. Inspired by Puk lock-free allocator,
+   except that we use int indexes for compatibility with Fortran.
+*/
+PUK_LFSTACK_TYPE(mpir_request_block, mpir_request_t req __attribute__((aligned(PUK_ALLOCATOR_ALIGN))););
+PUK_LFSTACK_TYPE(mpir_request_slice, struct mpir_request_block_lfstack_cell_s block; );
+static struct
+{
+  mpir_request_block_lfstack_t cache;          /**< cache for mpir_request_t blocks */
+  mpir_request_slice_lfstack_t slices;         /**< slices of memory containing blocks */
+  int slice_size;                              /**< number of blocks per slice */
+  MPI_Fint next_id;                            /**< next req id to allocate */
+  mpir_request_vect_t request_array;           /**< maps req_id -> mpir_request_t* */
+} mpir_requests = { .cache = NULL, .slices = NULL, .slice_size = 256, .next_id = 1, .request_array = NULL };
 
 static void mpir_request_init(void)
 {
-  tbx_malloc_init(&mpir_internal_data.request_mem, sizeof(mpir_request_t),
-		  PREALLOCATED_MPI_REQUEST, "MPI requests");
-  mpir_internal_data.request_array = mpir_request_vect_new();
+  mpir_requests.request_array = mpir_request_vect_new();
   /* placeholder so as to never allocate request #0 (easier to debug) */
-  mpir_request_vect_push_back(mpir_internal_data.request_array, (void*)0xDEADBEEF);
-  int k;
-  for(k = 1; k < PREALLOCATED_MPI_REQUEST; k++)
-    {
-      mpir_request_vect_push_back(mpir_internal_data.request_array, NULL);
-    }
+  mpir_request_vect_push_back(mpir_requests.request_array, (void*)0xDEADBEEF);
 }
 
 mpir_request_t*mpir_request_alloc(void)
 {
-  mpir_request_t*req = tbx_malloc(mpir_internal_data.request_mem);
-  /* todo: make this function thread-safe */
-  mpir_request_vect_itor_t i = mpir_request_vect_find(mpir_internal_data.request_array, NULL);
-  if(i == NULL)
+  struct mpir_request_block_lfstack_cell_s*cell = NULL;
+ retry:
+  cell = mpir_request_block_lfstack_pop(&mpir_requests.cache);
+  if(cell == NULL)
     {
-      /* no free slot- expand array and try again */
-      const int s = mpir_request_vect_size(mpir_internal_data.request_array);
-      int k;
-      for(k = 0; k < 2 * s; k++)
+      /* cache miss; allocate a new slice */
+      int slice_size = mpir_requests.slice_size;
+      mpir_requests.slice_size *= 2;
+      struct mpir_request_slice_lfstack_cell_s*slice =
+	padico_malloc(sizeof(struct mpir_request_slice_lfstack_cell_s) + sizeof(struct mpir_request_block_lfstack_cell_s) * slice_size);
+      mpir_request_slice_lfstack_push(&mpir_requests.slices, slice);
+      struct mpir_request_block_lfstack_cell_s*blocks = &slice->block;
+      int i;
+      for(i = 0; i < slice_size; i++)
 	{
-	  mpir_request_vect_push_back(mpir_internal_data.request_array, NULL);
+	  blocks[i].req.request_id = mpir_requests.next_id++;
+	  mpir_request_block_lfstack_push(&mpir_requests.cache, &blocks[i]);
 	}
-      i = mpir_request_vect_find(mpir_internal_data.request_array, NULL);
-      assert(i != NULL);
+      goto retry;
     }
-  *i = req;
-  req->request_id = mpir_request_vect_rank(mpir_internal_data.request_array, i);
-  assert(req == mpir_request_find(req->request_id));
+  mpir_request_t*req = &cell->req;
+  mpir_request_vect_put(mpir_requests.request_array, req, req->request_id);
   return req;
 }
 
-void mpir_request_free(mpir_request_t* req)
+void mpir_request_free(mpir_request_t*req)
 {
+  struct mpir_request_block_lfstack_cell_s*cell = container_of(req, struct mpir_request_block_lfstack_cell_s, req);
   const int id = req->request_id;
-  mpir_request_vect_itor_t i = mpir_request_vect_ptr(mpir_internal_data.request_array, id);
-  (*i)->request_id = MPI_REQUEST_NULL;
-  assert(*i == req);
-  *i = NULL;
-  tbx_free(mpir_internal_data.request_mem, req);
+  req->request_type = MPI_REQUEST_ZERO;
+  mpir_request_vect_put(mpir_requests.request_array, NULL, id);
+  mpir_request_block_lfstack_push(&mpir_requests.cache, cell);
 }
 
 mpir_request_t*mpir_request_find(MPI_Fint req_id)
@@ -84,7 +95,7 @@ mpir_request_t*mpir_request_find(MPI_Fint req_id)
   if(id == MPI_REQUEST_NULL)
     return NULL;
   assert(id >= 0);
-  mpir_request_t*mpir_request = mpir_request_vect_at(mpir_internal_data.request_array, id);
+  mpir_request_t*mpir_request = mpir_request_vect_at(mpir_requests.request_array, id);
   assert(mpir_request != NULL);
   assert(mpir_request->request_id == id);
   return mpir_request;
@@ -589,6 +600,7 @@ int mpi_finalize(void) {
   err = mpir_internal_exit(&mpir_internal_data);
 
   puk_instance_destroy(launcher_instance);
+  launcher_instance = NULL;
 
   MPI_NMAD_LOG_OUT();
   return err;

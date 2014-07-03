@@ -17,7 +17,7 @@
 #ifndef NM_CORE_INTERFACE_H
 #define NM_CORE_INTERFACE_H
 
-/* don't include pm2_common.h or tbx.h here.
+/* don't include tbx.h here.
  * They are not needed and not ISO C compliant.
  */
 #include <nm_public.h>
@@ -163,6 +163,7 @@ static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
 /** An unpack request */
 struct nm_unpack_s
 {
+  struct tbx_fast_list_head _link;
   nm_status_t status;
   void *data;
   nm_len_t expected_len;
@@ -170,13 +171,13 @@ struct nm_unpack_s
   nm_gate_t p_gate;
   nm_core_tag_t tag;
   nm_seq_t seq;
-  struct tbx_fast_list_head _link;
   nm_core_tag_t tag_mask;
 };
 
 /** A pack request */
 struct nm_pack_s
 {
+  struct tbx_fast_list_head _link;
   nm_status_t status;
   void*data; /**< actually, char*, struct iovec*, or DLOOP_Segment* depending on pack type (see status) */
   nm_len_t len;       /**< cumulated data length */
@@ -185,7 +186,6 @@ struct nm_pack_s
   nm_gate_t p_gate;
   nm_core_tag_t tag;
   nm_seq_t seq;
-  struct tbx_fast_list_head _link;
 };
 
 /** build a pack request for contiguous data */

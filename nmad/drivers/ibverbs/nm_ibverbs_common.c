@@ -234,14 +234,12 @@ void nm_ibverbs_hca_get_profile(int index, struct nm_drv_profile_s*p_profile)
       hwloc_topology_init(&__topology);
       hwloc_topology_load(__topology);
     }
-  if(p_profile->cpuset != NULL)
+  p_profile->cpuset = hwloc_bitmap_alloc();
+  int rc = hwloc_ibv_get_device_cpuset(__topology, p_hca->ib_dev, p_profile->cpuset);
+  if(rc)
     {
-      int rc = hwloc_ibv_get_device_cpuset(__topology, p_hca->ib_dev, p_profile->cpuset);
-      if(rc)
-	{
-	  fprintf(stderr, "# nmad: ibverbs- error while detecting ibv device location.\n");
-	  hwloc_bitmap_copy(p_profile->cpuset, hwloc_topology_get_complete_cpuset(__topology));
-	}
+      fprintf(stderr, "# nmad: ibverbs- error while detecting ibv device location.\n");
+      hwloc_bitmap_copy(p_profile->cpuset, hwloc_topology_get_complete_cpuset(__topology));
     }
 #endif /* PM2_TOPOLOGY */
   p_profile->latency = 1200; /* from sampling */

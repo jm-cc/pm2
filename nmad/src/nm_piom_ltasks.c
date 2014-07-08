@@ -65,6 +65,10 @@ static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
 #if defined(PM2_TOPOLOGY) && defined(PIOMAN_TOPOLOGY_HWLOC)
       {
 	hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
+	if(cpuset == NULL)
+	  {
+	    cpuset = hwloc_topology_get_complete_cpuset(__piom_ltask_topology);
+	  }
 	hwloc_obj_t o = hwloc_get_obj_covering_cpuset(__piom_ltask_topology, cpuset);
 	assert(o != NULL);
 	binding = piom_get_parent_obj(o, ltask_policy.level);

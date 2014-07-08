@@ -176,14 +176,18 @@ static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_para
       sprintf(s_index, "%d", p_drv->index);
       puk_context_putattr(conn->context, "index", s_index);
 #ifdef PM2_TOPOLOGY
-      props[i].profile.cpuset = hwloc_bitmap_alloc();
+      props[i].profile.cpuset = NULL;
 #endif /* PM2_TOPOLOGY */
       (*minidriver_iface->getprops)(p_drv->index, &props[i]);
     }
 
   /* driver profile encoding */
 #ifdef PM2_TOPOLOGY
-  hwloc_bitmap_copy(p_drv->profile.cpuset, props[0].profile.cpuset);
+  if(props[0].profile.cpuset != NULL)
+    {
+      p_drv->profile.cpuset = hwloc_bitmap_alloc();
+      hwloc_bitmap_copy(p_drv->profile.cpuset, props[0].profile.cpuset);
+    }
 #endif /* PM2_TOPOLOGY */
   p_drv->profile.latency = props[0].profile.latency;
   p_drv->profile.bandwidth = props[1].profile.bandwidth;

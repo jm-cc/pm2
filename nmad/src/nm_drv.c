@@ -44,8 +44,7 @@ int nm_core_driver_load(nm_core_t p_core,
   p_drv->p_in_rq  = NULL;
   p_drv->index = -1;
 #ifdef PM2_TOPOLOGY
-  p_drv->profile.cpuset = hwloc_bitmap_alloc();
-  hwloc_bitmap_copy(p_drv->profile.cpuset, hwloc_topology_get_complete_cpuset(topology));
+  p_drv->profile.cpuset = NULL;
 #endif /* PM2_TOPOLOGY */
 
   nm_pw_post_lfqueue_init(&p_drv->post_recv);
@@ -178,7 +177,8 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
   if(!getenv("NMAD_NUIOA_DISABLE"))
     {
       hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
-      if(!hwloc_bitmap_isequal(cpuset, hwloc_topology_get_complete_cpuset(topology)))
+      if(cpuset != NULL 
+	 && !hwloc_bitmap_isequal(cpuset, hwloc_topology_get_complete_cpuset(topology)))
 	{
 	  /* if this driver wants something */
 	  hwloc_cpuset_t current = hwloc_bitmap_alloc();

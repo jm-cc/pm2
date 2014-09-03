@@ -343,7 +343,7 @@ AC_ARG_ENABLE(mpi,
 	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
                     nmad_enable_mpi=yes
 		    nmad_interfaces="${nmad_interfaces} mpi"
-		    out_sh="${out_sh} interfaces/mpi/bin/mpirun interfaces/mpi/bin/mpicc interfaces/mpi/bin/mpicxx interfaces/mpi/bin/mpif77 interfaces/mpi/bin/mpif90"
+		    out_sh="${out_sh} interfaces/mpi/bin/mpirun interfaces/mpi/bin/mpicc interfaces/mpi/bin/mpif77 interfaces/mpi/bin/mpif90"
 	        fi
 	      ],
 	      [

@@ -161,6 +161,30 @@ static void nm_session_init_drivers(void)
 /* ********************************************************* */
 /* ** Session interface implementation */
 
+int nm_session_open(nm_session_t*pp_session, const char*label)
+{
+  if(nm_session.sessions == NULL || nm_session.p_core == NULL)
+    {
+      fprintf(stderr, "# session: FATAL- not yet initialized. Cannot open new session.\n");
+      abort();
+    }
+  const int len = strlen(label);
+  const uint32_t hash_code = puk_hash_oneatatime((void*)label, len);
+  struct nm_session_s*p_session = puk_hashtable_lookup(nm_session.sessions, &hash_code);
+  if(p_session != NULL)
+    {
+      return -NM_ENOTFOUND;
+    }
+  p_session = TBX_MALLOC(sizeof(struct nm_session_s));
+  p_session->label = strdup(label);
+  p_session->hash_code = hash_code;
+  p_session->p_core = nm_session.p_core;
+  puk_hashtable_insert(nm_session.sessions, &p_session->hash_code, p_session);
+  nm_session.ref_count++;
+  *pp_session = p_session;
+  return NM_ESUCCESS;
+}
+
 int nm_session_create(nm_session_t*pp_session, const char*label)
 {
   if(!nm_session.sessions)

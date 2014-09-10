@@ -34,6 +34,9 @@ typedef struct nm_session_s*nm_session_t;
  */
 int nm_session_create(nm_session_t*pp_session, const char*label);
 
+/** Open a new session, assuming processes are already connected.
+ */
+int nm_session_open(nm_session_t*pp_session, const char*label);
 
 /** Add a driver to the session.
  * @note call to this function is optional. Default drivers will be loaded

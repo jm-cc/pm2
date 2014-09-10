@@ -308,6 +308,15 @@ if test "x${with_cci}" != "xno" ; then
     fi
 fi
 
+dnl -- LZ4 compression
+AC_CHECK_HEADER(lz4.h, 
+                [ HAVE_LZ4_H="yes"
+                  HAVE_LIBLZ4="yes"
+                  AC_DEFINE(HAVE_LZ4_H, 1, [Define if you have the <lz4.h> header file.])],
+                [ HAVE_LZ4_H="no"
+                  HAVE_LIBLZ4="no" ])
+AC_SUBST(HAVE_LIBLZ4)
+
 dnl -- Fortran
 AC_MSG_CHECKING([for Fortran support in tbx])
 nmad_fortran_target=none
@@ -358,7 +367,7 @@ dnl --
 
 nmad_drivers="${nmad_drivers} self local tcp minidriver"
 nmad_strategies="${nmad_strategies} default aggreg aggreg_extended aggreg_autoextended split_balance"
-nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session connector"
+nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session connector coll"
 
 nmad_alldirs=
 for d in ${nmad_drivers}; do

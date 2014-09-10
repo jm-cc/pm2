@@ -471,5 +471,33 @@ extern int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req)
 
 #include <nm_sendrecv_private.h> /* private header included for inlining */
 
+/** blocking send */
+static inline int nm_sr_send(nm_session_t p_session,
+			     nm_gate_t p_gate, nm_tag_t tag,
+			     const void *data, nm_len_t len)
+{
+  nm_sr_request_t request;
+  int rc = nm_sr_isend(p_session, p_gate, tag, data, len, &request);
+  if(rc == NM_ESUCCESS)
+    {
+      rc = nm_sr_swait(p_session, &request);
+    }
+  return rc;
+}
+
+/** blocking recv */
+static inline int nm_sr_recv(nm_session_t p_session,
+			     nm_gate_t p_gate, nm_tag_t tag,
+			     void *data, nm_len_t len)
+{
+  nm_sr_request_t request;
+  int rc = nm_sr_irecv(p_session, p_gate, tag, data, len, &request);
+  if(rc == NM_ESUCCESS)
+    {
+      rc = nm_sr_rwait(p_session, &request);
+    }
+  return rc;
+}
+
 #endif /* NM_SENDRECV_INTERFACE_H */
 

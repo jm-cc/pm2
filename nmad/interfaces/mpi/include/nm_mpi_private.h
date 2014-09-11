@@ -13,10 +13,6 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_nmad_private.h
- * ==================
- */
 
 #ifndef MPI_NMAD_PRIVATE_H
 #define MPI_NMAD_PRIVATE_H

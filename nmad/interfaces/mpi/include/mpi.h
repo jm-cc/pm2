@@ -47,22 +47,14 @@ extern "C"
 #endif
 
 #include <sys/types.h>
-
-#include "mpi_types.h"
-
-#include "mpi_config.h"
-
-#include "mpi_pt2pt.h"
-
-#include "mpi_persistent.h"
-
-#include "mpi_collective.h"
-
-#include "mpi_datatype.h"
-
-#include "mpi_communicator.h"
-
-#include "mpi_not_implemented.h"
+#include "nm_mpi_types.h"
+#include "nm_mpi_config.h"
+#include "nm_mpi_p2p.h"
+#include "nm_mpi_persistent.h"
+#include "nm_mpi_collective.h"
+#include "nm_mpi_datatype.h"
+#include "nm_mpi_communicator.h"
+#include "nm_mpi_not_implemented.h"
 
 #ifdef __cplusplus
 }

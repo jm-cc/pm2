@@ -17,8 +17,7 @@
  * @brief FORTRAN interface implementation
  */
 
-#include "mpi.h"
-#include "mpi_nmad_private.h"
+#include "nm_mpi_private.h"
 #include <stdint.h>
 #include <assert.h>
 #include <errno.h>

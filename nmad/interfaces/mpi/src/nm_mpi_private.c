@@ -13,14 +13,8 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_nmad_private.c
- * ==================
- */
 
-#include <stdint.h>
-#include "mpi.h"
-#include "mpi_nmad_private.h"
+#include "nm_mpi_private.h"
 #include "nm_log.h"
 
 #include <Padico/Module.h>

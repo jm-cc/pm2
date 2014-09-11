@@ -13,15 +13,7 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_nmad_private_coll.c
- * =======================
- */
-
-#include <stdint.h>
-#include "mpi.h"
-#include "mpi_nmad_private.h"
-#include "nm_so_parameters.h"
+#include "nm_mpi_private.h"
 
 
 void mpir_op_max(void *invec,

@@ -254,6 +254,7 @@ typedef struct mpir_internal_data_s
   nm_session_t p_session;
 
 } mpir_internal_data_t;
+extern mpir_internal_data_t mpir_internal_data;
 /* @} */
 
 /**

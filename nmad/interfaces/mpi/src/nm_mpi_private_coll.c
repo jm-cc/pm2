@@ -103,7 +103,7 @@ void mpir_op_sum(void *invec,
 #define DO_SUM(__type__)						\
 	  __type__ *i_invec = (__type__ *) invec;			\
 	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  mpir_datatype_t *dtype = mpir_get_datatype(&mpir_internal_data, *type); \
+	  nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type); \
 	  for(i=0 ; i<*len* (dtype)->elements ; i++) {			\
 		  i_inoutvec[i] += i_invec[i];				\
 	  }
@@ -419,7 +419,7 @@ void mpir_op_maxloc(void *invec,
 		    int *len,
 		    MPI_Datatype *type) {
   int i, _len = *len;
-  mpir_datatype_t *dtype = mpir_get_datatype(&mpir_internal_data, *type);
+  nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type);
 
   if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2))
     {
@@ -485,7 +485,7 @@ void mpir_op_minloc(void *invec,
 		    int *len,
 		    MPI_Datatype *type) {
   int i, _len = *len;
-  mpir_datatype_t *dtype = mpir_get_datatype(&mpir_internal_data, *type);
+  nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type);
 
   if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2)) {
     MPI_Datatype oldtype = (dtype)->old_types[0];

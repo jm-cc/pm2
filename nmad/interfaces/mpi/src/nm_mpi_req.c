@@ -21,6 +21,21 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
+/* Custom requests allocator. Inspired by Puk lock-free allocator,
+   except that we use int indexes for compatibility with Fortran.
+*/
+PUK_LFSTACK_TYPE(nm_mpi_request_block, nm_mpi_request_t req __attribute__((aligned(PUK_ALLOCATOR_ALIGN))););
+PUK_LFSTACK_TYPE(nm_mpi_request_slice, struct nm_mpi_request_block_lfstack_cell_s block; );
+static struct
+{
+  nm_mpi_request_block_lfstack_t cache;        /**< cache for nm_mpi_request_t blocks */
+  nm_mpi_request_slice_lfstack_t slices;       /**< slices of memory containing blocks */
+  int slice_size;                              /**< number of blocks per slice */
+  MPI_Fint next_id;                            /**< next req id to allocate */
+  nm_mpi_request_vect_t request_array;         /**< maps req_id -> nm_mpi_request_t* */
+} nm_mpi_request_allocator = { .cache = NULL, .slices = NULL, .slice_size = 256, .next_id = 1, .request_array = NULL };
+
+
 /* ********************************************************* */
 
 int MPI_Waitsome(int incount,
@@ -69,7 +84,67 @@ int MPI_Start(MPI_Request *request) __attribute__ ((alias ("mpi_start")));
 int MPI_Startall(int count,
                  MPI_Request *array_of_requests) __attribute__ ((alias ("mpi_startall")));
 
+int MPI_Request_is_equal(MPI_Request request1,
+			 MPI_Request request2) __attribute__ ((alias ("mpi_request_is_equal")));
+
 /* ********************************************************* */
+
+__PUK_SYM_INTERNAL
+void nm_mpi_request_init(void)
+{
+  nm_mpi_request_allocator.request_array = nm_mpi_request_vect_new();
+  /* placeholder so as to never allocate request #0 (easier to debug) */
+  nm_mpi_request_vect_push_back(nm_mpi_request_allocator.request_array, (void*)0xDEADBEEF);
+}
+
+nm_mpi_request_t*nm_mpi_request_alloc(void)
+{
+  struct nm_mpi_request_block_lfstack_cell_s*cell = NULL;
+ retry:
+  cell = nm_mpi_request_block_lfstack_pop(&nm_mpi_request_allocator.cache);
+  if(cell == NULL)
+    {
+      /* cache miss; allocate a new slice */
+      int slice_size = nm_mpi_request_allocator.slice_size;
+      nm_mpi_request_allocator.slice_size *= 2;
+      struct nm_mpi_request_slice_lfstack_cell_s*slice =
+	padico_malloc(sizeof(struct nm_mpi_request_slice_lfstack_cell_s) + sizeof(struct nm_mpi_request_block_lfstack_cell_s) * slice_size);
+      nm_mpi_request_slice_lfstack_push(&nm_mpi_request_allocator.slices, slice);
+      struct nm_mpi_request_block_lfstack_cell_s*blocks = &slice->block;
+      int i;
+      for(i = 0; i < slice_size; i++)
+	{
+	  blocks[i].req.request_id = nm_mpi_request_allocator.next_id++;
+	  nm_mpi_request_block_lfstack_push(&nm_mpi_request_allocator.cache, &blocks[i]);
+	}
+      goto retry;
+    }
+  nm_mpi_request_t*req = &cell->req;
+  nm_mpi_request_vect_put(nm_mpi_request_allocator.request_array, req, req->request_id);
+  return req;
+}
+
+void nm_mpi_request_free(nm_mpi_request_t*req)
+{
+  struct nm_mpi_request_block_lfstack_cell_s*cell = container_of(req, struct nm_mpi_request_block_lfstack_cell_s, req);
+  const int id = req->request_id;
+  req->request_type = MPI_REQUEST_ZERO;
+  nm_mpi_request_vect_put(nm_mpi_request_allocator.request_array, NULL, id);
+  nm_mpi_request_block_lfstack_push(&nm_mpi_request_allocator.cache, cell);
+}
+
+nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id)
+{
+  const int id = (int)req_id;
+  if(id == MPI_REQUEST_NULL)
+    return NULL;
+  assert(id >= 0);
+  nm_mpi_request_t*req = nm_mpi_request_vect_at(nm_mpi_request_allocator.request_array, id);
+  assert(req != NULL);
+  assert(req->request_id == id);
+  return req;
+}
+
 
 int mpi_waitsome(int incount,
 		 MPI_Request *array_of_requests,
@@ -82,35 +157,35 @@ int mpi_waitsome(int incount,
 
 int mpi_wait(MPI_Request *request,
 	     MPI_Status *status) {
-  mpir_request_t  *mpir_request = mpir_request_find(*request);
+  nm_mpi_request_t  *p_req = nm_mpi_request_get(*request);
   int                       err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
 
-  if(mpir_request == NULL)
+  if(p_req == NULL)
     {
       err = MPI_ERR_REQUEST;
       goto out; 
     }
-  err = mpir_wait(&mpir_internal_data, mpir_request);
+  err = mpir_wait(p_req);
 
   if (status != MPI_STATUS_IGNORE) {
-      err = mpir_set_status(&mpir_internal_data, mpir_request, status);
+      err = mpir_set_status(p_req, status);
   }
 
-  if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
-    mpir_request->request_type = MPI_REQUEST_ZERO;
+  if (p_req->request_persistent_type == MPI_REQUEST_ZERO) {
+    p_req->request_type = MPI_REQUEST_ZERO;
   }
-  if (mpir_request->request_ptr != NULL) {
-    FREE_AND_SET_NULL(mpir_request->request_ptr);
+  if (p_req->request_ptr != NULL) {
+    FREE_AND_SET_NULL(p_req->request_ptr);
   }
 
   // Release one active communication for that type
-  if (mpir_request->request_datatype > MPI_PACKED) {
-    err = mpir_type_unlock(&mpir_internal_data, mpir_request->request_datatype);
+  if (p_req->request_datatype > MPI_PACKED) {
+    err = nm_mpi_datatype_unlock(p_req->request_datatype);
   }
   
-  mpir_request_free(mpir_request);
+  nm_mpi_request_free(p_req);
  out:
   *request = MPI_REQUEST_NULL;
   
@@ -159,8 +234,8 @@ int mpi_waitany(int count,
   while (1) {
     count_null = 0;
     for(i=0 ; i<count ; i++) {
-      mpir_request_t *mpir_request = mpir_request_find(array_of_requests[i]);
-      if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+      nm_mpi_request_t *p_req = nm_mpi_request_get(array_of_requests[i]);
+      if (p_req->request_type == MPI_REQUEST_ZERO) {
         count_null++;
         continue;
       }
@@ -183,29 +258,29 @@ int mpi_waitany(int count,
 int mpi_test(MPI_Request *request,
              int *flag,
              MPI_Status *status) {
-  mpir_request_t *mpir_request = mpir_request_find(*request);
+  nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
   int             err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
-  err = mpir_test(&mpir_internal_data, mpir_request);
+  err = mpir_test(p_req);
 
   if (err == NM_ESUCCESS) {
     *flag = 1;
 
     if (status != MPI_STATUS_IGNORE) {
-      err = mpir_set_status(&mpir_internal_data, mpir_request, status);
+      err = mpir_set_status(p_req, status);
     }
 
-    if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
-      mpir_request->request_type = MPI_REQUEST_ZERO;
+    if (p_req->request_persistent_type == MPI_REQUEST_ZERO) {
+      p_req->request_type = MPI_REQUEST_ZERO;
     }
-    if (mpir_request->request_ptr != NULL) {
-      FREE_AND_SET_NULL(mpir_request->request_ptr);
+    if (p_req->request_ptr != NULL) {
+      FREE_AND_SET_NULL(p_req->request_ptr);
     }
 
     // Release one active communication for that type
-    if (mpir_request->request_datatype > MPI_PACKED) {
-      err = mpir_type_unlock(&mpir_internal_data, mpir_request->request_datatype);
+    if (p_req->request_datatype > MPI_PACKED) {
+      err = nm_mpi_datatype_unlock(p_req->request_datatype);
     }
   }
   else { /* err == -NM_EAGAIN */
@@ -223,13 +298,13 @@ int mpi_testany(int count,
                 MPI_Status *status) {
   int i, err = 0;
   int count_inactive = 0;
-  mpir_request_t *mpir_request;
+  nm_mpi_request_t *p_req;
 
   MPI_NMAD_LOG_IN();
 
   for(i=0 ; i<count ; i++) {
-    mpir_request = mpir_request_find(array_of_requests[i]);
-    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+    p_req = nm_mpi_request_get(array_of_requests[i]);
+    if (p_req->request_type == MPI_REQUEST_ZERO) {
       count_inactive++;
       continue;
     }
@@ -257,7 +332,7 @@ int mpi_testall(int count,
 		MPI_Status *statuses) {
   int i, err = 0;
   int count_inactive = 0;
-  mpir_request_t *mpir_request;
+  nm_mpi_request_t *p_req;
 
   MPI_NMAD_LOG_IN();
 
@@ -266,13 +341,13 @@ int mpi_testall(int count,
    * modified.
    */
   for(i=0 ; i<count ; i++) {
-    mpir_request = mpir_request_find(array_of_requests[i]);
-    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+    p_req = nm_mpi_request_get(array_of_requests[i]);
+    if (p_req->request_type == MPI_REQUEST_ZERO) {
       count_inactive++;
       continue;
     }
 
-    err = mpir_test(&mpir_internal_data, mpir_request);
+    err = mpir_test(p_req);
     if(err != NM_ESUCCESS) {
       /* at least one request is not completed */
       *flag = 0;
@@ -283,8 +358,8 @@ int mpi_testall(int count,
 
   /* all the requests are completed */
   for(i=0 ; i<count ; i++) {
-    mpir_request = mpir_request_find(array_of_requests[i]);
-    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+    p_req = nm_mpi_request_get(array_of_requests[i]);
+    if (p_req->request_type == MPI_REQUEST_ZERO) {
       count_inactive++;
       continue;
     }
@@ -292,7 +367,7 @@ int mpi_testall(int count,
     err = MPI_Test(&(array_of_requests[i]), flag, &(statuses[i]));
     if(*flag != 1) {
       /* at least one request is not completed */
-      ERROR("Error during MPI_Testall: request #%d should be completed, but it is not !");
+      ERROR("Error during MPI_Testall: request #%d should be completed, but it is not !", i);
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
@@ -313,15 +388,15 @@ int mpi_testsome(int count,
 		 MPI_Status *statuses) {
   int i, flag, err = 0;
   int count_inactive = 0;
-  mpir_request_t *mpir_request;
+  nm_mpi_request_t *p_req;
 
   MPI_NMAD_LOG_IN();
 
   *outcount = 0;
 
   for(i=0 ; i<count ; i++) {
-    mpir_request = mpir_request_find(array_of_requests[i]);
-    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+    p_req = nm_mpi_request_get(array_of_requests[i]);
+    if (p_req->request_type == MPI_REQUEST_ZERO) {
       count_inactive++;
       continue;
     }
@@ -340,41 +415,40 @@ int mpi_testsome(int count,
   return err;
 }
 
-int mpi_cancel(MPI_Request *request) {
-  mpir_request_t *mpir_request = mpir_request_find(*request);
+int mpi_cancel(MPI_Request *request)
+{
+  nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
   int             err = NM_ESUCCESS;
-
+  
   MPI_NMAD_LOG_IN();
-
   MPI_NMAD_TRACE("Request is cancelled\n");
-
-  err = mpir_cancel(&mpir_internal_data, mpir_request);
-  mpir_request->request_type = MPI_REQUEST_CANCELLED;
-  if (mpir_request->contig_buffer != NULL) {
-    FREE_AND_SET_NULL(mpir_request->contig_buffer);
-  }
-
+  err = mpir_cancel(p_req);
+  p_req->request_type = MPI_REQUEST_CANCELLED;
+  if (p_req->contig_buffer != NULL)
+    {
+      FREE_AND_SET_NULL(p_req->contig_buffer);
+    }
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_start(MPI_Request *request) {
-  mpir_request_t *mpir_request = mpir_request_find(*request);
+int mpi_start(MPI_Request *request)
+{
+  nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
   int err;
-
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Start request\n");
 
-  mpir_request->request_type = mpir_request->request_persistent_type;
+  p_req->request_type = p_req->request_persistent_type;
 
-  err =  mpir_start(&mpir_internal_data, mpir_request);
+  err =  mpir_start(p_req);
 
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_startall(int count,
-                 MPI_Request *array_of_requests) {
+int mpi_startall(int count, MPI_Request *array_of_requests)
+{
   int i;
   int err = MPI_SUCCESS;
 
@@ -388,5 +462,20 @@ int mpi_startall(int count,
   }
   MPI_NMAD_LOG_OUT();
   return err;
+}
+
+int mpi_request_is_equal(MPI_Request request1, MPI_Request request2)
+{
+  nm_mpi_request_t *p_req1 = nm_mpi_request_get(request1);
+  nm_mpi_request_t *p_req2 = nm_mpi_request_get(request2);
+  if (p_req1->request_type == MPI_REQUEST_ZERO) {
+    return (p_req1->request_type == p_req2->request_type);
+  }
+  else if (p_req2->request_type == MPI_REQUEST_ZERO) {
+    return (p_req1->request_type == p_req2->request_type);
+  }
+  else {
+    return (p_req1 == p_req2);
+  }
 }
 

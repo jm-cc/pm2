@@ -13,10 +13,6 @@
  * General Public License for more details.
  */
 
-/*
- * mpi.c
- * =====
- */
 
 #include "nm_mpi_private.h"
 #include <assert.h>
@@ -26,79 +22,12 @@
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(NewMad_Core);
 
-static puk_instance_t launcher_instance = NULL;
+static int init_done = 0;
 
 /** internal MadMPI state, pointer shared accross files */
-__PUK_SYM_INTERNAL mpir_internal_data_t mpir_internal_data;
+__PUK_SYM_INTERNAL struct nm_mpi_internal_data_s nm_mpi_internal_data;
 
-/* Custom requests allocator. Inspired by Puk lock-free allocator,
-   except that we use int indexes for compatibility with Fortran.
-*/
-PUK_LFSTACK_TYPE(mpir_request_block, mpir_request_t req __attribute__((aligned(PUK_ALLOCATOR_ALIGN))););
-PUK_LFSTACK_TYPE(mpir_request_slice, struct mpir_request_block_lfstack_cell_s block; );
-static struct
-{
-  mpir_request_block_lfstack_t cache;          /**< cache for mpir_request_t blocks */
-  mpir_request_slice_lfstack_t slices;         /**< slices of memory containing blocks */
-  int slice_size;                              /**< number of blocks per slice */
-  MPI_Fint next_id;                            /**< next req id to allocate */
-  mpir_request_vect_t request_array;           /**< maps req_id -> mpir_request_t* */
-} mpir_requests = { .cache = NULL, .slices = NULL, .slice_size = 256, .next_id = 1, .request_array = NULL };
 
-static void mpir_request_init(void)
-{
-  mpir_requests.request_array = mpir_request_vect_new();
-  /* placeholder so as to never allocate request #0 (easier to debug) */
-  mpir_request_vect_push_back(mpir_requests.request_array, (void*)0xDEADBEEF);
-}
-
-mpir_request_t*mpir_request_alloc(void)
-{
-  struct mpir_request_block_lfstack_cell_s*cell = NULL;
- retry:
-  cell = mpir_request_block_lfstack_pop(&mpir_requests.cache);
-  if(cell == NULL)
-    {
-      /* cache miss; allocate a new slice */
-      int slice_size = mpir_requests.slice_size;
-      mpir_requests.slice_size *= 2;
-      struct mpir_request_slice_lfstack_cell_s*slice =
-	padico_malloc(sizeof(struct mpir_request_slice_lfstack_cell_s) + sizeof(struct mpir_request_block_lfstack_cell_s) * slice_size);
-      mpir_request_slice_lfstack_push(&mpir_requests.slices, slice);
-      struct mpir_request_block_lfstack_cell_s*blocks = &slice->block;
-      int i;
-      for(i = 0; i < slice_size; i++)
-	{
-	  blocks[i].req.request_id = mpir_requests.next_id++;
-	  mpir_request_block_lfstack_push(&mpir_requests.cache, &blocks[i]);
-	}
-      goto retry;
-    }
-  mpir_request_t*req = &cell->req;
-  mpir_request_vect_put(mpir_requests.request_array, req, req->request_id);
-  return req;
-}
-
-void mpir_request_free(mpir_request_t*req)
-{
-  struct mpir_request_block_lfstack_cell_s*cell = container_of(req, struct mpir_request_block_lfstack_cell_s, req);
-  const int id = req->request_id;
-  req->request_type = MPI_REQUEST_ZERO;
-  mpir_request_vect_put(mpir_requests.request_array, NULL, id);
-  mpir_request_block_lfstack_push(&mpir_requests.cache, cell);
-}
-
-mpir_request_t*mpir_request_find(MPI_Fint req_id)
-{
-  const int id = (int)req_id;
-  if(id == MPI_REQUEST_NULL)
-    return NULL;
-  assert(id >= 0);
-  mpir_request_t*mpir_request = mpir_request_vect_at(mpir_requests.request_array, id);
-  assert(mpir_request != NULL);
-  assert(mpir_request->request_id == id);
-  return mpir_request;
-}
 
 /* Aliases */
 
@@ -140,11 +69,6 @@ int MPI_Get_count(MPI_Status *status,
                   MPI_Datatype datatype TBX_UNUSED,
                   int *count) __attribute__ ((alias ("mpi_get_count")));
 
-int MPI_Request_is_equal(MPI_Request request1,
-			 MPI_Request request2) __attribute__ ((alias ("mpi_request_is_equal")));
-
-
-
 int MPI_Get_address(void *location,
 		    MPI_Aint *address) __attribute__ ((alias ("mpi_get_address")));
 
@@ -161,91 +85,75 @@ int MPI_Status_f2c(MPI_Fint *f_status,
 /* ********************************************************* */
 
 
-int mpi_init(int *argc,
-             char ***argv) {
-  int ret;
+int mpi_init(int *argc, char ***argv)
+{
   MPI_NMAD_LOG_IN();
-
   nm_launcher_init(argc, *argv);
-
-  /*
-   * Internal initialisation
-   */
-  ret = mpir_internal_init(&mpir_internal_data);
-
-  mpir_request_init();
+  mpir_internal_init();
+  nm_mpi_request_init();
+  init_done = 1;
   MPI_NMAD_LOG_OUT();
-  return ret;
+  return MPI_SUCCESS;
 }
 
-int mpi_init_thread(int *argc,
-                    char ***argv,
-                    int required TBX_UNUSED,
-                    int *provided) {
+int mpi_init_thread(int *argc, char ***argv, int required TBX_UNUSED, int *provided)
+{
   int err;
-
   MPI_NMAD_LOG_IN();
-
   err = mpi_init(argc, argv);
 #ifndef PIOMAN
   *provided = MPI_THREAD_SINGLE;
 #else
   *provided = MPI_THREAD_MULTIPLE;
 #endif
-
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_initialized(int *flag) {
-  *flag = (launcher_instance != NULL);
+int mpi_initialized(int *flag)
+{
+  *flag = init_done;
   return MPI_SUCCESS;
 }
 
-int mpi_finalize(void) {
+int mpi_finalize(void)
+{
   int err;
-
   MPI_NMAD_LOG_IN();
-
   mpi_barrier(MPI_COMM_WORLD);
-  err = mpir_internal_exit(&mpir_internal_data);
-
-  puk_instance_destroy(launcher_instance);
-  launcher_instance = NULL;
-
+  err = mpir_internal_exit();
+  init_done = 0;
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_abort(MPI_Comm comm TBX_UNUSED,
-              int errorcode) {
+int mpi_abort(MPI_Comm comm TBX_UNUSED, int errorcode)
+ {
   int err;
   MPI_NMAD_LOG_IN();
-
-  err = mpir_internal_exit(&mpir_internal_data);
-
+  err = mpir_internal_exit();
   MPI_NMAD_LOG_OUT();
   exit(errorcode);
   return errorcode;
 }
 
 
-int mpi_get_processor_name(char *name,
-			   int *resultlen) {
+int mpi_get_processor_name(char *name, int *resultlen)
+{
   int err;
-
   MPI_NMAD_LOG_IN();
-
   err = gethostname(name, MPI_MAX_PROCESSOR_NAME);
-  if (!err) {
-    *resultlen = strlen(name);
-    MPI_NMAD_LOG_OUT();
-    return MPI_SUCCESS;
-  }
-  else {
-    MPI_NMAD_LOG_OUT();
-    return errno;
-  }
+  if (!err)
+    {
+      *resultlen = strlen(name);
+      MPI_NMAD_LOG_OUT();
+      return MPI_SUCCESS;
+    }
+  else
+    {
+      MPI_NMAD_LOG_OUT();
+      return errno;
+    }
 }
 
 double mpi_wtime(void)
@@ -271,9 +179,8 @@ double mpi_wtick(void) {
   return 1e-7;
 }
 
-int mpi_error_string(int errorcode,
-		     char *string,
-		     int *resultlen) {
+int mpi_error_string(int errorcode, char *string, int *resultlen)
+{
   *resultlen = 100;
   string = malloc(*resultlen * sizeof(char));
   switch (errorcode) {
@@ -368,71 +275,55 @@ int mpi_error_string(int errorcode,
   return MPI_SUCCESS;
 }
 
-int mpi_errhandler_set(MPI_Comm comm,
-		       MPI_Errhandler errhandler) {
+int mpi_errhandler_set(MPI_Comm comm, MPI_Errhandler errhandler)
+{
   int err;
-  switch(errhandler) {
-  case MPI_ERRORS_RETURN:
-    err = MPI_SUCCESS;
-    break;
-  case MPI_ERRORS_ARE_FATAL:
-  default:
-    err = MPI_ERR_UNKNOWN;
-    break;
-  }
+  switch(errhandler)
+    {
+    case MPI_ERRORS_RETURN:
+      err = MPI_SUCCESS;
+      break;
+    case MPI_ERRORS_ARE_FATAL:
+    default:
+      err = MPI_ERR_UNKNOWN;
+      break;
+    }
   return err;
 }
 
-int mpi_get_version(int *version,
-		    int *subversion) {
+int mpi_get_version(int *version, int *subversion)
+{
   *version = MADMPI_VERSION;
   *subversion = MADMPI_SUBVERSION;
   return MPI_SUCCESS;
 }
 
-int mpi_request_free(MPI_Request *request) {
-  mpir_request_t *mpir_request = mpir_request_find(*request);
-
+int mpi_request_free(MPI_Request *request)
+{
+  nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
   MPI_NMAD_LOG_IN();
-  mpir_request->request_type = MPI_REQUEST_ZERO;
-  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
-  if (mpir_request->contig_buffer != NULL) {
-    FREE_AND_SET_NULL(mpir_request->contig_buffer);
-  }
-  mpir_request_free(mpir_request);
+  p_req->request_type = MPI_REQUEST_ZERO;
+  p_req->request_persistent_type = MPI_REQUEST_ZERO;
+  if (p_req->contig_buffer != NULL)
+    {
+      FREE_AND_SET_NULL(p_req->contig_buffer);
+    }
+  nm_mpi_request_free(p_req);
   *request = MPI_REQUEST_NULL;
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 
-int mpi_get_count(MPI_Status *status,
-                  MPI_Datatype datatype TBX_UNUSED,
-                  int *count) {
+int mpi_get_count(MPI_Status *status, MPI_Datatype datatype TBX_UNUSED, int *count)
+{
   MPI_NMAD_LOG_IN();
   *count = status->count;
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 
-int mpi_request_is_equal(MPI_Request request1,
-			 MPI_Request request2) {
-  mpir_request_t *mpir_request1 = mpir_request_find(request1);
-  mpir_request_t *mpir_request2 = mpir_request_find(request2);
-  if (mpir_request1->request_type == MPI_REQUEST_ZERO) {
-    return (mpir_request1->request_type == mpir_request2->request_type);
-  }
-  else if (mpir_request2->request_type == MPI_REQUEST_ZERO) {
-    return (mpir_request1->request_type == mpir_request2->request_type);
-  }
-  else {
-    return (mpir_request1 == mpir_request2);
-  }
-}
-
-
-
-int mpi_get_address(void *location,
-		    MPI_Aint *address) {
+int mpi_get_address(void *location, MPI_Aint *address)
+{
   /* This is the "portable" way to generate an address.
      The difference of two pointers is the number of elements
      between them, so this gives the number of chars between location
@@ -444,8 +335,8 @@ int mpi_get_address(void *location,
   return MPI_SUCCESS;
 }
 
-int mpi_address(void *location,
-		MPI_Aint *address) {
+int mpi_address(void *location, MPI_Aint *address)
+{
   return MPI_Get_address(location, address);
 }
 

@@ -375,15 +375,15 @@ void mpi_waitany_(int *count,
   while(1) {
     count_null = 0;
     for (i = 0; i < *count; i++) {
-      mpir_request_t *mpir_request = mpir_request_find(request[i]);
-      if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+      nm_mpi_request_t *p_req = nm_mpi_request_get(request[i]);
+      if (p_req->request_type == MPI_REQUEST_ZERO) {
         count_null ++;
       }
       else {
         MPI_Test(&request[i], &flag, &_status);
         if (flag) {
 
-          mpir_request->request_type = MPI_REQUEST_ZERO;
+          p_req->request_type = MPI_REQUEST_ZERO;
           *rqindex = i;
 
 	  mpi_status_c2f(&_status, status);
@@ -429,8 +429,8 @@ void mpi_testany_(int *count,
   MPI_Status _status;
 
   for (i = 0; i < *count; i++) {
-    mpir_request_t *mpir_request = mpir_request_find(array_of_requests[i]);
-    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+    nm_mpi_request_t *p_req = nm_mpi_request_get(array_of_requests[i]);
+    if (p_req->request_type == MPI_REQUEST_ZERO) {
       count_null ++;
     }
     else {

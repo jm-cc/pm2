@@ -40,18 +40,6 @@
 #define MADMPI_VERSION    1
 #define MADMPI_SUBVERSION 0
 
-/** @name Timer */
-/* @{ */
-#undef MADMPI_TIMER
-
-#if defined(MADMPI_TIMER)
-#  define MPI_NMAD_TIMER_IN()  double timer_start=MPI_Wtime();
-#  define MPI_NMAD_TIMER_OUT() double timer_stop=MPI_Wtime(); fprintf(stderr, "TIMER %s: %f\n", __TBX_FUNCTION__, timer_stop-timer_start);
-#else
-#  define MPI_NMAD_TIMER_IN()
-#  define MPI_NMAD_TIMER_OUT()
-#endif /* MADMPI_TIMER */
-/* @} */
 
 /** @name Debugging facilities */
 /* @{ */
@@ -77,7 +65,8 @@
 #define NUMBER_OF_COMMUNICATORS 32
 
 /** Internal communicator */
-typedef struct mpir_communicator_s {
+typedef struct nm_mpi_communicator_s
+{
   /** id of the communicator */
   unsigned int communicator_id;
   /** number of nodes in the communicator */
@@ -87,14 +76,14 @@ typedef struct mpir_communicator_s {
   /** ranks of all the communicator nodes in the \ref MPI_COMM_WORLD communicator */
   int *global_ranks;
   /** cartesian topology */
-  struct mpir_cart_topology_s
+  struct nm_mpi_cart_topology_s
   {
     int ndims;    /**< number of dimensions */
     int*dims;     /**< number of procs in each dim. */
     int*periods;  /**< whether each dim. is periodic */
     int size;     /**< pre-computed size of cartesian topology */
   } cart_topology;
-} mpir_communicator_t;
+} nm_mpi_communicator_t;
 /* @} */
 
 /** @name Requests */
@@ -109,7 +98,8 @@ typedef int MPI_Request_type;
 #define MPI_REQUEST_CANCELLED ((MPI_Request_type)5)
 
 /** Internal communication request */
-typedef struct mpir_request_s {
+typedef struct nm_mpi_request_s
+{
   /* identifier of the request */
   MPI_Request request_id;
   /** type of the request */
@@ -147,9 +137,9 @@ typedef struct mpir_request_s {
   int count;
   /** pointer to the data to be exchanged */
   void *buffer;
-} __attribute__((__may_alias__)) mpir_request_t;
+} __attribute__((__may_alias__)) nm_mpi_request_t;
 
-PUK_VECT_TYPE(mpir_request, mpir_request_t*);
+PUK_VECT_TYPE(nm_mpi_request, nm_mpi_request_t*);
 
 /* @} */
 
@@ -177,7 +167,8 @@ typedef enum {
 } mpir_nodetype_t;
 
 /** Internal datatype */
-typedef struct mpir_datatype_s {
+typedef struct nm_mpi_datatype_s
+{
   /** type of datatype element this is */
   mpir_nodetype_t dte_type;
   /** whether basic or user-defined */
@@ -213,16 +204,16 @@ typedef struct mpir_datatype_s {
   MPI_Datatype *old_types;
   /** size of old types */
   size_t* old_sizes;
-} mpir_datatype_t;
+} nm_mpi_datatype_t;
 /* @} */
 
 /** @name Internal data */
 /* @{ */
 /** Internal data */
-typedef struct mpir_internal_data_s
+struct nm_mpi_internal_data_s
 {
   /** all the defined datatypes */
-  mpir_datatype_t *datatypes[NUMBER_OF_DATATYPES];
+  nm_mpi_datatype_t *datatypes[NUMBER_OF_DATATYPES];
   /** pool of ids of datatypes that can be created by end-users */
   puk_int_vect_t datatypes_pool;
 
@@ -232,7 +223,7 @@ typedef struct mpir_internal_data_s
   puk_int_vect_t operators_pool;
 
   /** all the defined communicators */
-  mpir_communicator_t *communicators[NUMBER_OF_COMMUNICATORS];
+  nm_mpi_communicator_t *communicators[NUMBER_OF_COMMUNICATORS];
   /** pool of ids of communicators that can be created by end-users */
   puk_int_vect_t communicators_pool;
 
@@ -249,39 +240,41 @@ typedef struct mpir_internal_data_s
   /** NewMad session */
   nm_session_t p_session;
 
-} mpir_internal_data_t;
-extern mpir_internal_data_t mpir_internal_data;
+};
+extern struct nm_mpi_internal_data_s nm_mpi_internal_data;
 /* @} */
 
 /**
  * Initialises internal data
  */
-int mpir_internal_init(mpir_internal_data_t *mpir_internal_data);
+int mpir_internal_init(void);
 
 /**
  * Internal shutdown of the application.
  */
-int mpir_internal_exit(mpir_internal_data_t *mpir_internal_data);
+int mpir_internal_exit(void);
 
 /* Accessor functions */
 
 /**
  * Gets the in/out gate for the given node
  */
-nm_gate_t mpir_get_gate(mpir_internal_data_t *mpir_internal_data, int node);
+nm_gate_t mpir_get_gate(int node);
 
 /**
  * Gets the node associated to the given gate
  */
-int mpir_get_dest(mpir_internal_data_t *mpir_internal_data, nm_gate_t gate);
+int mpir_get_dest(nm_gate_t gate);
 
 /* Requests functions */
 
-mpir_request_t*mpir_request_alloc(void);
+void nm_mpi_request_init(void);
 
-void mpir_request_free(mpir_request_t* req);
+nm_mpi_request_t*nm_mpi_request_alloc(void);
 
-mpir_request_t*mpir_request_find(MPI_Fint req_id);
+void nm_mpi_request_free(nm_mpi_request_t* req);
+
+nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id);
 
 
 /* Send/recv/status functions */
@@ -289,188 +282,80 @@ mpir_request_t*mpir_request_find(MPI_Fint req_id);
 /**
  * Initialises a sending request.
  */
-int mpir_isend_init(mpir_internal_data_t *mpir_internal_data,
-		    mpir_request_t *mpir_request,
-                    int dest,
-                    mpir_communicator_t *mpir_communicator);
+int mpir_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *mpir_communicator);
 
 /**
  * Starts a sending request.
  */
-int mpir_isend_start(mpir_internal_data_t *mpir_internal_data,
-		     mpir_request_t *mpir_request);
+int mpir_isend_start(nm_mpi_request_t *p_req);
 
 /**
  * Sends data.
  */
-int mpir_isend(mpir_internal_data_t *mpir_internal_data,
-	       mpir_request_t *mpir_request,
-               int dest,
-               mpir_communicator_t *mpir_communicator);
+int mpir_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *mpir_communicator);
 
 /**
  * Sets the status based on a given request.
  */
-int mpir_set_status(mpir_internal_data_t *mpir_internal_data,
-		    mpir_request_t *request,
-		    MPI_Status *status);
+int mpir_set_status(nm_mpi_request_t *request, MPI_Status *status);
 
 /**
  * Initialises a receiving request.
  */
-int mpir_irecv_init(mpir_internal_data_t *mpir_internal_data,
-		    mpir_request_t *mpir_request,
-                    int source,
-                    mpir_communicator_t *mpir_communicator);
+int mpir_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *mpir_communicator);
 
 /**
  * Starts a receiving request.
  */
-int mpir_irecv_start(mpir_internal_data_t *mpir_internal_data,
-		     mpir_request_t *mpir_request);
+int mpir_irecv_start(nm_mpi_request_t *p_req);
 
 /**
  * Receives data.
  */
-int mpir_irecv(mpir_internal_data_t *mpir_internal_data,
-	       mpir_request_t *mpir_request,
-               int source,
-               mpir_communicator_t *mpir_communicator);
+int mpir_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *mpir_communicator);
 
 /**
  * Starts a sending or receiving request.
  */
-int mpir_start(mpir_internal_data_t *mpir_internal_data,
-	       mpir_request_t *mpir_request);
+int mpir_start(nm_mpi_request_t *p_req);
 
 /**
  * Waits for a request.
  */
-int mpir_wait(mpir_internal_data_t *mpir_internal_data,
-	      mpir_request_t *mpir_request);
+int mpir_wait(nm_mpi_request_t *p_req);
 
 /**
  * Tests the completion of a request.
  */
-int mpir_test(mpir_internal_data_t *mpir_internal_data,
-	      mpir_request_t *mpir_request);
+int mpir_test(nm_mpi_request_t *p_req);
 
 /**
  * Probes a request.
  */
-int mpir_probe(mpir_internal_data_t *mpir_internal_data,
-	       nm_gate_t gate,
-	       nm_gate_t *out_gate,
-	       nm_tag_t tag);
+int mpir_probe(nm_gate_t gate, nm_gate_t *out_gate, nm_tag_t tag);
 
 /**
  * Cancels a request.
  */
-int mpir_cancel(mpir_internal_data_t *mpir_internal_data,
-                mpir_request_t *mpir_request);
+int mpir_cancel(nm_mpi_request_t *p_req);
 
 /* Datatype functionalities */
 
 /**
  * Gets the size of the given datatype.
  */
-size_t mpir_sizeof_datatype(mpir_internal_data_t *mpir_internal_data,
-			    MPI_Datatype datatype);
+size_t mpir_sizeof_datatype(MPI_Datatype datatype);
 
 /**
  * Gets the internal representation of the given datatype.
  */
-mpir_datatype_t* mpir_get_datatype(mpir_internal_data_t *mpir_internal_data,
-				   MPI_Datatype datatype);
-
-/**
- * Gets the size of the given datatype.
- */
-int mpir_type_size(mpir_internal_data_t *mpir_internal_data,
-		   MPI_Datatype datatype,
-		   int *size);
-
-/**
- * Gets the extent and lower bound of the given datatype.
- */
-int mpir_type_get_lb_and_extent(mpir_internal_data_t *mpir_internal_data,
-				MPI_Datatype datatype,
-				MPI_Aint *lb,
-				MPI_Aint *extent);
-
-/**
- * Creates a new datatype based on the given datatype and the new
- * lower bound and extent.
- */
-int mpir_type_create_resized(mpir_internal_data_t *mpir_internal_data,
-			     MPI_Datatype oldtype,
-			     MPI_Aint lb,
-			     MPI_Aint extent,
-			     MPI_Datatype *newtype);
-
-/**
- * Commits the given datatype.
- */
-int mpir_type_commit(mpir_internal_data_t *mpir_internal_data,
-		     MPI_Datatype datatype);
+nm_mpi_datatype_t*nm_mpi_datatype_get(MPI_Datatype datatype);
 
 /**
  * Unlocks the given datatype, when the datatype is fully unlocked,
  * and a freeing request was posted, it will be released.
  */
-int mpir_type_unlock(mpir_internal_data_t *mpir_internal_data,
-		     MPI_Datatype datatype);
-
-/**
- * Releases the given datatype.
- */
-int mpir_type_free(mpir_internal_data_t *mpir_internal_data,
-		   MPI_Datatype datatype);
-
-/**
- * Sets the optimised functionality for the given datatype.
- */
-int mpir_type_optimized(mpir_internal_data_t *mpir_internal_data,
-			MPI_Datatype datatype,
-			int optimized);
-
-/**
- * Creates a contiguous datatype.
- */
-int mpir_type_contiguous(mpir_internal_data_t *mpir_internal_data,
-			 int count,
-                         MPI_Datatype oldtype,
-                         MPI_Datatype *newtype);
-
-/**
- * Creates a new vector datatype.
- */
-int mpir_type_vector(mpir_internal_data_t *mpir_internal_data,
-		     int count,
-                     int blocklength,
-                     int stride,
-                     MPI_Datatype oldtype,
-                     MPI_Datatype *newtype);
-
-/**
- * Creates an indexed datatype.
- */
-int mpir_type_indexed(mpir_internal_data_t *mpir_internal_data,
-		      int count,
-                      int *array_of_blocklengths,
-                      MPI_Aint *array_of_displacements,
-                      MPI_Datatype oldtype,
-                      MPI_Datatype *newtype);
-
-/**
- * Creates a struct datatype.
- */
-int mpir_type_struct(mpir_internal_data_t *mpir_internal_data,
-		     int count,
-                     int *array_of_blocklengths,
-                     MPI_Aint *array_of_displacements,
-                     MPI_Datatype *array_of_types,
-                     MPI_Datatype *newtype);
+int nm_mpi_datatype_unlock(MPI_Datatype datatype);
 
 
 /* Reduce operation functionalities */
@@ -478,22 +363,17 @@ int mpir_type_struct(mpir_internal_data_t *mpir_internal_data,
 /**
  * Commits a new operator for reduce operations.
  */
-int mpir_op_create(mpir_internal_data_t *mpir_internal_data,
-		   MPI_User_function *function,
-                   int commute,
-                   MPI_Op *op);
+int mpir_op_create(MPI_User_function *function, int commute, MPI_Op *op);
 
 /**
  * Releases the given operator for reduce operations.
  */
-int mpir_op_free(mpir_internal_data_t *mpir_internal_data,
-		 MPI_Op *op);
+int mpir_op_free(MPI_Op *op);
 
 /**
  * Gets the function associated to the given operator.
  */
-mpir_operator_t *mpir_get_operator(mpir_internal_data_t *mpir_internal_data,
-				   MPI_Op op);
+mpir_operator_t *mpir_get_operator(MPI_Op op);
 
 /**
  * Defines the MAX function for reduce operations.
@@ -596,28 +476,13 @@ void mpir_op_maxloc(void *invec,
 /**
  * Gets the internal representation of the given communicator.
  */
-mpir_communicator_t *mpir_get_communicator(mpir_internal_data_t *mpir_internal_data,
-					   MPI_Comm comm);
+nm_mpi_communicator_t*nm_mpi_communicator_get(MPI_Comm comm);
 
-/**
- * Duplicates the given communicator.
- */
-int mpir_comm_dup(mpir_internal_data_t *mpir_internal_data,
-		  MPI_Comm comm,
-		  MPI_Comm *newcomm);
-
-/**
- * Releases the given communicator.
- */
-int mpir_comm_free(mpir_internal_data_t *mpir_internal_data,
-		   MPI_Comm *comm);
 
 /**
  * Gets the NM tag for the given user tag and communicator.
  */
-nm_tag_t mpir_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
-			   mpir_communicator_t *mpir_communicator,
-			   int tag);
+nm_tag_t mpir_comm_and_tag(nm_mpi_communicator_t *mpir_communicator, int tag);
 
 /* Termination functionalities */
 
@@ -627,8 +492,7 @@ nm_tag_t mpir_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
  * "Algorithms for Distributed Termination Detection." Distributed
  * Computing, vol 2, pp 161-175, 1987.
  */
-tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
-				 MPI_Comm comm);
+tbx_bool_t mpir_test_termination(MPI_Comm comm);
 
 /* Internal symbols for MPI functions */
 int mpi_issend(void* buf,

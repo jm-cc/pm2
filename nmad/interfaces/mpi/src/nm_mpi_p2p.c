@@ -416,9 +416,9 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
   else
     {
       gate = nm_mpi_communicator_get_gate(p_comm, source);
-      if (source >= p_comm->size || gate == NM_ANY_GATE)
+      if(gate == NULL)
 	{
-	  fprintf(stderr, "Cannot find a in connection between %d and %d\n", p_comm->rank, source);
+	  fprintf(stderr, "Cannot find a in connection for source %d\n", source);
 	  MPI_NMAD_LOG_OUT();
 	  return MPI_ERR_INTERN;
 	}

@@ -597,19 +597,12 @@ int mpir_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_
 {
   nm_mpi_datatype_t*p_datatype = NULL;
   int err = MPI_SUCCESS;
-
-  if (tbx_unlikely(dest >= p_comm->size)) {
-    TBX_FAILUREF("Dest %d does not belong to communicator %d\n", dest, p_comm->communicator_id);
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
-
   nm_gate_t p_gate = nm_mpi_communicator_get_gate(p_comm, dest);
-  if(p_gate == NM_ANY_GATE)
+  if(p_gate == NULL)
     {
-      TBX_FAILUREF("Cannot find a connection between %d and %d, %d\n", p_comm->rank, dest, p_comm->global_ranks[dest]);
-   MPI_NMAD_LOG_OUT();
-   return MPI_ERR_INTERN;
+      TBX_FAILUREF("Cannot find rank %d in comm %p.\n", dest, p_comm);
+      MPI_NMAD_LOG_OUT();
+      return MPI_ERR_INTERN;
     }
 
   p_req->gate =p_gate;
@@ -710,25 +703,22 @@ int mpir_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *
   if (tbx_unlikely(source == MPI_ANY_SOURCE)) {
     p_req->gate = NM_ANY_GATE;
   }
-  else {
-    if (tbx_unlikely(source >= p_comm->size)) {
-      TBX_FAILUREF("Source %d does not belong to the communicator %d\n", source, p_comm->communicator_id);
-      MPI_NMAD_LOG_OUT();
-      return MPI_ERR_INTERN;
+  else
+    {
+      p_req->gate = nm_mpi_communicator_get_gate(p_comm, source);
+      if(tbx_unlikely(p_req->gate == NULL))
+	{
+	  TBX_FAILUREF("Cannot find rank %d in comm %p\n", source, p_comm);
+	  MPI_NMAD_LOG_OUT();
+	  return MPI_ERR_INTERN;
+	}
     }
-    p_req->gate = nm_mpi_communicator_get_gate(p_comm, source);
-    if (tbx_unlikely(p_req->gate == NM_ANY_GATE)) {
-      TBX_FAILUREF("Cannot find a connection between %d and %d, %d\n", p_comm->rank, source, p_comm->global_ranks[source]);
-      MPI_NMAD_LOG_OUT();
-      return MPI_ERR_INTERN;
-    }
-  }
 
   p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
   p_req->request_tag = mpir_comm_and_tag(p_comm, p_req->user_tag);
   p_req->request_source = source;
 
-  MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, p_req->buffer, p_req->request_tag, p_comm->communicator_id, p_req->user_tag);
+  MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (comm=%p, %d)\n", source, p_req->buffer, p_req->request_tag, p_comm, p_req->user_tag);
   if (p_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %ld (%d*%ld)\n", p_req->request_datatype, p_req->buffer, (long)p_req->count*p_datatype->size, p_req->count, (long)p_datatype->size);
     if (p_req->request_type != MPI_REQUEST_ZERO) p_req->request_type = MPI_REQUEST_RECV;

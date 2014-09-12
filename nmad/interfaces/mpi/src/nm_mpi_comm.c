@@ -141,8 +141,8 @@ int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t gate)
 int mpi_comm_size(MPI_Comm comm, int *size)
 {
   MPI_NMAD_LOG_IN();
-  nm_mpi_communicator_t *mpir_communicator = nm_mpi_communicator_get(comm);
-  *size = mpir_communicator->size;
+  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
+  *size = p_comm->size;
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
@@ -150,8 +150,8 @@ int mpi_comm_size(MPI_Comm comm, int *size)
 int mpi_comm_rank(MPI_Comm comm, int *rank)
 {
   MPI_NMAD_LOG_IN();
-  nm_mpi_communicator_t *mpir_communicator = nm_mpi_communicator_get(comm);
-  *rank = mpir_communicator->rank;
+  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
+  *rank = p_comm->rank;
   MPI_NMAD_TRACE("My comm rank is %d\n", *rank);
 
   MPI_NMAD_LOG_OUT();
@@ -204,24 +204,24 @@ int mpi_comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
   int *sendbuf, *recvbuf;
   int i, j, nb_conodes;
   int **conodes;
-  nm_mpi_communicator_t *mpir_communicator;
-  nm_mpi_communicator_t *mpir_newcommunicator;
+  nm_mpi_communicator_t *p_comm;
+  nm_mpi_communicator_t *p_new_comm;
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = nm_mpi_communicator_get(comm);
+  p_comm = nm_mpi_communicator_get(comm);
 
-  sendbuf = malloc(3*mpir_communicator->size*sizeof(int));
-  for(i=0 ; i<mpir_communicator->size*3 ; i+=3) {
+  sendbuf = malloc(3*p_comm->size*sizeof(int));
+  for(i=0 ; i<p_comm->size*3 ; i+=3) {
     sendbuf[i] = color;
     sendbuf[i+1] = key;
-    sendbuf[i+2] = mpir_communicator->global_ranks[mpir_communicator->rank];
+    sendbuf[i+2] = p_comm->global_ranks[p_comm->rank];
   }
-  recvbuf = malloc(3*mpir_communicator->size*sizeof(int));
+  recvbuf = malloc(3*p_comm->size*sizeof(int));
 
 #ifdef DEBUG
-  MPI_NMAD_TRACE("[%d] Sending: ", mpir_communicator->rank);
-  for(i=0 ; i<mpir_communicator->size*3 ; i++) {
+  MPI_NMAD_TRACE("[%d] Sending: ", p_comm->rank);
+  for(i=0 ; i<p_comm->size*3 ; i++) {
     MPI_NMAD_TRACE("%d ", sendbuf[i]);
   }
   MPI_NMAD_TRACE("\n");
@@ -230,8 +230,8 @@ int mpi_comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
   mpi_alltoall(sendbuf, 3, MPI_INT, recvbuf, 3, MPI_INT, comm);
 
 #ifdef DEBUG
-  MPI_NMAD_TRACE("[%d] Received: ", mpir_communicator->rank);
-  for(i=0 ; i<mpir_communicator->size*3 ; i++) {
+  MPI_NMAD_TRACE("[%d] Received: ", p_comm->rank);
+  for(i=0 ; i<p_comm->size*3 ; i++) {
     MPI_NMAD_TRACE("%d ", recvbuf[i]);
   }
   MPI_NMAD_TRACE("\n");
@@ -239,7 +239,7 @@ int mpi_comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
 
   // Counting how many nodes have the same color
   nb_conodes=0;
-  for(i=0 ; i<mpir_communicator->size*3 ; i+=3) {
+  for(i=0 ; i<p_comm->size*3 ; i+=3) {
     if (recvbuf[i] == color) {
       nb_conodes++;
     }
@@ -248,7 +248,7 @@ int mpi_comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
   // Accumulating the nodes with the same color into an array
   conodes = malloc(nb_conodes*sizeof(int*));
   j=0;
-  for(i=0 ; i<mpir_communicator->size*3 ; i+=3) {
+  for(i=0 ; i<p_comm->size*3 ; i+=3) {
     if (recvbuf[i] == color) {
       conodes[j] = &recvbuf[i];
       j++;
@@ -259,7 +259,7 @@ int mpi_comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
   qsort(conodes, nb_conodes, sizeof(int *), &nodecmp);
   
 #ifdef DEBUG
-  MPI_NMAD_TRACE("[%d] Conodes: ", mpir_communicator->rank);
+  MPI_NMAD_TRACE("[%d] Conodes: ", p_comm->rank);
   for(i=0 ; i<nb_conodes ; i++) {
     int *ptr = conodes[i];
     MPI_NMAD_TRACE("[%d %d %d] ", *ptr, *(ptr+1), *(ptr+2));
@@ -273,17 +273,17 @@ int mpi_comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
   }
   else {
     mpi_comm_dup(comm, newcomm);
-    mpir_newcommunicator = nm_mpi_communicator_get(*newcomm);
-    mpir_newcommunicator->size = nb_conodes;
-    FREE_AND_SET_NULL(mpir_newcommunicator->global_ranks);
-    mpir_newcommunicator->global_ranks = malloc(nb_conodes*sizeof(int));
+    p_new_comm = nm_mpi_communicator_get(*newcomm);
+    p_new_comm->size = nb_conodes;
+    FREE_AND_SET_NULL(p_new_comm->global_ranks);
+    p_new_comm->global_ranks = malloc(nb_conodes*sizeof(int));
     for(i=0 ; i<nb_conodes ; i++) {
       int *ptr = conodes[i];
-      if ((*(ptr+1) == key) && (*(ptr+2) == mpir_communicator->global_ranks[mpir_communicator->rank])) {
-        mpir_newcommunicator->rank = i;
+      if ((*(ptr+1) == key) && (*(ptr+2) == p_comm->global_ranks[p_comm->rank])) {
+        p_new_comm->rank = i;
       }
       if (*ptr == color) {
-        mpir_newcommunicator->global_ranks[i] = *(ptr+2);
+        p_new_comm->global_ranks[i] = *(ptr+2);
       }
     }
   }
@@ -469,19 +469,19 @@ int mpi_cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest
 int mpi_group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group group2, int *ranks2)
 {
   int i, j, x;
-  nm_mpi_communicator_t *mpir_communicator;
-  nm_mpi_communicator_t *mpir_communicator2;
+  nm_mpi_communicator_t *p_comm;
+  nm_mpi_communicator_t *p_comm2;
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = nm_mpi_communicator_get(group1);
-  mpir_communicator2 = nm_mpi_communicator_get(group2);
+  p_comm = nm_mpi_communicator_get(group1);
+  p_comm2 = nm_mpi_communicator_get(group2);
   for(i=0 ; i<n ; i++) {
     ranks2[i] = MPI_UNDEFINED;
-    if (ranks1[i] < mpir_communicator->size) {
-      x = mpir_communicator->global_ranks[ranks1[i]];
-      for(j=0 ; j<mpir_communicator2->size ; j++) {
-        if (mpir_communicator2->global_ranks[j] == x) {
+    if (ranks1[i] < p_comm->size) {
+      x = p_comm->global_ranks[ranks1[i]];
+      for(j=0 ; j<p_comm2->size ; j++) {
+        if (p_comm2->global_ranks[j] == x) {
           ranks2[i] = j;
           break;
         }
@@ -519,7 +519,7 @@ nm_mpi_communicator_t*nm_mpi_communicator_get(MPI_Comm comm)
     }
 }
 
-nm_tag_t mpir_comm_and_tag(nm_mpi_communicator_t *mpir_communicator, int tag)
+nm_tag_t mpir_comm_and_tag(nm_mpi_communicator_t *p_comm, int tag)
 {
   /*
    * The communicator is represented on 5 bits, we left shift the tag
@@ -528,7 +528,7 @@ nm_tag_t mpir_comm_and_tag(nm_mpi_communicator_t *mpir_communicator, int tag)
    * value.
    */
   nm_tag_t newtag = tag << 5;
-  newtag += (mpir_communicator->communicator_id);
+  newtag += (p_comm->communicator_id);
   return newtag;
 }
 

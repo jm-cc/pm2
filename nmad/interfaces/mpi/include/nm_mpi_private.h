@@ -285,7 +285,7 @@ nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id);
 /**
  * Initialises a sending request.
  */
-int mpir_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *mpir_communicator);
+int mpir_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm);
 
 /**
  * Starts a sending request.
@@ -295,12 +295,12 @@ int mpir_isend_start(nm_mpi_request_t *p_req);
 /**
  * Sends data.
  */
-int mpir_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *mpir_communicator);
+int mpir_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm);
 
 /**
  * Initialises a receiving request.
  */
-int mpir_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *mpir_communicator);
+int mpir_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm);
 
 /**
  * Starts a receiving request.
@@ -310,7 +310,7 @@ int mpir_irecv_start(nm_mpi_request_t *p_req);
 /**
  * Receives data.
  */
-int mpir_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *mpir_communicator);
+int mpir_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm);
 
 /**
  * Starts a sending or receiving request.
@@ -475,7 +475,7 @@ nm_mpi_communicator_t*nm_mpi_communicator_get(MPI_Comm comm);
 /**
  * Gets the NM tag for the given user tag and communicator.
  */
-nm_tag_t mpir_comm_and_tag(nm_mpi_communicator_t *mpir_communicator, int tag);
+nm_tag_t mpir_comm_and_tag(nm_mpi_communicator_t *p_comm, int tag);
 
 /* Termination functionalities */
 

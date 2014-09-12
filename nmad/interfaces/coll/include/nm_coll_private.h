@@ -35,3 +35,5 @@ struct nm_comm_s
 #define NM_COLL_TAG_BARRIER     ( NM_COLL_TAG_BASE | 0x02 )
 /** bcast */
 #define NM_COLL_TAG_BCAST       ( NM_COLL_TAG_BASE | 0x03 )
+/** gather */
+#define NM_COLL_TAG_GATRHER     ( NM_COLL_TAG_BASE | 0x04 )

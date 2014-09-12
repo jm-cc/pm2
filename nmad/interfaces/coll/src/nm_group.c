@@ -56,6 +56,18 @@ int nm_group_rank(nm_group_t group)
   return -1;
 }
 
+nm_gate_t nm_group_get_gate(nm_group_t p_group, int rank)
+{
+  if(rank >= 0 && rank < nm_group_size(p_group))
+    {
+      return nm_gate_vect_at(p_group, rank);
+    }
+  else
+    {
+      return NULL;
+    }
+}
+
 nm_group_t nm_group_dup(nm_group_t group)
 {
   nm_group_t newgroup = nm_gate_vect_copy(group);
@@ -195,3 +207,20 @@ nm_group_t nm_group_difference(nm_group_t group1, nm_group_t group2)
   return newgroup;
 }
 
+int nm_group_translate_ranks(nm_group_t p_group1, int n, int*ranks1, nm_group_t p_group2, int*ranks2)
+{
+  int i;
+  for(i = 0; i < n; i++)
+    {
+      ranks2[i] = -1;
+      nm_gate_t p_gate = nm_group_get_gate(p_group1, i);
+      if(p_gate == NULL)
+	return -1;
+      nm_gate_vect_itor_t pp_gate = nm_gate_vect_find(p_group2, p_gate);
+      if(pp_gate == NULL)
+	return -1;
+      const int rank = nm_gate_vect_rank(p_group2, pp_gate);
+      ranks2[i] = rank;
+    }
+  return 0;
+}

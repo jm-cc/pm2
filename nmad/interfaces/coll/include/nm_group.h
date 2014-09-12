@@ -53,6 +53,8 @@ extern int nm_group_size(nm_group_t group);
 
 extern int nm_group_rank(nm_group_t group);
 
+extern nm_gate_t nm_group_get_gate(nm_group_t p_group, int rank);
+
 extern int nm_group_compare(nm_group_t group1, nm_group_t group2);
 
 extern void nm_group_free(nm_group_t group);
@@ -69,3 +71,4 @@ extern nm_group_t nm_group_intersection(nm_group_t group1, nm_group_t group2);
 
 extern nm_group_t nm_group_difference(nm_group_t group1, nm_group_t group2);
 
+extern int nm_group_translate_ranks(nm_group_t p_group1, int n, int*ranks1, nm_group_t p_group2, int*ranks2); 

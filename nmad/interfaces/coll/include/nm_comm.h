@@ -35,6 +35,8 @@ extern nm_session_t nm_comm_get_session(nm_comm_t p_comm);
 
 extern nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group);
 
+extern void nm_comm_destroy(nm_comm_t p_comm);
+
 extern nm_group_t nm_comm_group(nm_comm_t comm);
 
 extern nm_comm_t nm_comm_dup(nm_comm_t comm);

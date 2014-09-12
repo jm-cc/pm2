@@ -89,6 +89,7 @@ int mpi_init(int *argc, char ***argv)
 {
   MPI_NMAD_LOG_IN();
   nm_launcher_init(argc, *argv);
+  nm_mpi_comm_init();
   mpir_internal_init();
   nm_mpi_request_init();
   init_done = 1;

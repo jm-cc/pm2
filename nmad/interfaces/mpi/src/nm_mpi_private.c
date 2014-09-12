@@ -169,31 +169,6 @@ int mpir_internal_init(void)
       puk_int_vect_push_back(nm_mpi_internal_data.datatypes_pool, i);
     }
 
-  /** Initialise data for communicators */
-  nm_mpi_internal_data.communicators[MPI_COMM_NULL] = NULL;
-
-  nm_mpi_internal_data.communicators[MPI_COMM_WORLD] = malloc(sizeof(nm_mpi_communicator_t));
-  nm_mpi_internal_data.communicators[MPI_COMM_WORLD]->communicator_id = MPI_COMM_WORLD;
-  nm_mpi_internal_data.communicators[MPI_COMM_WORLD]->size = global_size;
-  nm_mpi_internal_data.communicators[MPI_COMM_WORLD]->rank = process_rank;
-  nm_mpi_internal_data.communicators[MPI_COMM_WORLD]->global_ranks = malloc(global_size * sizeof(int));
-  for(i=0 ; i<global_size ; i++)
-    {
-      nm_mpi_internal_data.communicators[MPI_COMM_WORLD]->global_ranks[i] = i;
-    }
-
-  nm_mpi_internal_data.communicators[MPI_COMM_SELF] = malloc(sizeof(nm_mpi_communicator_t));
-  nm_mpi_internal_data.communicators[MPI_COMM_SELF]->communicator_id = MPI_COMM_SELF;
-  nm_mpi_internal_data.communicators[MPI_COMM_SELF]->size = 1;
-  nm_mpi_internal_data.communicators[MPI_COMM_SELF]->rank = process_rank;
-  nm_mpi_internal_data.communicators[MPI_COMM_SELF]->global_ranks = malloc(1 * sizeof(int));
-  nm_mpi_internal_data.communicators[MPI_COMM_SELF]->global_ranks[0] = process_rank;
-
-  nm_mpi_internal_data.communicators_pool = puk_int_vect_new();
-  for(i = _MPI_COMM_OFFSET; i < NUMBER_OF_COMMUNICATORS; i++)
-    {
-      puk_int_vect_push_back(nm_mpi_internal_data.communicators_pool, i);
-    }
 
   /** Initialise the collective operators */
   for(i = _MPI_OP_FIRST; i <= _MPI_OP_LAST; i++)
@@ -248,14 +223,6 @@ int mpir_internal_exit(void)
   puk_int_vect_delete(nm_mpi_internal_data.datatypes_pool);
   nm_mpi_internal_data.datatypes_pool = NULL;
 
-  FREE_AND_SET_NULL(nm_mpi_internal_data.communicators[MPI_COMM_WORLD]->global_ranks);
-  FREE_AND_SET_NULL(nm_mpi_internal_data.communicators[MPI_COMM_WORLD]);
-  FREE_AND_SET_NULL(nm_mpi_internal_data.communicators[MPI_COMM_SELF]->global_ranks);
-  FREE_AND_SET_NULL(nm_mpi_internal_data.communicators[MPI_COMM_SELF]);
-
-  puk_int_vect_delete(nm_mpi_internal_data.communicators_pool);
-  nm_mpi_internal_data.communicators_pool = NULL;
-
   for(i = _MPI_OP_FIRST; i <= _MPI_OP_LAST; i++)
     {
       FREE_AND_SET_NULL(nm_mpi_internal_data.operators[i]);
@@ -268,17 +235,6 @@ int mpir_internal_exit(void)
   puk_hashtable_delete(nm_mpi_internal_data.dests);
 
   return MPI_SUCCESS;
-}
-
-nm_gate_t mpir_get_gate(int node)
-{
-  return nm_mpi_internal_data.gates[node];
-}
-
-int mpir_get_dest(nm_gate_t gate)
-{
-  intptr_t rank_as_ptr = (intptr_t)puk_hashtable_lookup(nm_mpi_internal_data.dests, gate);
-  return (rank_as_ptr - 1);
 }
 
 /**
@@ -637,26 +593,28 @@ static inline int mpir_pack_wrapper(nm_mpi_request_t *p_req)
   return err;
 }
 
-int mpir_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *mpir_communicator)
+int mpir_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm)
 {
   nm_mpi_datatype_t*p_datatype = NULL;
   int err = MPI_SUCCESS;
 
-  if (tbx_unlikely(dest >= mpir_communicator->size)) {
-    TBX_FAILUREF("Dest %d does not belong to communicator %d\n", dest, mpir_communicator->communicator_id);
+  if (tbx_unlikely(dest >= p_comm->size)) {
+    TBX_FAILUREF("Dest %d does not belong to communicator %d\n", dest, p_comm->communicator_id);
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
 
-  if (tbx_unlikely(mpir_get_gate(mpir_communicator->global_ranks[dest]) == NM_ANY_GATE)) {
-    TBX_FAILUREF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, dest, mpir_communicator->global_ranks[dest]);
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
+  nm_gate_t p_gate = nm_mpi_communicator_get_gate(p_comm, dest);
+  if(p_gate == NM_ANY_GATE)
+    {
+      TBX_FAILUREF("Cannot find a connection between %d and %d, %d\n", p_comm->rank, dest, p_comm->global_ranks[dest]);
+   MPI_NMAD_LOG_OUT();
+   return MPI_ERR_INTERN;
+    }
 
-  p_req->gate = mpir_get_gate(mpir_communicator->global_ranks[dest]);
+  p_req->gate =p_gate;
   p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
-  p_req->request_tag = mpir_comm_and_tag(mpir_communicator, p_req->user_tag);
+  p_req->request_tag = mpir_comm_and_tag(p_comm, p_req->user_tag);
 
   if(p_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %ld (%d*%ld)\n", p_req->request_datatype, p_req->buffer, (long)p_req->count*p_datatype->size, p_req->count, (long)p_datatype->size);
@@ -733,48 +691,18 @@ int mpir_isend_start(nm_mpi_request_t *p_req)
   return err;
 }
 
-int mpir_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *mpir_communicator)
+int mpir_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm)
 {
   int err;
-  err = mpir_isend_init(p_req, dest, mpir_communicator);
+  err = mpir_isend_init(p_req, dest, p_comm);
   if (err == MPI_SUCCESS) {
     err = mpir_isend_start(p_req);
   }
   return err;
 }
 
-int mpir_set_status(nm_mpi_request_t *p_req, MPI_Status *status)
-{
-  int err = MPI_SUCCESS;
-  status->MPI_TAG = p_req->user_tag;
-  status->MPI_ERROR = p_req->request_error;
 
-  if (p_req->request_type == MPI_REQUEST_RECV ||
-      p_req->request_type == MPI_REQUEST_PACK_RECV) {
-    if (p_req->request_source == MPI_ANY_SOURCE) {
-      nm_gate_t gate;
-      err = nm_sr_recv_source(nm_mpi_internal_data.p_session, &p_req->request_nmad, &gate);
-      status->MPI_SOURCE = mpir_get_dest(gate);
-    }
-    else {
-      status->MPI_SOURCE = p_req->request_source;
-    }
-  }
-  size_t _size = 0;
-  nm_sr_get_size(nm_mpi_internal_data.p_session, &(p_req->request_nmad), &_size);
-  status->size = _size;
-  MPI_NMAD_TRACE("Size %d Size datatype %lu\n", status->size, (unsigned long)mpir_sizeof_datatype(p_req->request_datatype));
-  if (mpir_sizeof_datatype(p_req->request_datatype) != 0) {
-    status->count = status->size / mpir_sizeof_datatype(p_req->request_datatype);
-  }
-  else {
-    status->count = -1;
-  }
-
-  return err;
-}
-
-int mpir_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *mpir_communicator)
+int mpir_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm)
 {
   nm_mpi_datatype_t*p_datatype = NULL;
   MPI_NMAD_LOG_IN();
@@ -783,24 +711,24 @@ int mpir_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *
     p_req->gate = NM_ANY_GATE;
   }
   else {
-    if (tbx_unlikely(source >= mpir_communicator->size)) {
-      TBX_FAILUREF("Source %d does not belong to the communicator %d\n", source, mpir_communicator->communicator_id);
+    if (tbx_unlikely(source >= p_comm->size)) {
+      TBX_FAILUREF("Source %d does not belong to the communicator %d\n", source, p_comm->communicator_id);
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
-    p_req->gate = mpir_get_gate(mpir_communicator->global_ranks[source]);
+    p_req->gate = nm_mpi_communicator_get_gate(p_comm, source);
     if (tbx_unlikely(p_req->gate == NM_ANY_GATE)) {
-      TBX_FAILUREF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, source, mpir_communicator->global_ranks[source]);
+      TBX_FAILUREF("Cannot find a connection between %d and %d, %d\n", p_comm->rank, source, p_comm->global_ranks[source]);
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
   }
 
   p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
-  p_req->request_tag = mpir_comm_and_tag(mpir_communicator, p_req->user_tag);
+  p_req->request_tag = mpir_comm_and_tag(p_comm, p_req->user_tag);
   p_req->request_source = source;
 
-  MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, p_req->buffer, p_req->request_tag, mpir_communicator->communicator_id, p_req->user_tag);
+  MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, p_req->buffer, p_req->request_tag, p_comm->communicator_id, p_req->user_tag);
   if (p_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %ld (%d*%ld)\n", p_req->request_datatype, p_req->buffer, (long)p_req->count*p_datatype->size, p_req->count, (long)p_datatype->size);
     if (p_req->request_type != MPI_REQUEST_ZERO) p_req->request_type = MPI_REQUEST_RECV;
@@ -930,10 +858,10 @@ int mpir_irecv_start(nm_mpi_request_t *p_req)
   return p_req->request_error;
 }
 
-int mpir_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *mpir_communicator)
+int mpir_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm)
 {
   int err;
-  err = mpir_irecv_init(p_req, source, mpir_communicator);
+  err = mpir_irecv_init(p_req, source, p_comm);
   if (err == MPI_SUCCESS) {
     err = mpir_irecv_start(p_req);
   }
@@ -1049,11 +977,6 @@ int mpir_test(nm_mpi_request_t *p_req)
     MPI_NMAD_TRACE("Request type %d invalid\n", p_req->request_type);
   }
   return err;
-}
-
-int mpir_probe(nm_gate_t gate, nm_gate_t *out_gate, nm_tag_t tag)
-{
-  return nm_sr_probe(nm_mpi_internal_data.p_session, gate, out_gate, tag, NM_TAG_MASK_FULL, NULL, NULL);
 }
 
 int mpir_cancel(nm_mpi_request_t *p_req)

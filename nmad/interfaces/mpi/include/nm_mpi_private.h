@@ -133,6 +133,8 @@ typedef struct nm_mpi_request_s
   MPI_Communication_Mode communication_mode;
   /** gate of the destination or the source node */
   nm_gate_t gate;
+  /** communicator used for communication */
+  nm_mpi_communicator_t*p_comm;
   /** number of elements to be exchanged */
   int count;
   /** pointer to the data to be exchanged */
@@ -222,11 +224,6 @@ struct nm_mpi_internal_data_s
   /** pool of ids of reduce operations that can be created by end-users */
   puk_int_vect_t operators_pool;
 
-  /** all the defined communicators */
-  nm_mpi_communicator_t *communicators[NUMBER_OF_COMMUNICATORS];
-  /** pool of ids of communicators that can be created by end-users */
-  puk_int_vect_t communicators_pool;
-
   /** total number of incoming messages */
   int 		     nb_incoming_msg;
   /** total number of outgoing messages */
@@ -254,21 +251,27 @@ int mpir_internal_init(void);
  */
 int mpir_internal_exit(void);
 
+/** init request sub-system */
+void nm_mpi_request_init(void);
+
+/** init communicator sub-system */
+void nm_mpi_comm_init(void);
+
+void nm_mpi_comm_exit(void);
+
 /* Accessor functions */
 
 /**
  * Gets the in/out gate for the given node
  */
-nm_gate_t mpir_get_gate(int node);
+nm_gate_t nm_mpi_communicator_get_gate(nm_mpi_communicator_t*p_comm, int node);
 
 /**
  * Gets the node associated to the given gate
  */
-int mpir_get_dest(nm_gate_t gate);
+int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t gate);
 
 /* Requests functions */
-
-void nm_mpi_request_init(void);
 
 nm_mpi_request_t*nm_mpi_request_alloc(void);
 
@@ -293,11 +296,6 @@ int mpir_isend_start(nm_mpi_request_t *p_req);
  * Sends data.
  */
 int mpir_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *mpir_communicator);
-
-/**
- * Sets the status based on a given request.
- */
-int mpir_set_status(nm_mpi_request_t *request, MPI_Status *status);
 
 /**
  * Initialises a receiving request.
@@ -328,11 +326,6 @@ int mpir_wait(nm_mpi_request_t *p_req);
  * Tests the completion of a request.
  */
 int mpir_test(nm_mpi_request_t *p_req);
-
-/**
- * Probes a request.
- */
-int mpir_probe(nm_gate_t gate, nm_gate_t *out_gate, nm_tag_t tag);
 
 /**
  * Cancels a request.

@@ -145,6 +145,40 @@ nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id)
   return req;
 }
 
+static int nm_mpi_set_status(nm_mpi_request_t *p_req, MPI_Status *status)
+{
+  int err = MPI_SUCCESS;
+  status->MPI_TAG = p_req->user_tag;
+  status->MPI_ERROR = p_req->request_error;
+
+  if (p_req->request_type == MPI_REQUEST_RECV ||
+      p_req->request_type == MPI_REQUEST_PACK_RECV)
+    {
+      if(p_req->request_source == MPI_ANY_SOURCE)
+	{
+	  nm_gate_t p_gate;
+	  err = nm_sr_recv_source(nm_mpi_internal_data.p_session, &p_req->request_nmad, &p_gate);
+	  status->MPI_SOURCE = nm_mpi_communicator_get_dest(p_req->p_comm, p_gate);
+	}
+      else 
+	{
+	  status->MPI_SOURCE = p_req->request_source;
+	}
+    }
+  size_t _size = 0;
+  nm_sr_get_size(nm_mpi_internal_data.p_session, &(p_req->request_nmad), &_size);
+  status->size = _size;
+  MPI_NMAD_TRACE("Size %d Size datatype %lu\n", status->size, (unsigned long)mpir_sizeof_datatype(p_req->request_datatype));
+  if (mpir_sizeof_datatype(p_req->request_datatype) != 0) {
+    status->count = status->size / mpir_sizeof_datatype(p_req->request_datatype);
+  }
+  else {
+    status->count = -1;
+  }
+
+  return err;
+}
+
 
 int mpi_waitsome(int incount,
 		 MPI_Request *array_of_requests,
@@ -170,7 +204,7 @@ int mpi_wait(MPI_Request *request,
   err = mpir_wait(p_req);
 
   if (status != MPI_STATUS_IGNORE) {
-      err = mpir_set_status(p_req, status);
+      err = nm_mpi_set_status(p_req, status);
   }
 
   if (p_req->request_persistent_type == MPI_REQUEST_ZERO) {
@@ -268,7 +302,7 @@ int mpi_test(MPI_Request *request,
     *flag = 1;
 
     if (status != MPI_STATUS_IGNORE) {
-      err = mpir_set_status(p_req, status);
+      err = nm_mpi_set_status(p_req, status);
     }
 
     if (p_req->request_persistent_type == MPI_REQUEST_ZERO) {

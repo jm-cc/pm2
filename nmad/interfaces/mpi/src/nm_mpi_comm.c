@@ -69,6 +69,75 @@ int MPI_Group_translate_ranks(MPI_Group group1,
 
 /* ********************************************************* */
 
+static struct
+{
+  /** all the defined communicators */
+  nm_mpi_communicator_t *communicators[NUMBER_OF_COMMUNICATORS];
+  /** pool of ids of communicators that can be created by end-users */
+  puk_int_vect_t communicators_pool;
+} nm_mpi_communicators;
+
+__PUK_SYM_INTERNAL
+void nm_mpi_comm_init(void)
+{
+  int global_size  = -1;
+  int process_rank = -1;
+  nm_launcher_get_size(&global_size);
+  nm_launcher_get_rank(&process_rank);
+
+    /** Initialise data for communicators */
+  nm_mpi_communicators.communicators[MPI_COMM_NULL] = NULL;
+
+  nm_mpi_communicators.communicators[MPI_COMM_WORLD] = malloc(sizeof(nm_mpi_communicator_t));
+  nm_mpi_communicators.communicators[MPI_COMM_WORLD]->communicator_id = MPI_COMM_WORLD;
+  nm_mpi_communicators.communicators[MPI_COMM_WORLD]->size = global_size;
+  nm_mpi_communicators.communicators[MPI_COMM_WORLD]->rank = process_rank;
+  nm_mpi_communicators.communicators[MPI_COMM_WORLD]->global_ranks = malloc(global_size * sizeof(int));
+  int i;
+  for(i=0 ; i<global_size ; i++)
+    {
+      nm_mpi_communicators.communicators[MPI_COMM_WORLD]->global_ranks[i] = i;
+    }
+
+  nm_mpi_communicators.communicators[MPI_COMM_SELF] = malloc(sizeof(nm_mpi_communicator_t));
+  nm_mpi_communicators.communicators[MPI_COMM_SELF]->communicator_id = MPI_COMM_SELF;
+  nm_mpi_communicators.communicators[MPI_COMM_SELF]->size = 1;
+  nm_mpi_communicators.communicators[MPI_COMM_SELF]->rank = process_rank;
+  nm_mpi_communicators.communicators[MPI_COMM_SELF]->global_ranks = malloc(1 * sizeof(int));
+  nm_mpi_communicators.communicators[MPI_COMM_SELF]->global_ranks[0] = process_rank;
+
+  nm_mpi_communicators.communicators_pool = puk_int_vect_new();
+  for(i = _MPI_COMM_OFFSET; i < NUMBER_OF_COMMUNICATORS; i++)
+    {
+      puk_int_vect_push_back(nm_mpi_communicators.communicators_pool, i);
+    }
+}
+
+__PUK_SYM_INTERNAL
+void nm_mpi_comm_exit(void)
+{
+  FREE_AND_SET_NULL(nm_mpi_communicators.communicators[MPI_COMM_WORLD]->global_ranks);
+  FREE_AND_SET_NULL(nm_mpi_communicators.communicators[MPI_COMM_WORLD]);
+  FREE_AND_SET_NULL(nm_mpi_communicators.communicators[MPI_COMM_SELF]->global_ranks);
+  FREE_AND_SET_NULL(nm_mpi_communicators.communicators[MPI_COMM_SELF]);
+
+  puk_int_vect_delete(nm_mpi_communicators.communicators_pool);
+  nm_mpi_communicators.communicators_pool = NULL;
+}
+
+__PUK_SYM_INTERNAL
+nm_gate_t nm_mpi_communicator_get_gate(nm_mpi_communicator_t*p_comm, int node)
+{
+  return nm_mpi_internal_data.gates[node];
+}
+
+__PUK_SYM_INTERNAL
+int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t gate)
+{
+  intptr_t rank_as_ptr = (intptr_t)puk_hashtable_lookup(nm_mpi_internal_data.dests, gate);
+  return (rank_as_ptr - 1);
+}
+
 int mpi_comm_size(MPI_Comm comm, int *size)
 {
   MPI_NMAD_LOG_IN();
@@ -230,12 +299,12 @@ int mpi_comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
 
 int mpi_comm_dup(MPI_Comm comm, MPI_Comm *newcomm)
 {
-  if (puk_int_vect_empty(nm_mpi_internal_data.communicators_pool))
+  if (puk_int_vect_empty(nm_mpi_communicators.communicators_pool))
     {
       ERROR("Maximum number of communicators created");
       return MPI_ERR_INTERN;
     }
-  else if (nm_mpi_internal_data.communicators[comm] == NULL)
+  else if (nm_mpi_communicators.communicators[comm] == NULL)
     {
       ERROR("Communicator %d is not valid", comm);
       return MPI_ERR_OTHER;
@@ -243,15 +312,15 @@ int mpi_comm_dup(MPI_Comm comm, MPI_Comm *newcomm)
   else
     {
     int i;
-    *newcomm = puk_int_vect_pop_back(nm_mpi_internal_data.communicators_pool);
+    *newcomm = puk_int_vect_pop_back(nm_mpi_communicators.communicators_pool);
 
-    nm_mpi_internal_data.communicators[*newcomm] = malloc(sizeof(nm_mpi_communicator_t));
-    nm_mpi_internal_data.communicators[*newcomm]->communicator_id = *newcomm;
-    nm_mpi_internal_data.communicators[*newcomm]->size = nm_mpi_internal_data.communicators[comm]->size;
-    nm_mpi_internal_data.communicators[*newcomm]->rank = nm_mpi_internal_data.communicators[comm]->rank;
-    nm_mpi_internal_data.communicators[*newcomm]->global_ranks = malloc(nm_mpi_internal_data.communicators[*newcomm]->size * sizeof(int));
-    for(i=0 ; i<nm_mpi_internal_data.communicators[*newcomm]->size ; i++) {
-      nm_mpi_internal_data.communicators[*newcomm]->global_ranks[i] = nm_mpi_internal_data.communicators[comm]->global_ranks[i];
+    nm_mpi_communicators.communicators[*newcomm] = malloc(sizeof(nm_mpi_communicator_t));
+    nm_mpi_communicators.communicators[*newcomm]->communicator_id = *newcomm;
+    nm_mpi_communicators.communicators[*newcomm]->size = nm_mpi_communicators.communicators[comm]->size;
+    nm_mpi_communicators.communicators[*newcomm]->rank = nm_mpi_communicators.communicators[comm]->rank;
+    nm_mpi_communicators.communicators[*newcomm]->global_ranks = malloc(nm_mpi_communicators.communicators[*newcomm]->size * sizeof(int));
+    for(i=0 ; i<nm_mpi_communicators.communicators[*newcomm]->size ; i++) {
+      nm_mpi_communicators.communicators[*newcomm]->global_ranks[i] = nm_mpi_communicators.communicators[comm]->global_ranks[i];
     }
 
     return MPI_SUCCESS;
@@ -270,17 +339,17 @@ int mpi_comm_free(MPI_Comm *comm)
       ERROR("Cannot free communicator MPI_COMM_SELF");
       return MPI_ERR_OTHER;
     }
-  else if (*comm <= 0 || *comm >= NUMBER_OF_COMMUNICATORS || nm_mpi_internal_data.communicators[*comm] == NULL)
+  else if (*comm <= 0 || *comm >= NUMBER_OF_COMMUNICATORS || nm_mpi_communicators.communicators[*comm] == NULL)
     {
       ERROR("Communicator %d unknown\n", *comm);
       return MPI_ERR_OTHER;
     }
   else 
     {
-      free(nm_mpi_internal_data.communicators[*comm]->global_ranks);
-      free(nm_mpi_internal_data.communicators[*comm]);
-      nm_mpi_internal_data.communicators[*comm] = NULL;
-      puk_int_vect_push_back(nm_mpi_internal_data.communicators_pool, *comm);
+      free(nm_mpi_communicators.communicators[*comm]->global_ranks);
+      free(nm_mpi_communicators.communicators[*comm]);
+      nm_mpi_communicators.communicators[*comm] = NULL;
+      puk_int_vect_push_back(nm_mpi_communicators.communicators_pool, *comm);
       *comm = MPI_COMM_NULL;
       return MPI_SUCCESS;
     }
@@ -433,14 +502,14 @@ nm_mpi_communicator_t*nm_mpi_communicator_get(MPI_Comm comm)
 {
   if(comm > 0 && comm < NUMBER_OF_COMMUNICATORS)
     {
-      if (nm_mpi_internal_data.communicators[comm] == NULL) 
+      if (nm_mpi_communicators.communicators[comm] == NULL) 
 	{
 	  ERROR("Communicator %d invalid", comm);
 	  return NULL;
 	}
       else 
 	{
-	  return nm_mpi_internal_data.communicators[comm];
+	  return nm_mpi_communicators.communicators[comm];
 	}
     }
   else

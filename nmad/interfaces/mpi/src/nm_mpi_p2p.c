@@ -164,15 +164,11 @@ int mpi_bsend(void *buffer,
 	return mpi_send(buffer, count, datatype, dest, tag, comm);
 }
 
-int mpi_send(void *buffer,
-             int count,
-             MPI_Datatype datatype,
-             int dest,
-             int tag,
-             MPI_Comm comm) {
+int mpi_send(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+{
   nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
   MPI_Request           request = p_req->request_id;
-  nm_mpi_communicator_t  *mpir_communicator;
+  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
 
   MPI_NMAD_LOG_IN();
@@ -184,7 +180,6 @@ int mpi_send(void *buffer,
     return MPI_ERR_INTERN;
   }
 
-  mpir_communicator = nm_mpi_communicator_get(comm);
   p_req->request_type = MPI_REQUEST_SEND;
   p_req->request_persistent_type = MPI_REQUEST_ZERO;
   p_req->request_ptr = NULL;
@@ -194,8 +189,9 @@ int mpi_send(void *buffer,
   p_req->count = count;
   p_req->user_tag = tag;
   p_req->communication_mode = MPI_IMMEDIATE_MODE;
+  p_req->p_comm = p_comm;
 
-  err = mpir_isend(p_req, dest, mpir_communicator);
+  err = mpir_isend(p_req, dest, p_comm);
 
   mpi_wait(&request, MPI_STATUS_IGNORE);
 
@@ -203,16 +199,11 @@ int mpi_send(void *buffer,
   return err;
 }
 
-int mpi_isend(void *buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Comm comm,
-              MPI_Request *request) {
+int mpi_isend(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
+{
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   *request = p_req->request_id;
-  nm_mpi_communicator_t  *mpir_communicator;
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   int err;
 
   MPI_NMAD_LOG_IN();
@@ -223,8 +214,6 @@ int mpi_isend(void *buffer,
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
-
-  mpir_communicator = nm_mpi_communicator_get(comm);
   p_req->request_type = MPI_REQUEST_SEND;
   p_req->request_persistent_type = MPI_REQUEST_ZERO;
   p_req->request_ptr = NULL;
@@ -234,22 +223,19 @@ int mpi_isend(void *buffer,
   p_req->count = count;
   p_req->user_tag = tag;
   p_req->communication_mode = MPI_IMMEDIATE_MODE;
+  p_req->p_comm = p_comm;
 
-  err = mpir_isend(p_req, dest, mpir_communicator);
+  err = mpir_isend(p_req, dest, p_comm);
 
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_rsend(void* buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Comm comm) {
+int mpi_rsend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+{
   nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
   MPI_Request           request = p_req->request_id;
-  nm_mpi_communicator_t  *mpir_communicator;
+  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
 
   MPI_NMAD_LOG_IN();
@@ -260,8 +246,6 @@ int mpi_rsend(void* buffer,
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
-
-  mpir_communicator = nm_mpi_communicator_get(comm);
   p_req->request_type = MPI_REQUEST_SEND;
   p_req->request_persistent_type = MPI_REQUEST_ZERO;
   p_req->request_ptr = NULL;
@@ -271,8 +255,9 @@ int mpi_rsend(void* buffer,
   p_req->count = count;
   p_req->user_tag = tag;
   p_req->communication_mode = MPI_READY_MODE;
+  p_req->p_comm = p_comm;
 
-  err = mpir_isend(p_req, dest, mpir_communicator);
+  err = mpir_isend(p_req, dest, p_comm);
 
   mpi_wait(&request, MPI_STATUS_IGNORE);
 
@@ -280,14 +265,10 @@ int mpi_rsend(void* buffer,
   return err;
 }
 
-int mpi_ssend(void* buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Comm comm) {
+int mpi_ssend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+{
   nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
-  nm_mpi_communicator_t  *mpir_communicator;
+  nm_mpi_communicator_t  *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
 
   MPI_NMAD_LOG_IN();
@@ -298,8 +279,6 @@ int mpi_ssend(void* buffer,
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
-
-  mpir_communicator = nm_mpi_communicator_get(comm);
   p_req->request_type = MPI_REQUEST_SEND;
   p_req->request_persistent_type = MPI_REQUEST_ZERO;
   p_req->request_ptr = NULL;
@@ -309,47 +288,34 @@ int mpi_ssend(void* buffer,
   p_req->count = count;
   p_req->user_tag = tag;
   p_req->communication_mode = MPI_SYNCHRONOUS_MODE;
+  p_req->p_comm = p_comm;
 
-  err = mpir_isend(p_req, dest, mpir_communicator);
+  err = mpir_isend(p_req, dest, p_comm);
 
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_pack(void* inbuf,
-             int incount,
-             MPI_Datatype datatype,
-             void *outbuf,
-             int outsize,
-             int *position,
-             MPI_Comm comm) {
+int mpi_pack(void* inbuf, int incount, MPI_Datatype datatype, void *outbuf, int outsize, int *position, MPI_Comm comm)
+{
   size_t size_datatype;
   void *ptr = outbuf;
 
   MPI_NMAD_LOG_IN();
-
   MPI_NMAD_TRACE("Packing %d data of datatype %d at position %d\n", incount, datatype, *position);
-
   size_datatype = mpir_sizeof_datatype(datatype);
-
   ptr += *position;
   memcpy(ptr, inbuf, incount*size_datatype);
   *position += incount*size_datatype;
-
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 
-int mpi_recv(void *buffer,
-             int count,
-             MPI_Datatype datatype,
-             int source,
-             int tag,
-             MPI_Comm comm,
-             MPI_Status *status) {
+int mpi_recv(void *buffer, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)
+{
   nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
   MPI_Request           request = p_req->request_id;
-  nm_mpi_communicator_t  *mpir_communicator;
+  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
 
   MPI_NMAD_LOG_IN();
@@ -359,8 +325,6 @@ int mpi_recv(void *buffer,
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
-
-  mpir_communicator = nm_mpi_communicator_get(comm);
   p_req->request_ptr = NULL;
   p_req->request_persistent_type = MPI_REQUEST_ZERO;
   p_req->request_type = MPI_REQUEST_RECV;
@@ -369,34 +333,27 @@ int mpi_recv(void *buffer,
   p_req->buffer = buffer;
   p_req->count = count;
   p_req->user_tag = tag;
-  err = mpir_irecv(p_req, source, mpir_communicator);
+  p_req->p_comm = p_comm;
+  err = mpir_irecv(p_req, source, p_comm);
   err = mpi_wait(&request, status);
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_irecv(void *buffer,
-              int count,
-              MPI_Datatype datatype,
-              int source,
-              int tag,
-              MPI_Comm comm,
-              MPI_Request *request) {
+int mpi_irecv(void *buffer, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)
+{
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   *request = p_req->request_id;
-  nm_mpi_communicator_t *mpir_communicator;
-  int err;
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Ireceiving message from %d of datatype %d with tag %d\n", source, datatype, tag);
-
-  if (tbx_unlikely(tag == MPI_ANY_TAG)) {
-    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
-
-  mpir_communicator = nm_mpi_communicator_get(comm);
+  if (tbx_unlikely(tag == MPI_ANY_TAG))
+    {
+      ERROR("<Using MPI_ANY_TAG> not implemented yet!");
+      MPI_NMAD_LOG_OUT();
+      return MPI_ERR_INTERN;
+    }
   p_req->request_ptr = NULL;
   p_req->request_persistent_type = MPI_REQUEST_ZERO;
   p_req->request_type = MPI_REQUEST_RECV;
@@ -405,154 +362,113 @@ int mpi_irecv(void *buffer,
   p_req->buffer = buffer;
   p_req->count = count;
   p_req->user_tag = tag;
-
-  err = mpir_irecv(p_req, source, mpir_communicator);
-
+  p_req->p_comm = p_comm;
+  int err = mpir_irecv(p_req, source, p_comm);
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_sendrecv(void *sendbuf,
-                 int sendcount,
-                 MPI_Datatype sendtype,
-                 int dest,
-                 int sendtag,
-                 void *recvbuf,
-                 int recvcount,
-                 MPI_Datatype recvtype,
-                 int source,
-                 int recvtag,
-                 MPI_Comm comm,
-                 MPI_Status *status) {
+int mpi_sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag,
+                 void *recvbuf, int recvcount, MPI_Datatype recvtype, int source, int recvtag,
+                 MPI_Comm comm, MPI_Status *status)
+{
   int err;
   MPI_Request srequest, rrequest;
-
   MPI_NMAD_LOG_IN();
-
   err = mpi_isend(sendbuf, sendcount, sendtype, dest, sendtag, comm, &srequest);
   err = mpi_irecv(recvbuf, recvcount, recvtype, source, recvtag, comm, &rrequest);
-
   err = mpi_wait(&srequest, MPI_STATUS_IGNORE);
   err = mpi_wait(&rrequest, status);
-
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_unpack(void* inbuf,
-               int insize,
-               int *position,
-               void *outbuf,
-               int outcount,
-               MPI_Datatype datatype,
-               MPI_Comm comm) {
-  size_t size_datatype;
+int mpi_unpack(void* inbuf, int insize, int *position, void *outbuf, int outcount, MPI_Datatype datatype, MPI_Comm comm)
+{
   void *ptr = inbuf;
-
   MPI_NMAD_LOG_IN();
-
   MPI_NMAD_TRACE("Unpacking %d data of datatype %d at position %d\n", outcount, datatype, *position);
-
-  size_datatype = mpir_sizeof_datatype(datatype);
-
+  size_t size_datatype = mpir_sizeof_datatype(datatype);
   ptr += *position;
   memcpy(outbuf, ptr, outcount*size_datatype);
   *position += outcount*size_datatype;
-
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 
-int mpi_iprobe(int source,
-               int tag,
-               MPI_Comm comm,
-               int *flag,
-               MPI_Status *status) {
+int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status)
+{
   int err      = 0;
-  nm_gate_t gate, out_gate;
-  nm_mpi_communicator_t *mpir_communicator;
+  nm_gate_t gate;
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_tag_t nm_tag;
-
   MPI_NMAD_LOG_IN();
-
-  mpir_communicator = nm_mpi_communicator_get(comm);
-  if (tag == MPI_ANY_TAG) {
-    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
-
-  if (source == MPI_ANY_SOURCE) {
-    gate = NM_ANY_GATE;
-  }
-  else {
-    gate = mpir_get_gate(source);
-
-    if (source >= mpir_communicator->size || gate == NM_ANY_GATE) {
-      fprintf(stderr, "Cannot find a in connection between %d and %d\n", mpir_communicator->rank, source);
+  if (tag == MPI_ANY_TAG)
+    {
+      ERROR("<Using MPI_ANY_TAG> not implemented yet!");
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
-  }
-
-  nm_tag = mpir_comm_and_tag(mpir_communicator, tag);
-  err = mpir_probe(gate, &out_gate, nm_tag);
-
-  if (err == NM_ESUCCESS) {
-    *flag = 1;
-    if (status != NULL) {
-      status->MPI_TAG = tag;
-      status->MPI_SOURCE = mpir_get_dest(out_gate);
+  if (source == MPI_ANY_SOURCE) 
+    {
+      gate = NM_ANY_GATE;
     }
-  }
-  else { /* err == -NM_EAGAIN */
-    *flag = 0;
-  }
-
+  else
+    {
+      gate = nm_mpi_communicator_get_gate(p_comm, source);
+      if (source >= p_comm->size || gate == NM_ANY_GATE)
+	{
+	  fprintf(stderr, "Cannot find a in connection between %d and %d\n", p_comm->rank, source);
+	  MPI_NMAD_LOG_OUT();
+	  return MPI_ERR_INTERN;
+	}
+    }
+  nm_tag = mpir_comm_and_tag(p_comm, tag);
+  nm_gate_t out_gate = NULL;
+  err = nm_sr_probe(nm_mpi_internal_data.p_session, gate, &out_gate, nm_tag, NM_TAG_MASK_FULL, NULL, NULL);;
+  if (err == NM_ESUCCESS) 
+    {
+      *flag = 1;
+      if (status != NULL)
+	{
+	  status->MPI_TAG = tag;
+	  status->MPI_SOURCE = nm_mpi_communicator_get_dest(p_comm, out_gate);
+	}
+    }
+  else
+    { /* err == -NM_EAGAIN */
+      *flag = 0;
+    }
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_probe(int source,
-              int tag,
-              MPI_Comm comm,
-              MPI_Status *status) {
+int mpi_probe(int source, int tag, MPI_Comm comm, MPI_Status *status)
+{
   int flag = 0;
-  int err;
-
   MPI_NMAD_LOG_IN();
-
-  err = mpi_iprobe(source, tag, comm, &flag, status);
-  while (flag != 1) {
-    err = mpi_iprobe(source, tag, comm, &flag, status);
-  }
-
+  int err = mpi_iprobe(source, tag, comm, &flag, status);
+  while(flag != 1)
+    {
+      err = mpi_iprobe(source, tag, comm, &flag, status);
+    }
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_send_init(void* buf,
-                  int count,
-                  MPI_Datatype datatype,
-                  int dest,
-                  int tag,
-                  MPI_Comm comm,
-                  MPI_Request *request) {
+int mpi_send_init(void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
+{
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   *request = p_req->request_id;
-  nm_mpi_communicator_t  *mpir_communicator;
-  int err;
-
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Init Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
-
-  if (tbx_unlikely(tag == MPI_ANY_TAG)) {
-    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
-
-  mpir_communicator = nm_mpi_communicator_get(comm);
+  if (tbx_unlikely(tag == MPI_ANY_TAG))
+    {
+      ERROR("<Using MPI_ANY_TAG> not implemented yet!");
+      MPI_NMAD_LOG_OUT();
+      return MPI_ERR_INTERN;
+    }
   p_req->request_type = MPI_REQUEST_SEND;
   p_req->request_persistent_type = MPI_REQUEST_SEND;
   p_req->request_ptr = NULL;
@@ -562,25 +478,17 @@ int mpi_send_init(void* buf,
   p_req->count = count;
   p_req->user_tag = tag;
   p_req->communication_mode = MPI_IMMEDIATE_MODE;
-
-  err = mpir_isend_init(p_req, dest, mpir_communicator);
-
+  p_req->p_comm = p_comm;
+  int err = mpir_isend_init(p_req, dest, p_comm);
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int mpi_recv_init(void* buf,
-                  int count,
-                  MPI_Datatype datatype,
-                  int source,
-                  int tag,
-                  MPI_Comm comm,
-                  MPI_Request *request) {
+int mpi_recv_init(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)
+{
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   *request = p_req->request_id;
-  nm_mpi_communicator_t  *mpir_communicator;
-  int err;
-
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Init Irecv message from %d of datatype %d with tag %d\n", source, datatype, tag);
 
@@ -589,8 +497,6 @@ int mpi_recv_init(void* buf,
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
-
-  mpir_communicator = nm_mpi_communicator_get(comm);
   p_req->request_ptr = NULL;
   p_req->request_type = MPI_REQUEST_RECV;
   p_req->request_persistent_type = MPI_REQUEST_RECV;
@@ -599,9 +505,8 @@ int mpi_recv_init(void* buf,
   p_req->buffer = buf;
   p_req->count = count;
   p_req->user_tag = tag;
-
-  err = mpir_irecv_init(p_req, source, mpir_communicator);
-
+  p_req->p_comm = p_comm;
+  int err = mpir_irecv_init(p_req, source, p_comm);
   MPI_NMAD_LOG_OUT();
   return err;
 }

@@ -41,6 +41,8 @@ typedef volatile nm_sr_status_t nm_sr_cond_t;
 typedef piom_cond_t nm_sr_cond_t;
 #endif
 
+extern int nm_sr_flush(struct nm_core *p_core);
+
 
 /* ** Events *********************************************** */
 

@@ -21,9 +21,17 @@ typedef struct nm_comm_s*nm_comm_t;
 
 extern nm_comm_t nm_comm_world(void);
 
+extern nm_comm_t nm_comm_self(void);
+
 extern int nm_comm_size(nm_comm_t comm);
 
 extern int nm_comm_rank(nm_comm_t comm);
+
+extern nm_gate_t nm_comm_get_gate(nm_comm_t p_comm, int rank);
+
+extern int nm_comm_get_dest(nm_comm_t p_comm, nm_gate_t p_gate);
+
+extern nm_session_t nm_comm_get_session(nm_comm_t p_comm);
 
 extern nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group);
 

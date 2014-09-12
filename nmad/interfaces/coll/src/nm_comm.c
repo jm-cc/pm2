@@ -21,10 +21,22 @@
 
 /* ********************************************************* */
 
-static nm_comm_t world = NULL;
+static void nm_comm_finalize(nm_comm_t p_comm)
+{
+  /* hash gates */
+  p_comm->reverse = puk_hashtable_new_ptr();
+  int j;
+  for(j = 0; j < nm_gate_vect_size(p_comm->group); j++)
+    {
+      nm_gate_t p_gate = nm_gate_vect_at(p_comm->group, j);
+      const intptr_t rank_as_ptr = j + 1;
+      puk_hashtable_insert(p_comm->reverse, p_gate, (void*)rank_as_ptr);
+    }
+}
 
 nm_comm_t nm_comm_world(void)
 {
+  static nm_comm_t world = NULL;
   if(world == NULL)
     {
       nm_group_t group = nm_gate_vect_new();
@@ -43,6 +55,7 @@ nm_comm_t nm_comm_world(void)
       comm->group = group;
       comm->rank = nm_group_rank(group);
       comm->p_session = p_session;
+      nm_comm_finalize(comm);
       void*old = __sync_val_compare_and_swap(&world, NULL, comm);
       if(old != NULL)
 	{
@@ -53,6 +66,29 @@ nm_comm_t nm_comm_world(void)
   return world;
 }
 
+nm_comm_t nm_comm_self(void)
+{
+  static nm_comm_t self = NULL;
+  if(self == NULL)
+    {
+      int launcher_rank = -1;
+      nm_launcher_get_rank(&launcher_rank);
+      nm_gate_t p_gate = NULL;
+      nm_launcher_get_gate(launcher_rank, &p_gate);
+      nm_group_t group = nm_gate_vect_new();
+      nm_gate_vect_push_back(group,p_gate);
+      nm_comm_t world = nm_comm_world();
+      nm_comm_t p_comm = nm_comm_create(world, group);
+      void*old = __sync_val_compare_and_swap(&self, NULL, p_comm);
+      if(old != NULL)
+	{
+	  nm_group_free(group);
+	  free(p_comm);
+	}
+    }
+  return self;
+}
+
 int nm_comm_size(nm_comm_t comm)
 {
   return nm_group_size(comm->group);
@@ -61,6 +97,29 @@ int nm_comm_size(nm_comm_t comm)
 int nm_comm_rank(nm_comm_t comm)
 {
   return comm->rank;
+}
+
+nm_gate_t nm_comm_get_gate(nm_comm_t p_comm, int rank)
+{
+  if(rank >= 0 && rank < nm_comm_size(p_comm))
+    {
+      return nm_gate_vect_at(p_comm->group, rank);
+    }
+  else
+    {
+      return NULL;
+    }
+}
+
+int nm_comm_get_dest(nm_comm_t p_comm, nm_gate_t p_gate)
+{
+  intptr_t rank_as_ptr = (intptr_t)puk_hashtable_lookup(p_comm->reverse, p_gate);
+  return (rank_as_ptr - 1);
+}
+
+nm_session_t nm_comm_get_session(nm_comm_t p_comm)
+{
+  return p_comm->p_session;
 }
 
 nm_group_t nm_comm_group(nm_comm_t comm)
@@ -145,6 +204,7 @@ nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
 		}
 	    }
 	}
+      nm_comm_finalize(newcomm);
       return newcomm;
     }
 }

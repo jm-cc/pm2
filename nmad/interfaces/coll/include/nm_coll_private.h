@@ -19,9 +19,10 @@
 
 struct nm_comm_s
 {
-  nm_session_t p_session;
-  nm_group_t group;    /**< group of nodes involved in the communicator */
-  int rank;            /**< rank of local process in the group */
+  nm_session_t p_session;  /**< session for the communicator */
+  nm_group_t group;        /**< group of nodes involved in the communicator */
+  int rank;                /**< rank of local process in the group */
+  puk_hashtable_t reverse; /**< reverse table: p_gate -> rank */
 };
 
 /** maximum tag usable by enduser for p2p */

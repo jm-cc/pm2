@@ -36,6 +36,10 @@
 #include <nm_launcher.h>
 #include <nm_coll.h>
 
+#ifdef PIOMAN
+#include <pioman.h>
+#endif /* PIOMAN */
+
 #include "mpi.h"
 
 #define MADMPI_VERSION    1

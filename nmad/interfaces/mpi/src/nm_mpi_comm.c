@@ -76,6 +76,9 @@ static struct
   nm_mpi_comm_vect_t comms; /**< indirection table: id -> p_comm */
   puk_int_vect_t pool;      /**< pool of recycled comm IDs */
   MPI_Fint next_id;         /**< next ID to allocate */
+#ifdef PIOMAN
+  piom_spinlock_t lock;
+#endif /* PIOMAN */
 } nm_mpi_communicators = { .next_id = _MPI_COMM_OFFSET };
 
 __PUK_SYM_INTERNAL
@@ -95,6 +98,9 @@ void nm_mpi_comm_init(void)
   nm_mpi_comm_vect_put(nm_mpi_communicators.comms, NULL,         MPI_COMM_NULL);
   nm_mpi_comm_vect_put(nm_mpi_communicators.comms, p_comm_world, MPI_COMM_WORLD);
   nm_mpi_comm_vect_put(nm_mpi_communicators.comms, p_comm_self,  MPI_COMM_SELF);
+#ifdef PIOMAN
+  piom_spin_init(&nm_mpi_communicators.lock);
+#endif
 }
 
 __PUK_SYM_INTERNAL
@@ -116,6 +122,10 @@ void nm_mpi_comm_exit(void)
 static int nm_mpi_communicator_alloc(nm_comm_t p_nm_comm)
 {
   int newcomm = -1;
+  nm_mpi_communicator_t*p_new_comm = malloc(sizeof(nm_mpi_communicator_t));
+#ifdef PIOMAN
+  piom_spin_lock(&nm_mpi_communicators.lock);
+#endif
   if(puk_int_vect_empty(nm_mpi_communicators.pool))
     {
       newcomm = nm_mpi_communicators.next_id++;
@@ -125,21 +135,28 @@ static int nm_mpi_communicator_alloc(nm_comm_t p_nm_comm)
     {
       newcomm = puk_int_vect_pop_back(nm_mpi_communicators.pool);
     }
-  nm_mpi_communicator_t*p_new_comm = malloc(sizeof(nm_mpi_communicator_t));
+  nm_mpi_comm_vect_put(nm_mpi_communicators.comms, p_new_comm, newcomm);
+#ifdef PIOMAN
+  piom_spin_unlock(&nm_mpi_communicators.lock);
+#endif
   p_new_comm->communicator_id = newcomm;
   p_new_comm->p_comm = p_nm_comm;
-  nm_mpi_comm_vect_put(nm_mpi_communicators.comms, p_new_comm, newcomm);
   return newcomm;
 }
 
 static void nm_mpi_communicator_free(nm_mpi_communicator_t*p_comm)
 {
   const int comm_id = p_comm->communicator_id;
+#ifdef PIOMAN
+  piom_spin_lock(&nm_mpi_communicators.lock);
+#endif
   nm_mpi_comm_vect_put(nm_mpi_communicators.comms, NULL, comm_id);
+  puk_int_vect_push_back(nm_mpi_communicators.pool, comm_id);
+#ifdef PIOMAN
+  piom_spin_unlock(&nm_mpi_communicators.lock);
+#endif
   nm_comm_destroy(p_comm->p_comm);
   free(p_comm);
-  puk_int_vect_push_back(nm_mpi_communicators.pool, comm_id);
-
 }
 
 __PUK_SYM_INTERNAL

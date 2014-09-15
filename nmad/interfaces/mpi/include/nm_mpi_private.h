@@ -225,10 +225,6 @@ struct nm_mpi_internal_data_s
   int 		     nb_incoming_msg;
   /** total number of outgoing messages */
   int 		     nb_outgoing_msg;
-
-  /** NewMad session */
-  nm_session_t p_session;
-#warning TODO- use per-communicator session
 };
 extern struct nm_mpi_internal_data_s nm_mpi_internal_data;
 /* @} */

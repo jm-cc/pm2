@@ -425,7 +425,7 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
     }
   nm_tag = mpir_comm_and_tag(p_comm, tag);
   nm_gate_t out_gate = NULL;
-  err = nm_sr_probe(nm_mpi_internal_data.p_session, gate, &out_gate, nm_tag, NM_TAG_MASK_FULL, NULL, NULL);;
+  err = nm_sr_probe(nm_comm_get_session(p_comm->p_comm), gate, &out_gate, nm_tag, NM_TAG_MASK_FULL, NULL, NULL);;
   if (err == NM_ESUCCESS) 
     {
       *flag = 1;

@@ -70,9 +70,9 @@ int mpir_internal_init(void)
   nm_mpi_internal_data.nb_incoming_msg = 0;
 
   /** Set the NewMadeleine interfaces */
-  nm_launcher_get_session(&nm_mpi_internal_data.p_session);
-
-  nm_sr_init(nm_mpi_internal_data.p_session);
+  nm_session_t p_session = NULL;
+  nm_launcher_get_session(&p_session);
+  nm_sr_init(p_session);
 
   /** Initialise the basic datatypes */
   for(i = MPI_DATATYPE_NULL ; i <= _MPI_DATATYPE_MAX; i++)
@@ -528,11 +528,11 @@ static inline int mpir_isend_wrapper(nm_mpi_request_t *p_req)
   switch(p_req->communication_mode)
     {
     case MPI_IMMEDIATE_MODE:
-      err = nm_sr_isend(nm_mpi_internal_data.p_session, p_req->gate, p_req->request_tag, buffer,
+      err = nm_sr_isend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer,
 			p_req->count * p_datatype->size, &(p_req->request_nmad));
       break;
     case MPI_READY_MODE:
-      err = nm_sr_rsend(nm_mpi_internal_data.p_session, p_req->gate, p_req->request_tag, buffer,
+      err = nm_sr_rsend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer,
 			p_req->count * p_datatype->size, &(p_req->request_nmad));
       break;
     case MPI_SYNCHRONOUS_MODE:
@@ -556,7 +556,7 @@ static inline int mpir_pack_wrapper(nm_mpi_request_t *p_req)
   int err = MPI_SUCCESS;
 
   MPI_NMAD_TRACE("Packing data\n");
-  nm_begin_packing(nm_mpi_internal_data.p_session, p_req->gate, p_req->request_tag, connection);
+  nm_begin_packing(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, connection);
 
   if(p_datatype->dte_type == MPIR_VECTOR)
     {
@@ -661,7 +661,7 @@ int mpir_isend_start(nm_mpi_request_t *p_req)
     if (p_req->request_type != MPI_REQUEST_ZERO) p_req->request_type = MPI_REQUEST_PACK_SEND;
   }
 
-  err = nm_sr_progress(nm_mpi_internal_data.p_session);
+  err = nm_sr_progress(nm_comm_get_session(p_req->p_comm->p_comm));
   mpir_inc_nb_outgoing_msg();
 
   return err;
@@ -771,7 +771,7 @@ static inline int mpir_irecv_wrapper(nm_mpi_request_t *p_req)
 
   MPI_NMAD_TRACE("Posting recv request\n");
   MPI_NMAD_TRACE("Recv --< gate %p: %ld bytes\n", p_req->gate, (long)p_req->count * p_datatype->size);
-  err = nm_sr_irecv(nm_mpi_internal_data.p_session, p_req->gate, p_req->request_tag, buffer, p_req->count * p_datatype->size, &(p_req->request_nmad));
+  err = nm_sr_irecv(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer, p_req->count * p_datatype->size, &(p_req->request_nmad));
   MPI_NMAD_TRACE("Recv finished, request = %p\n", &(p_req->request_nmad));
 
   return err;
@@ -787,7 +787,7 @@ static inline int mpir_unpack_wrapper(nm_mpi_request_t *p_req)
   int err = MPI_SUCCESS;
 
   MPI_NMAD_TRACE("Unpacking data\n");
-  nm_begin_unpacking(nm_mpi_internal_data.p_session, p_req->gate, p_req->request_tag, connection);
+  nm_begin_unpacking(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, connection);
 
   if (p_datatype->dte_type == MPIR_VECTOR) {
     MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", p_datatype->stride, p_datatype->blocklens[0], p_datatype->elements, (long)p_datatype->size);
@@ -823,7 +823,7 @@ int mpir_irecv_start(nm_mpi_request_t *p_req)
       if (p_req->request_type != MPI_REQUEST_ZERO) p_req->request_type = MPI_REQUEST_PACK_RECV;
     }
 
-  nm_sr_progress(nm_mpi_internal_data.p_session);
+  nm_sr_progress(nm_comm_get_session(p_req->p_comm->p_comm));
 
   mpir_inc_nb_incoming_msg();
   MPI_NMAD_TRACE("Irecv_start completed\n");
@@ -891,7 +891,7 @@ int mpir_wait(nm_mpi_request_t *p_req)
   if (p_req->request_type == MPI_REQUEST_RECV) {
     MPI_NMAD_TRACE("Calling nm_sr_rwait\n");
     MPI_NMAD_TRACE("Calling nm_sr_rwait for request=%p\n", &(p_req->request_nmad));
-    err = nm_sr_rwait(nm_mpi_internal_data.p_session, &p_req->request_nmad);
+    err = nm_sr_rwait(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
     nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
     if (!p_datatype->is_contig && p_req->contig_buffer) 
       {
@@ -902,7 +902,7 @@ int mpir_wait(nm_mpi_request_t *p_req)
   else if (p_req->request_type == MPI_REQUEST_SEND) {
     MPI_NMAD_TRACE("Calling nm_sr_swait\n");
     MPI_NMAD_TRACE("Calling nm_sr_swait\n");
-    err = nm_sr_swait(nm_mpi_internal_data.p_session, &p_req->request_nmad);
+    err = nm_sr_swait(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
     MPI_NMAD_TRACE("Returning from nm_sr_swait\n");
     if (p_req->request_persistent_type == MPI_REQUEST_ZERO) {
       if (p_req->contig_buffer != NULL) {
@@ -933,10 +933,10 @@ int mpir_test(nm_mpi_request_t *p_req)
  {
   int err = MPI_SUCCESS;
   if (p_req->request_type == MPI_REQUEST_RECV) {
-    err = nm_sr_rtest(nm_mpi_internal_data.p_session, &p_req->request_nmad);
+    err = nm_sr_rtest(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
   }
   else if (p_req->request_type == MPI_REQUEST_SEND) {
-    err = nm_sr_stest(nm_mpi_internal_data.p_session, &p_req->request_nmad);
+    err = nm_sr_stest(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
   }
   else if (p_req->request_type == MPI_REQUEST_PACK_RECV) {
     nm_pack_cnx_t *connection = &(p_req->request_cnx);
@@ -957,7 +957,7 @@ int mpir_cancel(nm_mpi_request_t *p_req)
   int err = MPI_SUCCESS;
   if (p_req->request_type == MPI_REQUEST_RECV) {
     mpir_dec_nb_incoming_msg();
-    err = nm_sr_rcancel(nm_mpi_internal_data.p_session, &p_req->request_nmad);
+    err = nm_sr_rcancel(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
   }
   else if (p_req->request_type == MPI_REQUEST_SEND) {
     mpir_dec_nb_outgoing_msg();

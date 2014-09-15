@@ -62,9 +62,6 @@
 /** @name Communicators */
 /* @{ */
 
-/** Maximum number of communicators */
-#define NUMBER_OF_COMMUNICATORS 32
-
 /** Internal communicator */
 typedef struct nm_mpi_communicator_s
 {

@@ -220,6 +220,17 @@ int mpir_internal_exit(void)
   return MPI_SUCCESS;
 }
 
+nm_tag_t nm_mpi_get_tag(nm_mpi_communicator_t *p_comm, int tag)
+{
+  if(tag < 0 || tag > MPI_NMAD_MAX_VALUE_TAG)
+    {
+      ERROR("tag too large");
+    }
+  const nm_tag_t newtag = tag;
+  return newtag;
+}
+
+
 /**
  * Aggregates data represented by a vector datatype in a contiguous
  * buffer.
@@ -590,7 +601,7 @@ int mpir_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_
 
   p_req->gate =p_gate;
   p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
-  p_req->request_tag = mpir_comm_and_tag(p_comm, p_req->user_tag);
+  p_req->request_tag = nm_mpi_get_tag(p_comm, p_req->user_tag);
 
   if(p_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %ld (%d*%ld)\n", p_req->request_datatype, p_req->buffer, (long)p_req->count*p_datatype->size, p_req->count, (long)p_datatype->size);
@@ -698,7 +709,7 @@ int mpir_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *
     }
 
   p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
-  p_req->request_tag = mpir_comm_and_tag(p_comm, p_req->user_tag);
+  p_req->request_tag = nm_mpi_get_tag(p_comm, p_req->user_tag);
   p_req->request_source = source;
 
   MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (comm=%p, %d)\n", source, p_req->buffer, p_req->request_tag, p_comm, p_req->user_tag);

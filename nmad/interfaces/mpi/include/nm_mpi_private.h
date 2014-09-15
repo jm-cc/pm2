@@ -57,7 +57,7 @@
 #define FREE_AND_SET_NULL(p) free(p); p = NULL;
 
 /** Maximum value of the tag specified by the end-user */
-#define MPI_NMAD_MAX_VALUE_TAG (4UL * 256UL * 256UL * 256UL)
+#define MPI_NMAD_MAX_VALUE_TAG  0x7FFFFFFF
 
 /** @name Communicators */
 /* @{ */
@@ -463,7 +463,7 @@ nm_mpi_communicator_t*nm_mpi_communicator_get(MPI_Comm comm);
 /**
  * Gets the NM tag for the given user tag and communicator.
  */
-nm_tag_t mpir_comm_and_tag(nm_mpi_communicator_t *p_comm, int tag);
+nm_tag_t nm_mpi_get_tag(nm_mpi_communicator_t*p_comm, int tag);
 
 /* Termination functionalities */
 

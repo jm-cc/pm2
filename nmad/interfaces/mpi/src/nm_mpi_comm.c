@@ -465,19 +465,6 @@ nm_mpi_communicator_t*nm_mpi_communicator_get(MPI_Comm comm)
     }
 }
 
-nm_tag_t mpir_comm_and_tag(nm_mpi_communicator_t *p_comm, int tag)
-{
-  /*
-   * The communicator is represented on 5 bits, we left shift the tag
-   * value by 5 bits to add the communicator id.
-   * Let's suppose no significant bit is going to get lost in the tag
-   * value.
-   */
-  nm_tag_t newtag = tag << 5;
-  newtag += (p_comm->communicator_id);
-  return newtag;
-}
-
 /* ********************************************************* */
 
 int MPI_Comm_spawn(char *command,

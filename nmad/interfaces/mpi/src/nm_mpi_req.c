@@ -21,6 +21,8 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
+PUK_VECT_TYPE(nm_mpi_request, nm_mpi_request_t*);
+
 /* Custom requests allocator. Inspired by Puk lock-free allocator,
    except that we use int indexes for compatibility with Fortran.
 */

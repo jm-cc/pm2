@@ -58,9 +58,6 @@ static inline void mpir_dec_nb_outgoing_msg(void)
 
 int mpir_internal_init(void)
 {
-  int i;
-  int dest;
-
   int global_size  = -1;
   int process_rank = -1;
   nm_launcher_get_size(&global_size);
@@ -74,149 +71,11 @@ int mpir_internal_init(void)
   nm_launcher_get_session(&p_session);
   nm_sr_init(p_session);
 
-  /** Initialise the basic datatypes */
-  for(i = MPI_DATATYPE_NULL ; i <= _MPI_DATATYPE_MAX; i++)
-    {
-      nm_mpi_internal_data.datatypes[i] = malloc(sizeof(nm_mpi_datatype_t));
-      nm_mpi_internal_data.datatypes[i]->basic = 1;
-      nm_mpi_internal_data.datatypes[i]->committed = 1;
-      nm_mpi_internal_data.datatypes[i]->is_contig = 1;
-      nm_mpi_internal_data.datatypes[i]->dte_type = MPIR_BASIC;
-      nm_mpi_internal_data.datatypes[i]->active_communications = 100;
-      nm_mpi_internal_data.datatypes[i]->free_requested = 0;
-      nm_mpi_internal_data.datatypes[i]->lb = 0;
-    }
-
-  nm_mpi_internal_data.datatypes[MPI_DATATYPE_NULL]->size = 0;
-  nm_mpi_internal_data.datatypes[MPI_CHAR]->size = sizeof(signed char);
-  nm_mpi_internal_data.datatypes[MPI_UNSIGNED_CHAR]->size = sizeof(unsigned char);
-  nm_mpi_internal_data.datatypes[MPI_BYTE]->size = 1;
-  nm_mpi_internal_data.datatypes[MPI_SHORT]->size = sizeof(signed short);
-  nm_mpi_internal_data.datatypes[MPI_UNSIGNED_SHORT]->size = sizeof(unsigned short);
-  nm_mpi_internal_data.datatypes[MPI_INT]->size = sizeof(signed int);
-  nm_mpi_internal_data.datatypes[MPI_UNSIGNED]->size = sizeof(unsigned int);
-  nm_mpi_internal_data.datatypes[MPI_LONG]->size = sizeof(signed long);
-  nm_mpi_internal_data.datatypes[MPI_UNSIGNED_LONG]->size = sizeof(unsigned long);
-  nm_mpi_internal_data.datatypes[MPI_FLOAT]->size = sizeof(float);
-  nm_mpi_internal_data.datatypes[MPI_DOUBLE]->size = sizeof(double);
-  nm_mpi_internal_data.datatypes[MPI_LONG_DOUBLE]->size = sizeof(long double);
-  nm_mpi_internal_data.datatypes[MPI_LONG_LONG_INT]->size = sizeof(long long int);
-  nm_mpi_internal_data.datatypes[MPI_LONG_LONG]->size = sizeof(long long);
-
-  nm_mpi_internal_data.datatypes[MPI_LOGICAL]->size = sizeof(float);
-  nm_mpi_internal_data.datatypes[MPI_REAL]->size = sizeof(float);
-  nm_mpi_internal_data.datatypes[MPI_REAL4]->size = 4*sizeof(char);
-  nm_mpi_internal_data.datatypes[MPI_REAL8]->size = 8*sizeof(char);
-  nm_mpi_internal_data.datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
-  nm_mpi_internal_data.datatypes[MPI_INTEGER]->size = sizeof(float);
-  nm_mpi_internal_data.datatypes[MPI_INTEGER4]->size = sizeof(int32_t);
-  nm_mpi_internal_data.datatypes[MPI_INTEGER8]->size = sizeof(int64_t);
-  nm_mpi_internal_data.datatypes[MPI_PACKED]->size = sizeof(char);
-
-  nm_mpi_internal_data.datatypes[MPI_DATATYPE_NULL]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_CHAR]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_UNSIGNED_CHAR]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_BYTE]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_SHORT]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_UNSIGNED_SHORT]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_INT]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_UNSIGNED]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_LONG]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_UNSIGNED_LONG]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_FLOAT]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_DOUBLE]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_LONG_DOUBLE]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_LONG_LONG_INT]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_LONG_LONG]->elements = 1;
-
-  nm_mpi_internal_data.datatypes[MPI_LOGICAL]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_REAL]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_REAL4]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_REAL8]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_DOUBLE_PRECISION]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_INTEGER]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_INTEGER4]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_INTEGER8]->elements = 1;
-  nm_mpi_internal_data.datatypes[MPI_PACKED]->elements = 1;
-
-  /* todo: elements=2 */
-  nm_mpi_internal_data.datatypes[MPI_LONG_INT]->size = sizeof(long)+sizeof(int);
-  nm_mpi_internal_data.datatypes[MPI_SHORT_INT]->size = sizeof(short)+sizeof(int);
-  nm_mpi_internal_data.datatypes[MPI_FLOAT_INT]->size = sizeof(float)+sizeof(int);
-  nm_mpi_internal_data.datatypes[MPI_DOUBLE_INT]->size = sizeof(double) + sizeof(int);
-
-  nm_mpi_internal_data.datatypes[MPI_2INT]->size = 2*sizeof(int);
-  nm_mpi_internal_data.datatypes[MPI_2INT]->elements = 2;
-
-  nm_mpi_internal_data.datatypes[MPI_2DOUBLE_PRECISION]->size = 2*sizeof(double);
-  nm_mpi_internal_data.datatypes[MPI_2DOUBLE_PRECISION]->elements = 2;
-
-  nm_mpi_internal_data.datatypes[MPI_COMPLEX]->size = 2*sizeof(float);
-  nm_mpi_internal_data.datatypes[MPI_COMPLEX]->elements = 2;
-
-  nm_mpi_internal_data.datatypes[MPI_DOUBLE_COMPLEX]->size = 2*sizeof(double);
-  nm_mpi_internal_data.datatypes[MPI_DOUBLE_COMPLEX]->elements = 2;
-
-
-  for(i = MPI_DATATYPE_NULL; i <= _MPI_DATATYPE_MAX; i++)
-    {
-      nm_mpi_internal_data.datatypes[i]->extent = nm_mpi_internal_data.datatypes[i]->size;
-    }
-
-  nm_mpi_internal_data.datatypes_pool = puk_int_vect_new();
-  for(i = _MPI_DATATYPE_MAX+1 ; i < NUMBER_OF_DATATYPES; i++)
-    {
-      puk_int_vect_push_back(nm_mpi_internal_data.datatypes_pool, i);
-    }
-
-
-  /** Initialise the collective operators */
-  for(i = _MPI_OP_FIRST; i <= _MPI_OP_LAST; i++)
-    {
-      nm_mpi_internal_data.operators[i] = malloc(sizeof(mpir_operator_t));
-      nm_mpi_internal_data.operators[i]->commute = 1;
-    }
-  nm_mpi_internal_data.operators[MPI_MAX]->function = &mpir_op_max;
-  nm_mpi_internal_data.operators[MPI_MIN]->function = &mpir_op_min;
-  nm_mpi_internal_data.operators[MPI_SUM]->function = &mpir_op_sum;
-  nm_mpi_internal_data.operators[MPI_PROD]->function = &mpir_op_prod;
-  nm_mpi_internal_data.operators[MPI_LAND]->function = &mpir_op_land;
-  nm_mpi_internal_data.operators[MPI_BAND]->function = &mpir_op_band;
-  nm_mpi_internal_data.operators[MPI_LOR]->function = &mpir_op_lor;
-  nm_mpi_internal_data.operators[MPI_BOR]->function = &mpir_op_bor;
-  nm_mpi_internal_data.operators[MPI_LXOR]->function = &mpir_op_lxor;
-  nm_mpi_internal_data.operators[MPI_BXOR]->function = &mpir_op_bxor;
-  nm_mpi_internal_data.operators[MPI_MINLOC]->function = &mpir_op_minloc;
-  nm_mpi_internal_data.operators[MPI_MAXLOC]->function = &mpir_op_maxloc;
-
-  nm_mpi_internal_data.operators_pool = puk_int_vect_new();
-  for(i = 1; i < MPI_MAX; i++)
-    {
-      puk_int_vect_push_back(nm_mpi_internal_data.operators_pool, i);
-    }
-
   return MPI_SUCCESS;
 }
 
 int mpir_internal_exit(void)
 {
-  int i;
-  for(i = 0; i <= _MPI_DATATYPE_MAX; i++)
-    {
-      FREE_AND_SET_NULL(nm_mpi_internal_data.datatypes[i]);
-    }
-
-  puk_int_vect_delete(nm_mpi_internal_data.datatypes_pool);
-  nm_mpi_internal_data.datatypes_pool = NULL;
-
-  for(i = _MPI_OP_FIRST; i <= _MPI_OP_LAST; i++)
-    {
-      FREE_AND_SET_NULL(nm_mpi_internal_data.operators[i]);
-    }
-
-  puk_int_vect_delete(nm_mpi_internal_data.operators_pool);
-  nm_mpi_internal_data.operators_pool = NULL;
-
   return MPI_SUCCESS;
 }
 
@@ -978,51 +837,6 @@ int mpir_cancel(nm_mpi_request_t *p_req)
   }
 
   return err;
-}
-
-int mpir_op_create(MPI_User_function *function, int commute, MPI_Op *op)
-{
-  if(puk_int_vect_empty(nm_mpi_internal_data.operators_pool))
-    {
-      ERROR("Maximum number of operations created");
-      return MPI_ERR_INTERN;
-    }
-  else
-    {
-      *op = puk_int_vect_pop_back(nm_mpi_internal_data.operators_pool);
-      
-      nm_mpi_internal_data.operators[*op] = malloc(sizeof(mpir_operator_t));
-      nm_mpi_internal_data.operators[*op]->function = function;
-      nm_mpi_internal_data.operators[*op]->commute = commute;
-      return MPI_SUCCESS;
-    }
-}
-
-int mpir_op_free(MPI_Op *op)
-{
-  if (*op > NUMBER_OF_OPERATORS || nm_mpi_internal_data.operators[*op] == NULL) 
-    {
-      ERROR("Operator %d unknown\n", *op);
-      return MPI_ERR_OTHER;
-    }
-  else
-    {
-      FREE_AND_SET_NULL(nm_mpi_internal_data.operators[*op]);
-      puk_int_vect_push_back(nm_mpi_internal_data.operators_pool, *op);
-      *op = MPI_OP_NULL;
-      return MPI_SUCCESS;
-    }
-}
-
-mpir_operator_t *mpir_get_operator(MPI_Op op)
- {
-  if (nm_mpi_internal_data.operators[op] != NULL) {
-    return nm_mpi_internal_data.operators[op];
-  }
-  else {
-    ERROR("Operation %d unknown", op);
-    return NULL;
-  }
 }
 
 

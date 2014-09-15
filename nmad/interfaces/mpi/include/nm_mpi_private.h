@@ -139,14 +139,10 @@ typedef struct nm_mpi_request_s
   void *buffer;
 } __attribute__((__may_alias__)) nm_mpi_request_t;
 
-PUK_VECT_TYPE(nm_mpi_request, nm_mpi_request_t*);
-
 /* @} */
 
 /** @name Reduce operators */
 /* @{ */
-/** Maximum number of reduce operators */
-#define NUMBER_OF_OPERATORS (_MPI_OP_LAST+1)
 
 /** Internal reduce operators */
 typedef struct mpir_operator_s {
@@ -157,8 +153,6 @@ typedef struct mpir_operator_s {
 
 /** @name Datatypes */
 /* @{ */
-/** Maximum number of datatypes */
-#define NUMBER_OF_DATATYPES 2048
 
 /** Types of datatypes */
 typedef enum {
@@ -212,16 +206,6 @@ typedef struct nm_mpi_datatype_s
 /** Internal data */
 struct nm_mpi_internal_data_s
 {
-  /** all the defined datatypes */
-  nm_mpi_datatype_t *datatypes[NUMBER_OF_DATATYPES];
-  /** pool of ids of datatypes that can be created by end-users */
-  puk_int_vect_t datatypes_pool;
-
-  /** all the defined reduce operations */
-  mpir_operator_t *operators[NUMBER_OF_OPERATORS];
-  /** pool of ids of reduce operations that can be created by end-users */
-  puk_int_vect_t operators_pool;
-
   /** total number of incoming messages */
   int 		     nb_incoming_msg;
   /** total number of outgoing messages */
@@ -247,6 +231,14 @@ void nm_mpi_request_init(void);
 void nm_mpi_comm_init(void);
 
 void nm_mpi_comm_exit(void);
+
+void nm_mpi_datatype_init(void);
+
+void nm_mpi_datatype_exit(void);
+
+void nm_mpi_coll_init(void);
+
+void nm_mpi_coll_exit(void);
 
 /* Accessor functions */
 

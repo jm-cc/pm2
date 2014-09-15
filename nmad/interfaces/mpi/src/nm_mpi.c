@@ -90,6 +90,8 @@ int mpi_init(int *argc, char ***argv)
   MPI_NMAD_LOG_IN();
   nm_launcher_init(argc, *argv);
   nm_mpi_comm_init();
+  nm_mpi_datatype_init();
+  nm_mpi_coll_init();
   mpir_internal_init();
   nm_mpi_request_init();
   init_done = 1;
@@ -123,6 +125,9 @@ int mpi_finalize(void)
   MPI_NMAD_LOG_IN();
   mpi_barrier(MPI_COMM_WORLD);
   err = mpir_internal_exit();
+  nm_mpi_datatype_exit;
+  nm_mpi_coll_exit();
+  nm_mpi_comm_exit();
   init_done = 0;
   MPI_NMAD_LOG_OUT();
   return err;

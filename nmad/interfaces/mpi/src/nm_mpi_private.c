@@ -195,20 +195,6 @@ int mpir_internal_init(void)
       puk_int_vect_push_back(nm_mpi_internal_data.operators_pool, i);
     }
 
-  /** Store the gate id of all the other processes */
-  nm_mpi_internal_data.gates = malloc(global_size * sizeof(nm_gate_t));
-  nm_mpi_internal_data.dests = puk_hashtable_new_ptr();
-
-  for(dest = 0; dest < global_size; dest++)
-    {
-      nm_gate_t gate;
-      nm_launcher_get_gate(dest, &gate);
-      nm_mpi_internal_data.gates[dest] = gate;
-      assert(gate != NM_ANY_GATE);
-      intptr_t rank_as_ptr = dest + 1;
-      puk_hashtable_insert(nm_mpi_internal_data.dests, gate, (void*)rank_as_ptr);
-    }
-
   return MPI_SUCCESS;
 }
 
@@ -230,9 +216,6 @@ int mpir_internal_exit(void)
 
   puk_int_vect_delete(nm_mpi_internal_data.operators_pool);
   nm_mpi_internal_data.operators_pool = NULL;
-
-  FREE_AND_SET_NULL(nm_mpi_internal_data.gates);
-  puk_hashtable_delete(nm_mpi_internal_data.dests);
 
   return MPI_SUCCESS;
 }

@@ -80,33 +80,20 @@ static struct
 __PUK_SYM_INTERNAL
 void nm_mpi_comm_init(void)
 {
-  int global_size  = -1;
-  int process_rank = -1;
-  nm_launcher_get_size(&global_size);
-  nm_launcher_get_rank(&process_rank);
-
-    /** Initialise data for communicators */
   nm_mpi_communicators.communicators[MPI_COMM_NULL] = NULL;
 
-  nm_mpi_communicators.communicators[MPI_COMM_WORLD] = malloc(sizeof(nm_mpi_communicator_t));
-  nm_mpi_communicators.communicators[MPI_COMM_WORLD]->communicator_id = MPI_COMM_WORLD;
-  nm_mpi_communicators.communicators[MPI_COMM_WORLD]->size = global_size;
-  nm_mpi_communicators.communicators[MPI_COMM_WORLD]->rank = process_rank;
-  nm_mpi_communicators.communicators[MPI_COMM_WORLD]->global_ranks = malloc(global_size * sizeof(int));
-  int i;
-  for(i=0 ; i<global_size ; i++)
-    {
-      nm_mpi_communicators.communicators[MPI_COMM_WORLD]->global_ranks[i] = i;
-    }
+  nm_mpi_communicator_t*p_comm_world = malloc(sizeof(nm_mpi_communicator_t));
+  p_comm_world->communicator_id = MPI_COMM_WORLD;
+  p_comm_world->p_comm = nm_comm_world();
+  nm_mpi_communicators.communicators[MPI_COMM_WORLD] = p_comm_world;
 
-  nm_mpi_communicators.communicators[MPI_COMM_SELF] = malloc(sizeof(nm_mpi_communicator_t));
-  nm_mpi_communicators.communicators[MPI_COMM_SELF]->communicator_id = MPI_COMM_SELF;
-  nm_mpi_communicators.communicators[MPI_COMM_SELF]->size = 1;
-  nm_mpi_communicators.communicators[MPI_COMM_SELF]->rank = process_rank;
-  nm_mpi_communicators.communicators[MPI_COMM_SELF]->global_ranks = malloc(1 * sizeof(int));
-  nm_mpi_communicators.communicators[MPI_COMM_SELF]->global_ranks[0] = process_rank;
+  nm_mpi_communicator_t*p_comm_self = malloc(sizeof(nm_mpi_communicator_t));
+  p_comm_self->communicator_id = MPI_COMM_SELF;
+  p_comm_self->p_comm = nm_comm_self();
+  nm_mpi_communicators.communicators[MPI_COMM_SELF] = p_comm_self;
 
   nm_mpi_communicators.communicators_pool = puk_int_vect_new();
+  int i;
   for(i = _MPI_COMM_OFFSET; i < NUMBER_OF_COMMUNICATORS; i++)
     {
       puk_int_vect_push_back(nm_mpi_communicators.communicators_pool, i);
@@ -116,9 +103,9 @@ void nm_mpi_comm_init(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_comm_exit(void)
 {
-  FREE_AND_SET_NULL(nm_mpi_communicators.communicators[MPI_COMM_WORLD]->global_ranks);
+  nm_comm_destroy(nm_mpi_communicators.communicators[MPI_COMM_WORLD]->p_comm);
   FREE_AND_SET_NULL(nm_mpi_communicators.communicators[MPI_COMM_WORLD]);
-  FREE_AND_SET_NULL(nm_mpi_communicators.communicators[MPI_COMM_SELF]->global_ranks);
+  nm_comm_destroy(nm_mpi_communicators.communicators[MPI_COMM_SELF]->p_comm);
   FREE_AND_SET_NULL(nm_mpi_communicators.communicators[MPI_COMM_SELF]);
 
   puk_int_vect_delete(nm_mpi_communicators.communicators_pool);
@@ -128,33 +115,32 @@ void nm_mpi_comm_exit(void)
 __PUK_SYM_INTERNAL
 nm_gate_t nm_mpi_communicator_get_gate(nm_mpi_communicator_t*p_comm, int node)
 {
-  return nm_mpi_internal_data.gates[node];
+  return nm_comm_get_gate(p_comm->p_comm, node);
 }
 
 __PUK_SYM_INTERNAL
-int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t gate)
+int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t p_gate)
 {
-  intptr_t rank_as_ptr = (intptr_t)puk_hashtable_lookup(nm_mpi_internal_data.dests, gate);
-  return (rank_as_ptr - 1);
+  return nm_comm_get_dest(p_comm->p_comm, p_gate);
 }
 
 int mpi_comm_size(MPI_Comm comm, int *size)
 {
-  MPI_NMAD_LOG_IN();
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
-  *size = p_comm->size;
-  MPI_NMAD_LOG_OUT();
+  if(size)
+    {
+      *size = nm_comm_size(p_comm->p_comm);
+    }
   return MPI_SUCCESS;
 }
 
 int mpi_comm_rank(MPI_Comm comm, int *rank)
 {
-  MPI_NMAD_LOG_IN();
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
-  *rank = p_comm->rank;
-  MPI_NMAD_TRACE("My comm rank is %d\n", *rank);
-
-  MPI_NMAD_LOG_OUT();
+  if(rank)
+    {
+      *rank = nm_comm_rank(p_comm->p_comm);
+    }
   return MPI_SUCCESS;
 }
 
@@ -192,170 +178,133 @@ int mpi_comm_group(MPI_Comm comm, MPI_Group *group)
   return MPI_SUCCESS;
 }
 
-static int nodecmp(const void *v1, const void *v2) 
+/** a node participating in a mpi_coll_split */
+struct nm_mpi_comm_split_node_s
 {
-  int **node1 = (int **)v1;
-  int **node2 = (int **)v2;
-  return ((*node1)[1] - (*node2)[1]);
+  int color;
+  int key;
+  int rank;
+};
+/** sort by color major, key minor */
+static int nodecmp(const void*v1, const void*v2) 
+{
+  const struct nm_mpi_comm_split_node_s*n1 = v1;
+  const struct nm_mpi_comm_split_node_s*n2 = v2;
+  if(n1->color < n2->color)
+    return -1;
+  else if(n1->color > n2->color)
+    return +1;
+  else
+    return (n1->key - n2->key);
 }
 
-int mpi_comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
+int mpi_comm_split(MPI_Comm oldcomm, int color, int key, MPI_Comm *newcomm)
 {
-  int *sendbuf, *recvbuf;
-  int i, j, nb_conodes;
-  int **conodes;
-  nm_mpi_communicator_t *p_comm;
-  nm_mpi_communicator_t *p_new_comm;
+  const int root = 0; /* rank 0 in oldcomm is root */
+#warning TODO- use private tag
+  const int tag = 0xFF001010;
+  int i;
+  nm_mpi_communicator_t *p_old_comm = nm_mpi_communicator_get(oldcomm);
+  const int comm_size = nm_comm_size(p_old_comm->p_comm);
+  const int rank = nm_comm_rank(p_old_comm->p_comm);
+  struct nm_mpi_comm_split_node_s local_node = { .color = color, .key = key, .rank = rank};
+  struct nm_mpi_comm_split_node_s*all_nodes = malloc(comm_size * sizeof(struct nm_mpi_comm_split_node_s));
 
-  MPI_NMAD_LOG_IN();
-
-  p_comm = nm_mpi_communicator_get(comm);
-
-  sendbuf = malloc(3*p_comm->size*sizeof(int));
-  for(i=0 ; i<p_comm->size*3 ; i+=3) {
-    sendbuf[i] = color;
-    sendbuf[i+1] = key;
-    sendbuf[i+2] = p_comm->global_ranks[p_comm->rank];
-  }
-  recvbuf = malloc(3*p_comm->size*sizeof(int));
-
-#ifdef DEBUG
-  MPI_NMAD_TRACE("[%d] Sending: ", p_comm->rank);
-  for(i=0 ; i<p_comm->size*3 ; i++) {
-    MPI_NMAD_TRACE("%d ", sendbuf[i]);
-  }
-  MPI_NMAD_TRACE("\n");
-#endif /* DEBUG */
-
-  mpi_alltoall(sendbuf, 3, MPI_INT, recvbuf, 3, MPI_INT, comm);
-
-#ifdef DEBUG
-  MPI_NMAD_TRACE("[%d] Received: ", p_comm->rank);
-  for(i=0 ; i<p_comm->size*3 ; i++) {
-    MPI_NMAD_TRACE("%d ", recvbuf[i]);
-  }
-  MPI_NMAD_TRACE("\n");
-#endif /* DEBUG */
-
-  // Counting how many nodes have the same color
-  nb_conodes=0;
-  for(i=0 ; i<p_comm->size*3 ; i+=3) {
-    if (recvbuf[i] == color) {
-      nb_conodes++;
+  nm_coll_gather(p_old_comm->p_comm, root, &local_node, sizeof(local_node), all_nodes, sizeof(local_node), tag);
+  if(rank == root)
+    {
+      qsort(all_nodes, comm_size, sizeof(struct nm_mpi_comm_split_node_s), &nodecmp);
     }
-  }
-
-  // Accumulating the nodes with the same color into an array
-  conodes = malloc(nb_conodes*sizeof(int*));
-  j=0;
-  for(i=0 ; i<p_comm->size*3 ; i+=3) {
-    if (recvbuf[i] == color) {
-      conodes[j] = &recvbuf[i];
-      j++;
+  nm_coll_bcast(p_old_comm->p_comm, root, all_nodes, comm_size * sizeof(struct nm_mpi_comm_split_node_s), tag);
+  int lastcol = all_nodes[0].color;
+  nm_group_t newgroup = nm_gate_vect_new();
+  for(i = 0; i <= comm_size; i++)
+    {
+      if((i == comm_size) || (all_nodes[i].color != lastcol))
+	{
+	  /* new color => create sub-communicator */
+	  nm_comm_t p_nm_comm = nm_comm_create(p_old_comm->p_comm, newgroup);
+	  if(color == MPI_UNDEFINED)
+	    {
+	      *newcomm = MPI_COMM_NULL;
+	    }
+	  else if(p_nm_comm != NULL)
+	    {
+	      *newcomm = puk_int_vect_pop_back(nm_mpi_communicators.communicators_pool);
+	      nm_mpi_communicator_t *p_new_comm = malloc(sizeof(nm_mpi_communicator_t));
+	      p_new_comm->communicator_id = *newcomm;
+	      p_new_comm->p_comm = p_nm_comm;
+	      nm_mpi_communicators.communicators[*newcomm] = p_new_comm;
+	    }
+	  nm_group_free(newgroup);
+	  newgroup = NULL;
+	  if(i < comm_size)
+	    {
+	      lastcol = all_nodes[i + 1].color;
+	      newgroup = nm_gate_vect_new();
+	    }
+	  else
+	    {
+	      break;
+	    }
+	}
+      nm_gate_vect_push_back(newgroup, nm_gate_vect_at(nm_comm_group(p_old_comm->p_comm), all_nodes[i].rank));
     }
-  }
-
-  // Sorting the nodes with the same color according to their key
-  qsort(conodes, nb_conodes, sizeof(int *), &nodecmp);
-  
-#ifdef DEBUG
-  MPI_NMAD_TRACE("[%d] Conodes: ", p_comm->rank);
-  for(i=0 ; i<nb_conodes ; i++) {
-    int *ptr = conodes[i];
-    MPI_NMAD_TRACE("[%d %d %d] ", *ptr, *(ptr+1), *(ptr+2));
-  }
-  MPI_NMAD_TRACE("\n");
-#endif /* DEBUG */
-
-  // Create the new communicator
-  if (color == MPI_UNDEFINED) {
-    *newcomm = MPI_COMM_NULL;
-  }
-  else {
-    mpi_comm_dup(comm, newcomm);
-    p_new_comm = nm_mpi_communicator_get(*newcomm);
-    p_new_comm->size = nb_conodes;
-    FREE_AND_SET_NULL(p_new_comm->global_ranks);
-    p_new_comm->global_ranks = malloc(nb_conodes*sizeof(int));
-    for(i=0 ; i<nb_conodes ; i++) {
-      int *ptr = conodes[i];
-      if ((*(ptr+1) == key) && (*(ptr+2) == p_comm->global_ranks[p_comm->rank])) {
-        p_new_comm->rank = i;
-      }
-      if (*ptr == color) {
-        p_new_comm->global_ranks[i] = *(ptr+2);
-      }
-    }
-  }
-
-  // free the allocated area
-  FREE_AND_SET_NULL(conodes);
-  FREE_AND_SET_NULL(sendbuf);
-  FREE_AND_SET_NULL(recvbuf);
-
-  MPI_NMAD_LOG_OUT();
+  FREE_AND_SET_NULL(all_nodes);
   return MPI_SUCCESS;
 }
 
-int mpi_comm_dup(MPI_Comm comm, MPI_Comm *newcomm)
+int mpi_comm_dup(MPI_Comm oldcomm, MPI_Comm *newcomm)
 {
+  nm_mpi_communicator_t *p_old_comm = nm_mpi_communicator_get(oldcomm);
   if (puk_int_vect_empty(nm_mpi_communicators.communicators_pool))
     {
       ERROR("Maximum number of communicators created");
       return MPI_ERR_INTERN;
     }
-  else if (nm_mpi_communicators.communicators[comm] == NULL)
+  else if(p_old_comm == NULL)
     {
-      ERROR("Communicator %d is not valid", comm);
+      ERROR("Communicator %d is not valid", oldcomm);
       return MPI_ERR_OTHER;
     }
   else
     {
-    int i;
-    *newcomm = puk_int_vect_pop_back(nm_mpi_communicators.communicators_pool);
-
-    nm_mpi_communicators.communicators[*newcomm] = malloc(sizeof(nm_mpi_communicator_t));
-    nm_mpi_communicators.communicators[*newcomm]->communicator_id = *newcomm;
-    nm_mpi_communicators.communicators[*newcomm]->size = nm_mpi_communicators.communicators[comm]->size;
-    nm_mpi_communicators.communicators[*newcomm]->rank = nm_mpi_communicators.communicators[comm]->rank;
-    nm_mpi_communicators.communicators[*newcomm]->global_ranks = malloc(nm_mpi_communicators.communicators[*newcomm]->size * sizeof(int));
-    for(i=0 ; i<nm_mpi_communicators.communicators[*newcomm]->size ; i++) {
-      nm_mpi_communicators.communicators[*newcomm]->global_ranks[i] = nm_mpi_communicators.communicators[comm]->global_ranks[i];
+      *newcomm = puk_int_vect_pop_back(nm_mpi_communicators.communicators_pool);
+      nm_mpi_communicator_t*p_new_comm = malloc(sizeof(nm_mpi_communicator_t));
+      p_new_comm->communicator_id = *newcomm;
+      p_new_comm->p_comm = nm_comm_dup(p_old_comm->p_comm);
+      nm_mpi_communicators.communicators[*newcomm] = p_new_comm;
     }
-
-    return MPI_SUCCESS;
-  }
+  return MPI_SUCCESS;
 }
 
 int mpi_comm_free(MPI_Comm *comm)
 {
-  if (*comm == MPI_COMM_WORLD)
+  if(*comm == MPI_COMM_WORLD)
     {
       ERROR("Cannot free communicator MPI_COMM_WORLD");
       return MPI_ERR_OTHER;
     }
-  else if (*comm == MPI_COMM_SELF)
+  else if(*comm == MPI_COMM_SELF)
     {
       ERROR("Cannot free communicator MPI_COMM_SELF");
       return MPI_ERR_OTHER;
     }
-  else if (*comm <= 0 || *comm >= NUMBER_OF_COMMUNICATORS || nm_mpi_communicators.communicators[*comm] == NULL)
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(*comm);
+  if(p_comm == NULL)
     {
       ERROR("Communicator %d unknown\n", *comm);
       return MPI_ERR_OTHER;
     }
-  else 
-    {
-      free(nm_mpi_communicators.communicators[*comm]->global_ranks);
-      free(nm_mpi_communicators.communicators[*comm]);
-      nm_mpi_communicators.communicators[*comm] = NULL;
-      puk_int_vect_push_back(nm_mpi_communicators.communicators_pool, *comm);
-      *comm = MPI_COMM_NULL;
-      return MPI_SUCCESS;
-    }
+  nm_mpi_communicators.communicators[*comm] = NULL;
+  nm_comm_destroy(p_comm->p_comm);
+  free(p_comm);
+  puk_int_vect_push_back(nm_mpi_communicators.communicators_pool, *comm);
+  *comm = MPI_COMM_NULL;
+  return MPI_SUCCESS;
 }
 
-int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*_comm_cart)
+int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*newcomm)
 {
   MPI_Comm comm_cart = MPI_COMM_NULL;
   int err = MPI_Comm_dup(comm_old, &comm_cart);
@@ -363,16 +312,16 @@ int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reo
     {
       return err;
     }
-  nm_mpi_communicator_t*mpir_comm_cart = nm_mpi_communicator_get(comm_cart);
-  struct nm_mpi_cart_topology_s*cart = &mpir_comm_cart->cart_topology;
+  nm_mpi_communicator_t*p_old_comm = nm_mpi_communicator_get(comm_old);
+  struct nm_mpi_cart_topology_s cart;
   if(ndims < 0)
     {
       return MPI_ERR_DIMS;
     }
-  cart->ndims = ndims;
-  cart->dims = malloc(ndims * sizeof(int));
-  cart->periods = malloc(ndims * sizeof(int));
-  cart->size = 1;
+  cart.ndims = ndims;
+  cart.dims = malloc(ndims * sizeof(int));
+  cart.periods = malloc(ndims * sizeof(int));
+  cart.size = 1;
   int d;
   for(d = 0; d < ndims; d++)
     {
@@ -380,15 +329,25 @@ int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reo
 	{
 	  return MPI_ERR_DIMS;
 	}
-      cart->dims[d] = dims[d];
-      cart->periods[d] = periods[d];
-      cart->size *= dims[d];
+      cart.dims[d] = dims[d];
+      cart.periods[d] = periods[d];
+      cart.size *= dims[d];
     }
-  if(cart->size > mpir_comm_cart->size)
+  if(cart.size > nm_comm_size(p_old_comm->p_comm))
     return MPI_ERR_TOPOLOGY;
-  if(mpir_comm_cart->rank >= cart->size)
-    mpir_comm_cart->rank = MPI_PROC_NULL;
-  *_comm_cart = comm_cart;
+  nm_group_t cart_group = nm_gate_vect_new();
+  int i;
+  for(i = 0; i < nm_comm_size(p_old_comm->p_comm); i++)
+    {
+      nm_gate_vect_push_back(cart_group, nm_comm_get_gate(p_old_comm->p_comm, i));
+    }
+  *newcomm = puk_int_vect_pop_back(nm_mpi_communicators.communicators_pool);
+  nm_mpi_communicator_t*p_new_comm = malloc(sizeof(nm_mpi_communicator_t));
+  p_new_comm->communicator_id = *newcomm;
+  p_new_comm->p_comm = nm_comm_create(p_old_comm->p_comm, cart_group);
+  p_new_comm->cart_topology = cart;
+  nm_mpi_communicators.communicators[*newcomm] = p_new_comm;
+  nm_group_free(cart_group);
   return MPI_SUCCESS;
 }
 
@@ -447,9 +406,9 @@ int mpi_cart_rank(MPI_Comm comm, int*coords, int*rank)
 
 int mpi_cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest)
 {
-  nm_mpi_communicator_t*mpir_comm_cart = nm_mpi_communicator_get(comm);
-  struct nm_mpi_cart_topology_s*cart = &mpir_comm_cart->cart_topology;
-  const int rank = mpir_comm_cart->rank;
+  nm_mpi_communicator_t*p_comm_cart = nm_mpi_communicator_get(comm);
+  struct nm_mpi_cart_topology_s*cart = &p_comm_cart->cart_topology;
+  const int rank = nm_comm_rank(p_comm_cart->p_comm);
   if(direction < 0 || direction >= cart->ndims)
     return MPI_ERR_ARG;
   if(displ == 0)
@@ -468,31 +427,18 @@ int mpi_cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest
 
 int mpi_group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group group2, int *ranks2)
 {
-  int i, j, x;
-  nm_mpi_communicator_t *p_comm;
-  nm_mpi_communicator_t *p_comm2;
-
-  MPI_NMAD_LOG_IN();
-
-  p_comm = nm_mpi_communicator_get(group1);
-  p_comm2 = nm_mpi_communicator_get(group2);
-  for(i=0 ; i<n ; i++) {
-    ranks2[i] = MPI_UNDEFINED;
-    if (ranks1[i] < p_comm->size) {
-      x = p_comm->global_ranks[ranks1[i]];
-      for(j=0 ; j<p_comm2->size ; j++) {
-        if (p_comm2->global_ranks[j] == x) {
-          ranks2[i] = j;
-          break;
-        }
-      }
+  nm_group_t p_group1 = nm_comm_group(nm_mpi_communicator_get(group1)->p_comm);
+  nm_group_t p_group2 = nm_comm_group(nm_mpi_communicator_get(group2)->p_comm);
+  int err = nm_group_translate_ranks(p_group1, n, ranks1, p_group2, ranks2);
+  if(err != 0)
+    return MPI_ERR_RANK;
+  /* translate undefined ranks */
+  int i;
+  for(i = 0; i < n; i++)
+    {
+      if(ranks2[i] == -1)
+	ranks2[i] = MPI_UNDEFINED;
     }
-    else {
-      return MPI_ERR_RANK;
-    }
-  }
-
-  MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 

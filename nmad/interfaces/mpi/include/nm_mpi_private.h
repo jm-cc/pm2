@@ -34,6 +34,7 @@
 #include <nm_pack_interface.h>
 #include <tbx.h>
 #include <nm_launcher.h>
+#include <nm_coll.h>
 
 #include "mpi.h"
 
@@ -69,12 +70,8 @@ typedef struct nm_mpi_communicator_s
 {
   /** id of the communicator */
   unsigned int communicator_id;
-  /** number of nodes in the communicator */
-  int size;
-  /** local rank of the node itself */
-  int rank;
-  /** ranks of all the communicator nodes in the \ref MPI_COMM_WORLD communicator */
-  int *global_ranks;
+  /** underlying nmad communicator */
+  nm_comm_t p_comm;
   /** cartesian topology */
   struct nm_mpi_cart_topology_s
   {
@@ -229,14 +226,9 @@ struct nm_mpi_internal_data_s
   /** total number of outgoing messages */
   int 		     nb_outgoing_msg;
 
-  /** gives the in/out gate attached to a node */
-  nm_gate_t          *gates;
-  /** gives the node attached to a gate (hash: nm_gate_t:gate -> intptr_t:(rank+1))*/
-  puk_hashtable_t dests;
-
   /** NewMad session */
   nm_session_t p_session;
-
+#warning TODO- use per-communicator session
 };
 extern struct nm_mpi_internal_data_s nm_mpi_internal_data;
 /* @} */

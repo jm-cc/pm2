@@ -132,20 +132,26 @@ nm_comm_t nm_comm_dup(nm_comm_t comm)
 
 nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
 {
-  int rank = nm_group_rank(group);
+  const int newrank = nm_group_rank(group);
+  const int newroot = 0;
   struct nm_comm_create_header_s
   {
     int commit;
     char session_name[32];
   } header = { .session_name = { '\0'} };
-  const int root = 0;
+  const int root = nm_comm_get_dest(comm, nm_gate_vect_at(group, newroot));
   const nm_tag_t tag = NM_COLL_TAG_COMM_CREATE;
-  if(rank == -1)
+  if(newrank == -1)
     {
       /* not in group, wait for others */
       do
 	{
 	  nm_coll_bcast(comm, root, &header, sizeof(header), tag);
+	  if(header.commit == 0)
+	    {
+	      int ack = 1;
+	      nm_coll_gather(comm, root, &ack, sizeof(ack), NULL, 0, tag);
+	    }
 	}
       while(header.commit != 1);
       return NULL;
@@ -154,12 +160,12 @@ nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
     {
       nm_session_t p_session = NULL;
       nm_comm_t newcomm = malloc(sizeof(struct nm_comm_s));
-      newcomm->rank = rank;
+      newcomm->rank = newrank;
       newcomm->group = nm_group_dup(group);
       newcomm->p_session = NULL;
       while(newcomm->p_session == NULL)
 	{
-	  if(rank == root)
+	  if(newrank == newroot)
 	    {
 	      snprintf(&header.session_name[0], 32, "nm_comm-%08x", (unsigned)random());
 	      int rc = nm_session_open(&p_session, header.session_name);

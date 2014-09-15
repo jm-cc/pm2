@@ -214,13 +214,15 @@ int nm_group_translate_ranks(nm_group_t p_group1, int n, int*ranks1, nm_group_t 
     {
       ranks2[i] = -1;
       nm_gate_t p_gate = nm_group_get_gate(p_group1, i);
-      if(p_gate == NULL)
-	return -1;
-      nm_gate_vect_itor_t pp_gate = nm_gate_vect_find(p_group2, p_gate);
-      if(pp_gate == NULL)
-	return -1;
-      const int rank = nm_gate_vect_rank(p_group2, pp_gate);
-      ranks2[i] = rank;
+      if(p_gate != NULL)
+	{
+	  nm_gate_vect_itor_t pp_gate = nm_gate_vect_find(p_group2, p_gate);
+	  if(pp_gate != NULL)
+	    {
+	      const int rank = nm_gate_vect_rank(p_group2, pp_gate);
+	      ranks2[i] = rank;
+	    }
+	}
     }
   return 0;
 }

@@ -100,6 +100,20 @@ int MPI_Group_incl(MPI_Group group,
 		   int n,
 		   int*ranks,
 		   MPI_Group*newgroup);
+
+/**
+ * Creates a new group from ranges of ranks in an existing group
+ * @param group group
+ * @param n number of triplets in array ranges
+ * @param ranges a one-dimensional array of integer triplets, of the form (first rank, last rank, stride) indicating ranks in group or processes to be included in newgroup.
+ * @param newgroup new group derived from above, in the order defined by ranges
+ * @return MPI status
+ */
+int MPI_Group_range_incl(MPI_Group group,
+			 int n,
+			 int ranges[][3], 
+			 MPI_Group*newgroup);
+
 /**
  * Produces a group by reordering an existing group and taking only unlisted members
  * @param group group
@@ -112,6 +126,19 @@ int MPI_Group_excl(MPI_Group group,
 		   int n,
 		   int*ranks,
 		   MPI_Group*newgroup);
+
+/**
+ * Produces a group by excluding ranges of processes from an existing group
+ * @param group group
+ * @param n number of triplets in array ranges
+ * @param ranges a one-dimensional array of integer triplets of the form (first rank, last rank, stride), indicating the ranks in group of processes to be excluded from the output group newgroup 
+ * @param newgroup new group derived from above, preserving the order in group
+ * @return MPI status
+ */
+int MPI_Group_range_excl(MPI_Group group,
+			 int n,
+			 int ranges[][3], 
+			 MPI_Group*newgroup);
 
 /**
  * Frees a group

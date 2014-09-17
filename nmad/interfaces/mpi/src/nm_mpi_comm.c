@@ -82,8 +82,14 @@ int MPI_Group_compare(MPI_Group group1, MPI_Group group2, int*result)
 int MPI_Group_incl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup) 
   __attribute__ ((alias ("mpi_group_incl")));
 
+int MPI_Group_range_incl(MPI_Group group, int n, int ranges[][3], MPI_Group*newgroup)
+  __attribute__ ((alias ("mpi_group_range_incl")));
+
 int MPI_Group_excl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup) 
   __attribute__ ((alias ("mpi_group_excl")));
+
+int MPI_Group_range_excl(MPI_Group group, int n, int ranges[][3], MPI_Group*newgroup)
+  __attribute__ ((alias ("mpi_group_range_excl")));
 
 int MPI_Group_free(MPI_Group*group)
   __attribute__ ((alias ("mpi_group_free")));
@@ -699,6 +705,31 @@ int mpi_group_incl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup)
   return MPI_SUCCESS;
 }
 
+int mpi_group_range_incl(MPI_Group group, int n, int ranges[][3], MPI_Group*newgroup)
+{
+  nm_mpi_group_t*p_group = nm_mpi_group_get(group);
+  int size = nm_group_size(p_group->p_nm_group);
+  int*ranks = malloc(sizeof(int) * size);
+  int k = 0;
+  int i;
+  for(i = 0; i < n; i++)
+    {
+      const int first  = ranges[i][0];
+      const int last   = ranges[i][1];
+      const int stride = ranges[i][2];
+      const int e = (last - first) / stride;
+      int j;
+      for(j = 0; j < e; j++)
+	{
+	  ranks[k] = first + j * stride;
+	  k++;
+	}
+    }
+  int err = mpi_group_incl(group, k, ranks, newgroup);
+  free(ranks);
+  return err;
+}
+
 int mpi_group_excl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup)
 {
   if((n == 0) || (group == MPI_GROUP_EMPTY))
@@ -714,6 +745,32 @@ int mpi_group_excl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup)
     }
   return MPI_SUCCESS;
 }
+
+int mpi_group_range_excl(MPI_Group group, int n, int ranges[][3], MPI_Group*newgroup)
+{
+  nm_mpi_group_t*p_group = nm_mpi_group_get(group);
+  int size = nm_group_size(p_group->p_nm_group);
+  int*ranks = malloc(sizeof(int) * size);
+  int k = 0;
+  int i;
+  for(i = 0; i < n; i++)
+    {
+      const int first  = ranges[i][0];
+      const int last   = ranges[i][1];
+      const int stride = ranges[i][2];
+      const int e = (last - first) / stride;
+      int j;
+      for(j = 0; j < e; j++)
+	{
+	  ranks[k] = first + j * stride;
+	  k++;
+	}
+    }
+  int err = mpi_group_excl(group, k, ranks, newgroup);
+  free(ranks);
+  return err;
+}
+
 
 int mpi_group_free(MPI_Group*group)
 {

@@ -161,7 +161,7 @@ void nm_mpi_comm_init(void)
   nm_mpi_communicator_t*p_comm_self = malloc(sizeof(nm_mpi_communicator_t));
   p_comm_self->communicator_id = MPI_COMM_SELF;
   p_comm_self->p_comm = nm_comm_self();
-  p_comm_world->p_group = nm_mpi_group_get(nm_mpi_group_alloc(nm_comm_group(nm_comm_self())));
+  p_comm_self->p_group = nm_mpi_group_get(nm_mpi_group_alloc(nm_comm_group(nm_comm_self())));
 
   nm_mpi_handle_store((struct nm_mpi_handle_s){ .ptr.p_comm = p_comm_world, .kind = NM_MPI_HANDLE_COMMUNICATOR }, 
 		      MPI_COMM_WORLD);
@@ -324,7 +324,7 @@ int mpi_comm_size(MPI_Comm comm, int *size)
 
 int mpi_comm_rank(MPI_Comm comm, int *rank)
 {
-  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   if(rank)
     {
       *rank = nm_comm_rank(p_comm->p_comm);

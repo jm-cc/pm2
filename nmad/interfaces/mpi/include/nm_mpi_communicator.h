@@ -28,6 +28,38 @@
 /* @{ */
 
 /**
+ * Produces a group by reordering an existing group and taking only listed members
+ * @param group group
+ * @param n number of elements in array ranks
+ * @param ranks ranks of processes in group to appear in newgroup
+ * @param newgroup new group derived from above, in the order defined by ranks
+ * @return MPI status
+ */
+int MPI_Group_incl(MPI_Group group,
+		   int n,
+		   int*ranks,
+		   MPI_Group*newgroup);
+/**
+ * Produces a group by reordering an existing group and taking only unlisted members
+ * @param group group
+ * @param n number of elements in array ranks
+ * @param ranks ranks of processes in group to appear in newgroup
+ * @param newgroup new group derived from above, in the order defined by ranks
+ * @return MPI status
+ */
+int MPI_Group_excl(MPI_Group group,
+		   int n,
+		   int*ranks,
+		   MPI_Group*newgroup);
+
+/**
+ * Frees a group
+ * @param group group to free
+ * @return MPI status
+ */
+int MPI_Group_free(MPI_Group*group);
+
+/**
  * Returns a handle to the group of the given communicator.
  * @param comm communicator
  * @param group group corresponding to comm

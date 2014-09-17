@@ -131,6 +131,10 @@ typedef int MPI_Request;
 
 /** Group handle */
 typedef int MPI_Group;
+/** Invalid group handle */
+#define MPI_GROUP_NULL ((MPI_Group)0)
+/** Predefined empty group */
+#define MPI_GROUP_EMPTY ((MPI_Group)3)
 
 /** @name Communicators */
 /** Communicator handle */
@@ -141,8 +145,6 @@ typedef int MPI_Comm;
 #define MPI_COMM_WORLD ((MPI_Comm)1)
 /** Communicator that includes only the process itself. */
 #define MPI_COMM_SELF  ((MPI_Comm)2)
-/** Offset of the first user MPI communicator */
-#define _MPI_COMM_OFFSET ((MPI_Comm)3)
 /* @} */
 
 /** @name Basic datatypes */

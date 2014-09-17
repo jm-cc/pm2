@@ -53,10 +53,15 @@
 #define MPI_NMAD_LOG_OUT()              NM_LOG_OUT()
 /* @} */
 
-#define ERROR(...) { fprintf(stderr, "\n\n************\nERROR: %s\n\t", __TBX_FUNCTION__); fprintf(stderr, __VA_ARGS__); \
-                     fprintf(stderr, "\n************\n\n"); fflush(stderr); \
-                     MPI_Abort(MPI_COMM_WORLD, 1); \
-                   }
+#define ERROR(...) {							\
+    fprintf(stderr, "\n# madmpi: FATAL- %s\n\t", __TBX_FUNCTION__);	\
+    fprintf(stderr, __VA_ARGS__);					\
+    void*buffer[100];							\
+    int nptrs = backtrace(buffer, 100);					\
+    backtrace_symbols_fd(buffer, nptrs, STDERR_FILENO);			\
+    fflush(stderr);							\
+    MPI_Abort(MPI_COMM_WORLD, 1);					\
+  }
 
 #define FREE_AND_SET_NULL(p) free(p); p = NULL;
 
@@ -66,6 +71,13 @@
 /** @name Communicators */
 /* @{ */
 
+/** Internal group */
+typedef struct nm_mpi_group_s
+{
+  unsigned int group_id;  /**< ID of the group (handle) */
+  nm_group_t p_nm_group;  /**< underlying nmad group */
+} nm_mpi_group_t;
+
 /** Internal communicator */
 typedef struct nm_mpi_communicator_s
 {
@@ -73,6 +85,8 @@ typedef struct nm_mpi_communicator_s
   unsigned int communicator_id;
   /** underlying nmad communicator */
   nm_comm_t p_comm;
+  /** group attached to communicator */
+  nm_mpi_group_t*p_group;
   /** cartesian topology */
   struct nm_mpi_cart_topology_s
   {
@@ -865,6 +879,12 @@ int mpi_group_translate_ranks(MPI_Group group1,
 			      int *ranks1,
 			      MPI_Group group2,
 			      int *ranks2);
+
+int mpi_group_incl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup);
+
+int mpi_group_excl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup);
+
+int mpi_group_free(MPI_Group*group);
 
 int mpi_status_c2f(MPI_Status *c_status,
 		   MPI_Fint *f_status);

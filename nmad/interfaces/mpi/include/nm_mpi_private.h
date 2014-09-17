@@ -860,8 +860,9 @@ int mpi_type_struct(int count,
                     MPI_Datatype *array_of_types,
                     MPI_Datatype *newtype);
 
-int mpi_comm_group(MPI_Comm comm,
-		   MPI_Group *group);
+int mpi_comm_group(MPI_Comm comm, MPI_Group *group);
+
+int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm);
 
 
 int mpi_comm_split(MPI_Comm comm,

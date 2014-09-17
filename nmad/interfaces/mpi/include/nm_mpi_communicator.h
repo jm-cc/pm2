@@ -137,6 +137,16 @@ int MPI_Group_translate_ranks(MPI_Group group1,
 			      int *ranks2);
 
 /**
+ * Creates a new communicator
+ * @param comm communicator
+ * @param group group, which is a subset of the group of comm
+ * @param newcomm new communicator
+ */
+int MPI_Comm_create(MPI_Comm comm,
+		    MPI_Group group,
+		    MPI_Comm*newcomm);
+
+/**
  * Returns a handle to the group of the given communicator.
  * @param comm communicator
  * @param group group corresponding to comm

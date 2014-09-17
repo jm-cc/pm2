@@ -406,10 +406,10 @@ static inline int mpir_isend_wrapper(nm_mpi_request_t *p_req)
 			p_req->count * p_datatype->size, &(p_req->request_nmad));
       break;
     case MPI_SYNCHRONOUS_MODE:
-      TBX_FAILURE("madmpi: synchronous mode not supported yet.\n");
+      ERROR("madmpi: synchronous mode not supported yet.\n");
       break;
     default:
-      TBX_FAILUREF("madmpi: unkown mode %d for isend", p_req->communication_mode);
+      ERROR("madmpi: unkown mode %d for isend", p_req->communication_mode);
       break;
     }
   MPI_NMAD_TRACE("Sent finished\n");

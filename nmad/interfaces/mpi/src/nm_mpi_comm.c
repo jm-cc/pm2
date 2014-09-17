@@ -23,20 +23,20 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 /* ********************************************************* */
 
-int MPI_Comm_size(MPI_Comm comm,
-		  int *size) __attribute__ ((alias ("mpi_comm_size")));
+int MPI_Comm_size(MPI_Comm comm, int*size)
+  __attribute__ ((alias ("mpi_comm_size")));
 
-int MPI_Comm_rank(MPI_Comm comm,
-                  int *rank) __attribute__ ((alias ("mpi_comm_rank")));
+int MPI_Comm_rank(MPI_Comm comm, int*rank)
+  __attribute__ ((alias ("mpi_comm_rank")));
 
-int MPI_Attr_get(MPI_Comm comm,
-		 int keyval,
-		 void *attr_value,
-		 int *flag ) __attribute__ ((alias ("mpi_attr_get")));
+int MPI_Attr_get(MPI_Comm comm, int keyval, void*attr_value, int *flag)
+  __attribute__ ((alias ("mpi_attr_get")));
 
-int MPI_Comm_group(MPI_Comm comm,
-		   MPI_Group *group) __attribute__ ((alias ("mpi_comm_group")));
+int MPI_Comm_group(MPI_Comm comm, MPI_Group*group)
+  __attribute__ ((alias ("mpi_comm_group")));
 
+int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
+  __attribute__ ((alias ("mpi_comm_create")));
 
 int MPI_Comm_split(MPI_Comm comm,
 		   int color,
@@ -359,6 +359,15 @@ int mpi_comm_group(MPI_Comm comm, MPI_Group *group)
       nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
       *group = p_comm->p_group->group_id;
     }
+  return MPI_SUCCESS;
+}
+
+int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
+{
+  nm_mpi_communicator_t*p_old_comm = nm_mpi_communicator_get(comm);
+  nm_mpi_group_t*p_new_group = nm_mpi_group_get(group);
+  nm_comm_t p_nm_comm = nm_comm_create(p_old_comm->p_comm, p_new_group->p_nm_group);
+  *newcomm = nm_mpi_communicator_alloc(p_nm_comm);
   return MPI_SUCCESS;
 }
 

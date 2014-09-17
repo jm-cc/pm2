@@ -39,14 +39,14 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  fprintf(stdout, "[%d] Communicator %d with %d nodes, local rank %d\n", rank, MPI_COMM_WORLD, size, rank);
+  fprintf(stdout, "[%d] Communicator MPI_COMM_WORLD with %d nodes, local rank %d\n", rank, size, rank);
 
   color = (rank % 2);
 
   MPI_Comm_split(MPI_COMM_WORLD, color, rank*10, &comm);
   MPI_Comm_size(comm, &newsize);
   MPI_Comm_rank(comm, &newrank);
-  fprintf(stdout, "[%d] Communicator %d with %d nodes, local rank %d, color %d\n", rank, comm, newsize, newrank, color);
+  fprintf(stdout, "[%d] Communicator with %d nodes, local rank %d, color %d\n", rank, newsize, newrank, color);
   fflush(stdout);
 
   MPI_Barrier(MPI_COMM_WORLD);

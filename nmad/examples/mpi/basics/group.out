@@ -1,16 +1,16 @@
-[0] Communicator 1 with 4 nodes, local rank 0
-[0] Communicator 31 with 2 nodes, local rank 0, color 0
-[0] New ranks[0, -32766, 1, -32766]
+[0] Communicator MPI_COMM_WORLD with 4 nodes, local rank 0
+[0] Communicator with 2 nodes, local rank 0, color 0
+[0] New ranks[0, -32766, -32766, -32766]
 [0] Old ranks[0, 3, 0, 2]
-[1] Communicator 1 with 4 nodes, local rank 1
-[1] Communicator 31 with 2 nodes, local rank 0, color 1
-[1] New ranks[-32766, 0, -32766, 1]
+[1] Communicator MPI_COMM_WORLD with 4 nodes, local rank 1
+[1] Communicator with 2 nodes, local rank 0, color 1
+[1] New ranks[0, -32766, -32766, -32766]
 [1] Old ranks[0, 3, 0, 2]
-[2] Communicator 1 with 4 nodes, local rank 2
-[2] Communicator 31 with 2 nodes, local rank 1, color 0
-[2] New ranks[0, -32766, 1, -32766]
+[2] Communicator MPI_COMM_WORLD with 4 nodes, local rank 2
+[2] Communicator with 2 nodes, local rank 1, color 0
+[2] New ranks[1, -32766, -32766, -32766]
 [2] Old ranks[0, 3, 0, 2]
-[3] Communicator 1 with 4 nodes, local rank 3
-[3] Communicator 31 with 2 nodes, local rank 1, color 1
-[3] New ranks[-32766, 0, -32766, 1]
+[3] Communicator MPI_COMM_WORLD with 4 nodes, local rank 3
+[3] Communicator with 2 nodes, local rank 1, color 1
+[3] New ranks[1, -32766, -32766, -32766]
 [3] Old ranks[0, 3, 0, 2]

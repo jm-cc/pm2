@@ -61,6 +61,24 @@ int MPI_Cart_rank(MPI_Comm comm, int*coords, int*rank)
 int MPI_Cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest)
   __attribute__ ((alias ("mpi_cart_shift")));
 
+int MPI_Group_size(MPI_Group group, int*size)
+  __attribute__ ((alias ("mpi_group_size")));
+
+int MPI_Group_rank(MPI_Group group, int*rank)
+  __attribute__ ((alias ("mpi_group_rank")));
+
+int MPI_Group_union(MPI_Group group1, MPI_Group group2, MPI_Group*newgroup)
+  __attribute__ ((alias ("mpi_group_union")));
+
+int MPI_Group_intersection(MPI_Group group1, MPI_Group group2, MPI_Group*newgroup)
+  __attribute__ ((alias ("mpi_group_intersection")));
+
+int MPI_Group_difference(MPI_Group group1, MPI_Group group2, MPI_Group*newgroup)
+  __attribute__ ((alias ("mpi_group_difference")));
+
+int MPI_Group_compare(MPI_Group group1, MPI_Group group2, int*result)
+  __attribute__ ((alias ("mpi_group_compare")));
+
 int MPI_Group_incl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup) 
   __attribute__ ((alias ("mpi_group_incl")));
 
@@ -572,6 +590,90 @@ int mpi_cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest
   mpi_cart_rank(comm, coords, source);
   free(coords);
   return MPI_SUCCESS;
+}
+
+int mpi_group_size(MPI_Group group, int*size)
+{
+  nm_mpi_group_t*p_group = nm_mpi_group_get(group);
+  if(p_group == NULL)
+    return MPI_ERR_GROUP;
+  *size = nm_group_size(p_group->p_nm_group);
+  return MPI_SUCCESS;
+}
+
+int mpi_group_rank(MPI_Group group, int*rank)
+{
+  nm_mpi_group_t*p_group = nm_mpi_group_get(group);
+  if(p_group == NULL)
+    return MPI_ERR_GROUP;
+  const int r = nm_group_rank(p_group->p_nm_group);
+  if(r == -1)
+    {
+      *rank = MPI_UNDEFINED;
+    }
+  else
+    {
+      *rank = r;
+    }
+  return MPI_SUCCESS;
+}
+
+int mpi_group_union(MPI_Group group1,
+		    MPI_Group group2,
+		    MPI_Group*newgroup)
+{
+  nm_mpi_group_t*p_group1 = nm_mpi_group_get(group1);
+  nm_mpi_group_t*p_group2 = nm_mpi_group_get(group2);
+  if((p_group1 == NULL) || (p_group2 == NULL))
+    return MPI_ERR_GROUP;
+  nm_group_t p_new_nm_group = nm_group_union(p_group1->p_nm_group, p_group2->p_nm_group);
+  MPI_Group new_id = nm_mpi_group_alloc(p_new_nm_group);
+  *newgroup = new_id;
+  return MPI_SUCCESS;  
+}
+
+int mpi_group_intersection(MPI_Group group1,
+			   MPI_Group group2,
+			   MPI_Group*newgroup)
+{
+  nm_mpi_group_t*p_group1 = nm_mpi_group_get(group1);
+  nm_mpi_group_t*p_group2 = nm_mpi_group_get(group2);
+  if((p_group1 == NULL) || (p_group2 == NULL))
+    return MPI_ERR_GROUP;
+  nm_group_t p_new_nm_group = nm_group_intersection(p_group1->p_nm_group, p_group2->p_nm_group);
+  MPI_Group new_id = nm_mpi_group_alloc(p_new_nm_group);
+  *newgroup = new_id;
+  return MPI_SUCCESS;  
+}
+
+int mpi_group_difference(MPI_Group group1,
+			 MPI_Group group2,
+			 MPI_Group*newgroup)
+{
+  nm_mpi_group_t*p_group1 = nm_mpi_group_get(group1);
+  nm_mpi_group_t*p_group2 = nm_mpi_group_get(group2);
+  if((p_group1 == NULL) || (p_group2 == NULL))
+    return MPI_ERR_GROUP;
+  nm_group_t p_new_nm_group = nm_group_difference(p_group1->p_nm_group, p_group2->p_nm_group);
+  MPI_Group new_id = nm_mpi_group_alloc(p_new_nm_group);
+  *newgroup = new_id;
+  return MPI_SUCCESS;  
+}
+
+int mpi_group_compare(MPI_Group group1, MPI_Group group2, int*result)
+{
+  nm_mpi_group_t*p_group1 = nm_mpi_group_get(group1);
+  nm_mpi_group_t*p_group2 = nm_mpi_group_get(group2);
+  if((p_group1 == NULL) || (p_group2 == NULL))
+    return MPI_ERR_GROUP;
+  int r = nm_group_compare(p_group1->p_nm_group, p_group2->p_nm_group);
+  if(r == NM_GROUP_IDENT)
+    *result = MPI_IDENT;
+  else if(r == NM_GROUP_SIMILAR)
+    *result = MPI_SIMILAR;
+  else
+    *result = MPI_UNEQUAL;
+  return MPI_SUCCESS;  
 }
 
 int mpi_group_incl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup)

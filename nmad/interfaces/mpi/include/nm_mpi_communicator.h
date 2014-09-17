@@ -28,6 +28,67 @@
 /* @{ */
 
 /**
+ * Returns the size of a group
+ * @param group group
+ * @param size number of processes in the group
+ * @return MPI status
+ */
+int MPI_Group_size(MPI_Group group,
+		   int*size);
+/**
+ * Returns the rank of this process in the given group
+ * @param group group
+ * @apram rank rank of the calling process in group, or MPI_UNDEFINED if the process is not a member
+ * @return MPI status
+ */
+int MPI_Group_rank(MPI_Group group,
+		   int *rank);
+
+/**
+ * Produces a group by combining two groups
+ * @param group1 first group
+ * @param group2 second group
+ * @param newgroup union group
+ * @return MPI status
+ */
+int MPI_Group_union(MPI_Group group1,
+		    MPI_Group group2,
+		    MPI_Group*newgroup);
+
+/**
+ * Produces a group as the intersection of two existing groups
+ * @param group1 first group
+ * @param group2 second group
+ * @param newgroup intersection group
+ * @return MPI status
+ */
+int MPI_Group_intersection(MPI_Group group1,
+			   MPI_Group group2,
+			   MPI_Group*newgroup);
+
+/**
+ * Produces a group from the difference of two groups
+ * @param group1 first group
+ * @param group2 second group
+ * @param newgroup difference group
+ * @return MPI status
+ */
+int MPI_Group_difference(MPI_Group group1,
+			 MPI_Group group2,
+			 MPI_Group*newgroup);
+
+/**
+ * Compares two groups
+ * @param group1 first group
+ * @param group2 second group
+ * @param result nteger which is MPI_IDENT if the order and members of the two groups are the same, MPI_SIMILAR if only the members are the same, and MPI_UNEQUAL otherwise
+ * @return MPI status
+ */
+int MPI_Group_compare(MPI_Group group1,
+		      MPI_Group group2,
+		      int*result);
+
+/**
  * Produces a group by reordering an existing group and taking only listed members
  * @param group group
  * @param n number of elements in array ranks
@@ -58,6 +119,22 @@ int MPI_Group_excl(MPI_Group group,
  * @return MPI status
  */
 int MPI_Group_free(MPI_Group*group);
+
+/**
+ * Maps the rank of a set of processes in group1 to their rank in
+ * group2.
+ * @param group1 group
+ * @param n number of ranks in ranks1 and ranks2 arrays
+ * @param ranks1 array of zero or more valid ranks in group1
+ * @param group2 group
+ * @param ranks2 array of corresponding ranks in group2
+ * @return MPI status
+ */
+int MPI_Group_translate_ranks(MPI_Group group1,
+			      int n,
+			      int *ranks1,
+			      MPI_Group group2,
+			      int *ranks2);
 
 /**
  * Returns a handle to the group of the given communicator.
@@ -107,21 +184,6 @@ int MPI_Cart_rank(MPI_Comm comm, int*coords, int*rank);
 
 int MPI_Cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest);
 
-/**
- * Maps the rank of a set of processes in group1 to their rank in
- * group2.
- * @param group1 group
- * @param n number of ranks in ranks1 and ranks2 arrays
- * @param ranks1 array of zero or more valid ranks in group1
- * @param group2 group
- * @param ranks2 array of corresponding ranks in group2
- * @return MPI status
- */
-int MPI_Group_translate_ranks(MPI_Group group1,
-			      int n,
-			      int *ranks1,
-			      MPI_Group group2,
-			      int *ranks2);
 
 /* @}*/
 /* @}*/

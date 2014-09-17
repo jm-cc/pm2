@@ -874,17 +874,29 @@ int mpi_comm_dup(MPI_Comm comm,
 
 int mpi_comm_free(MPI_Comm *comm);
 
-int mpi_group_translate_ranks(MPI_Group group1,
-			      int n,
-			      int *ranks1,
-			      MPI_Group group2,
-			      int *ranks2);
+int mpi_group_size(MPI_Group group, int*size);
+
+int mpi_group_rank(MPI_Group group, int*rank);
+
+int mpi_group_union(MPI_Group group1, MPI_Group group2, MPI_Group*newgroup);
+
+int mpi_group_intersection(MPI_Group group1, MPI_Group group2, MPI_Group*newgroup);
+
+int mpi_group_difference(MPI_Group group1, MPI_Group group2, MPI_Group*newgroup);
+
+int mpi_group_compare(MPI_Group group1, MPI_Group group2, int*result);
 
 int mpi_group_incl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup);
 
 int mpi_group_excl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup);
 
 int mpi_group_free(MPI_Group*group);
+
+int mpi_group_translate_ranks(MPI_Group group1,
+			      int n,
+			      int *ranks1,
+			      MPI_Group group2,
+			      int *ranks2);
 
 int mpi_status_c2f(MPI_Status *c_status,
 		   MPI_Fint *f_status);

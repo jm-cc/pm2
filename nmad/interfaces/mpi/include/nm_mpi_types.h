@@ -136,6 +136,14 @@ typedef int MPI_Group;
 /** Predefined empty group */
 #define MPI_GROUP_EMPTY ((MPI_Group)3)
 
+/* group comparison return value */
+/** same memebers and order */
+#define MPI_IDENT   0x01
+/** same members, order differs */
+#define MPI_SIMILAR 0x02
+/** members differ */
+#define MPI_UNEQUAL 0x04
+
 /** @name Communicators */
 /** Communicator handle */
 typedef int MPI_Comm;

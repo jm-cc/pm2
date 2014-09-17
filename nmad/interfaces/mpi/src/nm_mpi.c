@@ -125,7 +125,7 @@ int mpi_finalize(void)
   MPI_NMAD_LOG_IN();
   mpi_barrier(MPI_COMM_WORLD);
   err = mpir_internal_exit();
-  nm_mpi_datatype_exit;
+  nm_mpi_datatype_exit();
   nm_mpi_coll_exit();
   nm_mpi_comm_exit();
   init_done = 0;
@@ -413,8 +413,3 @@ MPI_Fint MPI_Win_c2f(MPI_Win win)
   return MPI_ERR_UNKNOWN;
 }
 
-int MPI_Group_size(MPI_Group group, int *size)
-{
-  ERROR("<%s> not implemented\n", __FUNCTION__);
-  return MPI_ERR_UNKNOWN;
-}

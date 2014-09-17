@@ -175,9 +175,7 @@ void nm_mpi_comm_exit(void)
   nm_mpi_communicator_t*p_comm_world = nm_mpi_communicator_get(MPI_COMM_WORLD);
   nm_mpi_communicator_t*p_comm_self = nm_mpi_communicator_get(MPI_COMM_SELF);
 
-  nm_comm_destroy(p_comm_world->p_comm);
   FREE_AND_SET_NULL(p_comm_world);
-  nm_comm_destroy(p_comm_self->p_comm);
   FREE_AND_SET_NULL(p_comm_self);
 
   nm_mpi_handle_vect_delete(nm_mpi_communicators.handles);

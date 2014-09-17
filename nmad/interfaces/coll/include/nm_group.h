@@ -39,9 +39,9 @@ typedef nm_gate_vect_t nm_group_t;
  * MPI_Group_incl	creates a group from listed members of an existing group
  * MPI_Group_excl	creates a group excluding listed members of an existing group
  * MPI_Group_free	marks a group for deallocation
+ * MPI_Group_translate_ranks	translates ranks of processes in one group to those in another group
 
  TODO-
- MPI_Group_translate_ranks	translates ranks of processes in one group to those in another group
  MPI_Group_range_incl	creates a group according to first rank, stride, last rank
  MPI_Group_range_excl	creates a group by deleting according to first rank, stride, last rank
 

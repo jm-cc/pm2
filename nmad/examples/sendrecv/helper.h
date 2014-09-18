@@ -17,10 +17,12 @@
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
 #include <tbx.h>
+#include <nm_coll.h>
 
 static int is_server = -1;
 static nm_session_t p_session = NULL;
 static nm_gate_t p_gate = NULL;
+static nm_comm_t p_comm = NULL;
 
 enum nm_example_topo_e
   {
@@ -65,37 +67,9 @@ static void nm_examples_exit(void)
 /* barrier accross all nodes */
 static void nm_examples_barrier(nm_tag_t tag)
 {
-  int i;
-  int rank = -1, size = -1;;
-  nm_launcher_get_rank(&rank);
-  nm_launcher_get_size(&size);
-  if(rank == 0)
+  if(p_comm == NULL)
     {
-      for(i = 1; i < size; i++)
-	{
-	  nm_gate_t g;
-	  nm_launcher_get_gate(i, &g);
-	  nm_sr_request_t request;
-	  nm_sr_irecv(p_session, g, tag, NULL, 0, &request);
-	  nm_sr_rwait(p_session, &request);
-	}
-      for(i = 1; i < size; i++)
-	{
-	  nm_gate_t g;
-	  nm_launcher_get_gate(i, &g);
-	  nm_sr_request_t request;
-	  nm_sr_isend(p_session, g, tag, NULL, 0, &request);
-	  nm_sr_swait(p_session, &request);
-	}
+      p_comm = nm_comm_dup(nm_comm_world());
     }
-  else
-    {
-      nm_gate_t g;
-      nm_launcher_get_gate(0, &g);
-      nm_sr_request_t request;
-      nm_sr_isend(p_session, g, tag, NULL, 0, &request);
-      nm_sr_swait(p_session, &request);
-      nm_sr_irecv(p_session, g, tag, NULL, 0, &request);
-      nm_sr_rwait(p_session, &request);
-    }
+  nm_coll_barrier(p_comm, tag);
 }

@@ -163,6 +163,10 @@ static void nm_session_init_drivers(void)
 
 int nm_session_open(nm_session_t*pp_session, const char*label)
 {
+#ifndef NM_TAGS_AS_INDIRECT_HASH
+  fprintf(stderr, "# session: nm_session_open()- current flavor does not support multiple sessions. Please activate configure option '--enable-taghuge'.\n");
+  abort();
+#endif /* NM_TAG_AS_INDIRECT_HASH */
   if(nm_session.sessions == NULL || nm_session.p_core == NULL)
     {
       fprintf(stderr, "# session: FATAL- not yet initialized. Cannot open new session.\n");

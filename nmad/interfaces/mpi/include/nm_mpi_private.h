@@ -85,8 +85,6 @@ typedef struct nm_mpi_communicator_s
   unsigned int communicator_id;
   /** underlying nmad communicator */
   nm_comm_t p_comm;
-  /** group attached to communicator */
-  nm_mpi_group_t*p_group;
   /** cartesian topology */
   struct nm_mpi_cart_topology_s
   {

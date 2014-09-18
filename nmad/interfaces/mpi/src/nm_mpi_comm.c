@@ -157,11 +157,9 @@ void nm_mpi_comm_init(void)
   nm_mpi_communicator_t*p_comm_world = malloc(sizeof(nm_mpi_communicator_t));
   p_comm_world->communicator_id = MPI_COMM_WORLD;
   p_comm_world->p_comm = nm_comm_world();
-  p_comm_world->p_group = nm_mpi_group_get(nm_mpi_group_alloc(nm_comm_group(nm_comm_world())));
   nm_mpi_communicator_t*p_comm_self = malloc(sizeof(nm_mpi_communicator_t));
   p_comm_self->communicator_id = MPI_COMM_SELF;
   p_comm_self->p_comm = nm_comm_self();
-  p_comm_self->p_group = nm_mpi_group_get(nm_mpi_group_alloc(nm_comm_group(nm_comm_self())));
 
   nm_mpi_handle_store((struct nm_mpi_handle_s){ .ptr.p_comm = p_comm_world, .kind = NM_MPI_HANDLE_COMMUNICATOR }, 
 		      MPI_COMM_WORLD);
@@ -277,8 +275,6 @@ static int nm_mpi_communicator_alloc(nm_comm_t p_nm_comm)
   const int newcomm = nm_mpi_handle_alloc((struct nm_mpi_handle_s){ .ptr.p_comm = p_new_comm, .kind = NM_MPI_HANDLE_COMMUNICATOR });
   p_new_comm->communicator_id = newcomm;
   p_new_comm->p_comm = p_nm_comm;
-  int newgroup = nm_mpi_group_alloc(nm_comm_group(p_nm_comm));
-  p_new_comm->p_group = nm_mpi_group_get(newgroup);
   return newcomm;
 }
 
@@ -360,10 +356,14 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void *attr_value, int *flag)
 
 int mpi_comm_group(MPI_Comm comm, MPI_Group *group)
 {
-  if((comm != MPI_COMM_NULL) && (group != NULL))
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL)
+    return MPI_ERR_COMM;
+  if(group != NULL)
     {
-      nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-      *group = p_comm->p_group->group_id;
+      nm_group_t p_nm_group = nm_group_dup(nm_comm_group(p_comm->p_comm));
+      MPI_Group new_id = nm_mpi_group_alloc(p_nm_group);
+      *group = new_id;
     }
   return MPI_SUCCESS;
 }
@@ -371,8 +371,14 @@ int mpi_comm_group(MPI_Comm comm, MPI_Group *group)
 int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
 {
   nm_mpi_communicator_t*p_old_comm = nm_mpi_communicator_get(comm);
+  if(p_old_comm == NULL)
+    return MPI_ERR_COMM;
   nm_mpi_group_t*p_new_group = nm_mpi_group_get(group);
+  if(p_new_group == NULL)
+    return MPI_ERR_GROUP;
   nm_comm_t p_nm_comm = nm_comm_create(p_old_comm->p_comm, p_new_group->p_nm_group);
+  if(p_nm_comm == NULL)
+    return MPI_ERR_COMM;
   *newcomm = nm_mpi_communicator_alloc(p_nm_comm);
   return MPI_SUCCESS;
 }
@@ -717,12 +723,18 @@ int mpi_group_range_incl(MPI_Group group, int n, int ranges[][3], MPI_Group*newg
       const int first  = ranges[i][0];
       const int last   = ranges[i][1];
       const int stride = ranges[i][2];
+      if(stride == 0)
+	ERROR("stride = 0");
       const int e = (last - first) / stride;
       int j;
-      for(j = 0; j < e; j++)
+      for(j = 0; j <= e; j++)
 	{
-	  ranks[k] = first + j * stride;
-	  k++;
+	  const int r = first + j * stride;
+	  if(r >= 0 && r < size)
+	    {
+	      ranks[k] = r;
+	      k++;
+	    }
 	}
     }
   int err = mpi_group_incl(group, k, ranks, newgroup);
@@ -758,12 +770,18 @@ int mpi_group_range_excl(MPI_Group group, int n, int ranges[][3], MPI_Group*newg
       const int first  = ranges[i][0];
       const int last   = ranges[i][1];
       const int stride = ranges[i][2];
+      if(stride == 0)
+	ERROR("stride = 0");
       const int e = (last - first) / stride;
       int j;
-      for(j = 0; j < e; j++)
+      for(j = 0; j <= e; j++)
 	{
-	  ranks[k] = first + j * stride;
-	  k++;
+	  const int r = first + j * stride;
+	  if(r >= 0 && r < size)
+	    {
+	      ranks[k] = r;
+	      k++;
+	    }
 	}
     }
   int err = mpi_group_excl(group, k, ranks, newgroup);

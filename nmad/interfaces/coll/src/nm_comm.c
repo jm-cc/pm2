@@ -76,7 +76,7 @@ nm_comm_t nm_comm_self(void)
       nm_gate_t p_gate = NULL;
       nm_launcher_get_gate(launcher_rank, &p_gate);
       nm_group_t group = nm_gate_vect_new();
-      nm_gate_vect_push_back(group,p_gate);
+      nm_gate_vect_push_back(group, p_gate);
       nm_comm_t comm = malloc(sizeof(struct nm_comm_s));
       comm->group = group;
       comm->rank = nm_group_rank(group);

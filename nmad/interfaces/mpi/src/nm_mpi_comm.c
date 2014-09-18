@@ -138,6 +138,9 @@ static inline void nm_mpi_handle_free(int id);
 static int nm_mpi_group_alloc(nm_group_t p_nm_group);
 static nm_mpi_group_t*nm_mpi_group_get(MPI_Group comm);
 
+static int nm_mpi_communicator_alloc(nm_comm_t p_nm_comm);
+static void nm_mpi_communicator_free(nm_mpi_communicator_t*p_comm);
+
 __PUK_SYM_INTERNAL
 void nm_mpi_comm_init(void)
 {
@@ -179,8 +182,8 @@ void nm_mpi_comm_exit(void)
   nm_mpi_communicator_t*p_comm_world = nm_mpi_communicator_get(MPI_COMM_WORLD);
   nm_mpi_communicator_t*p_comm_self = nm_mpi_communicator_get(MPI_COMM_SELF);
 
-  FREE_AND_SET_NULL(p_comm_world);
-  FREE_AND_SET_NULL(p_comm_self);
+  nm_mpi_communicator_free(p_comm_world);
+  nm_mpi_communicator_free(p_comm_self);
 
   nm_mpi_handle_vect_delete(nm_mpi_communicators.handles);
   puk_int_vect_delete(nm_mpi_communicators.pool);

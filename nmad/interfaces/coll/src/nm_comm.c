@@ -174,7 +174,7 @@ nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
 		  int i;
 		  header.commit = 0;
 		  nm_coll_bcast(comm, root, &header, sizeof(header), tag);
-		  int*acks = malloc(sizeof(int) * nm_group_size(group));
+		  int*acks = malloc(sizeof(int) * nm_comm_size(comm));
 		  int ack = 1;
 		  nm_coll_gather(comm, root, &ack, sizeof(ack), acks, sizeof(ack), tag);
 		  int total_acks = 0;

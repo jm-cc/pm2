@@ -89,8 +89,11 @@ int nm_group_compare(nm_group_t group1, nm_group_t group2)
       nm_gate_vect_itor_t i1 = nm_gate_vect_begin(group1), i2 = nm_gate_vect_begin(group2);
       while(i1 != nm_gate_vect_end(group1) && i2 != nm_gate_vect_end(group2))
 	{
-	  if(*i1 != *i2)
+	  nm_gate_t p_gate1 = *i1, p_gate2 = *i2;
+	  if(p_gate1 != p_gate2)
 	    break;
+	  i1 = nm_gate_vect_next(i1);
+	  i2 = nm_gate_vect_next(i2);
 	}
       if(i1 == nm_gate_vect_end(group1) && i2 == nm_gate_vect_end(group2))
 	{
@@ -116,13 +119,11 @@ nm_group_t nm_group_incl(nm_group_t group, int n, const int ranks[])
   for(i = 0; i < n; i++)
     {
       int r = ranks[i];
-      if(r < 0 || r > nm_gate_vect_size(group))
+      if(r >= 0 && r < nm_gate_vect_size(group))
 	{
-	  nm_gate_vect_delete(newgroup);
-	  return NULL;
+	  nm_gate_t p_gate = nm_gate_vect_at(group, r);
+	  nm_gate_vect_push_back(newgroup, p_gate);
 	}
-      nm_gate_t p_gate = nm_gate_vect_at(group, r);
-      nm_gate_vect_push_back(newgroup, p_gate);
     }
   return newgroup;
 }
@@ -135,13 +136,11 @@ nm_group_t nm_group_excl(nm_group_t group, int n, const int ranks[])
   for(i = 0; i < n; i++)
     {
       int r = ranks[i];
-      if(r < 0 || r > nm_gate_vect_size(dupgroup))
+      if(r >= 0 && r < nm_gate_vect_size(dupgroup))
 	{
-	  nm_gate_vect_delete(dupgroup);
-	  return NULL;
+	  nm_gate_t*pp_gate = nm_gate_vect_ptr(dupgroup, r);
+	  *pp_gate = NULL;
 	}
-      nm_gate_t*pp_gate = nm_gate_vect_ptr(dupgroup, r);
-      *pp_gate = NULL;
     }
   /* compact vector */
   nm_gate_vect_itor_t v1, v2;

@@ -38,12 +38,12 @@ int main(int argc, char **argv) {
   }
 
   MPI_Comm_dup(MPI_COMM_WORLD, &comm1);
-  printf("Communicator 1 is %d\n", comm1);
+  printf("Communicator 1 opened\n", comm1);
   MPI_Comm_dup(MPI_COMM_WORLD, &comm2);
-  printf("Communicator 2 is %d\n", comm2);
+  printf("Communicator 2 opened\n", comm2);
   MPI_Comm_free(&comm1);
   MPI_Comm_dup(comm2, &comm1);
-  printf("Communicator 3 is %d\n", comm1);
+  printf("Communicator 3 opened\n", comm1);
 
   send_with_different_tags(rank);
   send_with_different_communicators(rank, comm1);

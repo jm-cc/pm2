@@ -112,13 +112,21 @@ typedef struct nm_mpi_communicator_s
 /** @name Requests */
 /* @{ */
 /** Type of a communication request */
-typedef int MPI_Request_type;
-#define NM_MPI_REQUEST_ZERO      ((MPI_Request_type)0)
-#define NM_MPI_REQUEST_SEND      ((MPI_Request_type)1)
-#define NM_MPI_REQUEST_RECV      ((MPI_Request_type)2)
-#define NM_MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
-#define NM_MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
-#define NM_MPI_REQUEST_CANCELLED ((MPI_Request_type)5)
+typedef int nm_mpi_request_type_t;
+#define NM_MPI_REQUEST_ZERO      ((nm_mpi_request_type_t)0)
+#define NM_MPI_REQUEST_SEND      ((nm_mpi_request_type_t)1)
+#define NM_MPI_REQUEST_RECV      ((nm_mpi_request_type_t)2)
+#define NM_MPI_REQUEST_PACK_SEND ((nm_mpi_request_type_t)3)
+#define NM_MPI_REQUEST_PACK_RECV ((nm_mpi_request_type_t)4)
+#define NM_MPI_REQUEST_CANCELLED ((nm_mpi_request_type_t)5)
+
+/** @name Extended modes */
+/* @{ */
+typedef int nm_mpi_communication_mode_t;
+#define NM_MPI_MODE_IMMEDIATE      ((nm_mpi_communication_mode_t)-1)
+#define NM_MPI_MODE_READY          ((nm_mpi_communication_mode_t)-2)
+#define NM_MPI_MODE_SYNCHRONOUS    ((nm_mpi_communication_mode_t)-3)
+/* @} */
 
 /** Internal communication request */
 typedef struct nm_mpi_request_s
@@ -126,9 +134,9 @@ typedef struct nm_mpi_request_s
   /* identifier of the request */
   MPI_Request request_id;
   /** type of the request */
-  MPI_Request_type request_type;
+  nm_mpi_request_type_t request_type;
   /** persistent type of the request */
-  MPI_Request_type request_persistent_type;
+  nm_mpi_request_type_t request_persistent_type;
 
   union
   {
@@ -153,7 +161,7 @@ typedef struct nm_mpi_request_s
   /** type of the exchanged data */
   struct nm_mpi_datatype_s*p_datatype;
   /** communication mode to be used when exchanging data */
-  MPI_Communication_Mode communication_mode;
+  nm_mpi_communication_mode_t communication_mode;
   /** gate of the destination or the source node */
   nm_gate_t gate;
   /** communicator used for communication */

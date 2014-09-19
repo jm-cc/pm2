@@ -191,7 +191,7 @@ static nm_mpi_request_t*nm_mpi_coll_isend(void*buffer, int count, nm_mpi_datatyp
   p_req->buffer                  = buffer;
   p_req->count                   = count;
   p_req->user_tag                = tag;
-  p_req->communication_mode      = MPI_IMMEDIATE_MODE;
+  p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
   p_req->p_comm                  = p_comm;
   int err = nm_mpi_isend(p_req, dest, p_comm);
   if(err != MPI_SUCCESS)
@@ -211,7 +211,7 @@ static nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatyp
   p_req->buffer                  = buffer;
   p_req->count                   = count;
   p_req->user_tag                = tag;
-  p_req->communication_mode      = MPI_IMMEDIATE_MODE;
+  p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
   p_req->p_comm                  = p_comm;
   int err = nm_mpi_irecv(p_req, source, p_comm);
   if(err != MPI_SUCCESS)

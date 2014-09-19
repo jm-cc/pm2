@@ -403,16 +403,17 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
       void *buffer = (p_datatype->is_contig == 1) ? p_req->buffer : p_req->contig_buffer;
       switch(p_req->communication_mode)
 	{
-	case MPI_IMMEDIATE_MODE:
+	case NM_MPI_MODE_IMMEDIATE:
 	  err = nm_sr_isend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer,
 			    p_req->count * p_datatype->size, &(p_req->request_nmad));
 	  break;
-	case MPI_READY_MODE:
+	case NM_MPI_MODE_READY:
 	  err = nm_sr_rsend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer,
 			    p_req->count * p_datatype->size, &(p_req->request_nmad));
 	  break;
-	case MPI_SYNCHRONOUS_MODE:
-	  ERROR("madmpi: synchronous mode not supported yet.\n");
+	case NM_MPI_MODE_SYNCHRONOUS:
+	  err = nm_sr_issend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer,
+			     p_req->count * p_datatype->size, &(p_req->request_nmad));
 	  break;
 	default:
 	  ERROR("madmpi: unkown mode %d for isend", p_req->communication_mode);

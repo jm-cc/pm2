@@ -141,15 +141,29 @@ int MPI_Recv_init(void* buf,
 
 /* ********************************************************* */
 
-int mpi_issend(void* buf,
-	       int count,
-	       MPI_Datatype datatype,
-	       int dest,
-               int tag,
-	       MPI_Comm comm,
-	       MPI_Request *request) {
-#warning Implement MPI_Issend !
-  return MPI_ERR_UNKNOWN;
+int mpi_issend(void*buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
+{
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc();
+  *request = p_req->request_id;
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  int err;
+  if(tbx_unlikely(tag == MPI_ANY_TAG))
+    {
+      ERROR("Cannot use MPI_ANY_TAG for send.");
+      return MPI_ERR_TAG;
+    }
+  p_req->request_type = NM_MPI_REQUEST_SEND;
+  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
+  p_req->request_ptr = NULL;
+  p_req->contig_buffer = NULL;
+  p_req->p_datatype = nm_mpi_datatype_get(datatype);
+  p_req->buffer = buffer;
+  p_req->count = count;
+  p_req->user_tag = nm_mpi_check_tag(tag);
+  p_req->communication_mode = NM_MPI_MODE_SYNCHRONOUS;
+  p_req->p_comm = p_comm;
+  err = nm_mpi_isend(p_req, dest, p_comm);
+  return err;
 }
 
 
@@ -170,16 +184,11 @@ int mpi_send(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, 
   MPI_Request           request = p_req->request_id;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
-
-  MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Sending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
-
-  if(tbx_unlikely(tag == MPI_ANY_TAG)) {
-    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
-
+  if(tbx_unlikely(tag == MPI_ANY_TAG))
+    {
+      ERROR("Cannot use MPI_ANY_TAG for send.");
+      return MPI_ERR_TAG;
+    }
   p_req->request_type = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->request_ptr = NULL;
@@ -188,14 +197,10 @@ int mpi_send(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, 
   p_req->buffer = buffer;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
-  p_req->communication_mode = MPI_IMMEDIATE_MODE;
+  p_req->communication_mode = NM_MPI_MODE_IMMEDIATE;
   p_req->p_comm = p_comm;
-
   err = nm_mpi_isend(p_req, dest, p_comm);
-
   mpi_wait(&request, MPI_STATUS_IGNORE);
-
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 
@@ -205,15 +210,11 @@ int mpi_isend(void *buffer, int count, MPI_Datatype datatype, int dest, int tag,
   *request = p_req->request_id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   int err;
-
-  MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
-
-  if(tbx_unlikely(tag == MPI_ANY_TAG)) {
-    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
+  if(tbx_unlikely(tag == MPI_ANY_TAG))
+    {
+      ERROR("Cannot use MPI_ANY_TAG for send.");
+      return MPI_ERR_TAG;
+    }
   p_req->request_type = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->request_ptr = NULL;
@@ -222,12 +223,9 @@ int mpi_isend(void *buffer, int count, MPI_Datatype datatype, int dest, int tag,
   p_req->buffer = buffer;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
-  p_req->communication_mode = MPI_IMMEDIATE_MODE;
+  p_req->communication_mode = NM_MPI_MODE_IMMEDIATE;
   p_req->p_comm = p_comm;
-
   err = nm_mpi_isend(p_req, dest, p_comm);
-
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 
@@ -237,15 +235,11 @@ int mpi_rsend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag,
   MPI_Request           request = p_req->request_id;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
-
-  MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Rsending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
-
-  if(tbx_unlikely(tag == MPI_ANY_TAG)) {
-    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
+  if(tbx_unlikely(tag == MPI_ANY_TAG))
+    {
+      ERROR("Cannot use MPI_ANY_TAG for send.");
+      return MPI_ERR_TAG;
+    }
   p_req->request_type = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->request_ptr = NULL;
@@ -254,45 +248,21 @@ int mpi_rsend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag,
   p_req->buffer = buffer;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
-  p_req->communication_mode = MPI_READY_MODE;
+  p_req->communication_mode = NM_MPI_MODE_READY;
   p_req->p_comm = p_comm;
-
   err = nm_mpi_isend(p_req, dest, p_comm);
-
   mpi_wait(&request, MPI_STATUS_IGNORE);
-
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 
 int mpi_ssend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 {
-  nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
-  nm_mpi_communicator_t  *p_comm = nm_mpi_communicator_get(comm);
-  int                   err = 0;
-
-  MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Ssending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
-
-  if(tbx_unlikely(tag == MPI_ANY_TAG)) {
-    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
-  p_req->request_type = NM_MPI_REQUEST_SEND;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
-  p_req->request_ptr = NULL;
-  p_req->contig_buffer = NULL;
-  p_req->p_datatype = nm_mpi_datatype_get(datatype);
-  p_req->buffer = buffer;
-  p_req->count = count;
-  p_req->user_tag = nm_mpi_check_tag(tag);
-  p_req->communication_mode = MPI_SYNCHRONOUS_MODE;
-  p_req->p_comm = p_comm;
-
-  err = nm_mpi_isend(p_req, dest, p_comm);
-
-  MPI_NMAD_LOG_OUT();
+  MPI_Request req;
+  int err = mpi_issend(buffer, count, datatype, dest, tag, comm, &req);
+  if(err == MPI_SUCCESS)
+    {
+      err = mpi_wait(&req, MPI_STATUS_IGNORE);
+    }
   return err;
 }
 
@@ -471,7 +441,7 @@ int mpi_send_init(void* buf, int count, MPI_Datatype datatype, int dest, int tag
   p_req->buffer = buf;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
-  p_req->communication_mode = MPI_IMMEDIATE_MODE;
+  p_req->communication_mode = NM_MPI_MODE_IMMEDIATE;
   p_req->p_comm = p_comm;
   int err = nm_mpi_isend_init(p_req, dest, p_comm);
   MPI_NMAD_LOG_OUT();

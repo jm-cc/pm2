@@ -224,14 +224,6 @@ typedef int MPI_Op;
 #define MPI_MAX_ERROR_STRING   512
 #define MPI_MAX_NAME_STRING    256
 
-/** @name Extended modes */
-/* @{ */
-typedef int MPI_Communication_Mode;
-#define MPI_IMMEDIATE_MODE      ((MPI_Communication_Mode)-1)
-#define MPI_READY_MODE          ((MPI_Communication_Mode)-2)
-#define MPI_SYNCHRONOUS_MODE    ((MPI_Communication_Mode)-3)
-/* @} */
-
 /** @name Error handlers */
 /* @{ */
 typedef int MPI_Errhandler;

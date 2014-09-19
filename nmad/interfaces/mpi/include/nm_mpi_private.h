@@ -100,12 +100,12 @@ typedef struct nm_mpi_communicator_s
 /* @{ */
 /** Type of a communication request */
 typedef int MPI_Request_type;
-#define MPI_REQUEST_ZERO      ((MPI_Request_type)0)
-#define MPI_REQUEST_SEND      ((MPI_Request_type)1)
-#define MPI_REQUEST_RECV      ((MPI_Request_type)2)
-#define MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
-#define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
-#define MPI_REQUEST_CANCELLED ((MPI_Request_type)5)
+#define NM_MPI_REQUEST_ZERO      ((MPI_Request_type)0)
+#define NM_MPI_REQUEST_SEND      ((MPI_Request_type)1)
+#define NM_MPI_REQUEST_RECV      ((MPI_Request_type)2)
+#define NM_MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
+#define NM_MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
+#define NM_MPI_REQUEST_CANCELLED ((MPI_Request_type)5)
 
 /** Internal communication request */
 typedef struct nm_mpi_request_s
@@ -227,6 +227,42 @@ extern struct nm_mpi_internal_data_s nm_mpi_internal_data;
 /* @} */
 
 /**
+ * Increases by one the counter of incoming messages. The counter is
+ * used for termination detection.
+ */
+static inline void mpir_inc_nb_incoming_msg(void)
+{
+  nm_mpi_internal_data.nb_incoming_msg ++;
+}
+
+/**
+ * Increases by one the counter of outgoing messages. The counter is
+ * used for termination detection.
+ */
+static inline void mpir_inc_nb_outgoing_msg(void)
+{
+  nm_mpi_internal_data.nb_outgoing_msg ++;
+}
+
+/**
+ * Decreases by one the counter of incoming messages. The counter is
+ * used for termination detection.
+ */
+static inline void mpir_dec_nb_incoming_msg(void)
+{
+  nm_mpi_internal_data.nb_incoming_msg --;
+}
+
+/**
+ * Decreases by one the counter of outgoing messages. The counter is
+ * used for termination detection.
+ */
+static inline void mpir_dec_nb_outgoing_msg(void)
+{
+  nm_mpi_internal_data.nb_outgoing_msg --;
+}
+
+/**
  * Initialises internal data
  */
 int mpir_internal_init(void);
@@ -278,52 +314,33 @@ nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id);
 /**
  * Initialises a sending request.
  */
-int mpir_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm);
+int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm);
 
 /**
  * Starts a sending request.
  */
-int mpir_isend_start(nm_mpi_request_t *p_req);
+int nm_mpi_isend_start(nm_mpi_request_t *p_req);
 
 /**
  * Sends data.
  */
-int mpir_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm);
+int nm_mpi_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm);
 
 /**
  * Initialises a receiving request.
  */
-int mpir_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm);
+int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm);
 
 /**
  * Starts a receiving request.
  */
-int mpir_irecv_start(nm_mpi_request_t *p_req);
+int nm_mpi_irecv_start(nm_mpi_request_t *p_req);
 
 /**
  * Receives data.
  */
-int mpir_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm);
+int nm_mpi_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm);
 
-/**
- * Starts a sending or receiving request.
- */
-int mpir_start(nm_mpi_request_t *p_req);
-
-/**
- * Waits for a request.
- */
-int mpir_wait(nm_mpi_request_t *p_req);
-
-/**
- * Tests the completion of a request.
- */
-int mpir_test(nm_mpi_request_t *p_req);
-
-/**
- * Cancels a request.
- */
-int mpir_cancel(nm_mpi_request_t *p_req);
 
 /* Datatype functionalities */
 
@@ -343,6 +360,10 @@ nm_mpi_datatype_t*nm_mpi_datatype_get(MPI_Datatype datatype);
  */
 int nm_mpi_datatype_unlock(MPI_Datatype datatype);
 
+/**
+ * Calls the appropriate splitting function based on the given request.
+ */
+int nm_mpi_datatype_split(nm_mpi_request_t *p_req);
 
 /* Reduce operation functionalities */
 

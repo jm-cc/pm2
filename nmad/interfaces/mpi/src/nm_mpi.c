@@ -63,8 +63,6 @@ int MPI_Errhandler_set(MPI_Comm comm,
 int MPI_Get_version(int *version,
 		    int *subversion) __attribute__ ((alias ("mpi_get_version")));
 
-int MPI_Request_free(MPI_Request *request) __attribute__ ((alias ("mpi_request_free")));
-
 int MPI_Get_count(MPI_Status *status,
                   MPI_Datatype datatype TBX_UNUSED,
                   int *count) __attribute__ ((alias ("mpi_get_count")));
@@ -135,9 +133,8 @@ int mpi_finalize(void)
 
 int mpi_abort(MPI_Comm comm TBX_UNUSED, int errorcode)
  {
-  int err;
   MPI_NMAD_LOG_IN();
-  err = mpir_internal_exit();
+  mpir_internal_exit();
   MPI_NMAD_LOG_OUT();
   exit(errorcode);
   return errorcode;
@@ -301,22 +298,6 @@ int mpi_get_version(int *version, int *subversion)
 {
   *version = MADMPI_VERSION;
   *subversion = MADMPI_SUBVERSION;
-  return MPI_SUCCESS;
-}
-
-int mpi_request_free(MPI_Request *request)
-{
-  nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
-  MPI_NMAD_LOG_IN();
-  p_req->request_type = MPI_REQUEST_ZERO;
-  p_req->request_persistent_type = MPI_REQUEST_ZERO;
-  if (p_req->contig_buffer != NULL)
-    {
-      FREE_AND_SET_NULL(p_req->contig_buffer);
-    }
-  nm_mpi_request_free(p_req);
-  *request = MPI_REQUEST_NULL;
-  MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 

@@ -251,7 +251,7 @@ int mpi_gather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf
   if(nm_comm_rank(p_comm->p_comm) == root)
     {
       MPI_Request *requests = malloc(nm_comm_size(p_comm->p_comm) * sizeof(MPI_Request));
-      int i, err;
+      int i;
       nm_mpi_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
       mpir_recv_datatype = nm_mpi_datatype_get(recvtype);
       mpir_send_datatype = nm_mpi_datatype_get(sendtype);
@@ -265,7 +265,7 @@ int mpi_gather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf
       for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
 	{
 	  if(i == root) continue;
-	  err = mpi_wait(&requests[i], MPI_STATUS_IGNORE);
+	  mpi_wait(&requests[i], MPI_STATUS_IGNORE);
 	}
       // copy local data for itself
       memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * mpir_recv_datatype->extent),
@@ -287,7 +287,7 @@ int mpi_gatherv(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf
   if(nm_comm_rank(p_comm->p_comm) == root)
     {
       MPI_Request *requests = malloc(nm_comm_size(p_comm->p_comm) * sizeof(MPI_Request));
-      int i, err;
+      int i;
       nm_mpi_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
       mpir_recv_datatype = nm_mpi_datatype_get(recvtype);
       mpir_send_datatype = nm_mpi_datatype_get(sendtype);
@@ -301,7 +301,7 @@ int mpi_gatherv(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf
       for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
 	{
 	  if (i==root) continue;
-	  err = mpi_wait(&requests[i], MPI_STATUS_IGNORE);
+	  mpi_wait(&requests[i], MPI_STATUS_IGNORE);
 	}
       // copy local data for itself
       MPI_NMAD_TRACE("Copying local data from %p to %p with len %ld\n", sendbuf,
@@ -357,7 +357,7 @@ int mpi_scatter(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbu
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   if (nm_comm_rank(p_comm->p_comm) == root)
     {
-      int i, err;
+      int i;
       nm_mpi_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
       MPI_Request *requests = malloc(nm_comm_size(p_comm->p_comm) * sizeof(MPI_Request));
       mpir_recv_datatype = nm_mpi_datatype_get(recvtype);
@@ -372,7 +372,7 @@ int mpi_scatter(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbu
       for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
 	{
 	  if (i==root) continue;
-	  err = mpi_wait(&requests[i], MPI_STATUS_IGNORE);
+	  mpi_wait(&requests[i], MPI_STATUS_IGNORE);
 	}
       // copy local data for itself
       memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * mpir_recv_datatype->extent),

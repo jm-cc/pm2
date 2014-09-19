@@ -66,7 +66,20 @@
 #define FREE_AND_SET_NULL(p) free(p); p = NULL;
 
 /** Maximum value of the tag specified by the end-user */
-#define MPI_NMAD_MAX_VALUE_TAG  0x7FFFFFFF
+#define NM_MPI_TAG_MAX           0x7FFFFFFF
+/** Mask for private tags */
+#define NM_MPI_TAG_PRIVATE_BASE  0xF0000000
+#define NM_MPI_TAG_PRIVATE_BARRIER       (NM_MPI_TAG_PRIVATE_BASE | 0x01)
+#define NM_MPI_TAG_PRIVATE_BCAST         (NM_MPI_TAG_PRIVATE_BASE | 0x02)
+#define NM_MPI_TAG_PRIVATE_GATHER        (NM_MPI_TAG_PRIVATE_BASE | 0x03)
+#define NM_MPI_TAG_PRIVATE_GATHERV       (NM_MPI_TAG_PRIVATE_BASE | 0x04)
+#define NM_MPI_TAG_PRIVATE_SCATTER       (NM_MPI_TAG_PRIVATE_BASE | 0x05)
+#define NM_MPI_TAG_PRIVATE_ALLTOALL      (NM_MPI_TAG_PRIVATE_BASE | 0x06)
+#define NM_MPI_TAG_PRIVATE_ALLTOALLV     (NM_MPI_TAG_PRIVATE_BASE | 0x07)
+#define NM_MPI_TAG_PRIVATE_REDUCE        (NM_MPI_TAG_PRIVATE_BASE | 0x08)
+#define NM_MPI_TAG_PRIVATE_REDUCESCATTER (NM_MPI_TAG_PRIVATE_BASE | 0x09)
+
+#define NM_MPI_TAG_PRIVATE_COMMSPLIT     (NM_MPI_TAG_PRIVATE_BASE | 0xF1)
 
 /** @name Communicators */
 /* @{ */
@@ -131,14 +144,14 @@ typedef struct nm_mpi_request_s
 
   /** tag given by the user*/
   int user_tag;
-  /** tag used by NM, its value is based on user_tag and the request communicator id */
+  /** tag used by nmad, built from user_tag */
   nm_tag_t request_tag;
   /** rank of the source node (used for incoming request) */
   int request_source;
   /** error status of the request */
   int request_error;
   /** type of the exchanged data */
-  MPI_Datatype request_datatype;
+  struct nm_mpi_datatype_s*p_datatype;
   /** communication mode to be used when exchanging data */
   MPI_Communication_Mode communication_mode;
   /** gate of the destination or the source node */
@@ -157,10 +170,11 @@ typedef struct nm_mpi_request_s
 /* @{ */
 
 /** Internal reduce operators */
-typedef struct mpir_operator_s {
+typedef struct nm_mpi_operator_s
+{
   MPI_User_function *function;
   int commute;
-} mpir_operator_t;
+} nm_mpi_operator_t;
 /* @} */
 
 /** @name Datatypes */
@@ -175,6 +189,7 @@ typedef enum {
 /** Internal datatype */
 typedef struct nm_mpi_datatype_s
 {
+  int id;
   /** type of datatype element this is */
   mpir_nodetype_t dte_type;
   /** whether basic or user-defined */
@@ -308,6 +323,12 @@ void nm_mpi_request_free(nm_mpi_request_t* req);
 
 nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id);
 
+int nm_mpi_request_test(nm_mpi_request_t *p_req);
+
+int nm_mpi_request_wait(nm_mpi_request_t *p_req);
+
+void nm_mpi_request_complete(nm_mpi_request_t*p_req);
+
 
 /* Send/recv/status functions */
 
@@ -347,7 +368,7 @@ int nm_mpi_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_c
 /**
  * Gets the size of the given datatype.
  */
-size_t mpir_sizeof_datatype(MPI_Datatype datatype);
+size_t nm_mpi_datatype_size(nm_mpi_datatype_t*p_datatype);
 
 /**
  * Gets the internal representation of the given datatype.
@@ -358,7 +379,7 @@ nm_mpi_datatype_t*nm_mpi_datatype_get(MPI_Datatype datatype);
  * Unlocks the given datatype, when the datatype is fully unlocked,
  * and a freeing request was posted, it will be released.
  */
-int nm_mpi_datatype_unlock(MPI_Datatype datatype);
+int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype);
 
 /**
  * Calls the appropriate splitting function based on the given request.
@@ -368,19 +389,9 @@ int nm_mpi_datatype_split(nm_mpi_request_t *p_req);
 /* Reduce operation functionalities */
 
 /**
- * Commits a new operator for reduce operations.
- */
-int mpir_op_create(MPI_User_function *function, int commute, MPI_Op *op);
-
-/**
- * Releases the given operator for reduce operations.
- */
-int mpir_op_free(MPI_Op *op);
-
-/**
  * Gets the function associated to the given operator.
  */
-mpir_operator_t *mpir_get_operator(MPI_Op op);
+nm_mpi_operator_t*nm_mpi_operator_get(MPI_Op op);
 
 /**
  * Defines the MAX function for reduce operations.
@@ -490,6 +501,11 @@ nm_mpi_communicator_t*nm_mpi_communicator_get(MPI_Comm comm);
  * Gets the NM tag for the given user tag and communicator.
  */
 nm_tag_t nm_mpi_get_tag(nm_mpi_communicator_t*p_comm, int tag);
+
+/**
+ * Checks whether the given tag is in the permitted bounds
+ */
+int nm_mpi_check_tag(int user_tag);
 
 /* Termination functionalities */
 

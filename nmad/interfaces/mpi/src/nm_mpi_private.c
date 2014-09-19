@@ -44,14 +44,20 @@ int mpir_internal_exit(void)
   return MPI_SUCCESS;
 }
 
+__PUK_SYM_INTERNAL
 nm_tag_t nm_mpi_get_tag(nm_mpi_communicator_t *p_comm, int tag)
 {
-  if(tag < 0 || tag > MPI_NMAD_MAX_VALUE_TAG)
+  const nm_tag_t newtag = tag;
+  return newtag;
+}
+__PUK_SYM_INTERNAL
+int nm_mpi_check_tag(int tag)
+{
+  if(tag < 0 || tag > NM_MPI_TAG_MAX)
     {
       ERROR("tag too large");
     }
-  const nm_tag_t newtag = tag;
-  return newtag;
+  return tag;
 }
 
 
@@ -61,18 +67,11 @@ nm_tag_t nm_mpi_get_tag(nm_mpi_communicator_t *p_comm, int tag)
  */
 static inline int nm_mpi_datatype_vector_aggregate(void *newptr, void *buffer, nm_mpi_datatype_t*p_datatype, int count)
 {
-#ifdef DEBUG
-  void * const orig = buffer;
-  void * const dest = newptr;
-#endif
   int i, j;
   for(i = 0; i < count; i++)
     {
       for(j = 0; j < p_datatype->elements; j++)
 	{
-	  MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n",
-			 i, j, (long) p_datatype->block_size, buffer, (int)(buffer-orig),
-			 newptr, (int)(newptr-dest));
 	  memcpy(newptr, buffer, p_datatype->block_size);
 	  newptr += p_datatype->block_size;
 	  buffer += p_datatype->stride;
@@ -86,15 +85,11 @@ static inline int nm_mpi_datatype_vector_aggregate(void *newptr, void *buffer, n
  */
 static inline int nm_mpi_datatype_vector_pack(nm_pack_cnx_t *connection, void *buffer, nm_mpi_datatype_t*p_datatype, int count)
 {
-#ifdef DEBUG
-  void *const orig = buffer;
-#endif
   int i, j, err = MPI_SUCCESS;
   for(i = 0 ; i<count ; i++)
     {
       for(j = 0; j < p_datatype->elements; j++)
 	{
-	  MPI_NMAD_TRACE("Element %d, %d with size %ld starts at %p (+ %d)\n", i, j, (long)p_datatype->block_size, buffer, (int)(buffer-orig));
 	  err = nm_pack(connection, buffer, p_datatype->block_size);
 	  buffer += p_datatype->stride;
 	}
@@ -120,7 +115,7 @@ static inline int nm_mpi_datatype_vector_unpack(nm_pack_cnx_t *connection, nm_mp
 	  p_req->request_ptr[k] = p_req->request_ptr[k-1] + p_datatype->block_size;
 	}
     }
-  if (p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
+  if(p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
   return err;
 }
 
@@ -154,9 +149,6 @@ static inline int nm_mpi_datatype_vector_split(void *recvbuffer, void *buffer, n
  */
 static inline int nm_mpi_datatype_indexed_aggregate(void *newptr, void *buffer, nm_mpi_datatype_t*p_datatype, int count)
 {
-#ifdef DEBUG
-  void *const dest = newptr;
-#endif
   int i, j;
   for(i = 0; i < count; i++)
     {
@@ -164,10 +156,6 @@ static inline int nm_mpi_datatype_indexed_aggregate(void *newptr, void *buffer, 
       for(j = 0; j < p_datatype->elements; j++)
 	{
 	  void *subptr = ptr + p_datatype->indices[j];
-	  MPI_NMAD_TRACE("Copy element %d, %d (size %ld = %d * %ld) from %p (+%d) to %p (+%d)\n", i, j,
-			 (long)p_datatype->blocklens[j] * p_datatype->old_sizes[0],
-			 p_datatype->blocklens[j], (long)p_datatype->old_sizes[0],
-			 subptr, (int)(subptr-buffer), newptr, (int)(newptr-dest));
 	  memcpy(newptr, subptr, p_datatype->blocklens[j] * p_datatype->old_sizes[0]);
 	  newptr += p_datatype->blocklens[j] * p_datatype->old_sizes[0];
     }
@@ -217,7 +205,7 @@ static inline int nm_mpi_datatype_indexed_unpack(nm_pack_cnx_t *connection, nm_m
 	  p_req->request_ptr[k] = p_req->request_ptr[k-1] + p_datatype->blocklens[j] * p_datatype->old_sizes[0];
 	}
     }
-  if (p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
+  if(p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
   return err;
 }
 
@@ -309,7 +297,7 @@ static inline int nm_mpi_datatype_struct_unpack(nm_pack_cnx_t *connection, nm_mp
 	  p_req->request_ptr[k] = p_req->request_ptr[k-1] - p_datatype->indices[j];
 	}
     }
-  if (p_req->request_type != NM_MPI_REQUEST_ZERO)
+  if(p_req->request_type != NM_MPI_REQUEST_ZERO)
     p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
   return err;
 }
@@ -343,7 +331,7 @@ static inline int nm_mpi_datatype_struct_split(void *recvbuffer, void *buffer, n
 __PUK_SYM_INTERNAL
 int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm)
 {
-  nm_mpi_datatype_t*p_datatype = NULL;
+  nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   int err = MPI_SUCCESS;
   nm_gate_t p_gate = nm_mpi_communicator_get_gate(p_comm, dest);
   if(p_gate == NULL)
@@ -352,63 +340,57 @@ int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
-
-  p_req->gate =p_gate;
-  p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
+  p_req->gate = p_gate;
   p_req->request_tag = nm_mpi_get_tag(p_comm, p_req->user_tag);
 
-  if(p_datatype->is_contig == 1) {
-    MPI_NMAD_TRACE("Sending data of type %d at address %p with len %ld (%d*%ld)\n", p_req->request_datatype, p_req->buffer, (long)p_req->count*p_datatype->size, p_req->count, (long)p_datatype->size);
-  }
-  else if (p_datatype->dte_type == MPIR_VECTOR) {
-    MPI_NMAD_TRACE("Sending (h)vector type: stride %d - blocklen %d - count %d - size %ld\n", p_datatype->stride, p_datatype->blocklens[0], p_datatype->elements, (long)p_datatype->size);
-    if (!p_datatype->is_optimized) {
-      MPI_NMAD_TRACE("Sending vector datatype in a contiguous buffer\n");
-
-      p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-      if (p_req->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)(p_req->count * p_datatype->size));
-        return MPI_ERR_INTERN;
-      }
-
-      nm_mpi_datatype_vector_aggregate(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
-      MPI_NMAD_TRACE("Sending data of vector type at address %p with len %ld (%d*%d*%ld)\n", p_req->contig_buffer, (long)(p_req->count * p_datatype->size), p_req->count, p_datatype->elements, (long)p_datatype->block_size);
+  if(p_datatype->is_contig == 1)
+    {
+      /* nothing to do */
     }
-  }
-  else if (p_datatype->dte_type == MPIR_INDEXED) {
-    if (!p_datatype->is_optimized) {
-      MPI_NMAD_TRACE("Sending (h)indexed datatype in a contiguous buffer\n");
-
-      p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-      if (p_req->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to send (h)indexed type\n", (long)(p_req->count * p_datatype->size));
-        return MPI_ERR_INTERN;
-      }
-      MPI_NMAD_TRACE("Allocating a buffer of size %ld (%d * %ld) for sending an indexed datatype\n", (long)(p_req->count * p_datatype->size), p_req->count, (long)p_datatype->size);
-
-      nm_mpi_datatype_indexed_aggregate(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
-      MPI_NMAD_TRACE("Sending data of (h)indexed type at address %p with len %ld\n", p_req->contig_buffer, (long)(p_req->count * p_datatype->size));
+  else if(p_datatype->dte_type == MPIR_VECTOR) 
+    {
+      if(!p_datatype->is_optimized) 
+	{
+	  p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
+	  if(p_req->contig_buffer == NULL)
+	    {
+	      ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)(p_req->count * p_datatype->size));
+	      return MPI_ERR_INTERN;
+	    }
+	  nm_mpi_datatype_vector_aggregate(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
+	}
     }
-  }
-  else if (p_datatype->dte_type == MPIR_STRUCT) {
-    if (!p_datatype->is_optimized) {
-      MPI_NMAD_TRACE("Sending struct datatype in a contiguous buffer\n");
-
-      p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-      if (p_req->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)(p_req->count * p_datatype->size));
-        return MPI_ERR_INTERN;
-      }
-
-      nm_mpi_datatype_struct_aggregate(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
-      MPI_NMAD_TRACE("Sending data of struct type at address %p with len %ld (%d*%ld)\n", p_req->contig_buffer, (long)(p_req->count * p_datatype->size), p_req->count, (long)p_datatype->size);
+  else if(p_datatype->dte_type == MPIR_INDEXED)
+    {
+      if(!p_datatype->is_optimized)
+	{
+	  p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
+	  if(p_req->contig_buffer == NULL)
+	    {
+	      ERROR("Cannot allocate memory with size %ld to send (h)indexed type\n", (long)(p_req->count * p_datatype->size));
+	      return MPI_ERR_INTERN;
+	    }
+	  nm_mpi_datatype_indexed_aggregate(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
+	}
     }
-  }
-  else {
-    ERROR("Do not know how to send datatype %d %d\n", p_req->request_datatype, p_datatype->dte_type);
-    return MPI_ERR_INTERN;
-  }
-
+  else if(p_datatype->dte_type == MPIR_STRUCT)
+    {
+      if(!p_datatype->is_optimized)
+	{
+	  p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
+	  if(p_req->contig_buffer == NULL)
+	    {
+	      ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)(p_req->count * p_datatype->size));
+	      return MPI_ERR_INTERN;
+	    }
+	  nm_mpi_datatype_struct_aggregate(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
+	}
+    }
+  else
+    {
+      ERROR("Do not know how to send datatype %d\n", p_datatype->dte_type);
+      return MPI_ERR_INTERN;
+    }
   return err;
 }
 
@@ -416,7 +398,7 @@ __PUK_SYM_INTERNAL
 int nm_mpi_isend_start(nm_mpi_request_t *p_req)
 {
   int err = MPI_SUCCESS;
-  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
+  nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->active_communications ++;
   if(p_datatype->is_contig || !(p_datatype->is_optimized))
     {
@@ -438,7 +420,7 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
 	  ERROR("madmpi: unkown mode %d for isend", p_req->communication_mode);
 	  break;
 	}
-      if (p_req->request_type != NM_MPI_REQUEST_ZERO)
+      if(p_req->request_type != NM_MPI_REQUEST_ZERO)
 	p_req->request_type = NM_MPI_REQUEST_SEND;
     }
   else
@@ -449,15 +431,15 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
 	{
 	  err = nm_mpi_datatype_vector_pack(connection, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if (p_datatype->dte_type == MPIR_INDEXED) 
+      else if(p_datatype->dte_type == MPIR_INDEXED) 
 	{
 	  err = nm_mpi_datatype_indexed_pack(connection, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if (p_datatype->dte_type == MPIR_STRUCT)
+      else if(p_datatype->dte_type == MPIR_STRUCT)
 	{
 	  err = nm_mpi_datatype_struct_pack(connection, p_req->buffer, p_datatype, p_req->count);
 	}
-      if (p_req->request_type != NM_MPI_REQUEST_ZERO) 
+      if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
 	p_req->request_type = NM_MPI_REQUEST_PACK_SEND;
     }
   err = nm_sr_progress(nm_comm_get_session(p_req->p_comm->p_comm));
@@ -471,7 +453,7 @@ int nm_mpi_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_com
 {
   int err;
   err = nm_mpi_isend_init(p_req, dest, p_comm);
-  if (err == MPI_SUCCESS)
+  if(err == MPI_SUCCESS)
     {
       err = nm_mpi_isend_start(p_req);
     }
@@ -482,12 +464,11 @@ int nm_mpi_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_com
 __PUK_SYM_INTERNAL
 int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm)
 {
-  nm_mpi_datatype_t*p_datatype = NULL;
-  MPI_NMAD_LOG_IN();
-
-  if (tbx_unlikely(source == MPI_ANY_SOURCE)) {
-    p_req->gate = NM_ANY_GATE;
-  }
+  nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
+  if(tbx_unlikely(source == MPI_ANY_SOURCE)) 
+    {
+      p_req->gate = NM_ANY_GATE;
+    }
   else
     {
       p_req->gate = nm_mpi_communicator_get_gate(p_comm, source);
@@ -498,60 +479,61 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 	  return MPI_ERR_INTERN;
 	}
     }
-
-  p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
   p_req->request_tag = nm_mpi_get_tag(p_comm, p_req->user_tag);
   p_req->request_source = source;
 
-  MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (comm=%p, %d)\n", source, p_req->buffer, p_req->request_tag, p_comm, p_req->user_tag);
-  if (p_datatype->is_contig == 1) {
-    MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %ld (%d*%ld)\n", p_req->request_datatype, p_req->buffer, (long)p_req->count*p_datatype->size, p_req->count, (long)p_datatype->size);
-    if (p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_RECV;
-  }
-  else if (p_datatype->dte_type == MPIR_VECTOR) {
-    if (!p_datatype->is_optimized) {
-      p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-      if (p_req->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to receive vector type\n", (long)(p_req->count * p_datatype->size));
-        return MPI_ERR_INTERN;
-      }
-
-      MPI_NMAD_TRACE("Receiving vector type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", p_req->request_datatype, p_req->contig_buffer, (long)(p_req->count * p_datatype->size), p_req->count, (long)p_datatype->size);
-      if (p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_RECV;
+  if(p_datatype->is_contig == 1)
+    {
+      if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
+	p_req->request_type = NM_MPI_REQUEST_RECV;
     }
-  }
-  else if (p_datatype->dte_type == MPIR_INDEXED) {
-    if (!p_datatype->is_optimized) {
-      MPI_NMAD_TRACE("Receiving (h)indexed datatype in a contiguous buffer\n");
-      p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-      if (p_req->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to receive (h)indexed type\n", (long)(p_req->count * p_datatype->size));
-        return MPI_ERR_INTERN;
-      }
-
-      MPI_NMAD_TRACE("Receiving (h)indexed type %d in a contiguous way at address %p with len %ld\n", p_req->request_datatype, p_req->contig_buffer, (long)(p_req->count * p_datatype->size));
-      if (p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_RECV;
+  else if(p_datatype->dte_type == MPIR_VECTOR)
+    {
+      if(!p_datatype->is_optimized)
+	{
+	  p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
+	  if(p_req->contig_buffer == NULL)
+	    {
+	      ERROR("Cannot allocate memory with size %ld to receive vector type\n", (long)(p_req->count * p_datatype->size));
+	      return MPI_ERR_INTERN;
+	    }
+	  if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
+	    p_req->request_type = NM_MPI_REQUEST_RECV;
+	}
     }
-  }
-  else if (p_datatype->dte_type == MPIR_STRUCT) {
-    if (!p_datatype->is_optimized) {
-      p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-      if (p_req->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to receive struct type\n", (long)(p_req->count * p_datatype->size));
-        return MPI_ERR_INTERN;
-      }
-
-      MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", p_req->request_datatype, p_req->contig_buffer, (long)p_req->count*p_datatype->size, p_req->count, (long)p_datatype->size);
-      if (p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_RECV;
+  else if(p_datatype->dte_type == MPIR_INDEXED)
+    {
+      if(!p_datatype->is_optimized)
+	{
+	  p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
+	  if(p_req->contig_buffer == NULL)
+	    {
+	      ERROR("Cannot allocate memory with size %ld to receive (h)indexed type\n", (long)(p_req->count * p_datatype->size));
+	      return MPI_ERR_INTERN;
+	    }
+	  if(p_req->request_type != NM_MPI_REQUEST_ZERO)
+	    p_req->request_type = NM_MPI_REQUEST_RECV;
+	}
     }
-  }
-  else {
-    ERROR("Do not know how to receive datatype %d\n", p_req->request_datatype);
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
-
-  MPI_NMAD_LOG_OUT();
+  else if(p_datatype->dte_type == MPIR_STRUCT)
+    {
+      if(!p_datatype->is_optimized)
+	{
+	  p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
+	  if(p_req->contig_buffer == NULL)
+	    {
+	      ERROR("Cannot allocate memory with size %ld to receive struct type\n", (long)(p_req->count * p_datatype->size));
+	      return MPI_ERR_INTERN;
+	    }
+	  if(p_req->request_type != NM_MPI_REQUEST_ZERO)
+	    p_req->request_type = NM_MPI_REQUEST_RECV;
+	}
+    }
+  else
+    {
+      ERROR("Do not know how to receive datatype %p\n", p_req->p_datatype);
+      return MPI_ERR_INTERN;
+    }
   return MPI_SUCCESS;
 }
 
@@ -560,7 +542,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 __PUK_SYM_INTERNAL
 int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
 {
-  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
+  nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->active_communications ++;
   if(p_datatype->is_contig || !(p_datatype->is_optimized))
     {
@@ -569,7 +551,7 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
       if(p_datatype->is_contig)
 	{
 	  MPI_NMAD_TRACE("Calling irecv_start for contiguous data\n");
-	  if (p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_RECV;
+	  if(p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_RECV;
 	}
     }
   else
@@ -577,20 +559,20 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
       nm_pack_cnx_t*connection = &(p_req->request_cnx);
       int err = NM_ESUCCESS;
       nm_begin_unpacking(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, connection);
-      if (p_datatype->dte_type == MPIR_VECTOR)
+      if(p_datatype->dte_type == MPIR_VECTOR)
 	{
 	  err = nm_mpi_datatype_vector_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if (p_datatype->dte_type == MPIR_INDEXED)
+      else if(p_datatype->dte_type == MPIR_INDEXED)
 	{
 	  err = nm_mpi_datatype_indexed_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if (p_datatype->dte_type == MPIR_STRUCT)
+      else if(p_datatype->dte_type == MPIR_STRUCT)
 	{
 	  err = nm_mpi_datatype_struct_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
 	}
       p_req->request_error = err;
-      if (p_req->request_type != NM_MPI_REQUEST_ZERO)
+      if(p_req->request_type != NM_MPI_REQUEST_ZERO)
 	p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
     }
   nm_sr_progress(nm_comm_get_session(p_req->p_comm->p_comm));
@@ -603,7 +585,7 @@ int nm_mpi_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_c
 {
   int err;
   err = nm_mpi_irecv_init(p_req, source, p_comm);
-  if (err == MPI_SUCCESS)
+  if(err == MPI_SUCCESS)
     {
       err = nm_mpi_irecv_start(p_req);
     }
@@ -616,9 +598,8 @@ int nm_mpi_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_c
 __PUK_SYM_INTERNAL
 int nm_mpi_datatype_split(nm_mpi_request_t *p_req)
 {
-  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(p_req->request_datatype);
+  nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   int err = MPI_SUCCESS;
-
   if(p_datatype->dte_type == MPIR_VECTOR) 
     {
       err = nm_mpi_datatype_vector_split(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
@@ -647,7 +628,7 @@ tbx_bool_t mpir_test_termination(MPI_Comm comm)
   mpi_comm_size(comm, &global_size);
   int tag = 31;
 
-  if (process_rank == 0) {
+  if(process_rank == 0) {
     // 1st phase
     int global_nb_incoming_msg = 0;
     int global_nb_outgoing_msg = 0;
@@ -666,7 +647,7 @@ tbx_bool_t mpir_test_termination(MPI_Comm comm)
     MPI_NMAD_TRACE("Global counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
 
     tbx_bool_t answer = tbx_true;
-    if (global_nb_incoming_msg != global_nb_outgoing_msg) {
+    if(global_nb_incoming_msg != global_nb_outgoing_msg) {
       answer = tbx_false;
     }
 
@@ -674,7 +655,7 @@ tbx_bool_t mpir_test_termination(MPI_Comm comm)
       mpi_send(&answer, 1, MPI_INT, i, tag, comm);
     }
 
-    if (answer == tbx_false) {
+    if(answer == tbx_false) {
       return tbx_false;
     }
     else {
@@ -692,7 +673,7 @@ tbx_bool_t mpir_test_termination(MPI_Comm comm)
 
       MPI_NMAD_TRACE("Global counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
       answer = tbx_true;
-      if (global_nb_incoming_msg != global_nb_outgoing_msg) {
+      if(global_nb_incoming_msg != global_nb_outgoing_msg) {
         answer = tbx_false;
       }
 
@@ -713,7 +694,7 @@ tbx_bool_t mpir_test_termination(MPI_Comm comm)
     MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", local_counters[0], local_counters[1]);
 
     mpi_recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
-    if (answer == tbx_false) {
+    if(answer == tbx_false) {
       return tbx_false;
     }
     else {

@@ -337,7 +337,7 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void *attr_value, int *flag)
   switch(keyval)
     {
     case MPI_TAG_UB:
-      *(int*)attr_value = MPI_NMAD_MAX_VALUE_TAG;
+      *(int*)attr_value = NM_MPI_TAG_MAX;
       *flag = 1;
       break;
     case MPI_HOST:
@@ -409,8 +409,7 @@ static int nodecmp(const void*v1, const void*v2)
 int mpi_comm_split(MPI_Comm oldcomm, int color, int key, MPI_Comm *newcomm)
 {
   const int root = 0; /* rank 0 in oldcomm is root */
-#warning TODO- use private tag
-  const int tag = 0xFF001010;
+  const int tag = NM_MPI_TAG_PRIVATE_COMMSPLIT;
   int i;
   nm_mpi_communicator_t *p_old_comm = nm_mpi_communicator_get(oldcomm);
   const int comm_size = nm_comm_size(p_old_comm->p_comm);

@@ -24,11 +24,6 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 static int init_done = 0;
 
-/** internal MadMPI state, pointer shared accross files */
-__PUK_SYM_INTERNAL struct nm_mpi_internal_data_s nm_mpi_internal_data;
-
-
-
 /* Aliases */
 
 int MPI_Init(int *argc,
@@ -90,7 +85,7 @@ int mpi_init(int *argc, char ***argv)
   nm_mpi_comm_init();
   nm_mpi_datatype_init();
   nm_mpi_coll_init();
-  mpir_internal_init();
+  nm_mpi_internal_init();
   nm_mpi_request_init();
   init_done = 1;
   MPI_NMAD_LOG_OUT();
@@ -120,22 +115,18 @@ int mpi_initialized(int *flag)
 int mpi_finalize(void)
 {
   int err;
-  MPI_NMAD_LOG_IN();
   mpi_barrier(MPI_COMM_WORLD);
-  err = mpir_internal_exit();
+  err = nm_mpi_internal_exit();
   nm_mpi_datatype_exit();
   nm_mpi_coll_exit();
   nm_mpi_comm_exit();
   init_done = 0;
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 
 int mpi_abort(MPI_Comm comm TBX_UNUSED, int errorcode)
  {
-  MPI_NMAD_LOG_IN();
-  mpir_internal_exit();
-  MPI_NMAD_LOG_OUT();
+  nm_mpi_internal_exit();
   exit(errorcode);
   return errorcode;
 }

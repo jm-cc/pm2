@@ -228,64 +228,12 @@ typedef struct nm_mpi_datatype_s
 } nm_mpi_datatype_t;
 /* @} */
 
-/** @name Internal data */
-/* @{ */
-/** Internal data */
-struct nm_mpi_internal_data_s
-{
-  /** total number of incoming messages */
-  int 		     nb_incoming_msg;
-  /** total number of outgoing messages */
-  int 		     nb_outgoing_msg;
-};
-extern struct nm_mpi_internal_data_s nm_mpi_internal_data;
-/* @} */
 
-/**
- * Increases by one the counter of incoming messages. The counter is
- * used for termination detection.
- */
-static inline void mpir_inc_nb_incoming_msg(void)
-{
-  nm_mpi_internal_data.nb_incoming_msg ++;
-}
+/** Initialises internal data */
+int nm_mpi_internal_init(void);
 
-/**
- * Increases by one the counter of outgoing messages. The counter is
- * used for termination detection.
- */
-static inline void mpir_inc_nb_outgoing_msg(void)
-{
-  nm_mpi_internal_data.nb_outgoing_msg ++;
-}
-
-/**
- * Decreases by one the counter of incoming messages. The counter is
- * used for termination detection.
- */
-static inline void mpir_dec_nb_incoming_msg(void)
-{
-  nm_mpi_internal_data.nb_incoming_msg --;
-}
-
-/**
- * Decreases by one the counter of outgoing messages. The counter is
- * used for termination detection.
- */
-static inline void mpir_dec_nb_outgoing_msg(void)
-{
-  nm_mpi_internal_data.nb_outgoing_msg --;
-}
-
-/**
- * Initialises internal data
- */
-int mpir_internal_init(void);
-
-/**
- * Internal shutdown of the application.
- */
-int mpir_internal_exit(void);
+/** Internal shutdown of the application. */
+int nm_mpi_internal_exit(void);
 
 /** init request sub-system */
 void nm_mpi_request_init(void);

@@ -413,12 +413,10 @@ int mpi_cancel(MPI_Request *request)
   int err = MPI_SUCCESS;
   if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
-      mpir_dec_nb_incoming_msg();
       err = nm_sr_rcancel(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
     }
   else if(p_req->request_type == NM_MPI_REQUEST_SEND)
     {
-      mpir_dec_nb_outgoing_msg();
     }
   else 
     {

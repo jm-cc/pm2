@@ -20,16 +20,13 @@
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(NewMad_Core);
 
-
-int mpir_internal_init(void)
+__PUK_SYM_INTERNAL
+int nm_mpi_internal_init(void)
 {
   int global_size  = -1;
   int process_rank = -1;
   nm_launcher_get_size(&global_size);
   nm_launcher_get_rank(&process_rank);
-
-  nm_mpi_internal_data.nb_outgoing_msg = 0;
-  nm_mpi_internal_data.nb_incoming_msg = 0;
 
   /** Set the NewMadeleine interfaces */
   nm_session_t p_session = NULL;
@@ -39,7 +36,8 @@ int mpir_internal_init(void)
   return MPI_SUCCESS;
 }
 
-int mpir_internal_exit(void)
+__PUK_SYM_INTERNAL
+int nm_mpi_internal_exit(void)
 {
   return MPI_SUCCESS;
 }
@@ -443,8 +441,6 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
 	p_req->request_type = NM_MPI_REQUEST_PACK_SEND;
     }
   err = nm_sr_progress(nm_comm_get_session(p_req->p_comm->p_comm));
-  mpir_inc_nb_outgoing_msg();
-
   return err;
 }
 
@@ -576,7 +572,6 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
 	p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
     }
   nm_sr_progress(nm_comm_get_session(p_req->p_comm->p_comm));
-  mpir_inc_nb_incoming_msg();
   return p_req->request_error;
 }
 
@@ -620,94 +615,4 @@ int nm_mpi_datatype_split(nm_mpi_request_t *p_req)
   return err;
 }
 
-
-tbx_bool_t mpir_test_termination(MPI_Comm comm)
-{
-  int process_rank, global_size;
-  mpi_comm_rank(comm, &process_rank);
-  mpi_comm_size(comm, &global_size);
-  int tag = 31;
-
-  if(process_rank == 0) {
-    // 1st phase
-    int global_nb_incoming_msg = 0;
-    int global_nb_outgoing_msg = 0;
-    int i, remote_counters[2];
-
-    MPI_NMAD_TRACE("Beginning of 1st phase.\n");
-    global_nb_incoming_msg = nm_mpi_internal_data.nb_incoming_msg;
-    global_nb_outgoing_msg = nm_mpi_internal_data.nb_outgoing_msg;
-    MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
-    for(i=1 ; i<global_size ; i++) {
-      mpi_recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
-      global_nb_incoming_msg += remote_counters[0];
-      global_nb_outgoing_msg += remote_counters[1];
-      MPI_NMAD_TRACE("Remote counters [incoming msg=%d, outgoing msg=%d]\n", remote_counters[0], remote_counters[1]);
-    }
-    MPI_NMAD_TRACE("Global counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
-
-    tbx_bool_t answer = tbx_true;
-    if(global_nb_incoming_msg != global_nb_outgoing_msg) {
-      answer = tbx_false;
-    }
-
-    for(i=1 ; i<global_size ; i++) {
-      mpi_send(&answer, 1, MPI_INT, i, tag, comm);
-    }
-
-    if(answer == tbx_false) {
-      return tbx_false;
-    }
-    else {
-      // 2nd phase
-      MPI_NMAD_TRACE("Beginning of 2nd phase.\n");
-      global_nb_incoming_msg = nm_mpi_internal_data.nb_incoming_msg;
-      global_nb_outgoing_msg = nm_mpi_internal_data.nb_outgoing_msg;
-      MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
-      for(i=1 ; i<global_size ; i++) {
-        mpi_recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
-        global_nb_incoming_msg += remote_counters[0];
-        global_nb_outgoing_msg += remote_counters[1];
-        MPI_NMAD_TRACE("Remote counters [incoming msg=%d, outgoing msg=%d]\n", remote_counters[0], remote_counters[1]);
-      }
-
-      MPI_NMAD_TRACE("Global counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
-      answer = tbx_true;
-      if(global_nb_incoming_msg != global_nb_outgoing_msg) {
-        answer = tbx_false;
-      }
-
-      for(i=1 ; i<global_size ; i++) {
-        mpi_send(&answer, 1, MPI_INT, i, tag, comm);
-      }
-
-      return answer;
-    }
-  }
-  else {
-    int answer, local_counters[2];
-
-    MPI_NMAD_TRACE("Beginning of 1st phase.\n");
-    local_counters[0] = nm_mpi_internal_data.nb_incoming_msg;
-    local_counters[1] = nm_mpi_internal_data.nb_outgoing_msg;
-    mpi_send(local_counters, 2, MPI_INT, 0, tag, comm);
-    MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", local_counters[0], local_counters[1]);
-
-    mpi_recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
-    if(answer == tbx_false) {
-      return tbx_false;
-    }
-    else {
-      // 2nd phase
-      MPI_NMAD_TRACE("Beginning of 2nd phase.\n");
-      local_counters[0] = nm_mpi_internal_data.nb_incoming_msg;
-      local_counters[1] = nm_mpi_internal_data.nb_outgoing_msg;
-      mpi_send(local_counters, 2, MPI_INT, 0, tag, comm);
-      MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", local_counters[0], local_counters[1]);
-
-      mpi_recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
-      return answer;
-    }
-  }
-}
 

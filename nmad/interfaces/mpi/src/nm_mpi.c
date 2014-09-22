@@ -100,7 +100,7 @@ int mpi_init_thread(int *argc, char ***argv, int required TBX_UNUSED, int *provi
 #ifndef PIOMAN
   *provided = MPI_THREAD_SINGLE;
 #else
-  *provided = MPI_THREAD_MULTIPLE;
+  *provided = required;
 #endif
   MPI_NMAD_LOG_OUT();
   return err;

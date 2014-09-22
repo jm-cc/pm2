@@ -19,8 +19,8 @@
 #include <tbx.h>
 #include <pthread.h>
 
-#define COUNT 20
-#define MAX_THREADS 128
+#define COUNT 100
+#define MAX_THREADS 256
 
 int peer = -1;
 
@@ -36,10 +36,11 @@ static int comp_double(const void*_a, const void*_b)
     return 0;
 }
 
-static void*ping_thread(void*_tag)
+static void*ping_thread(void*_i)
 {
-  const int iterations = MAX_THREADS * COUNT;
-  int tag = *(int*)_tag;
+  const int i = (uintptr_t)_i;
+  const int iterations = i * COUNT;
+  int tag = i;
   int k;
   int small = -1;
   for(k = 0; k < iterations; k++)
@@ -73,15 +74,15 @@ int main(int argc, char**argv)
 
   if(self == 0)
     {
-      printf("# threads | lat. (usec.)\t| min   \t| max\n");
-      double*lats = malloc(sizeof(double) * COUNT * MAX_THREADS);
+      printf("# threads | roundtrip (usec.)\t| min   \t| max\n");
+      double*lats = malloc(sizeof(double) * COUNT * (1 + MAX_THREADS));
       int i, k;
       for(i = 1; i <= MAX_THREADS; i++)
 	{
 	  MPI_Status status;
 	  tbx_tick_t t1, t2;
 	  const int iterations = i * COUNT;
-	  //	  MPI_Barrier(MPI_COMM_WORLD);
+	  MPI_Barrier(MPI_COMM_WORLD);
 	  for(k = 0; k < iterations; k++)
 	    {
 	      int tag = i;
@@ -98,14 +99,12 @@ int main(int argc, char**argv)
     }
   else
     {
-      pthread_t tids[MAX_THREADS];
-      int tags[MAX_THREADS];
+      pthread_t tids[MAX_THREADS + 1];
       int i;
       for(i = 1; i <= MAX_THREADS; i++)
 	{
-	  tags[i] = i;
-	  pthread_create(&tids[i], NULL, &ping_thread, &tags[i]);
-	  //	  MPI_Barrier(MPI_COMM_WORLD);
+	  pthread_create(&tids[i], NULL, &ping_thread, (void*)(uintptr_t)i);
+	  MPI_Barrier(MPI_COMM_WORLD);
 	}
       for(i = 1; i <= MAX_THREADS; i++)
 	{

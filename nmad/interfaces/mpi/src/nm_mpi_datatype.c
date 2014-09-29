@@ -92,6 +92,8 @@ int MPI_Type_struct(int count,
 /** Maximum number of datatypes */
 #define NUMBER_OF_DATATYPES 2048
 
+static void nm_mpi_datatype_store(int id, size_t size, int elements);
+
 static struct
 {
   /** all the defined datatypes */
@@ -103,96 +105,55 @@ static struct
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_init(void)
 {
-  /** Initialise the basic datatypes */
+  /* Initialise the basic datatypes */
+  nm_mpi_datatype_store(MPI_DATATYPE_NULL, 0, 0);
+
+  /* C types */
+  nm_mpi_datatype_store(MPI_CHAR,               sizeof(char), 1);
+  nm_mpi_datatype_store(MPI_UNSIGNED_CHAR,      sizeof(unsigned char), 1);
+  nm_mpi_datatype_store(MPI_SIGNED_CHAR,        sizeof(signed char), 1);
+  nm_mpi_datatype_store(MPI_BYTE,               1, 1);
+  nm_mpi_datatype_store(MPI_SHORT,              sizeof(signed short), 1);
+  nm_mpi_datatype_store(MPI_UNSIGNED_SHORT,     sizeof(unsigned short), 1);
+  nm_mpi_datatype_store(MPI_INT,                sizeof(signed int), 1);
+  nm_mpi_datatype_store(MPI_UNSIGNED,           sizeof(unsigned int), 1);
+  nm_mpi_datatype_store(MPI_LONG,               sizeof(signed long), 1);
+  nm_mpi_datatype_store(MPI_UNSIGNED_LONG,      sizeof(unsigned long), 1);
+  nm_mpi_datatype_store(MPI_FLOAT,              sizeof(float), 1);
+  nm_mpi_datatype_store(MPI_DOUBLE,             sizeof(double), 1);
+  nm_mpi_datatype_store(MPI_LONG_DOUBLE,        sizeof(long double), 1);
+  nm_mpi_datatype_store(MPI_LONG_LONG_INT,      sizeof(long long int), 1);
+  nm_mpi_datatype_store(MPI_UNSIGNED_LONG_LONG, sizeof(unsigned long long int), 1);
+
+  /* FORTRAN types */
+  nm_mpi_datatype_store(MPI_LOGICAL,            sizeof(float), 1);
+  nm_mpi_datatype_store(MPI_REAL,               sizeof(float), 1);
+  nm_mpi_datatype_store(MPI_REAL4,              4, 1);
+  nm_mpi_datatype_store(MPI_REAL8,              8, 1);
+  nm_mpi_datatype_store(MPI_DOUBLE_PRECISION,   sizeof(double), 1);
+  nm_mpi_datatype_store(MPI_INTEGER,            sizeof(float), 1);
+  nm_mpi_datatype_store(MPI_INTEGER4,           4, 1);
+  nm_mpi_datatype_store(MPI_INTEGER8,           8, 1);
+  nm_mpi_datatype_store(MPI_PACKED,             sizeof(char), 1);
+
+  /* C struct types */
+  nm_mpi_datatype_store(MPI_2INT,               sizeof(int) + sizeof(int), 2);
+  nm_mpi_datatype_store(MPI_SHORT_INT,          sizeof(short) + sizeof(int), 2);
+  nm_mpi_datatype_store(MPI_LONG_INT,           sizeof(long) + sizeof(int), 2);
+  nm_mpi_datatype_store(MPI_FLOAT_INT,          sizeof(float) + sizeof(int), 2);
+  nm_mpi_datatype_store(MPI_DOUBLE_INT,         sizeof(double) + sizeof(int), 2);
+
+  /* FORTRAN struct types */
+  nm_mpi_datatype_store(MPI_2INTEGER,           sizeof(float) + sizeof(float), 2);
+  nm_mpi_datatype_store(MPI_2REAL,              sizeof(float) + sizeof(float), 2);
+  nm_mpi_datatype_store(MPI_2DOUBLE_PRECISION,  sizeof(double) + sizeof(double), 2);
+  
+  /* TODO- Fortran types: 2COMPLEX, 2DOUBLE_COMPLEX; check mapping for: COMPLEX, DOUBLE_COMPLEX. */
+
+  nm_mpi_datatype_store(MPI_COMPLEX,            2 * sizeof(float), 2);
+  nm_mpi_datatype_store(MPI_DOUBLE_COMPLEX,     2 * sizeof(double), 2);
+
   int i;
-  for(i = MPI_DATATYPE_NULL ; i <= _MPI_DATATYPE_MAX; i++)
-    {
-      nm_mpi_datatypes.datatypes[i] = malloc(sizeof(nm_mpi_datatype_t));
-      nm_mpi_datatypes.datatypes[i]->basic = 1;
-      nm_mpi_datatypes.datatypes[i]->committed = 1;
-      nm_mpi_datatypes.datatypes[i]->is_contig = 1;
-      nm_mpi_datatypes.datatypes[i]->dte_type = MPIR_BASIC;
-      nm_mpi_datatypes.datatypes[i]->active_communications = 100;
-      nm_mpi_datatypes.datatypes[i]->free_requested = 0;
-      nm_mpi_datatypes.datatypes[i]->lb = 0;
-    }
-
-  nm_mpi_datatypes.datatypes[MPI_DATATYPE_NULL]->size = 0;
-  nm_mpi_datatypes.datatypes[MPI_CHAR]->size = sizeof(signed char);
-  nm_mpi_datatypes.datatypes[MPI_UNSIGNED_CHAR]->size = sizeof(unsigned char);
-  nm_mpi_datatypes.datatypes[MPI_BYTE]->size = 1;
-  nm_mpi_datatypes.datatypes[MPI_SHORT]->size = sizeof(signed short);
-  nm_mpi_datatypes.datatypes[MPI_UNSIGNED_SHORT]->size = sizeof(unsigned short);
-  nm_mpi_datatypes.datatypes[MPI_INT]->size = sizeof(signed int);
-  nm_mpi_datatypes.datatypes[MPI_UNSIGNED]->size = sizeof(unsigned int);
-  nm_mpi_datatypes.datatypes[MPI_LONG]->size = sizeof(signed long);
-  nm_mpi_datatypes.datatypes[MPI_UNSIGNED_LONG]->size = sizeof(unsigned long);
-  nm_mpi_datatypes.datatypes[MPI_FLOAT]->size = sizeof(float);
-  nm_mpi_datatypes.datatypes[MPI_DOUBLE]->size = sizeof(double);
-  nm_mpi_datatypes.datatypes[MPI_LONG_DOUBLE]->size = sizeof(long double);
-  nm_mpi_datatypes.datatypes[MPI_LONG_LONG_INT]->size = sizeof(long long int);
-  nm_mpi_datatypes.datatypes[MPI_LONG_LONG]->size = sizeof(long long);
-
-  nm_mpi_datatypes.datatypes[MPI_LOGICAL]->size = sizeof(float);
-  nm_mpi_datatypes.datatypes[MPI_REAL]->size = sizeof(float);
-  nm_mpi_datatypes.datatypes[MPI_REAL4]->size = 4*sizeof(char);
-  nm_mpi_datatypes.datatypes[MPI_REAL8]->size = 8*sizeof(char);
-  nm_mpi_datatypes.datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
-  nm_mpi_datatypes.datatypes[MPI_INTEGER]->size = sizeof(float);
-  nm_mpi_datatypes.datatypes[MPI_INTEGER4]->size = sizeof(int32_t);
-  nm_mpi_datatypes.datatypes[MPI_INTEGER8]->size = sizeof(int64_t);
-  nm_mpi_datatypes.datatypes[MPI_PACKED]->size = sizeof(char);
-
-  nm_mpi_datatypes.datatypes[MPI_DATATYPE_NULL]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_CHAR]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_UNSIGNED_CHAR]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_BYTE]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_SHORT]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_UNSIGNED_SHORT]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_INT]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_UNSIGNED]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_LONG]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_UNSIGNED_LONG]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_FLOAT]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_DOUBLE]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_LONG_DOUBLE]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_LONG_LONG_INT]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_LONG_LONG]->elements = 1;
-
-  nm_mpi_datatypes.datatypes[MPI_LOGICAL]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_REAL]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_REAL4]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_REAL8]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_DOUBLE_PRECISION]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_INTEGER]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_INTEGER4]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_INTEGER8]->elements = 1;
-  nm_mpi_datatypes.datatypes[MPI_PACKED]->elements = 1;
-
-  /* todo: elements=2 */
-  nm_mpi_datatypes.datatypes[MPI_LONG_INT]->size = sizeof(long)+sizeof(int);
-  nm_mpi_datatypes.datatypes[MPI_SHORT_INT]->size = sizeof(short)+sizeof(int);
-  nm_mpi_datatypes.datatypes[MPI_FLOAT_INT]->size = sizeof(float)+sizeof(int);
-  nm_mpi_datatypes.datatypes[MPI_DOUBLE_INT]->size = sizeof(double) + sizeof(int);
-
-  nm_mpi_datatypes.datatypes[MPI_2INT]->size = 2*sizeof(int);
-  nm_mpi_datatypes.datatypes[MPI_2INT]->elements = 2;
-
-  nm_mpi_datatypes.datatypes[MPI_2DOUBLE_PRECISION]->size = 2*sizeof(double);
-  nm_mpi_datatypes.datatypes[MPI_2DOUBLE_PRECISION]->elements = 2;
-
-  nm_mpi_datatypes.datatypes[MPI_COMPLEX]->size = 2*sizeof(float);
-  nm_mpi_datatypes.datatypes[MPI_COMPLEX]->elements = 2;
-
-  nm_mpi_datatypes.datatypes[MPI_DOUBLE_COMPLEX]->size = 2*sizeof(double);
-  nm_mpi_datatypes.datatypes[MPI_DOUBLE_COMPLEX]->elements = 2;
-
-
-  for(i = MPI_DATATYPE_NULL; i <= _MPI_DATATYPE_MAX; i++)
-    {
-      nm_mpi_datatypes.datatypes[i]->extent = nm_mpi_datatypes.datatypes[i]->size;
-    }
-
   nm_mpi_datatypes.datatypes_pool = puk_int_vect_new();
   for(i = _MPI_DATATYPE_MAX+1 ; i < NUMBER_OF_DATATYPES; i++)
     {
@@ -211,6 +172,25 @@ void nm_mpi_datatype_exit(void)
 
   puk_int_vect_delete(nm_mpi_datatypes.datatypes_pool);
   nm_mpi_datatypes.datatypes_pool = NULL;
+}
+
+/* ********************************************************* */
+
+/** store a basic datatype */
+static void nm_mpi_datatype_store(int id, size_t size, int elements)
+{
+  nm_mpi_datatype_t*p_datatype = malloc(sizeof(nm_mpi_datatype_t));
+  p_datatype->basic = 1;
+  p_datatype->committed = 1;
+  p_datatype->is_contig = 1;
+  p_datatype->dte_type = NM_MPI_DATATYPE_BASIC;
+  p_datatype->active_communications = 100;
+  p_datatype->free_requested = 0;
+  p_datatype->lb = 0;
+  p_datatype->size = size;
+  p_datatype->elements = elements;
+  p_datatype->extent = size;
+  nm_mpi_datatypes.datatypes[id] = p_datatype;
 }
 
 /* ********************************************************* */
@@ -258,7 +238,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
   p_newtype->extent    = extent;
   p_newtype->lb        = lb;
 
-  if(p_newtype->dte_type == MPIR_CONTIG)
+  if(p_newtype->dte_type == NM_MPI_DATATYPE_CONTIG)
     {
       p_newtype->old_sizes    = malloc(1 * sizeof(int));
       p_newtype->old_sizes[0] = p_oldtype->old_sizes[0];
@@ -266,7 +246,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
       p_newtype->old_types[0] = oldtype;
       p_newtype->elements     = p_oldtype->elements;
     }
-  else if(p_newtype->dte_type == MPIR_VECTOR)
+  else if(p_newtype->dte_type == NM_MPI_DATATYPE_VECTOR)
     {
       p_newtype->old_sizes    = malloc(1 * sizeof(int));
       p_newtype->old_sizes[0] = p_oldtype->old_sizes[0];
@@ -278,7 +258,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
       p_newtype->block_size   = p_oldtype->block_size;
       p_newtype->stride       = p_oldtype->stride;
   }
-  else if(p_newtype->dte_type == MPIR_INDEXED) 
+  else if(p_newtype->dte_type == NM_MPI_DATATYPE_INDEXED) 
     {
       p_newtype->old_sizes    = malloc(1 * sizeof(int));
       p_newtype->old_sizes[0] = p_oldtype->old_sizes[0];
@@ -293,7 +273,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
 	  p_newtype->indices[i]   = p_oldtype->indices[i];
 	}
     }
-  else if(p_newtype->dte_type == MPIR_STRUCT)
+  else if(p_newtype->dte_type == NM_MPI_DATATYPE_STRUCT)
     {
       p_newtype->elements  = p_oldtype->elements;
     p_newtype->blocklens = malloc(p_newtype->elements * sizeof(int));
@@ -307,7 +287,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
       p_newtype->old_types[i] = p_oldtype->old_types[i];
     }
   }
-  else if (p_newtype->dte_type != MPIR_BASIC) {
+  else if (p_newtype->dte_type != NM_MPI_DATATYPE_BASIC) {
     ERROR("Datatype %d unknown", oldtype);
     return MPI_ERR_OTHER;
   }
@@ -354,7 +334,7 @@ int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc();
   *newtype = p_newtype->id;
-  p_newtype->dte_type = MPIR_CONTIG;
+  p_newtype->dte_type = NM_MPI_DATATYPE_CONTIG;
   p_newtype->basic = 0;
   p_newtype->old_sizes = malloc(1 * sizeof(int));
   p_newtype->old_sizes[0] = p_oldtype->extent;
@@ -385,7 +365,7 @@ int mpi_type_hvector(int count, int blocklength, int stride, MPI_Datatype oldtyp
   nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc();
   *newtype = p_newtype->id;
-  p_newtype->dte_type = MPIR_VECTOR;
+  p_newtype->dte_type = NM_MPI_DATATYPE_VECTOR;
   p_newtype->basic = 0;
   p_newtype->old_sizes = malloc(1 * sizeof(int));
   p_newtype->old_sizes[0] = p_oldtype->extent;
@@ -452,7 +432,7 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
   MPI_NMAD_TRACE("Creating struct derived datatype based on %d elements\n", count);
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc();
   *newtype = p_newtype->id;
-  p_newtype->dte_type = MPIR_STRUCT;
+  p_newtype->dte_type = NM_MPI_DATATYPE_STRUCT;
   p_newtype->basic = 0;
   p_newtype->committed = 0;
   p_newtype->is_contig = 0;
@@ -568,12 +548,12 @@ static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
     {
       FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->old_sizes);
       FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->old_types);
-      if (nm_mpi_datatypes.datatypes[datatype]->dte_type == MPIR_INDEXED || nm_mpi_datatypes.datatypes[datatype]->dte_type == MPIR_STRUCT)
+      if (nm_mpi_datatypes.datatypes[datatype]->dte_type == NM_MPI_DATATYPE_INDEXED || nm_mpi_datatypes.datatypes[datatype]->dte_type == NM_MPI_DATATYPE_STRUCT)
 	{
 	  FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->blocklens);
 	  FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->indices);
 	}
-      if (nm_mpi_datatypes.datatypes[datatype]->dte_type == MPIR_VECTOR) 
+      if (nm_mpi_datatypes.datatypes[datatype]->dte_type == NM_MPI_DATATYPE_VECTOR) 
 	{
 	  FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->blocklens);
 	}
@@ -590,7 +570,7 @@ static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Ai
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc();
   *newtype = p_newtype->id;
-  p_newtype->dte_type = MPIR_INDEXED;
+  p_newtype->dte_type = NM_MPI_DATATYPE_INDEXED;
   p_newtype->basic = 0;
   p_newtype->old_sizes = malloc(1 * sizeof(int));
   p_newtype->old_sizes[0] = p_oldtype->extent;

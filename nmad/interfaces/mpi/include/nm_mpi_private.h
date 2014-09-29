@@ -189,17 +189,22 @@ typedef struct nm_mpi_operator_s
 /* @{ */
 
 /** Types of datatypes */
-typedef enum {
-    MPIR_BASIC,
-    MPIR_CONTIG, MPIR_VECTOR, MPIR_INDEXED, MPIR_STRUCT
-} mpir_nodetype_t;
+typedef enum 
+  {
+    NM_MPI_DATATYPE_BASIC,
+    NM_MPI_DATATYPE_CONTIG, 
+    NM_MPI_DATATYPE_VECTOR,
+    NM_MPI_DATATYPE_INDEXED, 
+    NM_MPI_DATATYPE_STRUCT
+  }
+  nm_mpi_datatype_type_t;
 
 /** Internal datatype */
 typedef struct nm_mpi_datatype_s
 {
   int id;
   /** type of datatype element this is */
-  mpir_nodetype_t dte_type;
+  nm_mpi_datatype_type_t dte_type;
   /** whether basic or user-defined */
   int basic;
   /** whether committed or not */

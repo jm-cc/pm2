@@ -345,7 +345,7 @@ int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *
     {
       /* nothing to do */
     }
-  else if(p_datatype->dte_type == MPIR_VECTOR) 
+  else if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR) 
     {
       if(!p_datatype->is_optimized) 
 	{
@@ -358,7 +358,7 @@ int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *
 	  nm_mpi_datatype_vector_aggregate(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
 	}
     }
-  else if(p_datatype->dte_type == MPIR_INDEXED)
+  else if(p_datatype->dte_type == NM_MPI_DATATYPE_INDEXED)
     {
       if(!p_datatype->is_optimized)
 	{
@@ -371,7 +371,7 @@ int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *
 	  nm_mpi_datatype_indexed_aggregate(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
 	}
     }
-  else if(p_datatype->dte_type == MPIR_STRUCT)
+  else if(p_datatype->dte_type == NM_MPI_DATATYPE_STRUCT)
     {
       if(!p_datatype->is_optimized)
 	{
@@ -426,15 +426,15 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
     {
       nm_pack_cnx_t*connection = &(p_req->request_cnx);
       nm_begin_packing(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, connection);
-      if(p_datatype->dte_type == MPIR_VECTOR)
+      if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR)
 	{
 	  err = nm_mpi_datatype_vector_pack(connection, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if(p_datatype->dte_type == MPIR_INDEXED) 
+      else if(p_datatype->dte_type == NM_MPI_DATATYPE_INDEXED) 
 	{
 	  err = nm_mpi_datatype_indexed_pack(connection, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if(p_datatype->dte_type == MPIR_STRUCT)
+      else if(p_datatype->dte_type == NM_MPI_DATATYPE_STRUCT)
 	{
 	  err = nm_mpi_datatype_struct_pack(connection, p_req->buffer, p_datatype, p_req->count);
 	}
@@ -484,7 +484,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
       if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
 	p_req->request_type = NM_MPI_REQUEST_RECV;
     }
-  else if(p_datatype->dte_type == MPIR_VECTOR)
+  else if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR)
     {
       if(!p_datatype->is_optimized)
 	{
@@ -498,7 +498,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 	    p_req->request_type = NM_MPI_REQUEST_RECV;
 	}
     }
-  else if(p_datatype->dte_type == MPIR_INDEXED)
+  else if(p_datatype->dte_type == NM_MPI_DATATYPE_INDEXED)
     {
       if(!p_datatype->is_optimized)
 	{
@@ -512,7 +512,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 	    p_req->request_type = NM_MPI_REQUEST_RECV;
 	}
     }
-  else if(p_datatype->dte_type == MPIR_STRUCT)
+  else if(p_datatype->dte_type == NM_MPI_DATATYPE_STRUCT)
     {
       if(!p_datatype->is_optimized)
 	{
@@ -556,15 +556,15 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
       nm_pack_cnx_t*connection = &(p_req->request_cnx);
       int err = NM_ESUCCESS;
       nm_begin_unpacking(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, connection);
-      if(p_datatype->dte_type == MPIR_VECTOR)
+      if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR)
 	{
 	  err = nm_mpi_datatype_vector_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if(p_datatype->dte_type == MPIR_INDEXED)
+      else if(p_datatype->dte_type == NM_MPI_DATATYPE_INDEXED)
 	{
 	  err = nm_mpi_datatype_indexed_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if(p_datatype->dte_type == MPIR_STRUCT)
+      else if(p_datatype->dte_type == NM_MPI_DATATYPE_STRUCT)
 	{
 	  err = nm_mpi_datatype_struct_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
 	}
@@ -596,15 +596,15 @@ int nm_mpi_datatype_split(nm_mpi_request_t *p_req)
 {
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   int err = MPI_SUCCESS;
-  if(p_datatype->dte_type == MPIR_VECTOR) 
+  if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR) 
     {
       err = nm_mpi_datatype_vector_split(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
     }
-  else if(p_datatype->dte_type == MPIR_INDEXED)
+  else if(p_datatype->dte_type == NM_MPI_DATATYPE_INDEXED)
     {
       err = nm_mpi_datatype_indexed_split(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
     }
-  else if(p_datatype->dte_type == MPIR_STRUCT)
+  else if(p_datatype->dte_type == NM_MPI_DATATYPE_STRUCT)
     {
       err = nm_mpi_datatype_struct_split(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
     }

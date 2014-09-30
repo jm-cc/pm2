@@ -123,7 +123,7 @@ typedef int MPI_Request;
 /** The special value MPI_REQUEST_NULL is used to indicate an invalid
  *  request handle.
  */
-#define MPI_REQUEST_NULL   ((MPI_Request) -1)
+#define MPI_REQUEST_NULL   ((MPI_Request)0)
 
 
 /* @} */
@@ -134,7 +134,7 @@ typedef int MPI_Group;
 /** Invalid group handle */
 #define MPI_GROUP_NULL ((MPI_Group)0)
 /** Predefined empty group */
-#define MPI_GROUP_EMPTY ((MPI_Group)3)
+#define MPI_GROUP_EMPTY ((MPI_Group)1)
 
 #define _NM_MPI_GROUP_OFFSET 4
 
@@ -209,27 +209,27 @@ typedef int MPI_Datatype;
 #define _MPI_DATATYPE_MAX    ((MPI_Datatype)35)
 
 #define _NM_MPI_DATATYPE_OFFSET 36
+
 /* @} */
 
 /** @name Collective operations */
 /* @{ */
 /** Operator handle */
 typedef int MPI_Op;
-#define MPI_OP_NULL (MPI_Op)(999)
-#define MPI_MAX     (MPI_Op)(100)
-#define MPI_MIN     (MPI_Op)(101)
-#define MPI_SUM     (MPI_Op)(102)
-#define MPI_PROD    (MPI_Op)(103)
-#define MPI_LAND    (MPI_Op)(104)
-#define MPI_BAND    (MPI_Op)(105)
-#define MPI_LOR     (MPI_Op)(106)
-#define MPI_BOR     (MPI_Op)(107)
-#define MPI_LXOR    (MPI_Op)(108)
-#define MPI_BXOR    (MPI_Op)(109)
-#define MPI_MINLOC  (MPI_Op)(110)
-#define MPI_MAXLOC  (MPI_Op)(111)
-#define _MPI_OP_FIRST ((MPI_Op)100)
-#define _MPI_OP_LAST  ((MPI_Op)111)
+#define MPI_OP_NULL ((MPI_Op)0)
+#define MPI_MAX     ((MPI_Op)1)
+#define MPI_MIN     ((MPI_Op)2)
+#define MPI_SUM     ((MPI_Op)3)
+#define MPI_PROD    ((MPI_Op)4)
+#define MPI_LAND    ((MPI_Op)5)
+#define MPI_BAND    ((MPI_Op)6)
+#define MPI_LOR     ((MPI_Op)7)
+#define MPI_BOR     ((MPI_Op)8)
+#define MPI_LXOR    ((MPI_Op)9)
+#define MPI_BXOR    ((MPI_Op)10)
+#define MPI_MINLOC  ((MPI_Op)11)
+#define MPI_MAXLOC  ((MPI_Op)12)
+#define _NM_MPI_OP_OFFSET    13
 /* @} */
 
 #define MPI_MAX_PROCESSOR_NAME 256

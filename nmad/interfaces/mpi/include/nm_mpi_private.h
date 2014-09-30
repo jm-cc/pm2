@@ -180,7 +180,8 @@ typedef struct nm_mpi_request_s
 /** Internal reduce operators */
 typedef struct nm_mpi_operator_s
 {
-  MPI_User_function *function;
+  int id;
+  MPI_User_function*function;
   int commute;
 } nm_mpi_operator_t;
 /* @} */

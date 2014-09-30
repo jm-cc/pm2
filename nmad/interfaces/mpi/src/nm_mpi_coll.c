@@ -23,6 +23,12 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 /* ********************************************************* */
 
+NM_MPI_HANDLE_TYPE(operator, nm_mpi_operator_t, _NM_MPI_OP_OFFSET, 16);
+
+static struct nm_mpi_handle_operator_s nm_mpi_operators;
+
+/* ********************************************************* */
+
 int MPI_Barrier(MPI_Comm comm) __attribute__ ((alias ("mpi_barrier")));
 
 
@@ -125,59 +131,37 @@ int MPI_Reduce_scatter(void *sendbuf,
 
 /* ********************************************************* */
 
-/** Maximum number of reduce operators */
-#define NUMBER_OF_OPERATORS (_MPI_OP_LAST+1)
-
-static struct
+/** store builtin operators */
+static void nm_mpi_operator_store(int id, MPI_User_function*function)
 {
-  /** all the defined reduce operations */
-  nm_mpi_operator_t *operators[NUMBER_OF_OPERATORS];
-  /** pool of ids of reduce operations that can be created by end-users */
-  puk_int_vect_t operators_pool;
-} nm_mpi_collectives;
+  nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_store(&nm_mpi_operators, id);
+  p_operator->function = function;
+  p_operator->commute = 1;
+}
 
 __PUK_SYM_INTERNAL
 void nm_mpi_coll_init(void)
 {
   /** Initialise the collective operators */
-  int i;
-  for(i = _MPI_OP_FIRST; i <= _MPI_OP_LAST; i++)
-    {
-      nm_mpi_collectives.operators[i] = malloc(sizeof(nm_mpi_operator_t));
-      nm_mpi_collectives.operators[i]->commute = 1;
-    }
-  nm_mpi_collectives.operators[MPI_MAX]->function = &mpir_op_max;
-  nm_mpi_collectives.operators[MPI_MIN]->function = &mpir_op_min;
-  nm_mpi_collectives.operators[MPI_SUM]->function = &mpir_op_sum;
-  nm_mpi_collectives.operators[MPI_PROD]->function = &mpir_op_prod;
-  nm_mpi_collectives.operators[MPI_LAND]->function = &mpir_op_land;
-  nm_mpi_collectives.operators[MPI_BAND]->function = &mpir_op_band;
-  nm_mpi_collectives.operators[MPI_LOR]->function = &mpir_op_lor;
-  nm_mpi_collectives.operators[MPI_BOR]->function = &mpir_op_bor;
-  nm_mpi_collectives.operators[MPI_LXOR]->function = &mpir_op_lxor;
-  nm_mpi_collectives.operators[MPI_BXOR]->function = &mpir_op_bxor;
-  nm_mpi_collectives.operators[MPI_MINLOC]->function = &mpir_op_minloc;
-  nm_mpi_collectives.operators[MPI_MAXLOC]->function = &mpir_op_maxloc;
-
-  nm_mpi_collectives.operators_pool = puk_int_vect_new();
-  for(i = 1; i < MPI_MAX; i++)
-    {
-      puk_int_vect_push_back(nm_mpi_collectives.operators_pool, i);
-    }
+  nm_mpi_handle_operator_init(&nm_mpi_operators);
+  nm_mpi_operator_store(MPI_MAX, &mpir_op_max);
+  nm_mpi_operator_store(MPI_MIN, &mpir_op_min);
+  nm_mpi_operator_store(MPI_SUM, &mpir_op_sum);
+  nm_mpi_operator_store(MPI_PROD, &mpir_op_prod);
+  nm_mpi_operator_store(MPI_LAND, &mpir_op_land);
+  nm_mpi_operator_store(MPI_BAND, &mpir_op_band);
+  nm_mpi_operator_store(MPI_LOR, &mpir_op_lor);
+  nm_mpi_operator_store(MPI_BOR, &mpir_op_bor);
+  nm_mpi_operator_store(MPI_LXOR, &mpir_op_lxor);
+  nm_mpi_operator_store(MPI_BXOR, &mpir_op_bxor);
+  nm_mpi_operator_store(MPI_MINLOC, &mpir_op_minloc);
+  nm_mpi_operator_store(MPI_MAXLOC, &mpir_op_maxloc);
 }
 
 __PUK_SYM_INTERNAL
 void nm_mpi_coll_exit(void)
 {
-  int i;
-  for(i = _MPI_OP_FIRST; i <= _MPI_OP_LAST; i++)
-    {
-      FREE_AND_SET_NULL(nm_mpi_collectives.operators[i]);
-    }
-
-  puk_int_vect_delete(nm_mpi_collectives.operators_pool);
-  nm_mpi_collectives.operators_pool = NULL;
-
+  nm_mpi_handle_operator_finalize(&nm_mpi_operators);
 }
 
 static nm_mpi_request_t*nm_mpi_coll_isend(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm)
@@ -482,41 +466,20 @@ int mpi_alltoallv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sen
   return MPI_SUCCESS;
 }
 
-int mpi_op_create(MPI_User_function *function, int commute, MPI_Op *op)
+int mpi_op_create(MPI_User_function*function, int commute, MPI_Op*op)
 {
-  int err;
-  if(puk_int_vect_empty(nm_mpi_collectives.operators_pool))
-    {
-      ERROR("Maximum number of operations created");
-      return MPI_ERR_INTERN;
-    }
-  else
-    {
-      *op = puk_int_vect_pop_back(nm_mpi_collectives.operators_pool);
-      nm_mpi_collectives.operators[*op] = malloc(sizeof(nm_mpi_operator_t));
-      nm_mpi_collectives.operators[*op]->function = function;
-      nm_mpi_collectives.operators[*op]->commute = commute;
-      return MPI_SUCCESS;
-    }
-  return err;
+  nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_alloc(&nm_mpi_operators);
+  p_operator->function = function;
+  p_operator->commute = commute;
+  return MPI_SUCCESS;
 }
 
-int mpi_op_free(MPI_Op *op)
+int mpi_op_free(MPI_Op*op)
 {
-  int err;
-  if (*op > NUMBER_OF_OPERATORS || nm_mpi_collectives.operators[*op] == NULL) 
-    {
-      ERROR("Operator %d unknown\n", *op);
-      return MPI_ERR_OTHER;
-    }
-  else
-    {
-      FREE_AND_SET_NULL(nm_mpi_collectives.operators[*op]);
-      puk_int_vect_push_back(nm_mpi_collectives.operators_pool, *op);
-      *op = MPI_OP_NULL;
-      return MPI_SUCCESS;
-    }
-  return err;
+  nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_get(&nm_mpi_operators, *op);
+  nm_mpi_handle_operator_free(&nm_mpi_operators, p_operator);
+  *op = MPI_OP_NULL;
+  return MPI_SUCCESS;
 }
 
 int mpi_reduce(void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
@@ -635,14 +598,7 @@ int mpi_reduce_scatter(void*sendbuf, void*recvbuf, int*recvcounts, MPI_Datatype 
 __PUK_SYM_INTERNAL
 nm_mpi_operator_t*nm_mpi_operator_get(MPI_Op op)
  {
-  if(nm_mpi_collectives.operators[op] != NULL)
-    {
-      return nm_mpi_collectives.operators[op];
-    }
-  else
-    {
-      ERROR("Operation %d unknown", op);
-      return NULL;
-    }
+   nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_get(&nm_mpi_operators, op);
+   return p_operator;
 }
 

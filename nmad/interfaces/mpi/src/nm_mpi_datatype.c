@@ -20,10 +20,16 @@
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(NewMad_Core);
 
-static nm_mpi_datatype_t*nm_mpi_datatype_alloc(void);
-static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
+NM_MPI_HANDLE_TYPE(datatype, nm_mpi_datatype_t, _NM_MPI_DATATYPE_OFFSET, 64);
+
+static struct nm_mpi_handle_datatype_s nm_mpi_datatypes;
+
+
 static int nm_mpi_datatype_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
 static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Aint*array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype);
+/** store builtin datatypes */
+static void nm_mpi_datatype_store(int id, size_t size, int elements);
+static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
 
 
 /* ********************************************************* */
@@ -89,24 +95,13 @@ int MPI_Type_struct(int count,
 
 /* ********************************************************* */
 
-/** Maximum number of datatypes */
-#define NUMBER_OF_DATATYPES 2048
-
-static void nm_mpi_datatype_store(int id, size_t size, int elements);
-
-static struct
-{
-  /** all the defined datatypes */
-  nm_mpi_datatype_t *datatypes[NUMBER_OF_DATATYPES];
-  /** pool of ids of datatypes that can be created by end-users */
-  puk_int_vect_t datatypes_pool;
-} nm_mpi_datatypes;
 
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_init(void)
 {
+  nm_mpi_handle_datatype_init(&nm_mpi_datatypes);
+
   /* Initialise the basic datatypes */
-  nm_mpi_datatype_store(MPI_DATATYPE_NULL, 0, 0);
 
   /* C types */
   nm_mpi_datatype_store(MPI_CHAR,               sizeof(char), 1);
@@ -153,25 +148,12 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_COMPLEX,            2 * sizeof(float), 2);
   nm_mpi_datatype_store(MPI_DOUBLE_COMPLEX,     2 * sizeof(double), 2);
 
-  int i;
-  nm_mpi_datatypes.datatypes_pool = puk_int_vect_new();
-  for(i = _MPI_DATATYPE_MAX+1 ; i < NUMBER_OF_DATATYPES; i++)
-    {
-      puk_int_vect_push_back(nm_mpi_datatypes.datatypes_pool, i);
-    }
 }
 
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_exit(void)
 {
-  int i;
-  for(i = 0; i <= _MPI_DATATYPE_MAX; i++)
-    {
-      FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[i]);
-    }
-
-  puk_int_vect_delete(nm_mpi_datatypes.datatypes_pool);
-  nm_mpi_datatypes.datatypes_pool = NULL;
+  nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes);
 }
 
 /* ********************************************************* */
@@ -179,7 +161,7 @@ void nm_mpi_datatype_exit(void)
 /** store a basic datatype */
 static void nm_mpi_datatype_store(int id, size_t size, int elements)
 {
-  nm_mpi_datatype_t*p_datatype = malloc(sizeof(nm_mpi_datatype_t));
+  nm_mpi_datatype_t*p_datatype = nm_mpi_handle_datatype_store(&nm_mpi_datatypes, id);
   p_datatype->basic = 1;
   p_datatype->committed = 1;
   p_datatype->is_contig = 1;
@@ -190,7 +172,6 @@ static void nm_mpi_datatype_store(int id, size_t size, int elements)
   p_datatype->size = size;
   p_datatype->elements = elements;
   p_datatype->extent = size;
-  nm_mpi_datatypes.datatypes[id] = p_datatype;
 }
 
 /* ********************************************************* */
@@ -228,7 +209,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
     }
   int i;
   nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
-  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc();
+  nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   *newtype = p_newtype->id;
   p_newtype->dte_type  = p_oldtype->dte_type;
   p_newtype->basic     = p_oldtype->basic;
@@ -332,7 +313,7 @@ int mpi_type_optimized(MPI_Datatype *datatype, int optimized)
 int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
-  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc();
+  nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   *newtype = p_newtype->id;
   p_newtype->dte_type = NM_MPI_DATATYPE_CONTIG;
   p_newtype->basic = 0;
@@ -363,7 +344,7 @@ int mpi_type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype
 int mpi_type_hvector(int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
-  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc();
+  nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   *newtype = p_newtype->id;
   p_newtype->dte_type = NM_MPI_DATATYPE_VECTOR;
   p_newtype->basic = 0;
@@ -430,7 +411,7 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
   int i;
 
   MPI_NMAD_TRACE("Creating struct derived datatype based on %d elements\n", count);
-  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc();
+  nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   *newtype = p_newtype->id;
   p_newtype->dte_type = NM_MPI_DATATYPE_STRUCT;
   p_newtype->basic = 0;
@@ -467,49 +448,16 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
 }
 
 
-
-/**
- * Gets the id of the next available datatype.
- */
-static inline nm_mpi_datatype_t*nm_mpi_datatype_alloc(void)
-{
-  nm_mpi_datatype_t*p_datatype = malloc(sizeof(nm_mpi_datatype_t));
-  if(puk_int_vect_empty(nm_mpi_datatypes.datatypes_pool))
-    {
-      ERROR("Maximum number of datatypes created");
-      return NULL;
-    }
-  const int datatype = puk_int_vect_pop_back(nm_mpi_datatypes.datatypes_pool);
-  nm_mpi_datatypes.datatypes[datatype] = p_datatype;
-  p_datatype->id = datatype;
-  return p_datatype;
-}
-
 __PUK_SYM_INTERNAL
 size_t nm_mpi_datatype_size(nm_mpi_datatype_t*p_datatype)
 {
   return p_datatype->size;
 }
 
+__PUK_SYM_INTERNAL
 nm_mpi_datatype_t* nm_mpi_datatype_get(MPI_Datatype datatype)
 {
-  if (datatype >= 0 && datatype < NUMBER_OF_DATATYPES)
-    {
-      if(tbx_unlikely(nm_mpi_datatypes.datatypes[datatype] == NULL))
-	{
-	  ERROR("Datatype %d invalid", datatype);
-	  return NULL;
-	}
-      else 
-	{
-	  return nm_mpi_datatypes.datatypes[datatype];
-	}
-    }
-  else 
-    {
-      ERROR("Datatype %d unknown", datatype);
-      return NULL;
-    }
+  return nm_mpi_handle_datatype_get(&nm_mpi_datatypes, datatype);
 }
 
 static int nm_mpi_datatype_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent)
@@ -538,7 +486,6 @@ int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype)
 
 static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
 {
-  const int datatype = p_datatype->id;
   if(p_datatype->active_communications != 0)
     {
       p_datatype->free_requested = 1;
@@ -546,19 +493,18 @@ static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
     }
   else
     {
-      FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->old_sizes);
-      FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->old_types);
-      if (nm_mpi_datatypes.datatypes[datatype]->dte_type == NM_MPI_DATATYPE_INDEXED || nm_mpi_datatypes.datatypes[datatype]->dte_type == NM_MPI_DATATYPE_STRUCT)
+      FREE_AND_SET_NULL(p_datatype->old_sizes);
+      FREE_AND_SET_NULL(p_datatype->old_types);
+      if(p_datatype->dte_type == NM_MPI_DATATYPE_INDEXED || p_datatype->dte_type == NM_MPI_DATATYPE_STRUCT)
 	{
-	  FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->blocklens);
-	  FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->indices);
+	  FREE_AND_SET_NULL(p_datatype->blocklens);
+	  FREE_AND_SET_NULL(p_datatype->indices);
 	}
-      if (nm_mpi_datatypes.datatypes[datatype]->dte_type == NM_MPI_DATATYPE_VECTOR) 
+      if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR) 
 	{
-	  FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]->blocklens);
+	  FREE_AND_SET_NULL(p_datatype->blocklens);
 	}
-      puk_int_vect_push_back(nm_mpi_datatypes.datatypes_pool, datatype);
-      FREE_AND_SET_NULL(nm_mpi_datatypes.datatypes[datatype]);
+      nm_mpi_handle_datatype_free(&nm_mpi_datatypes, p_datatype);
       return MPI_SUCCESS;
     }
 }
@@ -568,7 +514,7 @@ static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Ai
 {
   int i;
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
-  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc();
+  nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   *newtype = p_newtype->id;
   p_newtype->dte_type = NM_MPI_DATATYPE_INDEXED;
   p_newtype->basic = 0;

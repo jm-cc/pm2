@@ -21,22 +21,9 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
-PUK_VECT_TYPE(nm_mpi_request, nm_mpi_request_t*);
+NM_MPI_HANDLE_TYPE(request, nm_mpi_request_t, 1, 256);
 
-/* Custom requests allocator. Inspired by Puk lock-free allocator,
-   except that we use int indexes for compatibility with Fortran.
-*/
-PUK_LFSTACK_TYPE(nm_mpi_request_block, nm_mpi_request_t req __attribute__((aligned(PUK_ALLOCATOR_ALIGN))););
-PUK_LFSTACK_TYPE(nm_mpi_request_slice, struct nm_mpi_request_block_lfstack_cell_s block; );
-static struct
-{
-  nm_mpi_request_block_lfstack_t cache;        /**< cache for nm_mpi_request_t blocks */
-  nm_mpi_request_slice_lfstack_t slices;       /**< slices of memory containing blocks */
-  int slice_size;                              /**< number of blocks per slice */
-  MPI_Fint next_id;                            /**< next req id to allocate */
-  nm_mpi_request_vect_t request_array;         /**< maps req_id -> nm_mpi_request_t* */
-} nm_mpi_request_allocator = { .cache = NULL, .slices = NULL, .slice_size = 256, .next_id = 1, .request_array = NULL };
-
+static struct nm_mpi_handle_request_s nm_mpi_requests;
 
 /* ********************************************************* */
 
@@ -96,60 +83,46 @@ int MPI_Request_is_equal(MPI_Request request1,
 __PUK_SYM_INTERNAL
 void nm_mpi_request_init(void)
 {
-  nm_mpi_request_allocator.request_array = nm_mpi_request_vect_new();
-  /* placeholder so as to never allocate request #0 (easier to debug) */
-  nm_mpi_request_vect_push_back(nm_mpi_request_allocator.request_array, (void*)0xDEADBEEF);
+  nm_mpi_handle_request_init(&nm_mpi_requests);
 }
 
+__PUK_SYM_INTERNAL
+void nm_mpi_request_exit(void)
+{
+  nm_mpi_handle_request_finalize(&nm_mpi_requests);
+}
+
+/* ********************************************************* */
+
+__PUK_SYM_INTERNAL
 nm_mpi_request_t*nm_mpi_request_alloc(void)
 {
-  struct nm_mpi_request_block_lfstack_cell_s*cell = NULL;
- retry:
-  cell = nm_mpi_request_block_lfstack_pop(&nm_mpi_request_allocator.cache);
-  if(cell == NULL)
-    {
-      /* cache miss; allocate a new slice */
-      int slice_size = nm_mpi_request_allocator.slice_size;
-      nm_mpi_request_allocator.slice_size *= 2;
-      struct nm_mpi_request_slice_lfstack_cell_s*slice =
-	padico_malloc(sizeof(struct nm_mpi_request_slice_lfstack_cell_s) + sizeof(struct nm_mpi_request_block_lfstack_cell_s) * slice_size);
-      nm_mpi_request_slice_lfstack_push(&nm_mpi_request_allocator.slices, slice);
-      struct nm_mpi_request_block_lfstack_cell_s*blocks = &slice->block;
-      int i;
-      for(i = 0; i < slice_size; i++)
-	{
-	  blocks[i].req.request_id = nm_mpi_request_allocator.next_id++;
-	  nm_mpi_request_block_lfstack_push(&nm_mpi_request_allocator.cache, &blocks[i]);
-	}
-      goto retry;
-    }
-  nm_mpi_request_t*req = &cell->req;
-  nm_mpi_request_vect_put(nm_mpi_request_allocator.request_array, req, req->request_id);
-  return req;
+  nm_mpi_request_t*p_req = nm_mpi_handle_request_alloc(&nm_mpi_requests);
+  return p_req;
 }
 
-void nm_mpi_request_free(nm_mpi_request_t*req)
+__PUK_SYM_INTERNAL
+void nm_mpi_request_free(nm_mpi_request_t*p_req)
 {
-  struct nm_mpi_request_block_lfstack_cell_s*cell = container_of(req, struct nm_mpi_request_block_lfstack_cell_s, req);
-  const int id = req->request_id;
-  req->request_type = NM_MPI_REQUEST_ZERO;
-  nm_mpi_request_vect_put(nm_mpi_request_allocator.request_array, NULL, id);
-  nm_mpi_request_block_lfstack_push(&nm_mpi_request_allocator.cache, cell);
+  /* set request to zero to help debug */
+  p_req->request_type = NM_MPI_REQUEST_ZERO;
+  nm_mpi_handle_request_free(&nm_mpi_requests, p_req);
 }
 
+__PUK_SYM_INTERNAL
 nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id)
 {
   const int id = (int)req_id;
   if(id == MPI_REQUEST_NULL)
     return NULL;
   assert(id >= 0);
-  nm_mpi_request_t*req = nm_mpi_request_vect_at(nm_mpi_request_allocator.request_array, id);
-  assert(req != NULL);
-  assert(req->request_id == id);
-  return req;
+  nm_mpi_request_t*p_req = nm_mpi_handle_request_get(&nm_mpi_requests, req_id);
+  assert(p_req != NULL);
+  assert(p_req->id == id);
+  return p_req;
 }
 
-static int nm_mpi_set_status(nm_mpi_request_t *p_req, MPI_Status *status)
+static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
 {
   int err = MPI_SUCCESS;
   status->MPI_TAG = p_req->user_tag;

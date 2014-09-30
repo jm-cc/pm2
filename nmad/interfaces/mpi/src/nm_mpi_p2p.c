@@ -144,7 +144,7 @@ int MPI_Recv_init(void* buf,
 int mpi_issend(void*buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
-  *request = p_req->request_id;
+  *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   int err;
   if(tbx_unlikely(tag == MPI_ANY_TAG))
@@ -181,7 +181,7 @@ int mpi_bsend(void *buffer,
 int mpi_send(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 {
   nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
-  MPI_Request           request = p_req->request_id;
+  MPI_Request           request = p_req->id;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
   if(tbx_unlikely(tag == MPI_ANY_TAG))
@@ -207,7 +207,7 @@ int mpi_send(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, 
 int mpi_isend(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
-  *request = p_req->request_id;
+  *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   int err;
   if(tbx_unlikely(tag == MPI_ANY_TAG))
@@ -232,7 +232,7 @@ int mpi_isend(void *buffer, int count, MPI_Datatype datatype, int dest, int tag,
 int mpi_rsend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 {
   nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
-  MPI_Request           request = p_req->request_id;
+  MPI_Request           request = p_req->id;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
   if(tbx_unlikely(tag == MPI_ANY_TAG))
@@ -280,7 +280,7 @@ int mpi_pack(void* inbuf, int incount, MPI_Datatype datatype, void *outbuf, int 
 int mpi_recv(void *buffer, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)
 {
   nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
-  MPI_Request           request = p_req->request_id;
+  MPI_Request           request = p_req->id;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
 
@@ -309,7 +309,7 @@ int mpi_recv(void *buffer, int count, MPI_Datatype datatype, int source, int tag
 int mpi_irecv(void *buffer, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
-  *request = p_req->request_id;
+  *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
 
   MPI_NMAD_LOG_IN();
@@ -423,7 +423,7 @@ int mpi_probe(int source, int tag, MPI_Comm comm, MPI_Status *status)
 int mpi_send_init(void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
-  *request = p_req->request_id;
+  *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Init Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
@@ -451,7 +451,7 @@ int mpi_send_init(void* buf, int count, MPI_Datatype datatype, int dest, int tag
 int mpi_recv_init(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
-  *request = p_req->request_id;
+  *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Init Irecv message from %d of datatype %d with tag %d\n", source, datatype, tag);

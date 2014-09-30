@@ -87,7 +87,7 @@
 /** Internal group */
 typedef struct nm_mpi_group_s
 {
-  unsigned int group_id;  /**< ID of the group (handle) */
+  unsigned int id;        /**< ID of the group (handle) */
   nm_group_t p_nm_group;  /**< underlying nmad group */
 } nm_mpi_group_t;
 
@@ -95,7 +95,7 @@ typedef struct nm_mpi_group_s
 typedef struct nm_mpi_communicator_s
 {
   /** id of the communicator */
-  unsigned int communicator_id;
+  unsigned int id;
   /** underlying nmad communicator */
   nm_comm_t p_comm;
   /** cartesian topology */
@@ -132,7 +132,7 @@ typedef int nm_mpi_communication_mode_t;
 typedef struct nm_mpi_request_s
 {
   /* identifier of the request */
-  MPI_Request request_id;
+  MPI_Request id;
   /** type of the request */
   nm_mpi_request_type_t request_type;
   /** persistent type of the request */
@@ -241,6 +241,119 @@ typedef struct nm_mpi_datatype_s
 } nm_mpi_datatype_t;
 /* @} */
 
+/* ********************************************************* */
+
+#ifdef PIOMAN
+#define nm_mpi_spinlock_t        piom_spinlock_t
+#define nm_mpi_spin_init(LOCK)   piom_spin_init(LOCK)
+#define nm_mpi_spin_lock(LOCK)   piom_spin_lock(LOCK)
+#define nm_mpi_spin_unlock(LOCK) piom_spin_unlock(LOCK)
+#else
+#define nm_mpi_spinlock_t       int
+#define nm_mpi_spin_init(LOCK)
+#define nm_mpi_spin_lock(LOCK)
+#define nm_mpi_spin_unlock(LOCK)
+#endif /* PIOMAN */
+
+/* typed handle manager and object allocator for objects indexed by ID
+ */
+#define NM_MPI_HANDLE_TYPE(ENAME, TYPE, OFFSET, SLABSIZE)		\
+  PUK_VECT_TYPE(nm_mpi_entry_ ## ENAME, TYPE*);				\
+  PUK_ALLOCATOR_TYPE(ENAME, TYPE);					\
+  struct nm_mpi_handle_##ENAME##_s					\
+  {									\
+    struct nm_mpi_entry_##ENAME##_vect_s table;				\
+    puk_int_vect_t pool;						\
+    MPI_Fint next_id;							\
+    nm_mpi_spinlock_t lock;						\
+    ENAME##_allocator_t allocator;					\
+  };									\
+  /** initialize the allocator */								\
+  static void nm_mpi_handle_##ENAME##_init(struct nm_mpi_handle_##ENAME##_s*p_allocator) \
+  {									\
+    nm_mpi_entry_##ENAME##_vect_init(&p_allocator->table);		\
+    p_allocator->pool = puk_int_vect_new();				\
+    p_allocator->next_id = OFFSET;					\
+    nm_mpi_spin_init(&p_allocator->lock);					\
+    p_allocator->allocator = ENAME ## _allocator_new(SLABSIZE);		\
+    int i;								\
+    for(i = 0; i < OFFSET; i++)						\
+      {									\
+	nm_mpi_entry_##ENAME##_vect_push_back(&p_allocator->table, NULL); \
+      }									\
+  }									\
+  static void nm_mpi_handle_##ENAME##_finalize(struct nm_mpi_handle_##ENAME##_s*p_allocator) \
+  {									\
+    nm_mpi_entry_##ENAME##_vect_destroy(&p_allocator->table);		\
+    puk_int_vect_delete(p_allocator->pool);				\
+    ENAME##_allocator_delete(p_allocator->allocator);			\
+  }									\
+  /** store a builtin object (constant ID) */				\
+  static TYPE*nm_mpi_handle_##ENAME##_store(struct nm_mpi_handle_##ENAME##_s*p_allocator, int id) __attribute__((unused)); \
+  static TYPE*nm_mpi_handle_##ENAME##_store(struct nm_mpi_handle_##ENAME##_s*p_allocator, int id) \
+  {									\
+    TYPE*e = ENAME ## _malloc(p_allocator->allocator);			\
+    if((id <= 0) || (id > OFFSET))					\
+      {									\
+	ERROR("madmpi: cannot store invalid %s handle id %d\n", #ENAME, id); \
+      }									\
+    if(nm_mpi_entry_##ENAME##_vect_at(&p_allocator->table, id) != NULL) \
+      {									\
+	ERROR("madmpi: %s handle %d busy; cannot store.", #ENAME, id);	\
+      }									\
+    nm_mpi_entry_##ENAME##_vect_put(&p_allocator->table, e, id);	\
+    e->id = id;								\
+    return e;								\
+  }									\
+  /** allocate a dynamic entry */					\
+  static TYPE*nm_mpi_handle_##ENAME##_alloc(struct nm_mpi_handle_##ENAME##_s*p_allocator) \
+  {									\
+    TYPE*e = ENAME ## _malloc(p_allocator->allocator);			\
+    int new_id = -1;							\
+    nm_mpi_spin_lock(&p_allocator->lock);					\
+    if(puk_int_vect_empty(p_allocator->pool))				\
+      {									\
+	new_id = p_allocator->next_id++;				\
+	nm_mpi_entry_##ENAME##_vect_resize(&p_allocator->table, new_id); \
+      }									\
+    else								\
+      {									\
+	new_id = puk_int_vect_pop_back(p_allocator->pool);		\
+      }									\
+    nm_mpi_entry_##ENAME##_vect_put(&p_allocator->table, e, new_id);	\
+    nm_mpi_spin_unlock(&p_allocator->lock);				\
+    e->id = new_id;							\
+    return e;								\
+  }									\
+  /** free an entry  */							\
+  static void nm_mpi_handle_##ENAME##_free(struct nm_mpi_handle_##ENAME##_s*p_allocator, TYPE*e) \
+  {									\
+    const int id = e->id;						\
+    nm_mpi_spin_lock(&p_allocator->lock);					\
+    puk_int_vect_push_back(p_allocator->pool, id);			\
+    nm_mpi_entry_##ENAME##_vect_put(&p_allocator->table, NULL, id);	\
+    nm_mpi_spin_unlock(&p_allocator->lock);				\
+    ENAME ## _free(p_allocator->allocator, e);				\
+  }									\
+  /** get a pointer on an entry from its ID */				\
+  static TYPE*nm_mpi_handle_##ENAME##_get(struct nm_mpi_handle_##ENAME##_s*p_allocator, int id) \
+  {									\
+    TYPE*e = NULL;							\
+    if((id > 0) && (id < nm_mpi_entry_##ENAME##_vect_size(&p_allocator->table))) \
+      {									\
+	nm_mpi_spin_lock(&p_allocator->lock);				\
+	e = nm_mpi_entry_##ENAME##_vect_at(&p_allocator->table, id);	\
+	nm_mpi_spin_unlock(&p_allocator->lock);				\
+      }									\
+    else								\
+      {									\
+	ERROR("madmpi: cannot get invalid handle id %d\n", id);		\
+      }									\
+    return e;								\
+  }
+
+
+/* ********************************************************* */
 
 /** Initialises internal data */
 int nm_mpi_internal_init(void);
@@ -250,6 +363,7 @@ int nm_mpi_internal_exit(void);
 
 /** init request sub-system */
 void nm_mpi_request_init(void);
+void nm_mpi_request_exit(void);
 
 /** init communicator sub-system */
 void nm_mpi_comm_init(void);

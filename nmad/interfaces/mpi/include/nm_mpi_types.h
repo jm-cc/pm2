@@ -136,8 +136,10 @@ typedef int MPI_Group;
 /** Predefined empty group */
 #define MPI_GROUP_EMPTY ((MPI_Group)3)
 
+#define _NM_MPI_GROUP_OFFSET 4
+
 /* group comparison return value */
-/** same memebers and order */
+/** same members and order */
 #define MPI_IDENT   0x01
 /** same members, order differs */
 #define MPI_SIMILAR 0x02
@@ -153,6 +155,9 @@ typedef int MPI_Comm;
 #define MPI_COMM_WORLD ((MPI_Comm)1)
 /** Communicator that includes only the process itself. */
 #define MPI_COMM_SELF  ((MPI_Comm)2)
+/** offset for dynamically allocated communicators */
+#define _NM_MPI_COMM_OFFSET 3
+
 /* @} */
 
 /** @name Basic datatypes */
@@ -202,6 +207,8 @@ typedef int MPI_Datatype;
 #define MPI_PACKED           ((MPI_Datatype)35)
 
 #define _MPI_DATATYPE_MAX    ((MPI_Datatype)35)
+
+#define _NM_MPI_DATATYPE_OFFSET 36
 /* @} */
 
 /** @name Collective operations */

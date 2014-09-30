@@ -120,6 +120,7 @@ int mpi_finalize(void)
   nm_mpi_datatype_exit();
   nm_mpi_coll_exit();
   nm_mpi_comm_exit();
+  nm_mpi_request_exit();
   init_done = 0;
   return err;
 }

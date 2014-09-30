@@ -125,6 +125,8 @@ typedef int MPI_Request;
  */
 #define MPI_REQUEST_NULL   ((MPI_Request)0)
 
+#define _NM_MPI_REQUEST_OFFSET           1
+
 
 /* @} */
 
@@ -132,11 +134,11 @@ typedef int MPI_Request;
 /** Group handle */
 typedef int MPI_Group;
 /** Invalid group handle */
-#define MPI_GROUP_NULL ((MPI_Group)0)
+#define MPI_GROUP_NULL  ((MPI_Group)0)
 /** Predefined empty group */
 #define MPI_GROUP_EMPTY ((MPI_Group)1)
 
-#define _NM_MPI_GROUP_OFFSET 4
+#define _NM_MPI_GROUP_OFFSET        2
 
 /* group comparison return value */
 /** same members and order */
@@ -193,22 +195,20 @@ typedef int MPI_Datatype;
 #define MPI_2REAL             ((MPI_Datatype)23)
 #define MPI_2DOUBLE_PRECISION ((MPI_Datatype)24)
 
-#define MPI_COMPLEX          ((MPI_Datatype)25)
-#define MPI_DOUBLE_COMPLEX   ((MPI_Datatype)26)
-#define MPI_LOGICAL          ((MPI_Datatype)27)
-#define MPI_REAL	     ((MPI_Datatype)28)
-#define MPI_REAL4	     ((MPI_Datatype)29)
-#define MPI_REAL8	     ((MPI_Datatype)30)
-#define MPI_DOUBLE_PRECISION ((MPI_Datatype)31)
-#define MPI_INTEGER	     ((MPI_Datatype)32)
-#define MPI_INTEGER4	     ((MPI_Datatype)33)
-#define MPI_INTEGER8	     ((MPI_Datatype)34)
+#define MPI_COMPLEX           ((MPI_Datatype)25)
+#define MPI_DOUBLE_COMPLEX    ((MPI_Datatype)26)
+#define MPI_LOGICAL           ((MPI_Datatype)27)
+#define MPI_REAL	      ((MPI_Datatype)28)
+#define MPI_REAL4	      ((MPI_Datatype)29)
+#define MPI_REAL8	      ((MPI_Datatype)30)
+#define MPI_DOUBLE_PRECISION  ((MPI_Datatype)31)
+#define MPI_INTEGER	      ((MPI_Datatype)32)
+#define MPI_INTEGER4	      ((MPI_Datatype)33)
+#define MPI_INTEGER8	      ((MPI_Datatype)34)
 
-#define MPI_PACKED           ((MPI_Datatype)35)
+#define MPI_PACKED            ((MPI_Datatype)35)
 
-#define _MPI_DATATYPE_MAX    ((MPI_Datatype)35)
-
-#define _NM_MPI_DATATYPE_OFFSET 36
+#define _NM_MPI_DATATYPE_OFFSET              36
 
 /* @} */
 

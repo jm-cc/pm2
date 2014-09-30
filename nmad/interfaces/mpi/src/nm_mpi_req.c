@@ -21,7 +21,7 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
-NM_MPI_HANDLE_TYPE(request, nm_mpi_request_t, 1, 256);
+NM_MPI_HANDLE_TYPE(request, nm_mpi_request_t, _NM_MPI_REQUEST_OFFSET, 256);
 
 static struct nm_mpi_handle_request_s nm_mpi_requests;
 

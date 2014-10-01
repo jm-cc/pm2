@@ -474,6 +474,7 @@ static int nm_mpi_datatype_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb
   return MPI_SUCCESS;
 }
 
+__PUK_SYM_INTERNAL
 int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype)
 {
   p_datatype->active_communications--;

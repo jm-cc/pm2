@@ -164,6 +164,9 @@ void nm_mpi_coll_exit(void)
   nm_mpi_handle_operator_finalize(&nm_mpi_operators);
 }
 
+/* ********************************************************* */
+/* ** building blocks */
+
 static nm_mpi_request_t*nm_mpi_coll_isend(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm)
 {
   nm_mpi_request_t*p_req = nm_mpi_request_alloc();
@@ -276,9 +279,12 @@ int mpi_gather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf
 	  if(i == root) continue;
 	  nm_mpi_coll_wait(requests[i]);
 	}
-      // copy local data for itself
-      memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * p_recv_datatype->extent),
-	     sendbuf, sendcount * p_send_datatype->extent);
+      // copy local data for self
+      if(sendbuf != MPI_IN_PLACE)
+	{
+	  memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * p_recv_datatype->extent),
+		 sendbuf, sendcount * p_send_datatype->extent);
+	}
       FREE_AND_SET_NULL(requests);
     }
   else
@@ -314,8 +320,11 @@ int mpi_gatherv(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf
 	  nm_mpi_coll_wait(requests[i]);
 	}
       // copy local data for self
-      memcpy(recvbuf + (displs[nm_comm_rank(p_comm->p_comm)] * p_recv_datatype->extent),
-	     sendbuf, sendcount * p_send_datatype->extent);
+      if(sendbuf != MPI_IN_PLACE)
+	{
+	  memcpy(recvbuf + (displs[nm_comm_rank(p_comm->p_comm)] * p_recv_datatype->extent),
+		 sendbuf, sendcount * p_send_datatype->extent);
+	}
       // free memory
       FREE_AND_SET_NULL(requests);
     }
@@ -382,8 +391,11 @@ int mpi_scatter(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbu
 	  nm_mpi_coll_wait(requests[i]);
 	}
       // copy local data for itself
-      memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * p_recv_datatype->extent),
-	     sendbuf, sendcount * p_send_datatype->extent);
+      if(sendbuf != MPI_IN_PLACE)
+	{
+	  memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * p_recv_datatype->extent),
+		 sendbuf, sendcount * p_send_datatype->extent);
+	}
       FREE_AND_SET_NULL(requests);
     }
   else
@@ -483,50 +495,44 @@ int mpi_op_free(MPI_Op*op)
   return MPI_SUCCESS;
 }
 
-int mpi_reduce(void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
+int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_REDUCE;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_operator_t*p_operator = nm_mpi_operator_get(op);
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  const int size = nm_comm_size(p_comm->p_comm);
   if(p_operator->function == NULL)
     {
       ERROR("Operation %d not implemented\n", op);
-      MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
   if (nm_comm_rank(p_comm->p_comm) == root)
     {
       // Get the input buffers of all the processes
       int i;
-      void **remote_sendbufs = malloc(nm_comm_size(p_comm->p_comm) * sizeof(void *));
-      nm_mpi_request_t**requests = malloc(nm_comm_size(p_comm->p_comm) * sizeof(nm_mpi_request_t*));
-      for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
+      const int slot_size = count * nm_mpi_datatype_size(p_datatype);
+      char*gather_buf = malloc(size * slot_size);
+      nm_mpi_request_t**requests = malloc(size * sizeof(nm_mpi_request_t*));
+      for(i = 0; i < size; i++)
 	{
 	  if(i == root) continue;
-	  remote_sendbufs[i] = malloc(count * nm_mpi_datatype_size(p_datatype));
-	  requests[i] = nm_mpi_coll_irecv(remote_sendbufs[i], count, p_datatype, i, tag, p_comm);
+	  requests[i] = nm_mpi_coll_irecv(&gather_buf[i * slot_size], count, p_datatype, i, tag, p_comm);
 	}
-      for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
+      for(i = 0; i < size; i++)
 	{
-	  if (i == root) continue;
+	  if(i == root) continue;
 	  nm_mpi_coll_wait(requests[i]);
 	}
       // Do the reduction operation
-      if(recvbuf != sendbuf)
-	memcpy(recvbuf, sendbuf, count*nm_mpi_datatype_size(p_datatype));
-      for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
+      if((sendbuf != MPI_IN_PLACE) && (recvbuf != sendbuf))
+	memcpy(recvbuf, sendbuf, slot_size);
+      for(i = 0; i < size; i++)
 	{
-	  if (i == root) continue;
-	  p_operator->function(remote_sendbufs[i], recvbuf, &count, &datatype);
+	  if(i == root) continue;
+	  p_operator->function(&gather_buf[i * slot_size], recvbuf, &count, &datatype);
 	}
-      // Free memory
-      for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
-	{
-	  if (i == root) continue;
-	  FREE_AND_SET_NULL(remote_sendbufs[i]);
-	}
-      FREE_AND_SET_NULL(remote_sendbufs);
+      FREE_AND_SET_NULL(gather_buf);
       FREE_AND_SET_NULL(requests);
       return MPI_SUCCESS;
     }

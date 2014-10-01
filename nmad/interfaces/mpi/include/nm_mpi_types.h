@@ -47,6 +47,9 @@
 /** Indicates address zero for the buffer argument. */
 #define MPI_BOTTOM      (void *)0
 
+/** In-place collectives */
+#define MPI_IN_PLACE    NULL
+
 /** @name Error return classes */
 /* @{ */
 /** Successful return code */
@@ -91,6 +94,8 @@
 /* @} */
 
 typedef size_t MPI_Aint;
+
+typedef ssize_t MPI_Offset;
 
 /** @name Status of receive operation */
 /* @{ */

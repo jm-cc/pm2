@@ -471,6 +471,7 @@ int mpi_op_create(MPI_User_function*function, int commute, MPI_Op*op)
   nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_alloc(&nm_mpi_operators);
   p_operator->function = function;
   p_operator->commute = commute;
+  *op = p_operator->id;
   return MPI_SUCCESS;
 }
 

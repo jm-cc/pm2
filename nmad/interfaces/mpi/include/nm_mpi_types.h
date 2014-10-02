@@ -84,6 +84,7 @@
 #define MPI_ERR_DUP_DATAREP           27
 #define MPI_ERR_NO_SUCH_FILE          28
 #define MPI_ERR_NOT_SAME              29
+#define MPI_ERR_BAD_FILE              30
 
 #define MPI_ERR_LASTCODE     1073741823
 

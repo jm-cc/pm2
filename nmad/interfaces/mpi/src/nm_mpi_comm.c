@@ -684,19 +684,6 @@ int mpi_group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group gr
 
 /* ********************************************************* */
 
-int MPI_Comm_spawn(char *command,
-		   char *argv[],
-		   int maxprocs,
-		   MPI_Info info,
-		   int root,
-		   MPI_Comm comm,
-		   MPI_Comm *intercomm,
-		   int array_of_errcodes[])
-{
-  ERROR("<%s> not implemented\n", __FUNCTION__);
-  return MPI_ERR_UNKNOWN;
-}
-
 
 int MPI_Comm_get_parent(MPI_Comm *parent)
 {

@@ -30,7 +30,22 @@
 
 
 typedef int MPI_Win;
-typedef int MPI_Info;
+
+typedef void*MPI_Copy_function;
+typedef int (MPI_Delete_function)(MPI_Comm comm, int keyval, void *attribute_val, void *extra_state);
+#define MPI_NULL_COPY_FN (NULL)
+
+#define MPI_COMBINER_NAMED     (-1)
+#define MPI_COMBINER_CONTIGUOUS        0
+#define MPI_COMBINER_VECTOR    1
+#define MPI_COMBINER_HVECTOR   2
+#define MPI_COMBINER_INDEXED   3
+#define MPI_COMBINER_HINDEXED  4
+#define MPI_COMBINER_STRUCT    5
+
+#define MPI_UB -1
+#define MPI_LB -1
+
 #define MPI_ARGV_NULL (NULL)
 
 int MPI_Comm_get_parent(MPI_Comm *parent);
@@ -52,15 +67,6 @@ int MPI_Put(void *origin_addr,
             int target_count,
 	    MPI_Datatype target_datatype,
 	    MPI_Win win);
-
-int MPI_Comm_spawn(char *command,
-		   char *argv[],
-		   int maxprocs,
-		   MPI_Info info, 
-		   int root,
-		   MPI_Comm comm,
-		   MPI_Comm *intercomm,
-		   int array_of_errcodes[]);
 
 int MPI_Comm_remote_size(MPI_Comm comm, int *size);
 

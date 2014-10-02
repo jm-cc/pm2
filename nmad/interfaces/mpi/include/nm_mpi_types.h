@@ -182,7 +182,7 @@ typedef int MPI_Comm;
 /** Datatype handle */
 typedef int MPI_Datatype;
 #define MPI_DATATYPE_NULL      ((MPI_Datatype)0)
-
+/* C types */
 #define MPI_CHAR               ((MPI_Datatype)1)
 #define MPI_UNSIGNED_CHAR      ((MPI_Datatype)2)
 #define MPI_SIGNED_CHAR        ((MPI_Datatype)3)
@@ -199,31 +199,32 @@ typedef int MPI_Datatype;
 #define MPI_LONG_LONG_INT      ((MPI_Datatype)14)
 #define MPI_LONG_LONG          MPI_LONG_LONG_INT
 #define MPI_UNSIGNED_LONG_LONG ((MPI_Datatype)15)
-
-#define MPI_LONG_INT          ((MPI_Datatype)16)
-#define MPI_SHORT_INT         ((MPI_Datatype)17)
-#define MPI_FLOAT_INT         ((MPI_Datatype)18)
-#define MPI_DOUBLE_INT        ((MPI_Datatype)19)
-#define MPI_2INT              ((MPI_Datatype)20)
-#define MPI_LONG_DOUBLE_INT   ((MPI_Datatype)21)
-#define MPI_2INTEGER          ((MPI_Datatype)22)
-#define MPI_2REAL             ((MPI_Datatype)23)
-#define MPI_2DOUBLE_PRECISION ((MPI_Datatype)24)
-
+/* FORTRAN types */
+#define MPI_CHARACTER         ((MPI_Datatype)16)
+#define MPI_LOGICAL           ((MPI_Datatype)17)
+#define MPI_REAL	      ((MPI_Datatype)18)
+#define MPI_REAL4	      ((MPI_Datatype)19)
+#define MPI_REAL8	      ((MPI_Datatype)20)
+#define MPI_DOUBLE_PRECISION  ((MPI_Datatype)21)
+#define MPI_INTEGER	      ((MPI_Datatype)22)
+#define MPI_INTEGER4	      ((MPI_Datatype)23)
+#define MPI_INTEGER8	      ((MPI_Datatype)24)
 #define MPI_COMPLEX           ((MPI_Datatype)25)
 #define MPI_DOUBLE_COMPLEX    ((MPI_Datatype)26)
-#define MPI_LOGICAL           ((MPI_Datatype)27)
-#define MPI_REAL	      ((MPI_Datatype)28)
-#define MPI_REAL4	      ((MPI_Datatype)29)
-#define MPI_REAL8	      ((MPI_Datatype)30)
-#define MPI_DOUBLE_PRECISION  ((MPI_Datatype)31)
-#define MPI_INTEGER	      ((MPI_Datatype)32)
-#define MPI_INTEGER4	      ((MPI_Datatype)33)
-#define MPI_INTEGER8	      ((MPI_Datatype)34)
-
-#define MPI_PACKED            ((MPI_Datatype)35)
-
-#define _NM_MPI_DATATYPE_OFFSET              36
+#define MPI_PACKED            ((MPI_Datatype)27)
+/* C struct types */
+#define MPI_LONG_INT          ((MPI_Datatype)28)
+#define MPI_SHORT_INT         ((MPI_Datatype)29)
+#define MPI_FLOAT_INT         ((MPI_Datatype)30)
+#define MPI_DOUBLE_INT        ((MPI_Datatype)31)
+#define MPI_LONG_DOUBLE_INT   ((MPI_Datatype)32)
+/* FORTRAN struct types*/
+#define MPI_2INT              ((MPI_Datatype)33)
+#define MPI_2INTEGER          ((MPI_Datatype)34)
+#define MPI_2REAL             ((MPI_Datatype)35)
+#define MPI_2DOUBLE_PRECISION ((MPI_Datatype)36)
+/* offset for dynamically allocated datatypes */
+#define _NM_MPI_DATATYPE_OFFSET              37
 
 /* @} */
 

@@ -24,59 +24,27 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 static int init_done = 0;
 
+/* ********************************************************* */
 /* Aliases */
 
-int MPI_Init(int *argc,
-             char ***argv) __attribute__ ((alias ("mpi_init")));
-
-int MPI_Init_thread(int *argc,
-                    char ***argv,
-                    int required TBX_UNUSED,
-                    int *provided) __attribute__ ((alias ("mpi_init_thread")));
-
-int MPI_Initialized(int *flag) __attribute__ ((alias ("mpi_initialized")));
-
-int MPI_Finalize(void) __attribute__ ((alias ("mpi_finalize")));
-
-int MPI_Abort(MPI_Comm comm TBX_UNUSED,
-	      int errorcode) __attribute__ ((alias ("mpi_abort")));
-
-int MPI_Get_processor_name(char *name,
-			   int *resultlen) __attribute__ ((alias ("mpi_get_processor_name")));
-
-double MPI_Wtime(void) __attribute__ ((alias ("mpi_wtime")));
-
-double MPI_Wtick(void) __attribute__ ((alias ("mpi_wtick")));
-
-int MPI_Error_string(int errorcode,
-		     char *string,
-		     int *resultlen) __attribute__ ((alias ("mpi_error_string")));
-
-int MPI_Errhandler_set(MPI_Comm comm,
-		       MPI_Errhandler errhandler) __attribute__ ((alias ("mpi_errhandler_set")));
-
-int MPI_Get_version(int *version,
-		    int *subversion) __attribute__ ((alias ("mpi_get_version")));
-
-int MPI_Get_count(MPI_Status *status,
-                  MPI_Datatype datatype TBX_UNUSED,
-                  int *count) __attribute__ ((alias ("mpi_get_count")));
-
-int MPI_Get_address(void *location,
-		    MPI_Aint *address) __attribute__ ((alias ("mpi_get_address")));
-
-int MPI_Address(void *location,
-		MPI_Aint *address) __attribute__ ((alias ("mpi_address")));
-
-int MPI_Status_c2f(MPI_Status *c_status,
-		   MPI_Fint *f_status) __attribute__ ((alias ("mpi_status_c2f")));
-
-int MPI_Status_f2c(MPI_Fint *f_status,
-		   MPI_Status *c_status) __attribute__ ((alias ("mpi_status_f2c")));
-
+NM_MPI_ALIAS(MPI_Init, mpi_init);
+NM_MPI_ALIAS(MPI_Init_thread, mpi_init_thread);
+NM_MPI_ALIAS(MPI_Initialized, mpi_initialized);
+NM_MPI_ALIAS(MPI_Finalize, mpi_finalize);
+NM_MPI_ALIAS(MPI_Abort, mpi_abort);
+NM_MPI_ALIAS(MPI_Get_processor_name, mpi_get_processor_name);
+NM_MPI_ALIAS(MPI_Wtime, mpi_wtime);
+NM_MPI_ALIAS(MPI_Wtick, mpi_wtick);
+NM_MPI_ALIAS(MPI_Error_string, mpi_error_string);
+NM_MPI_ALIAS(MPI_Errhandler_set, mpi_errhandler_set);
+NM_MPI_ALIAS(MPI_Get_version, mpi_get_version);
+NM_MPI_ALIAS(MPI_Get_count, mpi_get_count);
+NM_MPI_ALIAS(MPI_Get_address, mpi_get_address);
+NM_MPI_ALIAS(MPI_Address, mpi_address);
+NM_MPI_ALIAS(MPI_Status_c2f, mpi_status_c2f);
+NM_MPI_ALIAS(MPI_Status_f2c, mpi_status_f2c);
 
 /* ********************************************************* */
-
 
 int mpi_init(int *argc, char ***argv)
 {

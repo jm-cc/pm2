@@ -73,6 +73,18 @@
 #define MPI_ERR_IN_STATUS    17
 #define MPI_ERR_PENDING      18
 #define MPI_ERR_REQUEST      19
+/* error codes for MPI-IO, not used internally */
+#define MPI_ERR_FILE                  20
+#define MPI_ERR_IO                    21
+#define MPI_ERR_AMODE                 22
+#define MPI_ERR_UNSUPPORTED_OPERATION 23
+#define MPI_ERR_UNSUPPORTED_DATAREP   24
+#define MPI_ERR_READ_ONLY             25
+#define MPI_ERR_ACCESS                26
+#define MPI_ERR_DUP_DATAREP           27
+#define MPI_ERR_NO_SUCH_FILE          28
+#define MPI_ERR_NOT_SAME              29
+
 #define MPI_ERR_LASTCODE     1073741823
 
 /** Datatype still in use */
@@ -94,8 +106,6 @@
 /* @} */
 
 typedef size_t MPI_Aint;
-
-typedef ssize_t MPI_Offset;
 
 /** @name Status of receive operation */
 /* @{ */

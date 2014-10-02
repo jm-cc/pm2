@@ -593,7 +593,19 @@ int nm_mpi_check_tag(int user_tag);
  */
 tbx_bool_t mpir_test_termination(MPI_Comm comm);
 
+/* ********************************************************* */
+
+/** defines public symbols MPI_* and PMPI_* as alias on internal symbols mpi_* */
+#define NM_MPI_ALIAS(SYM_MPI, SYM_INTERNAL)				\
+  /* enforces symbol type consistency */				\
+  typeof(SYM_MPI) SYM_INTERNAL;						\
+  /* define public MPI_* symbol */			                \
+  typeof(SYM_MPI)      SYM_MPI __attribute__ ((alias (#SYM_INTERNAL)));	\
+  /* define public PMPI_* profiling symbol */                           \
+  typeof(SYM_MPI) P ## SYM_MPI __attribute__ ((alias (#SYM_INTERNAL)));
+
 /* Internal symbols for MPI functions */
+
 int mpi_issend(void* buf,
 	       int count,
 	       MPI_Datatype datatype,

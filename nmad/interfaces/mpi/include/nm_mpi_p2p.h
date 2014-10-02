@@ -106,6 +106,13 @@ int MPI_Ssend(void* buffer,
               int tag,
               MPI_Comm comm);
 
+int MPI_Bsend(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm);
+
 /**
  * Packs a message specified by inbuf, incount, datatype, comm into
  * the buffer space specified by outbuf and outsize. The input buffer
@@ -261,6 +268,12 @@ int MPI_Waitany(int count,
                 MPI_Request *array_of_requests,
                 int *index,
                 MPI_Status *status);
+
+int MPI_Waitsome(int incount,
+		 MPI_Request *array_of_requests,
+		 int *outcount, 
+		 int *array_of_indices,
+		 MPI_Status *array_of_statuses);
 
 /**
  * Returns flag = true if the operation identified by request is

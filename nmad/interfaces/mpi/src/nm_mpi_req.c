@@ -27,56 +27,19 @@ static struct nm_mpi_handle_request_s nm_mpi_requests;
 
 /* ********************************************************* */
 
-int MPI_Request_free(MPI_Request *request) __attribute__ ((alias ("mpi_request_free")));
-
-int MPI_Waitsome(int incount,
-		 MPI_Request *array_of_requests,
-		 int *outcount,
-		 int *array_of_indices,
-		 MPI_Status *array_of_statuses) __attribute__ ((alias ("mpi_waitsome")));
-
-int MPI_Wait(MPI_Request *request,
-	     MPI_Status *status) __attribute__ ((alias ("mpi_wait")));
-
-int MPI_Waitall(int count,
-		MPI_Request *array_of_requests,
-		MPI_Status *array_of_statuses) __attribute__ ((alias ("mpi_waitall")));
-
-int MPI_Waitany(int count,
-                MPI_Request *array_of_requests,
-                int *rqindex,
-                MPI_Status *status) __attribute__ ((alias ("mpi_waitany")));
-
-int MPI_Test(MPI_Request *request,
-             int *flag,
-             MPI_Status *status) __attribute__ ((alias ("mpi_test")));
-
-int MPI_Testany(int count,
-                MPI_Request *array_of_requests,
-                int *rqindex,
-                int *flag,
-                MPI_Status *status) __attribute__ ((alias ("mpi_testany")));
-
-int MPI_Testall(int count,
-		MPI_Request *array_of_requests,
-		int *flag,
-		MPI_Status *statuses) __attribute__ ((alias ("mpi_testall")));
-
-int MPI_Testsome(int count,
-		 MPI_Request *array_of_requests,
-		 int *outcount,
-		 int *indices,
-		 MPI_Status *statuses) __attribute__ ((alias ("mpi_testsome")));
-
-int MPI_Cancel(MPI_Request *request) __attribute__ ((alias ("mpi_cancel")));
-
-int MPI_Start(MPI_Request *request) __attribute__ ((alias ("mpi_start")));
-
-int MPI_Startall(int count,
-                 MPI_Request *array_of_requests) __attribute__ ((alias ("mpi_startall")));
-
-int MPI_Request_is_equal(MPI_Request request1,
-			 MPI_Request request2) __attribute__ ((alias ("mpi_request_is_equal")));
+NM_MPI_ALIAS(MPI_Request_free,     mpi_request_free);
+NM_MPI_ALIAS(MPI_Wait,             mpi_wait);
+NM_MPI_ALIAS(MPI_Waitall,          mpi_waitall);
+NM_MPI_ALIAS(MPI_Waitany,          mpi_waitany);
+NM_MPI_ALIAS(MPI_Waitsome,         mpi_waitsome);
+NM_MPI_ALIAS(MPI_Test,             mpi_test);
+NM_MPI_ALIAS(MPI_Testall,          mpi_testall);
+NM_MPI_ALIAS(MPI_Testany,          mpi_testany);
+NM_MPI_ALIAS(MPI_Testsome,         mpi_testsome);
+NM_MPI_ALIAS(MPI_Cancel,           mpi_cancel);
+NM_MPI_ALIAS(MPI_Start,            mpi_start);
+NM_MPI_ALIAS(MPI_Startall,         mpi_startall);
+NM_MPI_ALIAS(MPI_Request_is_equal, mpi_request_is_equal);
 
 /* ********************************************************* */
 

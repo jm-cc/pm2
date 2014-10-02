@@ -34,64 +34,20 @@ static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
 
 /* ********************************************************* */
 
-int MPI_Type_size(MPI_Datatype datatype,
-		  int *size) __attribute__ ((alias ("mpi_type_size")));
-
-int MPI_Type_get_extent(MPI_Datatype datatype,
-			MPI_Aint *lb,
-			MPI_Aint *extent) __attribute__ ((alias ("mpi_type_get_extent")));
-
-int MPI_Type_extent(MPI_Datatype datatype,
-		    MPI_Aint *extent) __attribute__ ((alias ("mpi_type_extent")));
-
-int MPI_Type_lb(MPI_Datatype datatype,
-		MPI_Aint *lb) __attribute__ ((alias ("mpi_type_lb")));
-
-int MPI_Type_create_resized(MPI_Datatype oldtype,
-			    MPI_Aint lb,
-			    MPI_Aint extent,
-			    MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_create_resized")));
-
-int MPI_Type_commit(MPI_Datatype *datatype) __attribute__ ((alias ("mpi_type_commit")));
-
-int MPI_Type_free(MPI_Datatype *datatype) __attribute__ ((alias ("mpi_type_free")));
-
-int MPI_Type_optimized(MPI_Datatype *datatype,
-                       int optimized) __attribute__ ((alias ("mpi_type_optimized")));
-
-int MPI_Type_contiguous(int count,
-                        MPI_Datatype oldtype,
-                        MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_contiguous")));
-
-int MPI_Type_vector(int count,
-                    int blocklength,
-                    int stride,
-                    MPI_Datatype oldtype,
-                    MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_vector")));
-
-int MPI_Type_hvector(int count,
-                     int blocklength,
-                     int stride,
-                     MPI_Datatype oldtype,
-                     MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_hvector")));
-
-int MPI_Type_indexed(int count,
-                     int *array_of_blocklengths,
-                     int *array_of_displacements,
-                     MPI_Datatype oldtype,
-                     MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_indexed")));
-
-int MPI_Type_hindexed(int count,
-                      int *array_of_blocklengths,
-                      MPI_Aint *array_of_displacements,
-                      MPI_Datatype oldtype,
-                      MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_hindexed")));
-
-int MPI_Type_struct(int count,
-                    int *array_of_blocklengths,
-                    MPI_Aint *array_of_displacements,
-                    MPI_Datatype *array_of_types,
-                    MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_struct")));
+NM_MPI_ALIAS(MPI_Type_size,           mpi_type_size);
+NM_MPI_ALIAS(MPI_Type_get_extent,     mpi_type_get_extent);
+NM_MPI_ALIAS(MPI_Type_extent,         mpi_type_extent);
+NM_MPI_ALIAS(MPI_Type_lb,             mpi_type_lb);
+NM_MPI_ALIAS(MPI_Type_create_resized, mpi_type_create_resized);
+NM_MPI_ALIAS(MPI_Type_commit,         mpi_type_commit);
+NM_MPI_ALIAS(MPI_Type_free,           mpi_type_free);
+NM_MPI_ALIAS(MPI_Type_optimized,      mpi_type_optimized);
+NM_MPI_ALIAS(MPI_Type_contiguous,     mpi_type_contiguous);
+NM_MPI_ALIAS(MPI_Type_vector,         mpi_type_vector);
+NM_MPI_ALIAS(MPI_Type_hvector,        mpi_type_hvector);
+NM_MPI_ALIAS(MPI_Type_indexed,        mpi_type_indexed);
+NM_MPI_ALIAS(MPI_Type_hindexed,       mpi_type_hindexed);
+NM_MPI_ALIAS(MPI_Type_struct,         mpi_type_struct);
 
 /* ********************************************************* */
 

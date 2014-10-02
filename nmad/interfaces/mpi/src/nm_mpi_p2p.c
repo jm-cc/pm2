@@ -23,121 +23,21 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 /* ********************************************************* */
 
-int MPI_Issend(void* buf,
-	       int count,
-	       MPI_Datatype datatype,
-	       int dest,
-               int tag,
-	       MPI_Comm comm,
-	       MPI_Request *request) __attribute__ ((alias ("mpi_issend")));
-
-int MPI_Bsend(void *buffer,
-	      int count,
-	      MPI_Datatype datatype,
-	      int dest,
-	      int tag,
-	      MPI_Comm comm) __attribute__ ((alias ("mpi_bsend")));
-
-int MPI_Send(void *buffer,
-             int count,
-             MPI_Datatype datatype,
-             int dest,
-             int tag,
-             MPI_Comm comm) __attribute__ ((alias ("mpi_send")));
-
-int MPI_Isend(void *buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Comm comm,
-              MPI_Request *request) __attribute__ ((alias ("mpi_isend")));
-
-int MPI_Rsend(void* buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Comm comm) __attribute__ ((alias ("mpi_rsend")));
-
-int MPI_Ssend(void* buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Comm comm) __attribute__ ((alias ("mpi_ssend")));
-
-int MPI_Pack(void* inbuf,
-             int incount,
-             MPI_Datatype datatype,
-             void *outbuf,
-             int outsize,
-             int *position,
-             MPI_Comm comm) __attribute__ ((alias ("mpi_pack")));
-
-int MPI_Recv(void *buffer,
-             int count,
-             MPI_Datatype datatype,
-             int source,
-             int tag,
-             MPI_Comm comm,
-             MPI_Status *status) __attribute__ ((alias ("mpi_recv")));
-
-int MPI_Irecv(void *buffer,
-              int count,
-              MPI_Datatype datatype,
-              int source,
-              int tag,
-              MPI_Comm comm,
-              MPI_Request *request) __attribute__ ((alias ("mpi_irecv")));
-
-int MPI_Sendrecv(void *sendbuf,
-                 int sendcount,
-                 MPI_Datatype sendtype,
-                 int dest,
-                 int sendtag,
-                 void *recvbuf,
-                 int recvcount,
-                 MPI_Datatype recvtype,
-                 int source,
-                 int recvtag,
-                 MPI_Comm comm,
-                 MPI_Status *status) __attribute__ ((alias ("mpi_sendrecv")));
-
-int MPI_Unpack(void* inbuf,
-               int insize,
-               int *position,
-               void *outbuf,
-               int outcount,
-               MPI_Datatype datatype,
-               MPI_Comm comm) __attribute__ ((alias ("mpi_unpack")));
-
-int MPI_Iprobe(int source,
-               int tag,
-               MPI_Comm comm,
-               int *flag,
-               MPI_Status *status) __attribute__ ((alias ("mpi_iprobe")));
-
-int MPI_Probe(int source,
-              int tag,
-              MPI_Comm comm,
-              MPI_Status *status) __attribute__ ((alias ("mpi_probe")));
-
-int MPI_Send_init(void* buf,
-                  int count,
-                  MPI_Datatype datatype,
-                  int dest,
-                  int tag,
-                  MPI_Comm comm,
-                  MPI_Request *request) __attribute__ ((alias ("mpi_send_init")));
-
-int MPI_Recv_init(void* buf,
-                  int count,
-                  MPI_Datatype datatype,
-                  int source,
-                  int tag,
-                  MPI_Comm comm,
-                  MPI_Request *request) __attribute__ ((alias ("mpi_recv_init")));
+NM_MPI_ALIAS(MPI_Issend,    mpi_issend);
+NM_MPI_ALIAS(MPI_Bsend,     mpi_bsend);
+NM_MPI_ALIAS(MPI_Send,      mpi_send);
+NM_MPI_ALIAS(MPI_Isend,     mpi_isend);
+NM_MPI_ALIAS(MPI_Rsend,     mpi_rsend);
+NM_MPI_ALIAS(MPI_Ssend,     mpi_ssend);
+NM_MPI_ALIAS(MPI_Pack,      mpi_pack);
+NM_MPI_ALIAS(MPI_Recv,      mpi_recv);
+NM_MPI_ALIAS(MPI_Irecv,     mpi_irecv);
+NM_MPI_ALIAS(MPI_Sendrecv,  mpi_sendrecv);
+NM_MPI_ALIAS(MPI_Unpack,    mpi_unpack);
+NM_MPI_ALIAS(MPI_Iprobe,    mpi_iprobe);
+NM_MPI_ALIAS(MPI_Probe,     mpi_probe);
+NM_MPI_ALIAS(MPI_Send_init, mpi_send_init);
+NM_MPI_ALIAS(MPI_Recv_init, mpi_recv_init);
 
 /* ********************************************************* */
 

@@ -30,83 +30,30 @@ static struct nm_mpi_handle_group_s nm_mpi_groups;
 
 /* ********************************************************* */
 
-int MPI_Comm_size(MPI_Comm comm, int*size)
-  __attribute__ ((alias ("mpi_comm_size")));
-
-int MPI_Comm_rank(MPI_Comm comm, int*rank)
-  __attribute__ ((alias ("mpi_comm_rank")));
-
-int MPI_Attr_get(MPI_Comm comm, int keyval, void*attr_value, int *flag)
-  __attribute__ ((alias ("mpi_attr_get")));
-
-int MPI_Comm_group(MPI_Comm comm, MPI_Group*group)
-  __attribute__ ((alias ("mpi_comm_group")));
-
-int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
-  __attribute__ ((alias ("mpi_comm_create")));
-
-int MPI_Comm_split(MPI_Comm comm,
-		   int color,
-		   int key,
-		   MPI_Comm *newcomm) __attribute__ ((alias ("mpi_comm_split")));
-
-int MPI_Comm_dup(MPI_Comm comm,
-		 MPI_Comm *newcomm) __attribute__ ((alias ("mpi_comm_dup")));
-
-int MPI_Comm_free(MPI_Comm *comm) __attribute__ ((alias ("mpi_comm_free")));
-
-
-int MPI_Cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*_comm_cart)
-  __attribute__ ((alias ("mpi_cart_create")));
-
-int MPI_Cart_coords(MPI_Comm comm, int rank, int ndims, int*coords)
-  __attribute__ ((alias ("mpi_cart_coords")));
-
-int MPI_Cart_rank(MPI_Comm comm, int*coords, int*rank)
-  __attribute__ ((alias ("mpi_cart_rank")));
-
-int MPI_Cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest)
-  __attribute__ ((alias ("mpi_cart_shift")));
-
-int MPI_Group_size(MPI_Group group, int*size)
-  __attribute__ ((alias ("mpi_group_size")));
-
-int MPI_Group_rank(MPI_Group group, int*rank)
-  __attribute__ ((alias ("mpi_group_rank")));
-
-int MPI_Group_union(MPI_Group group1, MPI_Group group2, MPI_Group*newgroup)
-  __attribute__ ((alias ("mpi_group_union")));
-
-int MPI_Group_intersection(MPI_Group group1, MPI_Group group2, MPI_Group*newgroup)
-  __attribute__ ((alias ("mpi_group_intersection")));
-
-int MPI_Group_difference(MPI_Group group1, MPI_Group group2, MPI_Group*newgroup)
-  __attribute__ ((alias ("mpi_group_difference")));
-
-int MPI_Group_compare(MPI_Group group1, MPI_Group group2, int*result)
-  __attribute__ ((alias ("mpi_group_compare")));
-
-int MPI_Group_incl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup) 
-  __attribute__ ((alias ("mpi_group_incl")));
-
-int MPI_Group_range_incl(MPI_Group group, int n, int ranges[][3], MPI_Group*newgroup)
-  __attribute__ ((alias ("mpi_group_range_incl")));
-
-int MPI_Group_excl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup) 
-  __attribute__ ((alias ("mpi_group_excl")));
-
-int MPI_Group_range_excl(MPI_Group group, int n, int ranges[][3], MPI_Group*newgroup)
-  __attribute__ ((alias ("mpi_group_range_excl")));
-
-int MPI_Group_free(MPI_Group*group)
-  __attribute__ ((alias ("mpi_group_free")));
-
-int MPI_Group_translate_ranks(MPI_Group group1,
-			      int n,
-			      int *ranks1,
-			      MPI_Group group2,
-			      int *ranks2)
-  __attribute__ ((alias ("mpi_group_translate_ranks")));
+NM_MPI_ALIAS(MPI_Comm_size,             mpi_comm_size);
+NM_MPI_ALIAS(MPI_Comm_rank,             mpi_comm_rank);
+NM_MPI_ALIAS(MPI_Attr_get,              mpi_attr_get);
+NM_MPI_ALIAS(MPI_Comm_group,            mpi_comm_group);
+NM_MPI_ALIAS(MPI_Comm_create,           mpi_comm_create);
+NM_MPI_ALIAS(MPI_Comm_split,            mpi_comm_split);
+NM_MPI_ALIAS(MPI_Comm_dup,              mpi_comm_dup);
+NM_MPI_ALIAS(MPI_Comm_free,             mpi_comm_free);
+NM_MPI_ALIAS(MPI_Cart_create,           mpi_cart_create);
+NM_MPI_ALIAS(MPI_Cart_coords,           mpi_cart_coords)
+NM_MPI_ALIAS(MPI_Cart_rank,             mpi_cart_rank);
+NM_MPI_ALIAS(MPI_Cart_shift,            mpi_cart_shift);
+NM_MPI_ALIAS(MPI_Group_size,            mpi_group_size);
+NM_MPI_ALIAS(MPI_Group_rank,            mpi_group_rank);
+NM_MPI_ALIAS(MPI_Group_union,           mpi_group_union);
+NM_MPI_ALIAS(MPI_Group_intersection,    mpi_group_intersection);
+NM_MPI_ALIAS(MPI_Group_difference,      mpi_group_difference);
+NM_MPI_ALIAS(MPI_Group_compare,         mpi_group_compare);
+NM_MPI_ALIAS(MPI_Group_incl,            mpi_group_incl);
+NM_MPI_ALIAS(MPI_Group_range_incl,      mpi_group_range_incl);
+NM_MPI_ALIAS(MPI_Group_excl,            mpi_group_excl);
+NM_MPI_ALIAS(MPI_Group_range_excl,      mpi_group_range_excl);
+NM_MPI_ALIAS(MPI_Group_free,            mpi_group_free);
+NM_MPI_ALIAS(MPI_Group_translate_ranks, mpi_group_translate_ranks);
 
 /* ********************************************************* */
 

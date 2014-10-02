@@ -156,13 +156,15 @@ typedef int MPI_Group;
 
 #define _NM_MPI_GROUP_OFFSET        2
 
-/* group comparison return value */
+/* group and communicators comparison return value */
 /** same members and order */
-#define MPI_IDENT   0x01
+#define MPI_IDENT     0x01
 /** same members, order differs */
-#define MPI_SIMILAR 0x02
+#define MPI_SIMILAR   0x02
+/** same groups, context differs */
+#define MPI_CONGRUENT 0x03
 /** members differ */
-#define MPI_UNEQUAL 0x04
+#define MPI_UNEQUAL   0x04
 
 /** @name Communicators */
 /** Communicator handle */

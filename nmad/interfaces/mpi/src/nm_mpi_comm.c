@@ -51,6 +51,7 @@ NM_MPI_ALIAS(MPI_Comm_create,           mpi_comm_create);
 NM_MPI_ALIAS(MPI_Comm_split,            mpi_comm_split);
 NM_MPI_ALIAS(MPI_Comm_dup,              mpi_comm_dup);
 NM_MPI_ALIAS(MPI_Comm_free,             mpi_comm_free);
+NM_MPI_ALIAS(MPI_Comm_compare,          mpi_comm_compare);
 NM_MPI_ALIAS(MPI_Comm_test_inter,       mpi_comm_test_inter);
 NM_MPI_ALIAS(MPI_Cart_create,           mpi_cart_create);
 NM_MPI_ALIAS(MPI_Cart_coords,           mpi_cart_coords)
@@ -303,6 +304,22 @@ int mpi_comm_test_inter(MPI_Comm comm, int*flag)
   return MPI_SUCCESS;
 }
 
+int mpi_comm_compare(MPI_Comm comm1, MPI_Comm comm2, int*result)
+{
+  if(comm1 == comm2)
+    {
+      *result = MPI_IDENT;
+      return MPI_SUCCESS;
+    }
+  int r2;
+  mpi_group_compare(comm1, comm2, &r2);
+  if(r2 == MPI_IDENT)
+    *result = MPI_CONGRUENT;
+  else
+    *result = r2;
+  return MPI_SUCCESS;
+}
+
 int mpi_comm_group(MPI_Comm comm, MPI_Group *group)
 {
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
@@ -326,6 +343,11 @@ int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
   nm_mpi_group_t*p_new_group = nm_mpi_handle_group_get(&nm_mpi_groups, group);
   if(p_new_group == NULL)
     return MPI_ERR_GROUP;
+  if(nm_group_size(p_new_group->p_nm_group) == 0)
+    {
+      *newcomm = MPI_COMM_NULL;
+      return MPI_SUCCESS;
+    }
   nm_comm_t p_nm_comm = nm_comm_create(p_old_comm->p_comm, p_new_group->p_nm_group);
   if(p_nm_comm == NULL)
     return MPI_ERR_COMM;

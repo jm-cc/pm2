@@ -73,6 +73,7 @@
 #define MPI_ERR_IN_STATUS    17
 #define MPI_ERR_PENDING      18
 #define MPI_ERR_REQUEST      19
+#define MPI_ERR_KEYVAL       31
 /* error codes for MPI-IO, not used internally */
 #define MPI_ERR_FILE                  20
 #define MPI_ERR_IO                    21
@@ -96,7 +97,6 @@
 /* @{ */
 #define MPI_UNDEFINED      (-32766)
 #define MPI_UNDEFINED_RANK MPI_UNDEFINED
-#define MPI_KEYVAL_INVALID 0
 /* @} */
 
 /** @name For supported thread levels */
@@ -264,10 +264,29 @@ typedef int MPI_Errhandler;
 
 /** @name Communicator attributes */
 /* @{ */
+/* MPI-1 */
+typedef int (MPI_Copy_function)(MPI_Comm oldcomm, int keyval, void*extra_state, void*attribute_val_in, void*attribute_val_out, int*flag);
+typedef int (MPI_Delete_function)(MPI_Comm comm, int keyval, void*attribute_val, void*extra_state);
+#define MPI_NULL_COPY_FN   ((MPI_Copy_function*)NULL)
+#define MPI_NULL_DELETE_FN ((MPI_Delete_function*)NULL)
+/* MPI-2 */
+typedef int (MPI_Comm_copy_attr_function)(MPI_Comm oldcomm, int comm_keyval, void*extra_state, void*attribute_val_in, void*attribute_val_out, int*flag);
+typedef int (MPI_Comm_delete_attr_function)(MPI_Comm comm, int comm_keyval, void*attribute_val, void*extra_state); 
+/** empty copy function */
+#define MPI_COMM_NULL_COPY_FN ((MPI_Comm_copy_attr_function*)NULL)
+/** empty delete function */
+#define MPI_COMM_NULL_DELETE_FN ((MPI_Comm_delete_attr_function*)NULL)
+/** simple dup function */
+#define MPI_COMM_DUP_FN ((MPI_Comm_copy_attr_function*)-1)
+
+#define MPI_KEYVAL_INVALID  0
+
 #define MPI_TAG_UB          1
 #define MPI_HOST            2
 #define MPI_IO              3
 #define MPI_WTIME_IS_GLOBAL 4
+#define _NM_MPI_ATTR_OFFSET 5
+
 /* @} */
 
 /* @}*/

@@ -31,10 +31,6 @@
 
 typedef int MPI_Win;
 
-typedef void*MPI_Copy_function;
-typedef int (MPI_Delete_function)(MPI_Comm comm, int keyval, void *attribute_val, void *extra_state);
-#define MPI_NULL_COPY_FN (NULL)
-
 #define MPI_COMBINER_NAMED     (-1)
 #define MPI_COMBINER_CONTIGUOUS        0
 #define MPI_COMBINER_VECTOR    1

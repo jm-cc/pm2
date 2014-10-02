@@ -75,33 +75,6 @@ int MPI_Abort(MPI_Comm comm,
               int errorcode);
 
 /**
- * This function indicates the number of processes involved in a an
- * intracommunicator.
- * @param comm communicator
- * @param size number of processes in the group of comm
- * @return MPI status
- */
-int MPI_Comm_size(MPI_Comm comm,
-                  int *size);
-
-/**
- * This function gives the rank of the process in the particular
- * communicator's group.
- * @param comm communicator
- * @param rank rank of the calling process in group of comm
- * @return MPI status
- */
-int MPI_Comm_rank(MPI_Comm comm,
-                  int *rank);
-
-/** This function returns attributes values from communicators.
- */
-int MPI_Attr_get(MPI_Comm comm,
-		 int keyval,
-		 void *attr_value,
-		 int *flag );
-
-/**
  * This routine returns the name of the processor on which it was
  * called at the moment of the call.
  * @param name unique specifier for the actual (as opposed to virtual) node

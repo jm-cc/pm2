@@ -98,6 +98,8 @@ typedef struct nm_mpi_communicator_s
   unsigned int id;
   /** underlying nmad communicator */
   nm_comm_t p_comm;
+  /** communicator attributes, hashed by keyval descriptor */
+  puk_hashtable_t attrs;
   /** cartesian topology */
   struct nm_mpi_cart_topology_s
   {

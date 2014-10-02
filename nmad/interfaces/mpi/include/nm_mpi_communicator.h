@@ -164,6 +164,51 @@ int MPI_Group_translate_ranks(MPI_Group group1,
 			      int *ranks2);
 
 /**
+ * This function indicates the number of processes involved in a an
+ * intracommunicator.
+ * @param comm communicator
+ * @param size number of processes in the group of comm
+ * @return MPI status
+ */
+int MPI_Comm_size(MPI_Comm comm,
+                  int *size);
+
+/**
+ * This function gives the rank of the process in the particular
+ * communicator's group.
+ * @param comm communicator
+ * @param rank rank of the calling process in group of comm
+ * @return MPI status
+ */
+int MPI_Comm_rank(MPI_Comm comm,
+                  int *rank);
+
+int MPI_Keyval_create(MPI_Copy_function*copy_fn,
+		      MPI_Delete_function*delete_fn,
+		      int*keyval,
+		      void*extra_state);
+
+int MPI_Keyval_free(int *keyval);
+
+/**
+ * This function returns attributes values from communicators.
+ */
+int MPI_Attr_get(MPI_Comm comm,
+		 int keyval,
+		 void*attr_value,
+		 int*flag);
+
+/**
+ * Stores attribute value associated with a key
+ */
+int MPI_Attr_put(MPI_Comm comm,
+		 int keyval,
+		 void*attr_value);
+
+int MPI_Attr_delete(MPI_Comm comm,
+		    int keyval);
+
+/**
  * Creates a new communicator
  * @param comm communicator
  * @param group group, which is a subset of the group of comm
@@ -212,6 +257,13 @@ int MPI_Comm_dup(MPI_Comm comm,
  * @return MPI status
  */
 int MPI_Comm_free(MPI_Comm *comm);
+
+/**
+ * Tests to see if a comm is an inter-communicator
+ * @param comm communicator to test
+ * @param flag true if this is an inter-communicator
+ */
+int MPI_Comm_test_inter(MPI_Comm comm, int*flag);
 
 int MPI_Cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*_comm_cart);
 

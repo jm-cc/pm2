@@ -53,6 +53,13 @@
 #define MPI_NMAD_LOG_OUT()              NM_LOG_OUT()
 /* @} */
 
+/** error handler */
+struct nm_mpi_errhandler_s
+{
+  int id;
+  MPI_Handler_function*function;
+};
+
 #define ERROR(...) {							\
     fprintf(stderr, "\n# madmpi: FATAL- %s\n\t", __TBX_FUNCTION__);	\
     fprintf(stderr, __VA_ARGS__);					\
@@ -108,6 +115,8 @@ typedef struct nm_mpi_communicator_s
     int*periods;  /**< whether each dim. is periodic */
     int size;     /**< pre-computed size of cartesian topology */
   } cart_topology;
+  /** error handler attached to communicator */
+  struct nm_mpi_errhandler_s*p_errhandler;
 } nm_mpi_communicator_t;
 /* @} */
 
@@ -392,6 +401,8 @@ nm_gate_t nm_mpi_communicator_get_gate(nm_mpi_communicator_t*p_comm, int node);
  * Gets the node associated to the given gate
  */
 int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t gate);
+
+struct nm_mpi_errhandler_s*nm_mpi_errhandler_get(int errhandler);
 
 /* Requests functions */
 

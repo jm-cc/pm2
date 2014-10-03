@@ -110,13 +110,8 @@ int MPI_Error_string(int errorcode,
 		     char *string,
 		     int *resultlen);
 
-/**
- * Sets the error handler for a communicator.
- * @note this function is mostly not implemented yet.
- */
-int MPI_Errhandler_set(MPI_Comm comm,
-		       MPI_Errhandler errhandler);
 
+int MPI_Error_class(int errorcode, int *errorclass);
 
 /**
  * Returns the version
@@ -128,6 +123,20 @@ int MPI_Get_version(int *version,
 		    int *subversion);
 
 int MPI_Pcontrol(const int level, ...);
+
+int MPI_Errhandler_create(MPI_Handler_function*function, MPI_Errhandler*errhandler);
+
+int MPI_Errhandler_set(MPI_Comm comm, MPI_Errhandler errhandler);
+
+int MPI_Errhandler_get(MPI_Comm comm, MPI_Errhandler*errhandler);
+
+int MPI_Errhandler_free(MPI_Errhandler*errhandler);
+
+int MPI_Comm_create_errhandler(MPI_Comm_errhandler_fn*function, MPI_Errhandler*errhandler);
+
+int MPI_Comm_set_errhandler(MPI_Comm comm, MPI_Errhandler errhandler);
+
+int MPI_Comm_get_errhandler(MPI_Comm comm, MPI_Errhandler*errhandler);
 
 
 /* @} */

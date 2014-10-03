@@ -262,6 +262,12 @@ typedef int MPI_Errhandler;
 
 #define MPI_ERRORS_ARE_FATAL ((MPI_Errhandler)1)
 #define MPI_ERRORS_RETURN    ((MPI_Errhandler)2)
+#define _NM_MPI_ERRHANDLER_OFFSET             3
+
+/* MPI-1 */
+typedef void (MPI_Handler_function)(MPI_Comm *, int *, ...);
+/* MPI-2 */
+typedef void (MPI_Comm_errhandler_fn)(MPI_Comm *, int *, ...);
 /* @} */
 
 /** @name Communicator attributes */

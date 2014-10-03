@@ -90,9 +90,11 @@ void nm_mpi_comm_init(void)
   nm_mpi_communicator_t*p_comm_world = nm_mpi_handle_communicator_store(&nm_mpi_communicators, MPI_COMM_WORLD);
   p_comm_world->p_comm = nm_comm_world();
   p_comm_world->attrs = NULL;
+  p_comm_world->p_errhandler = nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL);
   nm_mpi_communicator_t*p_comm_self = nm_mpi_handle_communicator_store(&nm_mpi_communicators, MPI_COMM_SELF);
   p_comm_self->p_comm = nm_comm_self();
   p_comm_self->attrs = NULL;
+  p_comm_self->p_errhandler = nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL);
 
   /* built-in group */
   nm_mpi_group_t*p_group_empty = nm_mpi_handle_group_store(&nm_mpi_groups, MPI_GROUP_EMPTY);
@@ -283,6 +285,7 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
 {
   int err = MPI_SUCCESS;
   const static int nm_mpi_tag_ub = NM_MPI_TAG_MAX;
+  const static int nm_mpi_wtime_is_global = 0;
   switch(keyval)
     {
     case MPI_TAG_UB:
@@ -296,7 +299,7 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
       *flag = 0;
       break;
     case MPI_WTIME_IS_GLOBAL:
-      *(int*)attr_value = 0;
+      *(int**)attr_value = &nm_mpi_wtime_is_global;
       *flag = 1;
       break;
     default:
@@ -394,6 +397,7 @@ int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
   nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
   p_new_comm->p_comm = p_nm_comm;
   p_new_comm->attrs = NULL;
+  p_new_comm->p_errhandler = p_old_comm->p_errhandler;
   *newcomm = p_new_comm->id;
   return MPI_SUCCESS;
 }
@@ -452,6 +456,7 @@ int mpi_comm_split(MPI_Comm oldcomm, int color, int key, MPI_Comm *newcomm)
 	      nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
 	      p_new_comm->p_comm = p_nm_comm;
 	      p_new_comm->attrs = NULL;
+	      p_new_comm->p_errhandler = p_old_comm->p_errhandler;
 	      *newcomm = p_new_comm->id;
 	    }
 	  nm_group_free(newgroup);
@@ -485,6 +490,7 @@ int mpi_comm_dup(MPI_Comm oldcomm, MPI_Comm *newcomm)
       nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
       p_new_comm->p_comm = nm_comm_dup(p_old_comm->p_comm);
       int err = nm_mpi_comm_attrs_copy(p_old_comm, &p_new_comm->attrs);
+      p_new_comm->p_errhandler = p_old_comm->p_errhandler;
       if(err)
 	{
 	  *newcomm = MPI_COMM_NULL;
@@ -558,6 +564,7 @@ int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reo
   nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
   p_new_comm->p_comm = nm_comm_create(p_old_comm->p_comm, cart_group);
   p_new_comm->attrs = NULL;
+  p_new_comm->p_errhandler = p_old_comm->p_errhandler;
   p_new_comm->cart_topology = cart;
   *newcomm = p_new_comm->id;
   nm_group_free(cart_group);

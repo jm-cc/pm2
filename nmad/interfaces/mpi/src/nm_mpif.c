@@ -134,6 +134,11 @@ void mpi_attr_get_(int *comm,
   *ierr = MPI_Attr_get(*comm, *keyval, attr_value, flag);
 }
 
+void mpi_attr_put_(int*comm, int*keyval, void*attr_value, int*ierr)
+{
+  *ierr = MPI_Attr_put(*comm, *keyval, attr_value);
+}
+
 /**
  * Fortran version for MPI_GET_PROCESSOR_NAME
  */

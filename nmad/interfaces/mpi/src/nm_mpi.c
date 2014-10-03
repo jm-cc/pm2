@@ -41,6 +41,7 @@ NM_MPI_ALIAS(MPI_Get_version, mpi_get_version);
 NM_MPI_ALIAS(MPI_Get_count, mpi_get_count);
 NM_MPI_ALIAS(MPI_Get_address, mpi_get_address);
 NM_MPI_ALIAS(MPI_Address, mpi_address);
+NM_MPI_ALIAS(MPI_Pcontrol, mpi_pcontrol);
 NM_MPI_ALIAS(MPI_Status_c2f, mpi_status_c2f);
 NM_MPI_ALIAS(MPI_Status_f2c, mpi_status_f2c);
 
@@ -287,6 +288,12 @@ int mpi_address(void *location, MPI_Aint *address)
   return MPI_Get_address(location, address);
 }
 
+/** stub implementation to be overriden by profiling library */
+int MPI_Pcontrol(const int level, ...) __attribute__((weak));
+int mpi_pcontrol(const int level, ...)
+{
+  return MPI_SUCCESS;
+}
 
 int mpi_status_f2c(MPI_Fint *f_status, MPI_Status *c_status)
 {

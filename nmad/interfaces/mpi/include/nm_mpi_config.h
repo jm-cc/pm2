@@ -127,6 +127,9 @@ int MPI_Errhandler_set(MPI_Comm comm,
 int MPI_Get_version(int *version,
 		    int *subversion);
 
+int MPI_Pcontrol(const int level, ...);
+
+
 /* @} */
 /* @}*/
 

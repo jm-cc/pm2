@@ -87,7 +87,7 @@
 /** Internal group */
 typedef struct nm_mpi_group_s
 {
-  unsigned int id;        /**< ID of the group (handle) */
+  int id;                 /**< ID of the group (handle) */
   nm_group_t p_nm_group;  /**< underlying nmad group */
 } nm_mpi_group_t;
 
@@ -95,7 +95,7 @@ typedef struct nm_mpi_group_s
 typedef struct nm_mpi_communicator_s
 {
   /** id of the communicator */
-  unsigned int id;
+  int id;
   /** underlying nmad communicator */
   nm_comm_t p_comm;
   /** communicator attributes, hashed by keyval descriptor */

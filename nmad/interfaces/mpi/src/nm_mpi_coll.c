@@ -380,12 +380,15 @@ int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI
 	  if(i == root) continue;
 	  nm_mpi_coll_wait(requests[i]);
 	}
+      // input buffer from self
+      if(sendbuf == MPI_IN_PLACE)
+	memcpy(&gather_buf[root * slot_size], recvbuf, slot_size);
+      else
+	memcpy(&gather_buf[root * slot_size], sendbuf, slot_size);
       // Do the reduction operation
-      if((sendbuf != MPI_IN_PLACE) && (recvbuf != sendbuf))
-	memcpy(recvbuf, sendbuf, slot_size);
-      for(i = 0; i < size; i++)
+      memcpy(recvbuf, &gather_buf[0], slot_size);
+      for(i = 1; i < size; i++)
 	{
-	  if(i == root) continue;
 	  p_operator->function(&gather_buf[i * slot_size], recvbuf, &count, &datatype);
 	}
       FREE_AND_SET_NULL(gather_buf);

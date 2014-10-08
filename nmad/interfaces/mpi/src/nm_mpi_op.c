@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,10 +16,98 @@
 #include "nm_mpi_private.h"
 
 
-void mpir_op_max(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type) {
+/* ********************************************************* */
+
+NM_MPI_HANDLE_TYPE(operator, nm_mpi_operator_t, _NM_MPI_OP_OFFSET, 16);
+
+static struct nm_mpi_handle_operator_s nm_mpi_operators;
+
+static void nm_mpi_op_max(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_min(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_sum(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_prod(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_land(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_band(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_lor(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_bor(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_lxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_bxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+static void nm_mpi_op_minloc(void*invec, void*inoutvec, int*len, MPI_Datatype*type);
+
+
+/* ********************************************************* */
+
+NM_MPI_ALIAS(MPI_Op_create,      mpi_op_create);
+NM_MPI_ALIAS(MPI_Op_free,        mpi_op_free);
+
+/* ********************************************************* */
+
+
+/** store builtin operators */
+static void nm_mpi_operator_store(int id, MPI_User_function*function)
+{
+  nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_store(&nm_mpi_operators, id);
+  p_operator->function = function;
+  p_operator->commute = 1;
+}
+
+__PUK_SYM_INTERNAL
+void nm_mpi_op_init(void)
+{
+  /** Initialise the collective operators */
+  nm_mpi_handle_operator_init(&nm_mpi_operators);
+  nm_mpi_operator_store(MPI_MAX,    &nm_mpi_op_max);
+  nm_mpi_operator_store(MPI_MIN,    &nm_mpi_op_min);
+  nm_mpi_operator_store(MPI_SUM,    &nm_mpi_op_sum);
+  nm_mpi_operator_store(MPI_PROD,   &nm_mpi_op_prod);
+  nm_mpi_operator_store(MPI_LAND,   &nm_mpi_op_land);
+  nm_mpi_operator_store(MPI_BAND,   &nm_mpi_op_band);
+  nm_mpi_operator_store(MPI_LOR,    &nm_mpi_op_lor);
+  nm_mpi_operator_store(MPI_BOR,    &nm_mpi_op_bor);
+  nm_mpi_operator_store(MPI_LXOR,   &nm_mpi_op_lxor);
+  nm_mpi_operator_store(MPI_BXOR,   &nm_mpi_op_bxor);
+  nm_mpi_operator_store(MPI_MINLOC, &nm_mpi_op_minloc);
+  nm_mpi_operator_store(MPI_MAXLOC, &nm_mpi_op_maxloc);
+}
+
+__PUK_SYM_INTERNAL
+void nm_mpi_op_exit(void)
+{
+  nm_mpi_handle_operator_finalize(&nm_mpi_operators);
+}
+
+__PUK_SYM_INTERNAL
+nm_mpi_operator_t*nm_mpi_operator_get(MPI_Op op)
+ {
+   nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_get(&nm_mpi_operators, op);
+   return p_operator;
+}
+
+
+/* ********************************************************* */
+
+
+int mpi_op_create(MPI_User_function*function, int commute, MPI_Op*op)
+{
+  nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_alloc(&nm_mpi_operators);
+  p_operator->function = function;
+  p_operator->commute = commute;
+  *op = p_operator->id;
+  return MPI_SUCCESS;
+}
+
+int mpi_op_free(MPI_Op*op)
+{
+  nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_get(&nm_mpi_operators, *op);
+  nm_mpi_handle_operator_free(&nm_mpi_operators, p_operator);
+  *op = MPI_OP_NULL;
+  return MPI_SUCCESS;
+}
+
+
+static void nm_mpi_op_max(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 	  /* todo: this only works for 'simple' types
@@ -55,10 +143,8 @@ void mpir_op_max(void *invec,
   }
 }
 
-void mpir_op_min(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type) {
+static void nm_mpi_op_min(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 	  /* todo: this only works for 'simple' types
@@ -94,10 +180,8 @@ void mpir_op_min(void *invec,
   }
 }
 
-void mpir_op_sum(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type) {
+static void nm_mpi_op_sum(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 #define DO_SUM(__type__)						\
@@ -133,10 +217,8 @@ void mpir_op_sum(void *invec,
   }
 }
 
-void mpir_op_prod(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type) {
+static void nm_mpi_op_prod(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 	  /* todo: this only works for 'simple' types
@@ -171,10 +253,8 @@ void mpir_op_prod(void *invec,
   }
 }
 
-void mpir_op_land(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type) {
+static void nm_mpi_op_land(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 	  /* todo: this only works for 'simple' types
@@ -210,10 +290,8 @@ void mpir_op_land(void *invec,
   }
 }
 
-void mpir_op_band(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type) {
+static void nm_mpi_op_band(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 	  /* todo: this only works for 'simple' types
@@ -250,10 +328,8 @@ void mpir_op_band(void *invec,
   }
 }
 
-void mpir_op_lor(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type) {
+static void nm_mpi_op_lor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 	  /* todo: this only works for 'simple' types
@@ -290,10 +366,8 @@ void mpir_op_lor(void *invec,
   }
 }
 
-void mpir_op_bor(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type) {
+static void nm_mpi_op_bor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 	  /* todo: this only works for 'simple' types
@@ -330,10 +404,8 @@ void mpir_op_bor(void *invec,
   }
 }
 
-void mpir_op_lxor(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type) {
+static void nm_mpi_op_lxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 	  /* todo: this only works for 'simple' types
@@ -374,10 +446,8 @@ void mpir_op_lxor(void *invec,
   }
 }
 
-void mpir_op_bxor(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type) {
+static void nm_mpi_op_bxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i;
   switch (*type) {
 	  /* todo: this only works for 'simple' types
@@ -414,10 +484,8 @@ void mpir_op_bxor(void *invec,
   }
 }
 
-void mpir_op_maxloc(void *invec,
-		    void *inoutvec,
-		    int *len,
-		    MPI_Datatype *type) {
+static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i, _len = *len;
   nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type);
 
@@ -480,10 +548,8 @@ void mpir_op_maxloc(void *invec,
     }
 }
 
-void mpir_op_minloc(void *invec,
-		    void *inoutvec,
-		    int *len,
-		    MPI_Datatype *type) {
+static void nm_mpi_op_minloc(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
+{
   int i, _len = *len;
   nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type);
 

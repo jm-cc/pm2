@@ -386,9 +386,9 @@ void nm_mpi_datatype_init(void);
 
 void nm_mpi_datatype_exit(void);
 
-void nm_mpi_coll_init(void);
+void nm_mpi_op_init(void);
 
-void nm_mpi_coll_exit(void);
+void nm_mpi_op_exit(void);
 
 /* Accessor functions */
 
@@ -481,102 +481,6 @@ int nm_mpi_datatype_split(nm_mpi_request_t *p_req);
  * Gets the function associated to the given operator.
  */
 nm_mpi_operator_t*nm_mpi_operator_get(MPI_Op op);
-
-/**
- * Defines the MAX function for reduce operations.
- */
-void mpir_op_max(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type);
-
-/**
- * Defines the MIN function for reduce operations.
- */
-void mpir_op_min(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type);
-
-/**
- * Defines the SUM function for reduce operations.
- */
-void mpir_op_sum(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type);
-
-/**
- * Defines the PROD function for reduce operations.
- */
-void mpir_op_prod(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type);
-
-/**
- * Defines the LAND function for reduce operations.
- */
-void mpir_op_land(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type);
-
-/**
- * Defines the BAND function for reduce operations.
- */
-void mpir_op_band(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type);
-
-/**
- * Defines the LOR function for reduce operations.
- */
-void mpir_op_lor(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type);
-
-/**
- * Defines the BOR function for reduce operations.
- */
-void mpir_op_bor(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type);
-
-/**
- * Defines the LXOR function for reduce operations.
- */
-void mpir_op_lxor(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type);
-
-/**
- * Defines the BXOR function for reduce operations.
- */
-void mpir_op_bxor(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type);
-
-/**
- * Defines the MINLOC function for reduce operations.
- */
-void mpir_op_minloc(void *invec,
-		    void *inoutvec,
-		    int *len,
-		    MPI_Datatype *type);
-
-/**
- * Defines the MAXLOC function for reduce operations.
- */
-void mpir_op_maxloc(void *invec,
-		    void *inoutvec,
-		    int *len,
-		    MPI_Datatype *type);
 
 /* Communicator operations */
 

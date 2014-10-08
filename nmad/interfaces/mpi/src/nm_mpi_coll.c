@@ -23,12 +23,6 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 /* ********************************************************* */
 
-NM_MPI_HANDLE_TYPE(operator, nm_mpi_operator_t, _NM_MPI_OP_OFFSET, 16);
-
-static struct nm_mpi_handle_operator_s nm_mpi_operators;
-
-/* ********************************************************* */
-
 NM_MPI_ALIAS(MPI_Barrier,        mpi_barrier);
 NM_MPI_ALIAS(MPI_Bcast,          mpi_bcast);
 NM_MPI_ALIAS(MPI_Gather,         mpi_gather);
@@ -38,48 +32,12 @@ NM_MPI_ALIAS(MPI_Allgatherv,     mpi_allgatherv);
 NM_MPI_ALIAS(MPI_Scatter,        mpi_scatter);
 NM_MPI_ALIAS(MPI_Alltoall,       mpi_alltoall);
 NM_MPI_ALIAS(MPI_Alltoallv,      mpi_alltoallv);
-NM_MPI_ALIAS(MPI_Op_create,      mpi_op_create);
-NM_MPI_ALIAS(MPI_Op_free,        mpi_op_free);
 NM_MPI_ALIAS(MPI_Reduce,         mpi_reduce);
 NM_MPI_ALIAS(MPI_Allreduce,      mpi_allreduce);
 NM_MPI_ALIAS(MPI_Reduce_scatter, mpi_reduce_scatter);
 
 /* ********************************************************* */
 
-/** store builtin operators */
-static void nm_mpi_operator_store(int id, MPI_User_function*function)
-{
-  nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_store(&nm_mpi_operators, id);
-  p_operator->function = function;
-  p_operator->commute = 1;
-}
-
-__PUK_SYM_INTERNAL
-void nm_mpi_coll_init(void)
-{
-  /** Initialise the collective operators */
-  nm_mpi_handle_operator_init(&nm_mpi_operators);
-  nm_mpi_operator_store(MPI_MAX, &mpir_op_max);
-  nm_mpi_operator_store(MPI_MIN, &mpir_op_min);
-  nm_mpi_operator_store(MPI_SUM, &mpir_op_sum);
-  nm_mpi_operator_store(MPI_PROD, &mpir_op_prod);
-  nm_mpi_operator_store(MPI_LAND, &mpir_op_land);
-  nm_mpi_operator_store(MPI_BAND, &mpir_op_band);
-  nm_mpi_operator_store(MPI_LOR, &mpir_op_lor);
-  nm_mpi_operator_store(MPI_BOR, &mpir_op_bor);
-  nm_mpi_operator_store(MPI_LXOR, &mpir_op_lxor);
-  nm_mpi_operator_store(MPI_BXOR, &mpir_op_bxor);
-  nm_mpi_operator_store(MPI_MINLOC, &mpir_op_minloc);
-  nm_mpi_operator_store(MPI_MAXLOC, &mpir_op_maxloc);
-}
-
-__PUK_SYM_INTERNAL
-void nm_mpi_coll_exit(void)
-{
-  nm_mpi_handle_operator_finalize(&nm_mpi_operators);
-}
-
-/* ********************************************************* */
 /* ** building blocks */
 
 static nm_mpi_request_t*nm_mpi_coll_isend(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm)
@@ -393,23 +351,6 @@ int mpi_alltoallv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sen
   return MPI_SUCCESS;
 }
 
-int mpi_op_create(MPI_User_function*function, int commute, MPI_Op*op)
-{
-  nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_alloc(&nm_mpi_operators);
-  p_operator->function = function;
-  p_operator->commute = commute;
-  *op = p_operator->id;
-  return MPI_SUCCESS;
-}
-
-int mpi_op_free(MPI_Op*op)
-{
-  nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_get(&nm_mpi_operators, *op);
-  nm_mpi_handle_operator_free(&nm_mpi_operators, p_operator);
-  *op = MPI_OP_NULL;
-  return MPI_SUCCESS;
-}
-
 int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_REDUCE;
@@ -517,10 +458,4 @@ int mpi_reduce_scatter(void*sendbuf, void*recvbuf, int*recvcounts, MPI_Datatype 
   return MPI_SUCCESS;
 }
 
-__PUK_SYM_INTERNAL
-nm_mpi_operator_t*nm_mpi_operator_get(MPI_Op op)
- {
-   nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_get(&nm_mpi_operators, op);
-   return p_operator;
-}
 

@@ -500,15 +500,6 @@ nm_tag_t nm_mpi_get_tag(nm_mpi_communicator_t*p_comm, int tag);
  */
 int nm_mpi_check_tag(int user_tag);
 
-/* Termination functionalities */
-
-/**
- * Using Friedmann  Mattern's Four Counter Method to detect
- * termination detection.
- * "Algorithms for Distributed Termination Detection." Distributed
- * Computing, vol 2, pp 161-175, 1987.
- */
-tbx_bool_t mpir_test_termination(MPI_Comm comm);
 
 /* ********************************************************* */
 

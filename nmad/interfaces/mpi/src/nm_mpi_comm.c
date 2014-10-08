@@ -299,7 +299,7 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
       *flag = 0;
       break;
     case MPI_WTIME_IS_GLOBAL:
-      *(int**)attr_value = &nm_mpi_wtime_is_global;
+      *(const int**)attr_value = &nm_mpi_wtime_is_global;
       *flag = 1;
       break;
     default:

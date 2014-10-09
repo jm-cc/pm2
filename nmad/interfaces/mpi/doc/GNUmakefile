@@ -29,6 +29,8 @@ all: pdf-upload html-upload
 html-upload: $(BUILD)/html/$(TARGET)/index.html
 	$(RSYNC) $(RSYNCOPTIONS) $(BUILD)/html/$(TARGET)/ $(PUBLISHDIR)
 
+html: $(BUILD)/html/$(TARGET)/%.html
+
 $(BUILD)/html/$(TARGET)/%.html: $(TARGET).xml $(DEPS) $(FIGURES_HTML) $(EMPHCFILES_HTML)
 	$(XML2HTML)/bin/shell/xml2runtime.sh $(TARGET).xml $(BUILD)/html/$(TARGET) $(SECTIONS)
 

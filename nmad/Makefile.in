@@ -73,8 +73,8 @@ bench:
 #
 docs: doxygen
 
-doxygen: doc/Doxyfile $(SRC_FILES)
-	doxygen doc/Doxyfile
+doxygen: @nmad_srcdir@/doc/Doxyfile $(SRC_FILES)
+	env NMAD_SRCDIR=@nmad_srcdir@ NMAD_BUILDDIR=@nmad_builddir@ doxygen @nmad_srcdir@/doc/Doxyfile
 	@echo
 	@echo "# documentation generated in: @nmad_builddir@/doc/html/index.html"
 	@echo

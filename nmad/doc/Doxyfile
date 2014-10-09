@@ -450,7 +450,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = @nmad_srcdir@/src @nmad_srcdir@/include @nmad_srcdir@/drivers @nmad_srcdir@/interfaces @nmad_srcdir@/strategies
+INPUT                  = $(NMAD_SRCDIR)
 
 # This tag can be used to specify the character encoding of the source files that
 # doxygen parses. Internally doxygen uses the UTF-8 encoding, which is also the default
@@ -466,7 +466,7 @@ INPUT_ENCODING         = ISO-8859-15
 # *.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx
 # *.hpp *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm *.py
 
-FILE_PATTERNS          = *.h
+FILE_PATTERNS          = *.h *.md
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories
 # should be searched for input files as well. Possible values are YES and NO.
@@ -498,7 +498,7 @@ EXCLUDE_PATTERNS       =
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           = @nmad_srcdir@/examples
+EXAMPLE_PATH           = $(NMAD_SRCDIR)/examples
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
@@ -648,13 +648,13 @@ HTML_FILE_EXTENSION    = .html
 # each generated HTML page. If it is left blank doxygen will generate a
 # standard header.
 
-HTML_HEADER            = @nmad_srcdir@/doc/html_header.html
+HTML_HEADER            = $(NMAD_SRCDIR)/doc/html_header.html
 
 # The HTML_FOOTER tag can be used to specify a personal HTML footer for
 # each generated HTML page. If it is left blank doxygen will generate a
 # standard footer.
 
-HTML_FOOTER            =  @nmad_srcdir@/doc/html_footer.html
+HTML_FOOTER            =  $(NMAD_SRCDIR)/doc/html_footer.html
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading
 # style sheet that is used by each HTML page. It can be used to

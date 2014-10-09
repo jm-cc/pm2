@@ -50,7 +50,7 @@ instructions).
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Required Development Tools" LABEL="sec:tools">
+<SUBSECTION TITLE="Prerequisites">
 
 <P>
 The following development tools are required to compile <MACRO
@@ -72,46 +72,17 @@ GNU <TT>make</TT> (version <TT>3.81</TT> and higher).
 
 <LI>
 <P>
-GNU Bison (<URL>http://www.gnu.org/software/bison/</URL>) and Flex (<URL>http://www.gnu.org/software/flex/</URL>).
+To use InfiniBand, you must get the OFED drivers stack.
 </P>
 </LI>
 </UL>
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Prerequisites">
-
-<P>
-To use Myrinet and Quadrics, you must get the appropriate drivers.
-<MACRO NAME="madmpi"/> supports Myrinet networks through the MX driver
-and Quadrics networks through the ELAN driver.
-</P>
-
-<IGNORE>
-<P>
-The default installation directories for these drivers are:
-</P>
-
-<UL>
-<LI> <TT>/opt/mx</TT> for Myrinet/MX; </LI>
-<LI> <TT>/opt/DIS</TT> for SCI/SISCI. </LI>
-</UL>
-
-<P>
-In case, your installation differs from these directories, you will
-need to set the following environment variables to point to your own
-installation directories:
-</P>
-</IGNORE>
-
-<CODE FILE="./code/setDrivers.txt"/>
-
-</SUBSECTION>
-
 <SUBSECTION TITLE="Installing PM2">
 
 <P>
-Here are the required steps to install PM2.
+NewMadeleine and Mad-MPI install as part of the PM2 software suite.
 </P>
 
 <OL>
@@ -165,42 +136,6 @@ PM2 is installed.
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Installing Mad-MPI" LABEL="installMadMpi">
-
-<P>
-Here are the required steps to install <MACRO NAME="madmpi"/>.
-</P>
-
-<OL>
-<LI>
-<P>
-Create the PM2 flavor tuned for <MACRO NAME="madmpi"/>.
-</P>
-<CODE FILE="./code/createFlavor.txt"/>
-<P>
-By default, the only network protocol selected is TCP. To enable more
-protocols, see Section <REF LABEL="networkProtocols"/>.
-</P>
-</LI>
-
-<LI>
-<P>
-Compile <MACRO NAME="madmpi"/>.
-</P>
-<CODE FILE="./code/compileMadMpi.txt"/>
-</LI>
-
-<LI> 
-<P>
-Users should add to their <TT>PATH</TT> the element
-<TT>nmad/interfaces/mpi/scripts/</TT> in order to easily access the
-commands <TT>mpicc</TT> and <TT>mpirun</TT>.
-</P>
-<CODE FILE="./code/setPath2.txt"/>
-</LI>
-</OL>
-
-</SUBSECTION>
 
 <SUBSECTION TITLE="Network Protocols" LABEL="networkProtocols">
 
@@ -251,16 +186,6 @@ pressing <TT>Ctrl-Q</TT>, or by selecting in the toolbar menu,
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Summary of Environment Variables" LABEL="variables">
-
-<P>
-Here the list of environment variables you need to set (preferably in
-your login files such as <TT>$HOME/.bashrc</TT>) before being able to
-compile and execute <MACRO NAME="madmpi"/> applications.
-</P>
-
-<CODE FILE="./code/variables.txt"/>
-</SUBSECTION>
 
 </TEXT>
 

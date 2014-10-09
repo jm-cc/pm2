@@ -13,13 +13,9 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_config.h
- * ============
- */
 
-#ifndef MPI_CONFIG_H
-#define MPI_CONFIG_H
+#ifndef NM_MPI_CONFIG_H
+#define NM_MPI_CONFIG_H
 
 /** \addtogroup mpi_interface */
 /* @{ */
@@ -142,5 +138,5 @@ int MPI_Comm_get_errhandler(MPI_Comm comm, MPI_Errhandler*errhandler);
 /* @} */
 /* @}*/
 
-#endif /* MPI_CONFIG_H */
+#endif /* NM_MPI_CONFIG_H */
 

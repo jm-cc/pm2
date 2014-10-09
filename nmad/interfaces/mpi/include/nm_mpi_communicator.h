@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,13 +13,9 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_collective.h
- * ================
- */
 
-#ifndef MPI_COMMUNICATOR_H
-#define MPI_COMMUNICATOR_H
+#ifndef NM_MPI_COMMUNICATOR_H
+#define NM_MPI_COMMUNICATOR_H
 
 /** \addtogroup mpi_interface */
 /* @{ */
@@ -38,7 +34,7 @@ int MPI_Group_size(MPI_Group group,
 /**
  * Returns the rank of this process in the given group
  * @param group group
- * @apram rank rank of the calling process in group, or MPI_UNDEFINED if the process is not a member
+ * @param rank rank of the calling process in group, or MPI_UNDEFINED if the process is not a member
  * @return MPI status
  */
 int MPI_Group_rank(MPI_Group group,
@@ -282,4 +278,4 @@ int MPI_Cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest
 /* @}*/
 /* @}*/
 
-#endif /* MPI_COMMUNICATOR_H */
+#endif /* NM_MPI_COMMUNICATOR_H */

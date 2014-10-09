@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,13 +13,9 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_datatype.h
- * ==============
- */
 
-#ifndef MPI_DATATYPE_H
-#define MPI_DATATYPE_H
+#ifndef NM_MPI_DATATYPE_H
+#define NM_MPI_DATATYPE_H
 
 /** \addtogroup mpi_interface */
 /* @{ */
@@ -227,4 +223,4 @@ int MPI_Type_struct(int count,
 /* @}*/
 /* @}*/
 
-#endif /* MPI_DATATYPE_H */
+#endif /* NM_MPI_DATATYPE_H */

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2012 (see AUTHORS file)
+ * Copyright (C) 2012-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,13 +13,9 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_not_implemented.h
- * ===========
- */
 
-#ifndef MPI_NOT_IMPLEMENTED_H
-#define MPI_NOT_IMPLEMENTED_H
+#ifndef NM_MPI_NOT_IMPLEMENTED_H
+#define NM_MPI_NOT_IMPLEMENTED_H
 
 
 /** \addtogroup mpi_interface */
@@ -73,4 +69,4 @@ MPI_Fint MPI_Win_c2f(MPI_Win win);
 /* @}*/
 /* @}*/
 
-#endif /* MPI_NOT_IMPLEMENTED_H */
+#endif /* NM_MPI_NOT_IMPLEMENTED_H */

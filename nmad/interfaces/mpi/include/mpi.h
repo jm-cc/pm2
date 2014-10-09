@@ -13,10 +13,6 @@
  * General Public License for more details.
  */
 
-/*
- * mpi.h
- * =====
- */
 
 #ifndef MPI_H
 #define MPI_H

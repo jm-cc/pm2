@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,13 +13,9 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_collective.h
- * ================
- */
 
-#ifndef MPI_COLLECTIVE_H
-#define MPI_COLLECTIVE_H
+#ifndef NM_MPI_COLLECTIVE_H
+#define NM_MPI_COLLECTIVE_H
 
 /** \addtogroup mpi_interface */
 /* @{ */
@@ -307,4 +303,4 @@ int MPI_Reduce_scatter(void *sendbuf,
 /* @}*/
 /* @}*/
 
-#endif /* MPI_COLLECTIVE_H */
+#endif /* NM_MPI_COLLECTIVE_H */

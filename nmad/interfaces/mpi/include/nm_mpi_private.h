@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
  */
 
 
-#ifndef MPI_NMAD_PRIVATE_H
-#define MPI_NMAD_PRIVATE_H
+#ifndef NM_MPI_PRIVATE_H
+#define NM_MPI_PRIVATE_H
 
 /** \defgroup mpi_private_interface Mad-MPI Private Interface
  *
@@ -938,4 +938,4 @@ int mpi_status_f2c(MPI_Fint *f_status,
 
 /* @} */
 
-#endif /* MPI_NMAD_PRIVATE_H */
+#endif /* NM_MPI_PRIVATE_H */

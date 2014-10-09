@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,13 +13,9 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_types.h
- * ===========
- */
 
-#ifndef MPI_TYPES_H
-#define MPI_TYPES_H
+#ifndef NM_MPI_TYPES_H
+#define NM_MPI_TYPES_H
 
 #define MPI_BSEND_OVERHEAD 0
 /** \addtogroup mpi_interface */
@@ -327,4 +323,4 @@ int MPI_Status_f2c(MPI_Fint *f_status, MPI_Status *c_status);
  */
 int MPI_Status_c2f(MPI_Status *c_status, MPI_Fint *f_status);
 
-#endif /* MPI_TYPES_H */
+#endif /* NM_MPI_TYPES_H */

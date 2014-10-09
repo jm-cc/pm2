@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,13 +13,9 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_persistent.h
- * ================
- */
 
-#ifndef MPI_PERSISTENT_H
-#define MPI_PERSISTENT_H
+#ifndef NM_MPI_PERSISTENT_H
+#define NM_MPI_PERSISTENT_H
 
 /** \addtogroup mpi_interface */
 /* @{ */
@@ -91,4 +87,4 @@ int MPI_Startall(int count,
 /* @}*/
 /* @}*/
 
-#endif /* MPI_PERSISTENT_H */
+#endif /* NM_MPI_PERSISTENT_H */

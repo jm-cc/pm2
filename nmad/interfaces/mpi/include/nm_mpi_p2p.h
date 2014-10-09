@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,13 +13,9 @@
  * General Public License for more details.
  */
 
-/*
- * mpi_pt2pt.h
- * ===========
- */
 
-#ifndef MPI_PT2PT_H
-#define MPI_PT2PT_H
+#ifndef NM_MPI_P2P_H
+#define NM_MPI_P2P_H
 
 /** \addtogroup mpi_interface */
 /* @{ */
@@ -405,4 +401,4 @@ int MPI_Request_is_equal(MPI_Request request1,
 /* @}*/
 /* @}*/
 
-#endif /* MPI_PT2PT_H */
+#endif /* NM_MPI_P2P_H */

@@ -62,5 +62,5 @@ The following development tools are required to compile NewMadeleine:
 Installation
 ------------
 
-For up to date installation details see \subpage README.md 
+For up to date installation details and various configuration parameters see \subpage README
 

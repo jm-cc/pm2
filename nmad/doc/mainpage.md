@@ -1,5 +1,6 @@
-The NewMadeleine API Documentation
-==================================
+# 
+The NewMadeleine Documentation
+==============================
 
 Introduction
 ------------

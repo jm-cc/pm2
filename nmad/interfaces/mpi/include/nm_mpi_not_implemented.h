@@ -70,8 +70,6 @@ MPI_Win MPI_Win_f2c(MPI_Fint win);
 
 MPI_Fint MPI_Win_c2f(MPI_Win win);
 
-int MPI_Group_size(MPI_Group group, int *size);
-
 /* @}*/
 /* @}*/
 

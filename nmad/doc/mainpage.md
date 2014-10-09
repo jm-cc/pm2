@@ -30,7 +30,37 @@ User APIs
 ---------
 
 Several APIs are provided to NewMadeleine users:
-  - The \ref pack_interface
-  - The \ref sr_interface
-  - The \ref mpi_interface known as Mad-MPI
+  - The \ref mpi_interface known as Mad-MPI, which is a regular MPI implementation
+
+or the low-level APIs:
+  - The \ref sr_interface as general purpose send receive
+  - The \ref launcher_interface to interface with launcher to initialize sessions
+  - The \ref pack_interface for compatibility with legacy Mad3
+
+
+Getting the source code
+-----------------------
+
+NewMadeleine files are hosted by the PM2 project on the
+InriaGforge at https://gforge.inria.fr/projects/pm2/
+
+The source code is managed by a *Subversion* server hosted by
+the InriaGforge. Anonymous SVN access is available, so that you
+don't need to become a project member to access the repository
+with the latest source. Alternatively, you can download a
+released PM2 tarball.
+
+Prerequisites
+-------------
+
+The following development tools are required to compile NewMadeleine:
+
+- GNU C Compiler `gcc` (version 3.2 and higher).
+- GNU `make` (version 3.81 and higher).
+- To use InfiniBand, you must get the OFED drivers stack.
+
+Installation
+------------
+
+For up to date installation details see \subpage README.md 
 

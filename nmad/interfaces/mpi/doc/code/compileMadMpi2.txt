@@ -1,2 +1,0 @@
-% make -C $PM2_ROOT/nmad FLAVOR=nmad-mpi clean
-% make -C $PM2_ROOT/nmad FLAVOR=nmad-mpi

@@ -1,2 +1,0 @@
-% cd $PM2_ROOT/nmad/examples/mpi/basics
-% mpicc -o cpi cpi.c

@@ -1,1 +1,0 @@
-% mpirun -dbg -np 2 cpi

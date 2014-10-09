@@ -1,3 +1,6 @@
+README.md
+=========
+
 This document describes nmad installation and configuration.
 
 for any question, mailto: Alexandre.Denis@inria.fr
@@ -19,7 +22,7 @@ Requirements:
 Build:
 ./autogen.sh
 mkdir build ; cd build
-../configure <your options here>
+../configure [your options here]
 make
 make install
 
@@ -159,6 +162,6 @@ Documentation
 
 To generate doxygen documentation:
 
-% cd <prefix>/build/nmad
+% cd @prefix@/build/nmad
 % make docs
 

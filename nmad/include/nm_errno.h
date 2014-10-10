@@ -41,7 +41,8 @@ enum nm_errno {
                                          * unreachable		*/
         NM_ECANCELED		= 14,	/* operation canceled	*/
         NM_EABORTED		= 15,	/* operation aborted	*/
-	NM_EBUSY                = 16    /* gate/track is busy   */
+	NM_EBUSY                = 16,   /* gate/track is busy   */
+	NM_ENOTPOSTED           = 17    /* request not posted   */
 };
 
 #endif /* NM_ERRNO_H */

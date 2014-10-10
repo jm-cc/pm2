@@ -144,13 +144,17 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
 
-#ifdef DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
-    TBX_FAILUREF("nm_sr_stest- req=%p no send posted!\n", p_request);
-#endif /* DEBUG */
+    {
+      rc = -NM_ENOTPOSTED;
+      goto exit;
+    }
 
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
-    goto exit;
+    {
+      rc = NM_ESUCCESS;
+      goto exit;
+    }
 
 #ifdef NMAD_POLL
   nm_schedule(p_core);
@@ -223,11 +227,12 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
   int rc = NM_ESUCCESS;
   NM_LOG_IN();
   assert(nm_sr_data.init_done);
-#ifdef DEBUG
-  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
-    TBX_FAILUREF("nm_sr_rtest- req=%p no recv posted!\n", p_request);
-#endif /* DEBUG */
 
+  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
+    {
+      rc = -NM_ENOTPOSTED;
+      goto exit;
+    }
   if( !nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED))
     {
 #ifdef NMAD_POLL
@@ -249,6 +254,7 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
     {
       rc = -NM_EAGAIN;
     }
+ exit:
   NM_TRACEF("req=%p; rc=%d\n", p_request, rc);
   NM_LOG_OUT();
   return rc;

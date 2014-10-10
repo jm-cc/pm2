@@ -17,6 +17,9 @@
 #ifndef PIOMAN_H
 #define PIOMAN_H
 
+/** @defgroup pioman PIOMan API
+ * @{
+ */
 
 #if defined(PIOMAN_PTHREAD)
 #  include <pthread.h>
@@ -54,13 +57,22 @@ extern void pioman_init(int*argc, char**argv);
 extern void pioman_exit(void);
 
 
-/* Polling constants. Define the polling points */
+/** @defgroup polling_points Polling constants. Define the polling points.
+ * @{
+ */
+/** poll on timer */
 #define PIOM_POLL_AT_TIMER_SIG  1
+/** poll on explicit yield */
 #define PIOM_POLL_AT_YIELD      2
+/** poll on libc entry */
 #define PIOM_POLL_AT_LIB_ENTRY  4
+/** poll when LWP is idle */
 #define PIOM_POLL_AT_IDLE       8
+/** poll at context switch */
 #define PIOM_POLL_AT_CTX_SWITCH 16
+/** poll when explicitely asked for */
 #define PIOM_POLL_WHEN_FORCED   32
+/** @} */
 
 /** Polling point. May be called from the application to force polling,
  * from marcel hooks, from timer handler.
@@ -72,6 +84,8 @@ extern int piom_check_polling(unsigned polling_point);
 #include "piom_sem.h"
 #include "piom_ltask.h"
 #include "piom_io_task.h"
+
+/** @} */
 
 #endif /* PIOMAN_H */
 

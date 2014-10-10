@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-/** @file internal PIOMan definitions.
+/** @file piom_private.h internal PIOMan definitions.
  */
 
 #ifndef PIOM_PRIVATE_H

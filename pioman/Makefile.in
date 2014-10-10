@@ -145,4 +145,16 @@ $(TARGET_LIB): $(OBJ_FILES)
 	$(Q)$(DYNLIB_LD) $(LDFLAGS) -o $@ $+ $(LIBS)
 
 
+# ## Doxygen
+#
+docs: doxygen
 
+doxygen: @pioman_srcdir@/doc/Doxyfile $(SRC_FILES)
+	@mkdir -p @pioman_builddir@/doc/html/
+	env PIOMAN_SRCDIR=@pioman_srcdir@ PIOMAN_BUILDDIR=@pioman_builddir@ doxygen @pioman_srcdir@/doc/Doxyfile
+	@echo
+	@echo "# documentation generated in: @pioman_builddir@/doc/html/index.html"
+	@echo
+
+upload-doc: doxygen
+	rsync -avz @pioman_builddir@/doc/html/ scm.gforge.inria.fr:/home/groups/pm2/htdocs/pioman/doc/

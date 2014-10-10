@@ -17,6 +17,12 @@
 #ifndef PIOM_LTASK_H
 #define PIOM_LTASK_H
 
+/** @defgroup piom_ltask PIOMan ltask interface
+ * This is the main PIOMan interface, used to submit light tasks
+ * @ingroup pioman
+ * @{
+ */
+
 #ifdef PIOMAN_TOPOLOGY_MARCEL
 #define piom_topo_obj_t   struct marcel_topo_level*
 #define piom_topo_full    marcel_topo_levels[0]
@@ -75,7 +81,7 @@ typedef enum
 	PIOM_LTASK_STATE_CANCELLED  = 0x40
     } piom_ltask_state_t;
 
-
+/** type for ltask callback function */
 typedef int (*piom_ltask_func_t)(void*arg);
 
 struct piom_ltask
@@ -209,5 +215,6 @@ extern void piom_ltask_unmask(struct piom_ltask *ltask);
 
 extern piom_topo_obj_t piom_get_parent_obj(piom_topo_obj_t obj, enum piom_topo_level_e level);
 
+/** @} */
 
 #endif /* PIOM_LTASK_H */

@@ -19,6 +19,13 @@
 
 #include <assert.h>
 
+/** @defgroup  piom_lock PIOMan locking interface.
+ * This interface manages locking and unified threading API.
+ * It is used internally for ltasks locking, and is usable by endusers.
+ * @ingroup pioman
+ * @{
+ */
+
 #ifdef PIOMAN_LOCK_MARCEL
 
 /* ** locks for Marcel ************************************* */
@@ -108,6 +115,8 @@ static inline int piom_spin_trylock(piom_spinlock_t*lock)
 #else
 #  error "PIOMan: no lock scheme defined."
 #endif
+
+/** @} */
 
 #endif /* PIOM_LOCK_H */
 

@@ -1,10 +1,14 @@
-/** @file lock-free FIFO as circular array
+/** @file piom_lfqueue.h lock-free FIFO as circular array
  * @author Alexandre DENIS
  * @note code copied from Puk to avoid a dependancy
  */
 
 #ifndef PIOM_LFQUEUE_H
 #define PIOM_LFQUEUE_H
+
+/** @ingroup pioman
+ * @{
+ */
 
 /** builds a lock-free FIFO type and functions.
  *  ENAME is base name for symbols
@@ -119,6 +123,8 @@
   {									\
     return(queue->_tail < queue->_head);				\
   }
+
+/** @} */
 
 #endif /* PIOM_LFQUEUE_H */
 

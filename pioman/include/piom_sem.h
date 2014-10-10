@@ -17,6 +17,10 @@
 #ifndef PIOM_SEM_H
 #define PIOM_SEM_H
 
+/** @ingroup piom_lock
+ * @{
+ */
+
 #include <sys/uio.h>
 #include <stdint.h>
 #include "pioman.h"
@@ -61,5 +65,7 @@ void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask);
 int  piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask);
 void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial);
 void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask);
+
+/** @} */
 
 #endif	/* PIOM_SEM_H */

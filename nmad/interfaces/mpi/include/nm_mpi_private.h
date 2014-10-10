@@ -67,7 +67,7 @@ struct nm_mpi_errhandler_s
     int nptrs = backtrace(buffer, 100);					\
     backtrace_symbols_fd(buffer, nptrs, STDERR_FILENO);			\
     fflush(stderr);							\
-    MPI_Abort(MPI_COMM_WORLD, 1);					\
+    abort();								\
   }
 
 #define FREE_AND_SET_NULL(p) free(p); p = NULL;
@@ -160,7 +160,6 @@ typedef struct nm_mpi_request_s
   void *contig_buffer;
   /** array of pointers used when non-contiguous data are exchanged with the \ref pack_interface */
   void **request_ptr;
-
   /** tag given by the user*/
   int user_tag;
   /** tag used by nmad, built from user_tag */

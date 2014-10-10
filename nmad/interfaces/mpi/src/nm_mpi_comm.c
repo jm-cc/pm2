@@ -349,17 +349,22 @@ int mpi_comm_test_inter(MPI_Comm comm, int*flag)
 
 int mpi_comm_compare(MPI_Comm comm1, MPI_Comm comm2, int*result)
 {
+  nm_mpi_communicator_t*p_comm1 = nm_mpi_communicator_get(comm1);
+  nm_mpi_communicator_t*p_comm2 = nm_mpi_communicator_get(comm2);
+  if(p_comm1 == NULL || p_comm2 == NULL)
+    return MPI_ERR_COMM;
   if(comm1 == comm2)
     {
       *result = MPI_IDENT;
       return MPI_SUCCESS;
     }
-  int r2;
-  mpi_group_compare(comm1, comm2, &r2);
-  if(r2 == MPI_IDENT)
+  int r = nm_group_compare(nm_comm_group(p_comm1->p_comm), nm_comm_group(p_comm2->p_comm));
+  if(r == NM_GROUP_IDENT)
     *result = MPI_CONGRUENT;
+  else if(r == NM_GROUP_SIMILAR)
+    *result = MPI_SIMILAR;
   else
-    *result = r2;
+    *result = MPI_UNEQUAL;
   return MPI_SUCCESS;
 }
 

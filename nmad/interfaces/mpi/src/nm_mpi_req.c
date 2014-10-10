@@ -123,19 +123,25 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
 
 /* ********************************************************* */
 
-int mpi_request_free(MPI_Request *request)
+int mpi_request_free(MPI_Request*request)
 {
-  nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
-  MPI_NMAD_LOG_IN();
-  p_req->request_type = NM_MPI_REQUEST_ZERO;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
-  if(p_req->contig_buffer != NULL)
+  nm_mpi_request_t*p_req = nm_mpi_request_get(*request);
+  int rc = nm_mpi_request_test(p_req);
+  if(rc == NM_ESUCCESS || rc == -NM_ENOTPOSTED)
     {
-      FREE_AND_SET_NULL(p_req->contig_buffer);
+      p_req->request_type = NM_MPI_REQUEST_ZERO;
+      p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
+      if(p_req->contig_buffer != NULL)
+	{
+	  FREE_AND_SET_NULL(p_req->contig_buffer);
+	}
+      nm_mpi_request_free(p_req);
     }
-  nm_mpi_request_free(p_req);
+  else
+    {
+#warning TODO- enqueue task for future deletion
+    }
   *request = MPI_REQUEST_NULL;
-  MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 
@@ -145,23 +151,20 @@ int mpi_waitsome(int incount, MPI_Request *array_of_requests, int *outcount, int
   return MPI_ERR_UNKNOWN;
 }
 
-int mpi_wait(MPI_Request *request, MPI_Status *status)
+int mpi_wait(MPI_Request*request, MPI_Status*status)
 {
   nm_mpi_request_t*p_req = nm_mpi_request_get(*request);
-  int err = NM_ESUCCESS;
   if(p_req == NULL)
     {
-      err = MPI_ERR_REQUEST;
-      goto out; 
+      return MPI_ERR_REQUEST;
     }
-  err = nm_mpi_request_wait(p_req);
+  int err = nm_mpi_request_wait(p_req);
   if(status != MPI_STATUS_IGNORE)
     {
       err = nm_mpi_set_status(p_req, status);
     }
   nm_mpi_request_complete(p_req);
   nm_mpi_request_free(p_req);
- out:
   *request = MPI_REQUEST_NULL;
   return err;
 }
@@ -217,7 +220,6 @@ int mpi_waitany(int count, MPI_Request *array_of_requests, int *rqindex, MPI_Sta
       if(count_null == count)
 	{
 	  *rqindex = MPI_UNDEFINED;
-	  MPI_NMAD_LOG_OUT();
 	  return MPI_SUCCESS;
 	}
     }
@@ -260,7 +262,6 @@ int mpi_testany(int count, MPI_Request*array_of_requests, int*rqindex, int*flag,
       if(*flag == 1)
 	{
 	  *rqindex = i;
-	  MPI_NMAD_LOG_OUT();
 	  return err;
 	}
     }

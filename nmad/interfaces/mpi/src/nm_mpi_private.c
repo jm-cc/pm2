@@ -441,7 +441,6 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
       if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
 	p_req->request_type = NM_MPI_REQUEST_PACK_SEND;
     }
-  err = nm_sr_progress(nm_comm_get_session(p_req->p_comm->p_comm));
   return err;
 }
 
@@ -572,7 +571,6 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
       if(p_req->request_type != NM_MPI_REQUEST_ZERO)
 	p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
     }
-  nm_sr_progress(nm_comm_get_session(p_req->p_comm->p_comm));
   return p_req->request_error;
 }
 

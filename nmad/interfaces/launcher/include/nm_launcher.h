@@ -29,16 +29,18 @@
 /** Component interface definition: 'NewMad_Launcher' */
 struct newmad_launcher_driver_s
 {
-
+  /** initialize nmad, establishes connections */
   void         (*init)(void*_status, int*argc, char**argv, const char*label);
-
+  /** get the number of nodes in the session */
   int          (*get_size)(void*_status);
-
+  /** get process rank */
   int          (*get_rank)(void*_status);
-
+  /** get the session instance for send/recv */
   nm_session_t (*get_session)(void*_status);
-
+  /** get the list of gates */
   void         (*get_gates)(void*_status, nm_gate_t*gates);
+  /** abort the full session */
+  void         (*abort)(void*_status);
 };
 
 PUK_IFACE_TYPE(NewMad_Launcher, struct newmad_launcher_driver_s);
@@ -63,6 +65,9 @@ int nm_launcher_get_session(nm_session_t *p_session);
 
 /** Returns the gate for the process dest */
 int nm_launcher_get_gate(int dest, nm_gate_t *gate);
+
+/** Abort all processes */
+void nm_launcher_abort(void);
 
 /* @} */
 

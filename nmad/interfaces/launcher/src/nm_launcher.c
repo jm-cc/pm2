@@ -71,6 +71,12 @@ int nm_launcher_get_gate(int dest, nm_gate_t*pp_gate)
   return NM_ESUCCESS;
 }
 
+void nm_launcher_abort(void)
+{
+  assert(launcher.instance != NULL);
+  (*launcher.r.driver->abort)(launcher.r._status);
+}
+
 int nm_launcher_init(int *argc, char**argv)
 {
   static int init_done = 0;

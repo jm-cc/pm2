@@ -67,6 +67,14 @@ nm_mpi_request_t*nm_mpi_request_alloc(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_request_free(nm_mpi_request_t*p_req)
 {
+  if(p_req->contig_buffer != NULL)
+    {
+      FREE_AND_SET_NULL(p_req->contig_buffer);
+    }
+  if(p_req->request_ptr != NULL)
+    {
+      FREE_AND_SET_NULL(p_req->request_ptr);
+    }
   /* set request to zero to help debug */
   p_req->request_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_handle_request_free(&nm_mpi_requests, p_req);
@@ -128,10 +136,6 @@ int mpi_request_free(MPI_Request*request)
     {
       p_req->request_type = NM_MPI_REQUEST_ZERO;
       p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
-      if(p_req->contig_buffer != NULL)
-	{
-	  FREE_AND_SET_NULL(p_req->contig_buffer);
-	}
       nm_mpi_request_free(p_req);
     }
   else
@@ -144,6 +148,7 @@ int mpi_request_free(MPI_Request*request)
 
 int mpi_waitsome(int incount, MPI_Request *array_of_requests, int *outcount, int *array_of_indices, MPI_Status *array_of_statuses)
 {
+  ERROR("MPI_Waitsome() not implemented.\n");
 #warning Implement MPI_Waitsome !
   return MPI_ERR_UNKNOWN;
 }
@@ -202,7 +207,7 @@ int mpi_waitany(int count, MPI_Request *array_of_requests, int *rqindex, MPI_Sta
       for(i = 0; i < count; i++)
 	{
 	  nm_mpi_request_t*p_req = nm_mpi_request_get(array_of_requests[i]);
-	  if(p_req->request_type == NM_MPI_REQUEST_ZERO)
+	  if(p_req == NULL || p_req->request_type == NM_MPI_REQUEST_ZERO)
 	    {
 	      count_null++;
 	      continue;
@@ -225,6 +230,11 @@ int mpi_waitany(int count, MPI_Request *array_of_requests, int *rqindex, MPI_Sta
 int mpi_test(MPI_Request *request, int *flag, MPI_Status *status)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
+  if(p_req == NULL)
+    {
+      *flag = 1;
+      return MPI_SUCCESS;
+    }
   int err = nm_mpi_request_test(p_req);
   if(err == NM_ESUCCESS)
     {
@@ -234,6 +244,8 @@ int mpi_test(MPI_Request *request, int *flag, MPI_Status *status)
 	  err = nm_mpi_set_status(p_req, status);
 	}
       nm_mpi_request_complete(p_req);
+      nm_mpi_request_free(p_req);
+      *request = MPI_REQUEST_NULL;
     }
   else
     { /* err == -NM_EAGAIN */
@@ -250,7 +262,7 @@ int mpi_testany(int count, MPI_Request*array_of_requests, int*rqindex, int*flag,
   for(i = 0; i < count; i++)
     {
       nm_mpi_request_t*p_req = nm_mpi_request_get(array_of_requests[i]);
-      if(p_req->request_type == NM_MPI_REQUEST_ZERO)
+      if(p_req == NULL || p_req->request_type == NM_MPI_REQUEST_ZERO)
 	{
 	  count_inactive++;
 	  continue;
@@ -281,6 +293,11 @@ int mpi_testall(int count, MPI_Request*array_of_requests, int*flag, MPI_Status*s
   for(i = 0; i < count; i++)
     {
       nm_mpi_request_t*p_req = nm_mpi_request_get(array_of_requests[i]);
+      if(p_req == NULL)
+	{
+	  *flag = 0;
+	  return MPI_ERR_REQUEST;
+	}
       if(p_req->request_type == NM_MPI_REQUEST_ZERO)
 	{
 	  count_inactive++;
@@ -427,10 +444,6 @@ void nm_mpi_request_complete(nm_mpi_request_t*p_req)
   if(p_req->request_persistent_type == NM_MPI_REQUEST_ZERO)
     {
       p_req->request_type = NM_MPI_REQUEST_ZERO;
-    }
-  if(p_req->request_ptr != NULL)
-    {
-      FREE_AND_SET_NULL(p_req->request_ptr);
     }
   // Release one active communication for that type
   if(!p_req->p_datatype->basic)

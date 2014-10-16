@@ -265,12 +265,9 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
   int err      = 0;
   nm_gate_t gate;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-  nm_tag_t nm_tag;
-  MPI_NMAD_LOG_IN();
   if(tag == MPI_ANY_TAG)
     {
       ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-      MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
   if(source == MPI_ANY_SOURCE) 
@@ -283,13 +280,13 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
       if(gate == NULL)
 	{
 	  fprintf(stderr, "Cannot find a in connection for source %d\n", source);
-	  MPI_NMAD_LOG_OUT();
 	  return MPI_ERR_INTERN;
 	}
     }
-  nm_tag = nm_mpi_get_tag(p_comm, tag);
+  const nm_tag_t nm_tag = nm_mpi_get_tag(p_comm, tag);
   nm_gate_t out_gate = NULL;
-  err = nm_sr_probe(nm_comm_get_session(p_comm->p_comm), gate, &out_gate, nm_tag, NM_TAG_MASK_FULL, NULL, NULL);;
+  nm_len_t out_len = -1;
+  err = nm_sr_probe(nm_comm_get_session(p_comm->p_comm), gate, &out_gate, nm_tag, NM_TAG_MASK_FULL, NULL, &out_len);;
   if(err == NM_ESUCCESS) 
     {
       *flag = 1;
@@ -297,13 +294,13 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
 	{
 	  status->MPI_TAG = tag;
 	  status->MPI_SOURCE = nm_mpi_communicator_get_dest(p_comm, out_gate);
+	  status->count = out_len;
 	}
     }
   else
     { /* err == -NM_EAGAIN */
       *flag = 0;
     }
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 

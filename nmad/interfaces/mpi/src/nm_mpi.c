@@ -291,11 +291,21 @@ int mpi_get_version(int *version, int *subversion)
   return MPI_SUCCESS;
 }
 
-int mpi_get_count(MPI_Status *status, MPI_Datatype datatype TBX_UNUSED, int *count)
+int mpi_get_count(MPI_Status*status, MPI_Datatype datatype, int*count)
 {
-  MPI_NMAD_LOG_IN();
-  *count = status->count;
-  MPI_NMAD_LOG_OUT();
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype->size == 0)
+    {
+      *count = 0;
+    }
+  else if(status->count % p_datatype->size != 0)
+    {
+      *count = MPI_UNDEFINED;
+    }
+  else
+    {
+      *count = status->count / p_datatype->size;
+    }
   return MPI_SUCCESS;
 }
 

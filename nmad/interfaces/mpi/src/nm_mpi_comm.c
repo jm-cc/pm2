@@ -494,6 +494,7 @@ int mpi_comm_dup(MPI_Comm oldcomm, MPI_Comm *newcomm)
     {
       nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
       p_new_comm->p_comm = nm_comm_dup(p_old_comm->p_comm);
+      p_new_comm->attrs = NULL;
       int err = nm_mpi_comm_attrs_copy(p_old_comm, &p_new_comm->attrs);
       p_new_comm->p_errhandler = p_old_comm->p_errhandler;
       if(err)

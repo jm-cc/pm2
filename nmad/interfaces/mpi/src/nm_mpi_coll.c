@@ -155,7 +155,7 @@ int mpi_gather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf
       // copy local data for self
       if(sendbuf != MPI_IN_PLACE)
 	{
-	  memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * p_recv_datatype->extent),
+	  memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * recvcount * p_recv_datatype->extent),
 		 sendbuf, sendcount * p_send_datatype->extent);
 	}
       FREE_AND_SET_NULL(requests);

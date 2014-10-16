@@ -91,8 +91,7 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
   status->MPI_TAG = p_req->user_tag;
   status->MPI_ERROR = p_req->request_error;
 
-  if(p_req->request_type == NM_MPI_REQUEST_RECV ||
-      p_req->request_type == NM_MPI_REQUEST_PACK_RECV)
+  if((p_req->request_type == NM_MPI_REQUEST_RECV) || (p_req->request_type == NM_MPI_REQUEST_PACK_RECV))
     {
       if(p_req->request_source == MPI_ANY_SOURCE)
 	{
@@ -103,6 +102,12 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
       else 
 	{
 	  status->MPI_SOURCE = p_req->request_source;
+	}
+      if(p_req->user_tag == MPI_ANY_TAG)
+	{
+	  nm_tag_t nm_tag;
+	  nm_sr_get_rtag(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad, &nm_tag);
+	  status->MPI_TAG = (int)nm_tag;
 	}
     }
   size_t _size = 0;

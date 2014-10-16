@@ -43,17 +43,25 @@ int nm_mpi_internal_exit(void)
 }
 
 __PUK_SYM_INTERNAL
-nm_tag_t nm_mpi_get_tag(nm_mpi_communicator_t *p_comm, int tag)
+void nm_mpi_get_tag(nm_mpi_communicator_t*p_comm, int user_tag, nm_tag_t*nm_tag, nm_tag_t*tag_mask)
 {
-  const nm_tag_t newtag = tag;
-  return newtag;
+  if(user_tag == MPI_ANY_TAG)
+    {
+      *nm_tag   = 0;
+      *tag_mask = NM_MPI_TAG_PRIVATE_BASE; /* mask out private tags */
+    }
+  else
+    {
+      *nm_tag  = user_tag;
+      *tag_mask = NM_TAG_MASK_FULL;
+    }
 }
 __PUK_SYM_INTERNAL
 int nm_mpi_check_tag(int tag)
 {
-  if(tag < 0 || tag > NM_MPI_TAG_MAX)
+  if((tag != MPI_ANY_TAG) && (tag < 0 || tag > NM_MPI_TAG_MAX))
     {
-      ERROR("tag too large");
+      ERROR("invalid tag %d", tag);
     }
   return tag;
 }
@@ -395,7 +403,8 @@ __PUK_SYM_INTERNAL
 int nm_mpi_isend_start(nm_mpi_request_t *p_req)
 {
   int err = MPI_SUCCESS;
-  nm_tag_t nm_tag = nm_mpi_get_tag(p_req->p_comm, p_req->user_tag);
+  nm_tag_t nm_tag, tag_mask;
+  nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->active_communications ++;
   if(p_datatype->is_contig || !(p_datatype->is_optimized))
@@ -537,14 +546,18 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 __PUK_SYM_INTERNAL
 int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
 {
-  nm_tag_t nm_tag = nm_mpi_get_tag(p_req->p_comm, p_req->user_tag);
+  nm_tag_t nm_tag, tag_mask;
+  nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->active_communications ++;
+  nm_session_t p_session = nm_comm_get_session(p_req->p_comm->p_comm);
   if(p_datatype->is_contig || !(p_datatype->is_optimized))
     {
       void *buffer = (p_datatype->is_contig == 1) ? p_req->buffer : p_req->contig_buffer;
-      p_req->request_error = nm_sr_irecv(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, buffer, 
-					 p_req->count * p_datatype->size, &(p_req->request_nmad));
+      nm_sr_recv_init(p_session, &(p_req->request_nmad));
+      nm_sr_recv_unpack_data(p_session, &(p_req->request_nmad), buffer, p_req->count * p_datatype->size);
+      const int err = nm_sr_recv_irecv(p_session, &(p_req->request_nmad), p_req->gate, nm_tag, tag_mask);
+      p_req->request_error = err;
       if(p_datatype->is_contig)
 	{
 	  MPI_NMAD_TRACE("Calling irecv_start for contiguous data\n");

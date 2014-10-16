@@ -183,14 +183,6 @@ int mpi_recv(void *buffer, int count, MPI_Datatype datatype, int source, int tag
   MPI_Request           request = p_req->id;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   int                   err = 0;
-
-  MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Receiving message from %d of datatype %d with tag %d, count %d\n", source, datatype, tag, count);
-  if(tbx_unlikely(tag == MPI_ANY_TAG)) {
-    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
   p_req->request_ptr = NULL;
   p_req->request_type = NM_MPI_REQUEST_RECV;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
@@ -202,7 +194,6 @@ int mpi_recv(void *buffer, int count, MPI_Datatype datatype, int source, int tag
   p_req->p_comm = p_comm;
   err = nm_mpi_irecv(p_req, source, p_comm);
   err = mpi_wait(&request, status);
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 
@@ -211,15 +202,6 @@ int mpi_irecv(void *buffer, int count, MPI_Datatype datatype, int source, int ta
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-
-  MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Ireceiving message from %d of datatype %d with tag %d\n", source, datatype, tag);
-  if(tbx_unlikely(tag == MPI_ANY_TAG))
-    {
-      ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-      MPI_NMAD_LOG_OUT();
-      return MPI_ERR_INTERN;
-    }
   p_req->request_ptr = NULL;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->request_type = NM_MPI_REQUEST_RECV;
@@ -230,7 +212,6 @@ int mpi_irecv(void *buffer, int count, MPI_Datatype datatype, int source, int ta
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->p_comm = p_comm;
   int err = nm_mpi_irecv(p_req, source, p_comm);
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 
@@ -265,11 +246,6 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
   int err      = 0;
   nm_gate_t gate;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-  if(tag == MPI_ANY_TAG)
-    {
-      ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-      return MPI_ERR_INTERN;
-    }
   if(source == MPI_ANY_SOURCE) 
     {
       gate = NM_ANY_GATE;
@@ -283,10 +259,11 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
 	  return MPI_ERR_INTERN;
 	}
     }
-  const nm_tag_t nm_tag = nm_mpi_get_tag(p_comm, tag);
+  nm_tag_t nm_tag, tag_mask;
+  nm_mpi_get_tag(p_comm, tag, &nm_tag, &tag_mask);
   nm_gate_t out_gate = NULL;
   nm_len_t out_len = -1;
-  err = nm_sr_probe(nm_comm_get_session(p_comm->p_comm), gate, &out_gate, nm_tag, NM_TAG_MASK_FULL, NULL, &out_len);;
+  err = nm_sr_probe(nm_comm_get_session(p_comm->p_comm), gate, &out_gate, nm_tag, tag_mask, NULL, &out_len);;
   if(err == NM_ESUCCESS) 
     {
       *flag = 1;
@@ -347,18 +324,9 @@ int mpi_send_init(void* buf, int count, MPI_Datatype datatype, int dest, int tag
 
 int mpi_recv_init(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)
 {
-  nm_mpi_request_t *p_req = nm_mpi_request_alloc();
+  nm_mpi_request_t*p_req = nm_mpi_request_alloc();
   *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-  MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Init Irecv message from %d of datatype %d with tag %d\n", source, datatype, tag);
-
-  if(tbx_unlikely(tag == MPI_ANY_TAG))
-    {
-      ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-      MPI_NMAD_LOG_OUT();
-      return MPI_ERR_INTERN;
-    }
   p_req->request_ptr = NULL;
   p_req->request_type = NM_MPI_REQUEST_RECV;
   p_req->request_persistent_type = NM_MPI_REQUEST_RECV;
@@ -369,7 +337,6 @@ int mpi_recv_init(void* buf, int count, MPI_Datatype datatype, int source, int t
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->p_comm = p_comm;
   int err = nm_mpi_irecv_init(p_req, source, p_comm);
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 

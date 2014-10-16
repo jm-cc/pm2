@@ -491,7 +491,7 @@ nm_mpi_communicator_t*nm_mpi_communicator_get(MPI_Comm comm);
 /**
  * Gets the NM tag for the given user tag and communicator.
  */
-nm_tag_t nm_mpi_get_tag(nm_mpi_communicator_t*p_comm, int tag);
+void nm_mpi_get_tag(nm_mpi_communicator_t*p_comm, int user_tag, nm_tag_t*nm_tag, nm_tag_t*tag_mask);
 
 /**
  * Checks whether the given tag is in the permitted bounds

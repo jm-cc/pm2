@@ -109,14 +109,6 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
   nm_sr_get_size(nm_comm_get_session(p_req->p_comm->p_comm), &(p_req->request_nmad), &_size);
   status->size = _size;
   MPI_NMAD_TRACE("Size %d Size datatype %lu\n", status->size, (unsigned long)nm_mpi_datatype_size(p_req->p_datatype));
-  if(nm_mpi_datatype_size(p_req->p_datatype) != 0)
-    {
-      status->count = status->size / nm_mpi_datatype_size(p_req->p_datatype);
-    }
-  else
-    {
-      status->count = -1;
-    }
   return err;
 }
 

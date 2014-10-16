@@ -294,7 +294,7 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
 	{
 	  status->MPI_TAG = tag;
 	  status->MPI_SOURCE = nm_mpi_communicator_get_dest(p_comm, out_gate);
-	  status->count = out_len;
+	  status->size = out_len;
 	}
     }
   else

@@ -339,7 +339,6 @@ int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *
       return MPI_ERR_INTERN;
     }
   p_req->gate = p_gate;
-  p_req->request_tag = nm_mpi_get_tag(p_comm, p_req->user_tag);
 
   if(p_datatype->is_contig == 1)
     {
@@ -396,6 +395,7 @@ __PUK_SYM_INTERNAL
 int nm_mpi_isend_start(nm_mpi_request_t *p_req)
 {
   int err = MPI_SUCCESS;
+  nm_tag_t nm_tag = nm_mpi_get_tag(p_req->p_comm, p_req->user_tag);
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->active_communications ++;
   if(p_datatype->is_contig || !(p_datatype->is_optimized))
@@ -404,15 +404,15 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
       switch(p_req->communication_mode)
 	{
 	case NM_MPI_MODE_IMMEDIATE:
-	  err = nm_sr_isend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer,
+	  err = nm_sr_isend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, buffer,
 			    p_req->count * p_datatype->size, &(p_req->request_nmad));
 	  break;
 	case NM_MPI_MODE_READY:
-	  err = nm_sr_rsend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer,
+	  err = nm_sr_rsend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, buffer,
 			    p_req->count * p_datatype->size, &(p_req->request_nmad));
 	  break;
 	case NM_MPI_MODE_SYNCHRONOUS:
-	  err = nm_sr_issend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer,
+	  err = nm_sr_issend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, buffer,
 			     p_req->count * p_datatype->size, &(p_req->request_nmad));
 	  break;
 	default:
@@ -425,7 +425,7 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
   else
     {
       nm_pack_cnx_t*connection = &(p_req->request_cnx);
-      nm_begin_packing(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, connection);
+      nm_begin_packing(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, connection);
       if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR)
 	{
 	  err = nm_mpi_datatype_vector_pack(connection, p_req->buffer, p_datatype, p_req->count);
@@ -475,7 +475,6 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 	  return MPI_ERR_INTERN;
 	}
     }
-  p_req->request_tag = nm_mpi_get_tag(p_comm, p_req->user_tag);
   p_req->request_source = source;
 
   if(p_datatype->is_contig == 1)
@@ -538,12 +537,14 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 __PUK_SYM_INTERNAL
 int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
 {
+  nm_tag_t nm_tag = nm_mpi_get_tag(p_req->p_comm, p_req->user_tag);
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->active_communications ++;
   if(p_datatype->is_contig || !(p_datatype->is_optimized))
     {
       void *buffer = (p_datatype->is_contig == 1) ? p_req->buffer : p_req->contig_buffer;
-      p_req->request_error = nm_sr_irecv(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, buffer, p_req->count * p_datatype->size, &(p_req->request_nmad));
+      p_req->request_error = nm_sr_irecv(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, buffer, 
+					 p_req->count * p_datatype->size, &(p_req->request_nmad));
       if(p_datatype->is_contig)
 	{
 	  MPI_NMAD_TRACE("Calling irecv_start for contiguous data\n");
@@ -554,7 +555,7 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
     {
       nm_pack_cnx_t*connection = &(p_req->request_cnx);
       int err = NM_ESUCCESS;
-      nm_begin_unpacking(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, p_req->request_tag, connection);
+      nm_begin_unpacking(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, connection);
       if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR)
 	{
 	  err = nm_mpi_datatype_vector_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);

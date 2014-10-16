@@ -110,12 +110,12 @@ typedef size_t MPI_Aint;
 #define MPI_STATUS_SIZE		4
 
 /** Status handle */
-struct MPI_Status_s {
-  int count;
-  int size;
+struct MPI_Status_s
+{
   int MPI_SOURCE;
   int MPI_TAG;
   int MPI_ERROR;
+  int size;
 };
 
 /** Status handle */

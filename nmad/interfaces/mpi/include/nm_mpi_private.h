@@ -63,6 +63,7 @@ struct nm_mpi_errhandler_s
 #define ERROR(...) {							\
     fprintf(stderr, "\n# madmpi: FATAL- %s\n\t", __TBX_FUNCTION__);	\
     fprintf(stderr, __VA_ARGS__);					\
+    fprintf(stderr, "\n\n");						\
     void*buffer[100];							\
     int nptrs = backtrace(buffer, 100);					\
     backtrace_symbols_fd(buffer, nptrs, STDERR_FILENO);			\
@@ -162,8 +163,6 @@ typedef struct nm_mpi_request_s
   void **request_ptr;
   /** tag given by the user*/
   int user_tag;
-  /** tag used by nmad, built from user_tag */
-  nm_tag_t request_tag;
   /** rank of the source node (used for incoming request) */
   int request_source;
   /** error status of the request */

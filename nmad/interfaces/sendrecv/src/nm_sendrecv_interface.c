@@ -299,7 +299,7 @@ int nm_sr_probe(nm_session_t p_session,
   nm_core_t p_core = p_session->p_core;
   nm_core_tag_t core_tag = NM_CORE_TAG_NONE;
   nm_sr_tag_build(p_session, tag, &core_tag);
-  nm_core_tag_t core_mask = NM_CORE_TAG_NONE;
+  nm_core_tag_t core_mask = NM_CORE_TAG_MASK_FULL;
   nm_sr_tag_build(p_session, mask, &core_mask);
 
   nm_lock_interface(p_core);
@@ -318,12 +318,14 @@ int nm_sr_probe(nm_session_t p_session,
   if(p_out_len)
     *p_out_len = out_size;
 
+  if(err != NM_ESUCCESS)
+    {
 #ifdef NMAD_POLL
-  nm_schedule(p_core);
+      nm_schedule(p_core);
 #else
-  piom_check_polling(PIOM_POLL_WHEN_FORCED);
+      piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
-
+    }
   return err;
 }
 

@@ -388,6 +388,8 @@ int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
   nm_mpi_communicator_t*p_old_comm = nm_mpi_communicator_get(comm);
   if(p_old_comm == NULL)
     return MPI_ERR_COMM;
+  if(group == MPI_GROUP_NULL)
+    return MPI_ERR_GROUP;
   nm_mpi_group_t*p_new_group = nm_mpi_handle_group_get(&nm_mpi_groups, group);
   if(p_new_group == NULL)
     return MPI_ERR_GROUP;

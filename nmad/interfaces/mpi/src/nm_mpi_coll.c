@@ -260,14 +260,14 @@ int mpi_scatter(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbu
 	}
       for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
 	{
-	  if (i==root) continue;
+	  if(i == root) continue;
 	  nm_mpi_coll_wait(requests[i]);
 	}
       // copy local data for itself
       if(sendbuf != MPI_IN_PLACE)
 	{
-	  memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * p_recv_datatype->extent),
-		 sendbuf, sendcount * p_send_datatype->extent);
+	  memcpy(recvbuf, sendbuf + (nm_comm_rank(p_comm->p_comm) * sendcount * p_recv_datatype->extent),
+		 sendcount * p_send_datatype->extent);
 	}
       FREE_AND_SET_NULL(requests);
     }

@@ -99,6 +99,12 @@ int mpi_op_create(MPI_User_function*function, int commute, MPI_Op*op)
 
 int mpi_op_free(MPI_Op*op)
 {
+  if(*op < 0 ||
+     *op == MPI_OP_NULL ||
+     *op < _NM_MPI_OP_OFFSET)
+    {
+      return MPI_ERR_OP;
+    }
   nm_mpi_operator_t*p_operator = nm_mpi_handle_operator_get(&nm_mpi_operators, *op);
   nm_mpi_handle_operator_free(&nm_mpi_operators, p_operator);
   *op = MPI_OP_NULL;

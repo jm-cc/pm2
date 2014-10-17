@@ -354,6 +354,14 @@ int mpi_alltoallv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sen
 int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_REDUCE;
+  if(op == MPI_OP_NULL)
+    {
+      return MPI_ERR_OP;
+    }
+  if(comm == MPI_COMM_NULL)
+    {
+      return MPI_ERR_COMM;
+    }
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_operator_t*p_operator = nm_mpi_operator_get(op);
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
@@ -386,8 +394,8 @@ int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI
       else
 	memcpy(&gather_buf[root * slot_size], sendbuf, slot_size);
       // Do the reduction operation
-      memcpy(recvbuf, &gather_buf[0], slot_size);
-      for(i = 1; i < size; i++)
+      memcpy(recvbuf, &gather_buf[slot_size * (size - 1)], slot_size);
+      for(i = size - 2; i >= 0; i--)
 	{
 	  p_operator->function(&gather_buf[i * slot_size], recvbuf, &count, &datatype);
 	}

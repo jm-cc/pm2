@@ -50,6 +50,7 @@
 /* @{ */
 /** Successful return code */
 #define MPI_SUCCESS          0
+/* base error codes, used as error class */
 #define MPI_ERR_BUFFER       1
 #define MPI_ERR_COUNT        2
 #define MPI_ERR_TYPE         3
@@ -68,25 +69,25 @@
 #define MPI_ERR_INTERN       16
 #define MPI_ERR_IN_STATUS    17
 #define MPI_ERR_PENDING      18
-#define MPI_ERR_REQUEST      19
-#define MPI_ERR_KEYVAL       31
+/* extended error codes, not a class */
+#define MPI_ERR_REQUEST      32
+#define MPI_ERR_KEYVAL       33
+#define MPI_ERR_DATATYPE_ACTIVE  34 /**< Datatype still in use */
 /* error codes for MPI-IO, not used internally */
-#define MPI_ERR_FILE                  20
-#define MPI_ERR_IO                    21
-#define MPI_ERR_AMODE                 22
-#define MPI_ERR_UNSUPPORTED_OPERATION 23
-#define MPI_ERR_UNSUPPORTED_DATAREP   24
-#define MPI_ERR_READ_ONLY             25
-#define MPI_ERR_ACCESS                26
-#define MPI_ERR_DUP_DATAREP           27
-#define MPI_ERR_NO_SUCH_FILE          28
-#define MPI_ERR_NOT_SAME              29
-#define MPI_ERR_BAD_FILE              30
+#define MPI_ERR_FILE                  64
+#define MPI_ERR_IO                    65
+#define MPI_ERR_AMODE                 66
+#define MPI_ERR_UNSUPPORTED_OPERATION 67
+#define MPI_ERR_UNSUPPORTED_DATAREP   68
+#define MPI_ERR_READ_ONLY             69
+#define MPI_ERR_ACCESS                70
+#define MPI_ERR_DUP_DATAREP           71
+#define MPI_ERR_NO_SUCH_FILE          72
+#define MPI_ERR_NOT_SAME              73
+#define MPI_ERR_BAD_FILE              74
 
 #define MPI_ERR_LASTCODE     1073741823
 
-/** Datatype still in use */
-#define MPI_DATATYPE_ACTIVE  1
 /* @} */
 
 /** @name Pre-defined constants */

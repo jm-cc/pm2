@@ -184,7 +184,10 @@ double mpi_wtick(void) {
 
 int mpi_error_class(int errorcode, int*errorclass)
 {
-  *errorclass = errorcode;
+  if(errorcode < 32)
+    *errorclass = errorcode;
+  else
+    *errorclass = MPI_ERR_OTHER;
   return MPI_SUCCESS;
 }
 

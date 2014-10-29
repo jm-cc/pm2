@@ -253,7 +253,7 @@ int mpi_type_free(MPI_Datatype *datatype)
       *datatype = MPI_DATATYPE_NULL;
     }
   else
-    { /* err = MPI_DATATYPE_ACTIVE */
+    { /* err = MPI_ERR_DATATYPE_ACTIVE */
       err = MPI_SUCCESS;
     }  
   return err;
@@ -446,7 +446,7 @@ static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
   if(p_datatype->active_communications != 0)
     {
       p_datatype->free_requested = 1;
-      return MPI_DATATYPE_ACTIVE;
+      return MPI_ERR_DATATYPE_ACTIVE;
     }
   else
     {

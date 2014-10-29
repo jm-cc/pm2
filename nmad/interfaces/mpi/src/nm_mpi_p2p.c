@@ -243,8 +243,8 @@ int mpi_unpack(void* inbuf, int insize, int *position, void *outbuf, int outcoun
 
 int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status)
 {
-  int err      = 0;
-  nm_gate_t gate;
+  int err = MPI_SUCCESS;
+  nm_gate_t gate = NULL;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   if(source == MPI_ANY_SOURCE) 
     {
@@ -259,17 +259,17 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
 	  return MPI_ERR_INTERN;
 	}
     }
-  nm_tag_t nm_tag, tag_mask;
+  nm_tag_t nm_tag, tag_mask, out_tag;
   nm_mpi_get_tag(p_comm, tag, &nm_tag, &tag_mask);
   nm_gate_t out_gate = NULL;
   nm_len_t out_len = -1;
-  err = nm_sr_probe(nm_comm_get_session(p_comm->p_comm), gate, &out_gate, nm_tag, tag_mask, NULL, &out_len);;
+  err = nm_sr_probe(nm_comm_get_session(p_comm->p_comm), gate, &out_gate, nm_tag, tag_mask, &out_tag, &out_len);;
   if(err == NM_ESUCCESS) 
     {
       *flag = 1;
       if(status != NULL)
 	{
-	  status->MPI_TAG = tag;
+	  status->MPI_TAG = out_tag;
 	  status->MPI_SOURCE = nm_mpi_communicator_get_dest(p_comm, out_gate);
 	  status->size = out_len;
 	}
@@ -284,13 +284,12 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
 int mpi_probe(int source, int tag, MPI_Comm comm, MPI_Status *status)
 {
   int flag = 0;
-  MPI_NMAD_LOG_IN();
-  int err = mpi_iprobe(source, tag, comm, &flag, status);
-  while(flag != 1)
+  int err = MPI_ERR_UNKNOWN;
+  do
     {
       err = mpi_iprobe(source, tag, comm, &flag, status);
     }
-  MPI_NMAD_LOG_OUT();
+  while(flag != 1);
   return err;
 }
 

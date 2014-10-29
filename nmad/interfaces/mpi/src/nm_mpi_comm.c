@@ -286,6 +286,12 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
   int err = MPI_SUCCESS;
   const static int nm_mpi_tag_ub = NM_MPI_TAG_MAX;
   const static int nm_mpi_wtime_is_global = 0;
+  const static int nm_mpi_host = MPI_PROC_NULL;
+#ifdef NM_MPI_ENABLE_ROMIO
+  const static int nm_mpi_attr_io = 1;
+#else
+  const static int nm_mpi_attr_io = 0;
+#endif
   switch(keyval)
     {
     case MPI_TAG_UB:
@@ -293,10 +299,12 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
       *flag = 1;
       break;
     case MPI_HOST:
-      *flag = 0;
+      *(const int**)attr_value = &nm_mpi_host;
+      *flag = 1;
       break;
     case MPI_IO:
-      *flag = 0;
+      *(const int**)attr_value = &nm_mpi_attr_io;
+      *flag = 1;
       break;
     case MPI_WTIME_IS_GLOBAL:
       *(const int**)attr_value = &nm_mpi_wtime_is_global;

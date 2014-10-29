@@ -341,7 +341,7 @@ int mpi_testsome(int count, MPI_Request*array_of_requests, int*outcount, int*ind
   for(i = 0; i < count; i++)
     {
       nm_mpi_request_t *p_req = nm_mpi_request_get(array_of_requests[i]);
-      if(p_req->request_type == NM_MPI_REQUEST_ZERO)
+      if(p_req == NULL || p_req->request_type == NM_MPI_REQUEST_ZERO)
 	{
 	  count_inactive++;
 	  continue;

@@ -29,11 +29,9 @@ NM_MPI_ALIAS(MPI_Send,      mpi_send);
 NM_MPI_ALIAS(MPI_Isend,     mpi_isend);
 NM_MPI_ALIAS(MPI_Rsend,     mpi_rsend);
 NM_MPI_ALIAS(MPI_Ssend,     mpi_ssend);
-NM_MPI_ALIAS(MPI_Pack,      mpi_pack);
 NM_MPI_ALIAS(MPI_Recv,      mpi_recv);
 NM_MPI_ALIAS(MPI_Irecv,     mpi_irecv);
 NM_MPI_ALIAS(MPI_Sendrecv,  mpi_sendrecv);
-NM_MPI_ALIAS(MPI_Unpack,    mpi_unpack);
 NM_MPI_ALIAS(MPI_Iprobe,    mpi_iprobe);
 NM_MPI_ALIAS(MPI_Probe,     mpi_probe);
 NM_MPI_ALIAS(MPI_Send_init, mpi_send_init);
@@ -166,16 +164,6 @@ int mpi_ssend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag,
   return err;
 }
 
-int mpi_pack(void* inbuf, int incount, MPI_Datatype datatype, void *outbuf, int outsize, int *position, MPI_Comm comm)
-{
-  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
-  void *ptr = outbuf;
-  size_t size_datatype = nm_mpi_datatype_size(p_datatype);
-  ptr += *position;
-  memcpy(ptr, inbuf, incount*size_datatype);
-  *position += incount*size_datatype;
-  return MPI_SUCCESS;
-}
 
 int mpi_recv(void *buffer, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)
 {
@@ -228,17 +216,6 @@ int mpi_sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, 
   err = mpi_wait(&rrequest, status);
   MPI_NMAD_LOG_OUT();
   return err;
-}
-
-int mpi_unpack(void* inbuf, int insize, int *position, void *outbuf, int outcount, MPI_Datatype datatype, MPI_Comm comm)
-{
-  void *ptr = inbuf;
-  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
-  size_t size_datatype = nm_mpi_datatype_size(p_datatype);
-  ptr += *position;
-  memcpy(outbuf, ptr, outcount*size_datatype);
-  *position += outcount*size_datatype;
-  return MPI_SUCCESS;
 }
 
 int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status)

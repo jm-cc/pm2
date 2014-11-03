@@ -468,10 +468,9 @@ nm_mpi_datatype_t*nm_mpi_datatype_get(MPI_Datatype datatype);
  */
 int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype);
 
-/**
- * Calls the appropriate splitting function based on the given request.
- */
-int nm_mpi_datatype_split(nm_mpi_request_t *p_req);
+void nm_mpi_datatype_pack(void*dest_ptr, const void*src_ptr, nm_mpi_datatype_t*p_datatype, int count);
+
+void nm_mpi_datatype_unpack(const void*src_ptr, void*dest_ptr, nm_mpi_datatype_t*p_datatype, int count);
 
 /* Reduce operation functionalities */
 

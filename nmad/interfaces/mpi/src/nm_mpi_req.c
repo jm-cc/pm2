@@ -488,10 +488,14 @@ int nm_mpi_request_wait(nm_mpi_request_t*p_req)
   if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
       err = nm_sr_rwait(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
-      nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
-      if(!p_datatype->is_contig && p_req->contig_buffer) 
+      if(!p_req->p_datatype->is_contig && p_req->contig_buffer) 
 	{
-	  nm_mpi_datatype_split(p_req);
+	  nm_mpi_datatype_unpack(p_req->contig_buffer, p_req->buffer, p_req->p_datatype, p_req->count);
+	  if(p_req->request_persistent_type == NM_MPI_REQUEST_ZERO)
+	    {
+	      FREE_AND_SET_NULL(p_req->contig_buffer);
+	      p_req->request_type = NM_MPI_REQUEST_ZERO;
+	    }
 	}
     }
   else if(p_req->request_type == NM_MPI_REQUEST_SEND) 

@@ -48,6 +48,8 @@ NM_MPI_ALIAS(MPI_Type_hvector,        mpi_type_hvector);
 NM_MPI_ALIAS(MPI_Type_indexed,        mpi_type_indexed);
 NM_MPI_ALIAS(MPI_Type_hindexed,       mpi_type_hindexed);
 NM_MPI_ALIAS(MPI_Type_struct,         mpi_type_struct);
+NM_MPI_ALIAS(MPI_Pack,                mpi_pack);
+NM_MPI_ALIAS(MPI_Unpack,              mpi_unpack);
 
 /* ********************************************************* */
 
@@ -502,4 +504,138 @@ static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Ai
   return MPI_SUCCESS;
 }
 
+/**
+ * Pack data into a contiguous buffers.
+ */
+__PUK_SYM_INTERNAL
+void nm_mpi_datatype_pack(void*dest_ptr, const void*src_ptr, nm_mpi_datatype_t*p_datatype, int count)
+{
+  int i, j;
+  switch(p_datatype->dte_type)
+    {
+    case NM_MPI_DATATYPE_VECTOR:
+      {
+	for(i = 0; i < count; i++)
+	  {
+	    for(j = 0; j < p_datatype->elements; j++)
+	      {
+		memcpy(dest_ptr, src_ptr, p_datatype->block_size);
+		dest_ptr += p_datatype->block_size;
+		src_ptr  += p_datatype->stride;
+	      }
+	  }
+      }
+      break;
 
+    case NM_MPI_DATATYPE_INDEXED:
+      {
+	for(i = 0; i < count; i++)
+	  {
+	    const void*ptr = src_ptr + i * p_datatype->extent;
+	    for(j = 0; j < p_datatype->elements; j++)
+	      {
+		memcpy(dest_ptr, ptr + p_datatype->indices[j], p_datatype->blocklens[j] * p_datatype->old_sizes[0]);
+		dest_ptr += p_datatype->blocklens[j] * p_datatype->old_sizes[0];
+	      }
+	  }
+      }
+      break;
+
+    case NM_MPI_DATATYPE_STRUCT:
+      {
+	for(i = 0; i < count; i++)
+	  {
+	    const void*ptr = src_ptr + i * p_datatype->extent;
+	    for(j = 0; j < p_datatype->elements; j++)
+	      {
+		memcpy(dest_ptr, ptr + p_datatype->indices[j], p_datatype->blocklens[j] * p_datatype->old_sizes[j]);
+		dest_ptr += p_datatype->blocklens[j] * p_datatype->old_sizes[j];
+	      }
+	  }
+      }
+      break;
+
+    default:
+      ERROR("madmpi: cannot pack datatype of type %d\n", p_datatype->dte_type);
+    }
+}
+
+__PUK_SYM_INTERNAL
+void nm_mpi_datatype_unpack(const void*src_ptr, void*dest_ptr, nm_mpi_datatype_t*p_datatype, int count)
+{
+  int i, j;
+  switch(p_datatype->dte_type)
+    {
+    case NM_MPI_DATATYPE_VECTOR:
+      {
+	const void *recvptr = src_ptr;
+	void *ptr = dest_ptr;
+	for(i = 0; i < count; i++)
+	  {
+	    for(j = 0; j < p_datatype->elements; j++)
+	      {
+		memcpy(ptr, recvptr, p_datatype->block_size);
+		recvptr += p_datatype->block_size;
+		ptr += p_datatype->block_size;
+	      }
+	  }
+      }
+      break;
+
+    case NM_MPI_DATATYPE_INDEXED:
+      {
+	const void *recvptr = src_ptr;
+	void *ptr = dest_ptr;
+	for(i = 0; i < count ; i++)
+	  {
+	    for(j = 0; j < p_datatype->elements; j++)
+	      {
+		memcpy(ptr, recvptr, p_datatype->blocklens[j] * p_datatype->old_sizes[0]);
+		recvptr += p_datatype->blocklens[j] * p_datatype->old_sizes[0];
+		ptr += p_datatype->blocklens[j] * p_datatype->old_sizes[0];
+	      }
+	  }
+	
+      }
+      break;
+
+    case NM_MPI_DATATYPE_STRUCT:
+      {
+	const void *recvptr = src_ptr;
+	for(i = 0; i < count; i++)
+	  {
+	    void *ptr = dest_ptr + i * p_datatype->extent;
+	    for(j = 0; j < p_datatype->elements; j++)
+	      {
+		memcpy(ptr + p_datatype->indices[j], recvptr, p_datatype->blocklens[j] * p_datatype->old_sizes[j]);
+		recvptr += p_datatype->blocklens[j] * p_datatype->old_sizes[j];
+	      }
+	  }
+      }
+      break;
+      
+    default:
+      ERROR("madmpi: cannot unpack datatype of type %d\n", p_datatype->dte_type);
+    }
+}
+
+
+int mpi_pack(void*inbuf, int incount, MPI_Datatype datatype, void*outbuf, int outsize, int*position, MPI_Comm comm)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  size_t size = incount * nm_mpi_datatype_size(p_datatype);
+  assert(outsize >= size);
+  nm_mpi_datatype_pack(outbuf + *position, inbuf, p_datatype, incount);
+  *position += size;
+  return MPI_SUCCESS;
+}
+
+int mpi_unpack(void*inbuf, int insize, int*position, void*outbuf, int outcount, MPI_Datatype datatype, MPI_Comm comm)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  size_t size = outcount * nm_mpi_datatype_size(p_datatype);
+  assert(insize >= size);
+  nm_mpi_datatype_unpack(inbuf + *position, outbuf, p_datatype, outcount);
+  *position += size;
+  return MPI_SUCCESS;
+}

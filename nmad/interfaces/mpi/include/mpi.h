@@ -42,6 +42,7 @@ extern "C"
 {
 #endif
 
+#include <stdint.h>
 #include <sys/types.h>
 #include "nm_mpi_types.h"
 #include "nm_mpi_config.h"

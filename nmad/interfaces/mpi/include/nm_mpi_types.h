@@ -103,7 +103,7 @@
 #define MPI_THREAD_MULTIPLE	3
 /* @} */
 
-typedef size_t MPI_Aint;
+typedef uintptr_t MPI_Aint;
 
 /** @name Status of receive operation */
 /* @{ */

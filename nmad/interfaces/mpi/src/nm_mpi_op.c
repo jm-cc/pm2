@@ -497,7 +497,7 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 
   if ((dtype)->dte_type == NM_MPI_DATATYPE_CONTIG && ((dtype)->elements == 2))
     {
-      MPI_Datatype oldtype = (dtype)->old_types[0];
+      MPI_Datatype oldtype = (dtype)->p_old_types[0]->id;
       /** Set the actual length */
       _len = *len * (dtype)->elements;
       /** Perform the operation */
@@ -560,7 +560,7 @@ static void nm_mpi_op_minloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
   nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type);
 
   if ((dtype)->dte_type == NM_MPI_DATATYPE_CONTIG && ((dtype)->elements == 2)) {
-    MPI_Datatype oldtype = (dtype)->old_types[0];
+    MPI_Datatype oldtype = (dtype)->p_old_types[0]->id;
 
     /** Set the actual length */
     _len = *len * (dtype)->elements;

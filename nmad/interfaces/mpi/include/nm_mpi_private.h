@@ -201,11 +201,11 @@ typedef struct nm_mpi_operator_s
 /** Types of datatypes */
 typedef enum 
   {
-    NM_MPI_DATATYPE_BASIC,
-    NM_MPI_DATATYPE_CONTIG, 
-    NM_MPI_DATATYPE_VECTOR,
-    NM_MPI_DATATYPE_INDEXED, 
-    NM_MPI_DATATYPE_STRUCT
+    NM_MPI_DATATYPE_BASIC,   /**< basic type built-in MPI */
+    NM_MPI_DATATYPE_CONTIG,  /**< contiguous array */
+    NM_MPI_DATATYPE_VECTOR,  /**< vector with stride */
+    NM_MPI_DATATYPE_INDEXED, /**< indexed type */
+    NM_MPI_DATATYPE_STRUCT   /**< structured type */
   }
   nm_mpi_datatype_type_t;
 
@@ -215,8 +215,6 @@ typedef struct nm_mpi_datatype_s
   int id;
   /** type of datatype element this is */
   nm_mpi_datatype_type_t dte_type;
-  /** whether basic or user-defined */
-  int basic;
   /** whether committed or not */
   int committed;
   /** whether entirely contiguous */
@@ -245,7 +243,9 @@ typedef struct nm_mpi_datatype_s
   /** array of blocklenghts */
   int *blocklens;
   /** old types */
-  MPI_Datatype *old_types;
+  struct nm_mpi_datatype_s**p_old_types;
+  /** old type for types with single inheritance */
+  struct nm_mpi_datatype_s*p_old_type;
   /** size of old types */
   size_t* old_sizes;
 } nm_mpi_datatype_t;

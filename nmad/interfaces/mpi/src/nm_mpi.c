@@ -320,7 +320,7 @@ int mpi_get_address(void *location, MPI_Aint *address)
      between them, so this gives the number of chars between location
      and ptr.  As long as sizeof(char) == 1, this will be the number
      of bytes from 0 to location */
-  *address = (uintptr_t)address;
+  *address = (uintptr_t)location;
   return MPI_SUCCESS;
 }
 

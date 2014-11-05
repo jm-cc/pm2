@@ -83,8 +83,11 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_REAL,               sizeof(float), 1);
   nm_mpi_datatype_store(MPI_REAL4,              4, 1);
   nm_mpi_datatype_store(MPI_REAL8,              8, 1);
+  nm_mpi_datatype_store(MPI_REAL16,             16, 1);
   nm_mpi_datatype_store(MPI_DOUBLE_PRECISION,   sizeof(double), 1);
   nm_mpi_datatype_store(MPI_INTEGER,            sizeof(float), 1);
+  nm_mpi_datatype_store(MPI_INTEGER1,           1, 1);
+  nm_mpi_datatype_store(MPI_INTEGER2,           2, 1);
   nm_mpi_datatype_store(MPI_INTEGER4,           4, 1);
   nm_mpi_datatype_store(MPI_INTEGER8,           8, 1);
   nm_mpi_datatype_store(MPI_PACKED,             sizeof(char), 1);
@@ -301,7 +304,7 @@ int mpi_type_hvector(int count, int blocklength, int hstride, MPI_Datatype oldty
   p_newtype->block_size = blocklength * p_oldtype->size;
   p_newtype->hstride = hstride;
   p_newtype->lb = 0;
-  p_newtype->extent = p_oldtype->extent * count * blocklength;
+  p_newtype->extent = p_oldtype->extent * blocklength + (count - 1) * hstride;
   return MPI_SUCCESS;
 }
 

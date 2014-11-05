@@ -205,26 +205,29 @@ typedef int MPI_Datatype;
 #define MPI_REAL	      ((MPI_Datatype)18)
 #define MPI_REAL4	      ((MPI_Datatype)19)
 #define MPI_REAL8	      ((MPI_Datatype)20)
-#define MPI_DOUBLE_PRECISION  ((MPI_Datatype)21)
-#define MPI_INTEGER	      ((MPI_Datatype)22)
-#define MPI_INTEGER4	      ((MPI_Datatype)23)
-#define MPI_INTEGER8	      ((MPI_Datatype)24)
-#define MPI_COMPLEX           ((MPI_Datatype)25)
-#define MPI_DOUBLE_COMPLEX    ((MPI_Datatype)26)
-#define MPI_PACKED            ((MPI_Datatype)27)
+#define MPI_REAL16	      ((MPI_Datatype)21)
+#define MPI_DOUBLE_PRECISION  ((MPI_Datatype)22)
+#define MPI_INTEGER	      ((MPI_Datatype)23)
+#define MPI_INTEGER1	      ((MPI_Datatype)24)
+#define MPI_INTEGER2	      ((MPI_Datatype)25)
+#define MPI_INTEGER4	      ((MPI_Datatype)26)
+#define MPI_INTEGER8	      ((MPI_Datatype)27)
+#define MPI_COMPLEX           ((MPI_Datatype)28)
+#define MPI_DOUBLE_COMPLEX    ((MPI_Datatype)29)
+#define MPI_PACKED            ((MPI_Datatype)30)
 /* C struct types */
-#define MPI_LONG_INT          ((MPI_Datatype)28)
-#define MPI_SHORT_INT         ((MPI_Datatype)29)
-#define MPI_FLOAT_INT         ((MPI_Datatype)30)
-#define MPI_DOUBLE_INT        ((MPI_Datatype)31)
-#define MPI_LONG_DOUBLE_INT   ((MPI_Datatype)32)
+#define MPI_LONG_INT          ((MPI_Datatype)31)
+#define MPI_SHORT_INT         ((MPI_Datatype)32)
+#define MPI_FLOAT_INT         ((MPI_Datatype)33)
+#define MPI_DOUBLE_INT        ((MPI_Datatype)34)
+#define MPI_LONG_DOUBLE_INT   ((MPI_Datatype)35)
 /* FORTRAN struct types*/
-#define MPI_2INT              ((MPI_Datatype)33)
-#define MPI_2INTEGER          ((MPI_Datatype)34)
-#define MPI_2REAL             ((MPI_Datatype)35)
-#define MPI_2DOUBLE_PRECISION ((MPI_Datatype)36)
+#define MPI_2INT              ((MPI_Datatype)36)
+#define MPI_2INTEGER          ((MPI_Datatype)37)
+#define MPI_2REAL             ((MPI_Datatype)38)
+#define MPI_2DOUBLE_PRECISION ((MPI_Datatype)39)
 /* offset for dynamically allocated datatypes */
-#define _NM_MPI_DATATYPE_OFFSET              37
+#define _NM_MPI_DATATYPE_OFFSET              40
 
 /* @} */
 

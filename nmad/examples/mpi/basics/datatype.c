@@ -145,65 +145,50 @@ void vector_datatype(int rank, int ping_side, int rank_dst, int optimized) {
     MPI_Send(buffer2, 1, mytype2, rank_dst, 10, MPI_COMM_WORLD);
   }
   else {
-    int buffer[20];
-    float buffer2[24];
+    int buffer[100] = { 0 };
+    float buffer2[64] = { 0.0 };
 
     MPI_Recv(buffer, 1, mytype, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
-      int i=0, success=1;
-      int value=0;
-      int count, blength, stride=10;
-
-      for(count=0 ; count<10 ; count++) {
-        for(blength=0 ; blength<2 ; blength++) {
-          if (buffer[i] != value) {
-            success=0;
-            break;
-          }
-          i++;
-          value++;
+      int i, success = 1;
+      for(i = 0; i < 100; i++)
+	{
+	  int value = ((i % 10) == 0 || (i % 10) == 1) ? i : 0;
+	  int ok = (buffer[i] == value);
+	  fprintf(stderr, "# ok = %d; expected = %2d; received = %2d\n", ok, value, buffer[i]);
+	  success &= ok;
         }
-        value += stride - 2;
-      }
-
-      if (success) {
-        printf("[%d] Vector successfully received\n", rank);
-      }
-      else {
-        printf("[%d] Incorrect vector: [", rank);
-        for(i=0 ; i<20 ; i++) printf("%d ", buffer[i]);
-        printf("]\n");
-      }
+      if(success)
+	{
+	  printf("[%d] Vector successfully received\n", rank);
+	}
+      else
+	{
+	  printf("[%d] Incorrect vector received \n", rank);
+	}
     }
 
     MPI_Recv(buffer2, 1, mytype2, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
-      int i=0, success=1;
-      float value=0;
-      int count, blength, stride=8;
+      int i, success = 1;
+      for(i = 0; i < 64; i++)
+	{
+	  float value = ((i % 8) == 0 || (i % 8) == 1 || (i % 8) == 2) ? i : 0.0;
+	  int ok = (buffer2[i] == value);
+	  fprintf(stderr, "# ok = %d; expected = %8.3f; received = %3.2f\n", ok, value, buffer2[i]);
+	  success &= ok;
+	}
 
-      for(count=0 ; count<8 ; count++) {
-        for(blength=0 ; blength<3 ; blength++) {
-          if (buffer2[i] != value) {
-            success=0;
-            break;
-          }
-          i++;
-          value++;
-        }
-        value += stride - 3;
-      }
-
-      if (success) {
-        printf("[%d] Vector successfully received\n", rank);
-      }
-      else {
-        printf("[%d] Incorrect vector: [", rank);
-        for(i=0 ; i<24 ; i++) printf("%3.2f ", buffer2[i]);
-        printf("]\n");
-      }
+      if(success)
+	{
+	  printf("[%d] hvector successfully received\n", rank);
+	}
+      else
+	{
+	  printf("[%d] Incorrect hvector received \n", rank);
+	}
     }
   }
   MPI_Type_free(&mytype);
@@ -236,75 +221,51 @@ void indexed_datatype(int rank, int ping_side, int rank_dst, int optimized) {
     MPI_Send(buffer, 2, mytype2, rank_dst, 10, MPI_COMM_WORLD);
   }
   else {
-    char buffer[18];
-    char buffer2[12];
+    char buffer[26] = { 0 };
+    char buffer2[26] = { 0 };
 
     MPI_Recv(buffer, 3, mytype, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
-      int i=0, j=0, success=1;
-      char value;
-      int nb, count, blength;
+      int i, success = 1;
+      for(i = 0; i < 24; i++)
+	{
+	  char value = ((i % 8) == 1 || (i % 8) == 5) ? 0 : 'a' + i;
+	  int ok = (buffer[i] == value);
+	  fprintf(stderr, "# ok = %d; expected = %3d; received = %3d\n", ok, (int)value, (int)buffer[i]);
+	  success &= ok;
+	}
 
-      for(nb=0 ; nb<3 ; nb++) {
-        j=0;
-        for(count=0 ; count<3 ; count++) {
-          value = 'a' + (nb * (strides[2] + blocklengths[2]));
-          value += strides[j];
-          for(blength=0 ; blength<blocklengths[j] ; blength++) {
-            if (buffer[i] != value) {
-              success=0;
-              break;
-            }
-            i++;
-            value++;
-          }
-          j++;
-        }
-      }
-
-      if (success) {
-        printf("[%d] Index successfully received\n", rank);
-      }
-      else {
-        printf("Incorrect index: [ ");
-        for(i=0 ; i<18 ; i++) printf("%c(%d) ", buffer[i], ((int) buffer[i])-97);
-        printf("]\n");
-      }
+      if(success)
+	{
+	  printf("[%d] indexed successfully received\n", rank);
+	}
+      else
+	{
+	  printf("[%d] Incorrect indexed received \n", rank);
+	}
     }
 
-    MPI_Recv(buffer2, 2, mytype2, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(buffer2, 3, mytype2, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
-      int i=0, j=0, success=1;
-      char value='a';
-      int nb, count, blength;
+      int i, success = 1;
+      for(i = 0; i < 24; i++)
+	{
+	  char value = ((i % 8) == 1 || (i % 8) == 5) ? 0 : 'a' + i;
+	  int ok = (buffer2[i] == value);
+	  fprintf(stderr, "# ok = %d; expected = %3d; received = %3d\n", ok, (int)value, (int)buffer2[i]);
+	  success &= ok;
+	}
 
-      for(nb=0 ; nb<2 ; nb++) {
-        j=0;
-        for(count=0 ; count<3 ; count++) {
-          value = 'a' + (nb * (strides[2] + blocklengths[2]));
-          value += strides[j];
-          for(blength=0 ; blength<blocklengths[j] ; blength++) {
-            if (buffer[i] != value) {
-              success=0;
-              break;
-            }
-            i++;
-            value++;
-          }
-          j++;
-        }
-      }
-
-      if (success) {
-        printf("[%d] Index successfully received\n", rank);
-      }
-      else {
-        printf("Incorrect index: [ ");
-        for(i=0 ; i<12 ; i++) printf("%c(%d) ", buffer[i], ((int) buffer[i])-97);
-        printf("]\n");
-      }
+      if(success)
+	{
+	  printf("[%d] hindexed successfully received\n", rank);
+	}
+      else
+	{
+	  printf("[%d] Incorrect hindexed received \n", rank);
+	}
     }
   }
 
@@ -399,8 +360,8 @@ void struct_and_indexed(int rank, int ping_side, int rank_dst, int optimized) {
 
   MPI_Datatype indexed_type;
   int indexed_blocklens[2] = { 3, 1 };
-  int indexed_displacements[2] = { 0, 4*sizeof(struct part_s) };
-  int indexed_displacements_aux[2] = { 0, 4 };
+  MPI_Aint indexed_displacements[2] = { 0, 3*sizeof(struct part_s) };
+  int indexed_displacements_aux[2] = { 0, 3 };
 
   MPI_Address(&(particle.d), &struct_displacements[0]);
   MPI_Address(&(particle.b), &struct_displacements[1]);
@@ -421,10 +382,10 @@ void struct_and_indexed(int rank, int ping_side, int rank_dst, int optimized) {
   if (extent != sizeof(struct part_s)) {
     MPI_Type_create_resized(struct_type, lb, sizeof(struct part_s), &struct_type_ext);
     MPI_Type_commit(&struct_type_ext);
-    MPI_Type_indexed(2, indexed_blocklens, indexed_displacements, struct_type_ext, &indexed_type);
+    MPI_Type_hindexed(2, indexed_blocklens, indexed_displacements, struct_type_ext, &indexed_type);
   }
   else {
-    MPI_Type_indexed(2, indexed_blocklens, indexed_displacements, struct_type, &indexed_type);
+    MPI_Type_hindexed(2, indexed_blocklens, indexed_displacements, struct_type, &indexed_type);
   }
 
   MPI_Type_commit(&indexed_type);
@@ -460,10 +421,11 @@ void struct_and_indexed(int rank, int ping_side, int rank_dst, int optimized) {
           value = nb * (indexed_displacements_aux[1] + indexed_blocklens[1]);
           value += indexed_displacements_aux[j];
           for(blength=0 ; blength<indexed_blocklens[j] ; blength++) {
-            if (particles[i].d != (value+1)*10 || particles[i].b != value+1) {
-              success=0;
-              break;
-            }
+            if (particles[i].d != (value+1)*10 || particles[i].b != value+1) 
+	      {
+		success=0;
+		break;
+	      }
             i++;
             value++;
           }

@@ -179,28 +179,22 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
 
   if(p_newtype->dte_type == NM_MPI_DATATYPE_CONTIG)
     {
-      p_newtype->old_sizes    = malloc(1 * sizeof(int));
-      p_newtype->old_sizes[0] = p_oldtype->old_sizes[0];
       p_newtype->p_old_type   = p_oldtype;
       p_newtype->p_old_types  = &p_newtype->p_old_type;
       p_newtype->elements     = p_oldtype->elements;
     }
   else if(p_newtype->dte_type == NM_MPI_DATATYPE_VECTOR)
     {
-      p_newtype->old_sizes    = malloc(1 * sizeof(int));
-      p_newtype->old_sizes[0] = p_oldtype->old_sizes[0];
       p_newtype->p_old_type   = p_oldtype;
       p_newtype->p_old_types  = &p_newtype->p_old_type;
       p_newtype->elements     = p_oldtype->elements;
       p_newtype->blocklens    = malloc(1 * sizeof(int));
       p_newtype->blocklens[0] = p_oldtype->blocklens[0];
       p_newtype->block_size   = p_oldtype->block_size;
-      p_newtype->stride       = p_oldtype->stride;
+      p_newtype->hstride      = p_oldtype->hstride;
   }
   else if(p_newtype->dte_type == NM_MPI_DATATYPE_INDEXED) 
     {
-      p_newtype->old_sizes    = malloc(1 * sizeof(int));
-      p_newtype->old_sizes[0] = p_oldtype->old_sizes[0];
       p_newtype->p_old_type   = p_oldtype;
       p_newtype->p_old_types  = &p_newtype->p_old_type;
       p_newtype->elements     = p_oldtype->elements;
@@ -217,14 +211,12 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
       p_newtype->elements  = p_oldtype->elements;
       p_newtype->blocklens = malloc(p_newtype->elements * sizeof(int));
       p_newtype->indices   = malloc(p_newtype->elements * sizeof(MPI_Aint));
-      p_newtype->old_sizes = malloc(p_newtype->elements * sizeof(size_t));
       p_newtype->p_old_types = malloc(p_newtype->elements * sizeof(nm_mpi_datatype_t*));
       p_newtype->p_old_type = NULL;
       for(i = 0; i < p_newtype->elements; i++)
 	{
 	  p_newtype->blocklens[i] = p_oldtype->blocklens[i];
 	  p_newtype->indices[i]   = p_oldtype->indices[i];
-	  p_newtype->old_sizes[i] = p_oldtype->old_sizes[i];
 	  p_newtype->p_old_types[i] = p_oldtype->p_old_types[i];
 	}
     }
@@ -233,9 +225,6 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
       ERROR("Datatype %d unknown", oldtype);
       return MPI_ERR_OTHER;
     }
-  
-  MPI_NMAD_TRACE("Creating resized type (%d) with extent=%ld, based on type %d with a extent %ld\n",
-		 *newtype, (long)p_newtype->extent, oldtype, (long)p_oldtype->extent);
   return MPI_SUCCESS;
 }
 
@@ -277,20 +266,14 @@ int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
   nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   *newtype = p_newtype->id;
   p_newtype->dte_type = NM_MPI_DATATYPE_CONTIG;
-  p_newtype->old_sizes = malloc(1 * sizeof(int));
-  p_newtype->old_sizes[0] = p_oldtype->extent;
   p_newtype->p_old_type = p_oldtype;
   p_newtype->p_old_types = &p_newtype->p_old_type;
   p_newtype->committed = 0;
   p_newtype->is_contig = p_oldtype->is_contig;
-  p_newtype->size = p_newtype->old_sizes[0] * count;
+  p_newtype->size = p_oldtype->size * count;
   p_newtype->elements = count;
   p_newtype->lb = 0;
-  p_newtype->extent = p_newtype->old_sizes[0] * count;
-
-  MPI_NMAD_TRACE("Creating new contiguous type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
-		 (long)p_newtype->size, (long)p_newtype->extent,
-		 oldtype, (long)p_newtype->old_sizes[0]);
+  p_newtype->extent = p_oldtype->extent * count;
   return MPI_SUCCESS;
 }
 
@@ -301,64 +284,49 @@ int mpi_type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype
   return mpi_type_hvector(count, blocklength, hstride, oldtype, newtype);
 }
 
-int mpi_type_hvector(int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype *newtype)
+int mpi_type_hvector(int count, int blocklength, int hstride, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
   nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   *newtype = p_newtype->id;
   p_newtype->dte_type = NM_MPI_DATATYPE_VECTOR;
-  p_newtype->old_sizes = malloc(1 * sizeof(int));
-  p_newtype->old_sizes[0] = p_oldtype->extent;
   p_newtype->p_old_type = p_oldtype;
   p_newtype->p_old_types = &p_newtype->p_old_type;
   p_newtype->committed = 0;
   p_newtype->is_contig = 0;
-  p_newtype->size = p_newtype->old_sizes[0] * count * blocklength;
+  p_newtype->size = p_oldtype->size * count * blocklength;
   p_newtype->elements = count;
   p_newtype->blocklens = malloc(1 * sizeof(int));
   p_newtype->blocklens[0] = blocklength;
-  p_newtype->block_size = blocklength * p_newtype->old_sizes[0];
-  p_newtype->stride = stride;
+  p_newtype->block_size = blocklength * p_oldtype->size;
+  p_newtype->hstride = hstride;
   p_newtype->lb = 0;
-  p_newtype->extent = p_newtype->old_sizes[0] * count * blocklength;
-
-  MPI_NMAD_TRACE("Creating new (h)vector type (%d) with size=%ld, extent=%ld, elements=%d, blocklen=%d based on type %d with a extent %ld\n",
-		 *newtype, (long)p_newtype->size, (long)p_newtype->extent,
-		 p_newtype->elements, p_newtype->blocklens[0],
-		 oldtype, (long)p_newtype->old_sizes[0]);
+  p_newtype->extent = p_oldtype->extent * count * blocklength;
   return MPI_SUCCESS;
 }
 
-int mpi_type_indexed(int count,
-                     int *array_of_blocklengths,
-                     int *array_of_displacements,
-                     MPI_Datatype oldtype,
-                     MPI_Datatype *newtype) {
-  int err, i;
-
-  MPI_NMAD_LOG_IN();
-
+int mpi_type_indexed(int count, int *array_of_blocklengths, int *array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype)
+{
   MPI_Aint *displacements = malloc(count * sizeof(MPI_Aint));
-  for(i=0 ; i<count ; i++) {
-    displacements[i] = array_of_displacements[i];
-  }
-
-  err = nm_mpi_datatype_indexed(count, array_of_blocklengths, displacements, oldtype, newtype);
-
+  nm_mpi_datatype_t*p_old_type = nm_mpi_datatype_get(oldtype);
+  const int old_size = nm_mpi_datatype_size(p_old_type);
+  int i;
+  for(i = 0; i < count; i++)
+    {
+      displacements[i] = array_of_displacements[i] * old_size;
+    }
+  int err = nm_mpi_datatype_indexed(count, array_of_blocklengths, displacements, oldtype, newtype);
   FREE_AND_SET_NULL(displacements);
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 
 int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype) 
 {
   MPI_Aint *displacements = malloc(count * sizeof(MPI_Aint));
-  nm_mpi_datatype_t*p_old_type = nm_mpi_datatype_get(oldtype);
-  int old_size = nm_mpi_datatype_size(p_old_type);
   int i;
   for(i = 0; i < count; i++)
     {
-      displacements[i] = array_of_displacements[i] * old_size;
+      displacements[i] = array_of_displacements[i];
     }
   int err = nm_mpi_datatype_indexed(count, array_of_blocklengths, displacements, oldtype, newtype);
   FREE_AND_SET_NULL(displacements);
@@ -379,7 +347,6 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
 
   p_newtype->blocklens = malloc(count * sizeof(int));
   p_newtype->indices = malloc(count * sizeof(MPI_Aint));
-  p_newtype->old_sizes = malloc(count * sizeof(size_t));
   p_newtype->p_old_types = malloc(count * sizeof(nm_mpi_datatype_t*));
   p_newtype->p_old_type = NULL;
   for(i = 0; i < count; i++)
@@ -392,17 +359,16 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
 	  return MPI_ERR_TYPE;
 	}
       p_newtype->blocklens[i] = array_of_blocklengths[i];
-      p_newtype->old_sizes[i] = p_datatype->size;
       p_newtype->p_old_types[i] = p_datatype;
       p_newtype->indices[i] = array_of_displacements[i];
-      p_newtype->size += p_newtype->blocklens[i] * p_newtype->old_sizes[i];
+      p_newtype->size += p_newtype->blocklens[i] * p_datatype->size;
     }
   /** We suppose here that the last field of the struct does not need
    * an alignment. In case, one sends an array of struct, the 1st
    * field of the 2nd struct immediatly follows the last field of the
    * previous struct.
    */
-  p_newtype->extent = p_newtype->indices[count-1] + p_newtype->blocklens[count-1] * p_newtype->old_sizes[count-1];
+  p_newtype->extent = p_newtype->indices[count-1] + p_newtype->blocklens[count-1] * p_newtype->p_old_types[count-1]->extent;
   return MPI_SUCCESS;
 }
 
@@ -453,7 +419,6 @@ static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
     }
   else
     {
-      FREE_AND_SET_NULL(p_datatype->old_sizes);
       if(p_datatype->p_old_types != &p_datatype->p_old_type)
 	{
 	  FREE_AND_SET_NULL(p_datatype->p_old_types);
@@ -473,15 +438,13 @@ static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
 }
 
 
-static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Aint*array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype)
+static int nm_mpi_datatype_indexed(int count, int*array_of_blocklengths, MPI_Aint*array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   int i;
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
   nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   *newtype = p_newtype->id;
   p_newtype->dte_type = NM_MPI_DATATYPE_INDEXED;
-  p_newtype->old_sizes = malloc(1 * sizeof(int));
-  p_newtype->old_sizes[0] = p_oldtype->extent;
   p_newtype->p_old_type = p_oldtype;
   p_newtype->p_old_types = &p_newtype->p_old_type;
   p_newtype->committed = 0;
@@ -491,19 +454,13 @@ static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Ai
   p_newtype->blocklens = malloc(count * sizeof(int));
   p_newtype->indices = malloc(count * sizeof(MPI_Aint));
   p_newtype->size = 0;
-
   for(i = 0; i < count ; i++)
     {
       p_newtype->blocklens[i] = array_of_blocklengths[i];
       p_newtype->indices[i] = array_of_displacements[i];
-      p_newtype->size += p_newtype->old_sizes[0] * p_newtype->blocklens[i];
-      MPI_NMAD_TRACE("Element %d: length %d, indice %ld, new size %ld\n", i, p_newtype->blocklens[i], (long)p_newtype->indices[i], (long) p_newtype->size);
+      p_newtype->size += p_oldtype->size * p_newtype->blocklens[i];
     }
   p_newtype->extent = (p_newtype->indices[count-1] + p_oldtype->extent * p_newtype->blocklens[count-1]);
-
-  MPI_NMAD_TRACE("Creating new index type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
-		 (long)p_newtype->size, (long)p_newtype->extent,
-		 oldtype, (long)p_newtype->old_sizes[0]);
   return MPI_SUCCESS;
 }
 
@@ -513,111 +470,158 @@ static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Ai
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_pack(void*dest_ptr, const void*src_ptr, nm_mpi_datatype_t*p_datatype, int count)
 {
-  int i, j;
-  switch(p_datatype->dte_type)
+  if(p_datatype->is_contig)
     {
-    case NM_MPI_DATATYPE_VECTOR:
-      {
-	for(i = 0; i < count; i++)
+      assert(p_datatype->lb == 0);
+      assert(p_datatype->extent == p_datatype->size);
+      memcpy(dest_ptr, src_ptr, count * p_datatype->size);
+    }
+  else
+    {
+      int i, j;
+      switch(p_datatype->dte_type)
+	{
+	case NM_MPI_DATATYPE_CONTIG:
 	  {
-	    for(j = 0; j < p_datatype->elements; j++)
+	    for(i = 0; i < count; i++)
 	      {
-		memcpy(dest_ptr, src_ptr, p_datatype->block_size);
-		dest_ptr += p_datatype->block_size;
-		src_ptr  += p_datatype->stride;
+		nm_mpi_datatype_pack(dest_ptr, src_ptr, p_datatype->p_old_type, p_datatype->elements);
+		dest_ptr += p_datatype->size;
+		src_ptr  += p_datatype->extent;
 	      }
 	  }
-      }
-      break;
-
-    case NM_MPI_DATATYPE_INDEXED:
-      {
-	for(i = 0; i < count; i++)
+	  break;
+	  
+	case NM_MPI_DATATYPE_VECTOR:
 	  {
-	    const void*ptr = src_ptr + i * p_datatype->extent;
-	    for(j = 0; j < p_datatype->elements; j++)
+	    for(i = 0; i < count; i++)
 	      {
-		memcpy(dest_ptr, ptr + p_datatype->indices[j], p_datatype->blocklens[j] * p_datatype->old_sizes[0]);
-		dest_ptr += p_datatype->blocklens[j] * p_datatype->old_sizes[0];
+		for(j = 0; j < p_datatype->elements; j++)
+		  {
+		    nm_mpi_datatype_pack(dest_ptr, src_ptr + j * p_datatype->hstride, p_datatype->p_old_type, p_datatype->blocklens[0]);
+		    dest_ptr += p_datatype->p_old_type->size * p_datatype->blocklens[0];
+		  }
+		src_ptr += p_datatype->extent;
 	      }
 	  }
-      }
-      break;
-
-    case NM_MPI_DATATYPE_STRUCT:
-      {
-	for(i = 0; i < count; i++)
+	  break;
+	  
+	case NM_MPI_DATATYPE_INDEXED:
 	  {
-	    const void*ptr = src_ptr + i * p_datatype->extent;
-	    for(j = 0; j < p_datatype->elements; j++)
+	    for(i = 0; i < count; i++)
 	      {
-		memcpy(dest_ptr, ptr + p_datatype->indices[j], p_datatype->blocklens[j] * p_datatype->old_sizes[j]);
-		dest_ptr += p_datatype->blocklens[j] * p_datatype->old_sizes[j];
+		for(j = 0; j < p_datatype->elements; j++)
+		  {
+		    nm_mpi_datatype_pack(dest_ptr, src_ptr + p_datatype->indices[j], p_datatype->p_old_type, p_datatype->blocklens[j]);
+		    dest_ptr += p_datatype->blocklens[j] * p_datatype->p_old_type->size;
+		  }
+		src_ptr += p_datatype->extent;
 	      }
 	  }
-      }
-      break;
+	  break;
+	  
+	case NM_MPI_DATATYPE_STRUCT:
+	  {
+	    for(i = 0; i < count; i++)
+	      {
+		for(j = 0; j < p_datatype->elements; j++)
+		  {
+		    nm_mpi_datatype_pack(dest_ptr, src_ptr + p_datatype->indices[j], p_datatype->p_old_types[j], p_datatype->blocklens[j]);
+		    dest_ptr += p_datatype->blocklens[j] * p_datatype->p_old_types[j]->size;
+		  }
+		src_ptr += p_datatype->extent;
+	      }
+	  }
+	  break;
+	  
+	case NM_MPI_DATATYPE_BASIC:
+	  {
+	    ERROR("madmpi: trying to pack BASIC datatype as sparse (should be contiguous).\n");
+	  }
+	  break;
 
-    default:
-      ERROR("madmpi: cannot pack datatype of type %d\n", p_datatype->dte_type);
+	default:
+	  ERROR("madmpi: cannot pack datatype of type %d\n", p_datatype->dte_type);
+	}
     }
 }
 
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_unpack(const void*src_ptr, void*dest_ptr, nm_mpi_datatype_t*p_datatype, int count)
 {
-  int i, j;
-  switch(p_datatype->dte_type)
+  if(p_datatype->is_contig)
     {
-    case NM_MPI_DATATYPE_VECTOR:
-      {
-	const void *recvptr = src_ptr;
-	void *ptr = dest_ptr;
-	for(i = 0; i < count; i++)
+      assert(p_datatype->lb == 0);
+      assert(p_datatype->extent == p_datatype->size);
+      memcpy(dest_ptr, src_ptr, count * p_datatype->size);
+    }
+  else
+    {
+      int i, j;
+      switch(p_datatype->dte_type)
+	{
+	case NM_MPI_DATATYPE_CONTIG:
 	  {
-	    for(j = 0; j < p_datatype->elements; j++)
+	    for(i = 0; i < count; i++)
 	      {
-		memcpy(ptr, recvptr, p_datatype->block_size);
-		recvptr += p_datatype->block_size;
-		ptr += p_datatype->block_size;
+		nm_mpi_datatype_unpack(src_ptr, dest_ptr, p_datatype->p_old_type, p_datatype->elements);
+		dest_ptr += p_datatype->extent;
+		src_ptr  += p_datatype->size;
 	      }
 	  }
-      }
-      break;
+	  break;
 
-    case NM_MPI_DATATYPE_INDEXED:
-      {
-	const void *recvptr = src_ptr;
-	void *ptr = dest_ptr;
-	for(i = 0; i < count ; i++)
+	case NM_MPI_DATATYPE_VECTOR:
 	  {
-	    for(j = 0; j < p_datatype->elements; j++)
+	    for(i = 0; i < count; i++)
 	      {
-		memcpy(ptr, recvptr, p_datatype->blocklens[j] * p_datatype->old_sizes[0]);
-		recvptr += p_datatype->blocklens[j] * p_datatype->old_sizes[0];
-		ptr += p_datatype->blocklens[j] * p_datatype->old_sizes[0];
+		for(j = 0; j < p_datatype->elements; j++)
+		  {
+		    nm_mpi_datatype_unpack(src_ptr, dest_ptr + j * p_datatype->hstride, p_datatype->p_old_type, p_datatype->blocklens[0]);
+		    src_ptr += p_datatype->p_old_type->size * p_datatype->blocklens[0];
+		  }
+		dest_ptr += p_datatype->extent;
 	      }
 	  }
-	
-      }
-      break;
+	  break;
+	  
+	case NM_MPI_DATATYPE_INDEXED:
+	  {
+	    for(i = 0; i < count ; i++)
+	      {
+		for(j = 0; j < p_datatype->elements; j++)
+		  {
+		    nm_mpi_datatype_unpack(src_ptr, dest_ptr + p_datatype->indices[j], p_datatype->p_old_type, p_datatype->blocklens[j]);
+		    src_ptr += p_datatype->blocklens[j] * p_datatype->p_old_type->size;
+		  }
+		dest_ptr += p_datatype->extent;
+	      }
+	  }
+	  break;
+	  
+	case NM_MPI_DATATYPE_STRUCT:
+	  {
+	    for(i = 0; i < count; i++)
+	      {
+		for(j = 0; j < p_datatype->elements; j++)
+		  {
+		    nm_mpi_datatype_unpack(src_ptr, dest_ptr + p_datatype->indices[j], p_datatype->p_old_types[j], p_datatype->blocklens[j]);
+		    src_ptr += p_datatype->blocklens[j] * p_datatype->p_old_types[j]->size;
+		  }
+		dest_ptr += p_datatype->extent;
+	      }
+	  }
+	  break;
+	  
+	case NM_MPI_DATATYPE_BASIC:
+	  {
+	    ERROR("madmpi: trying to unpack BASIC datatype as sparse (should be contiguous).\n");
+	  }
+	  break;
 
-    case NM_MPI_DATATYPE_STRUCT:
-      {
-	for(i = 0; i < count; i++)
-	  {
-	    void *ptr = dest_ptr + i * p_datatype->extent;
-	    for(j = 0; j < p_datatype->elements; j++)
-	      {
-		memcpy(ptr + p_datatype->indices[j], src_ptr, p_datatype->blocklens[j] * p_datatype->old_sizes[j]);
-		src_ptr += p_datatype->blocklens[j] * p_datatype->old_sizes[j];
-	      }
-	  }
-      }
-      break;
-      
-    default:
-      ERROR("madmpi: cannot unpack datatype of type %d\n", p_datatype->dte_type);
+	default:
+	  ERROR("madmpi: cannot unpack datatype of type %d\n", p_datatype->dte_type);
+	}
     }
 }
 

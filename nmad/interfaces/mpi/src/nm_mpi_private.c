@@ -79,7 +79,7 @@ static inline int nm_mpi_datatype_vector_pack(nm_pack_cnx_t *connection, void *b
       for(j = 0; j < p_datatype->elements; j++)
 	{
 	  err = nm_pack(connection, buffer, p_datatype->block_size);
-	  buffer += p_datatype->stride;
+	  buffer += p_datatype->hstride;
 	}
     }
   return err;
@@ -122,8 +122,8 @@ static inline int nm_mpi_datatype_indexed_pack(nm_pack_cnx_t *connection, void *
 	{
 	  void *subptr = ptr + p_datatype->indices[j];
 	  MPI_NMAD_TRACE("Sub-element %d,%d starts at %p (%p + %ld) with size %ld\n", i, j, subptr, ptr,
-			 (long)p_datatype->indices[j], (long)p_datatype->blocklens[j] * p_datatype->old_sizes[0]);
-	  err = nm_pack(connection, subptr, p_datatype->blocklens[j] * p_datatype->old_sizes[0]);
+			 (long)p_datatype->indices[j], (long)p_datatype->blocklens[j] * p_datatype->p_old_type->size);
+	  err = nm_pack(connection, subptr, p_datatype->blocklens[j] * p_datatype->p_old_type->size);
 	}
     }
   return err;
@@ -144,10 +144,10 @@ static inline int nm_mpi_datatype_indexed_unpack(nm_pack_cnx_t *connection, nm_m
 	{
 	  MPI_NMAD_TRACE("Sub-element %d,%d unpacked at %p (%p + %d) with size %ld\n", i, j,
 			 p_req->request_ptr[k], buffer, (int)(p_req->request_ptr[k]-buffer),
-			 (long)p_datatype->blocklens[j] * p_datatype->old_sizes[0]);
-	  err = nm_unpack(connection, p_req->request_ptr[k], p_datatype->blocklens[j] * p_datatype->old_sizes[0]);
+			 (long)p_datatype->blocklens[j] * p_datatype->p_old_type->size);
+	  err = nm_unpack(connection, p_req->request_ptr[k], p_datatype->blocklens[j] * p_datatype->p_old_type->size);
 	  k++;
-	  p_req->request_ptr[k] = p_req->request_ptr[k-1] + p_datatype->blocklens[j] * p_datatype->old_sizes[0];
+	  p_req->request_ptr[k] = p_req->request_ptr[k-1] + p_datatype->blocklens[j] * p_datatype->p_old_type->size;
 	}
     }
   if(p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
@@ -168,8 +168,8 @@ static inline int nm_mpi_datatype_struct_pack(nm_pack_cnx_t *connection, void *b
       for(j = 0; j < p_datatype->elements; j++)
 	{
 	  ptr += p_datatype->indices[j];
-	  MPI_NMAD_TRACE("packing data at %p (+%ld) with a size %d*%ld\n", ptr, (long)p_datatype->indices[j], p_datatype->blocklens[j], (long)p_datatype->old_sizes[j]);
-	  err = nm_pack(connection, ptr, p_datatype->blocklens[j] * p_datatype->old_sizes[j]);
+	  MPI_NMAD_TRACE("packing data at %p (+%ld) with a size %d*%ld\n", ptr, (long)p_datatype->indices[j], p_datatype->blocklens[j], (long)p_datatype->p_old_types[j]->size);
+	  err = nm_pack(connection, ptr, p_datatype->blocklens[j] * p_datatype->p_old_types[j]->size);
 	  ptr -= p_datatype->indices[j];
 	}
     }
@@ -190,7 +190,7 @@ static inline int nm_mpi_datatype_struct_unpack(nm_pack_cnx_t *connection, nm_mp
       for(j = 0; j < p_datatype->elements; j++)
 	{
 	  p_req->request_ptr[k] += p_datatype->indices[j];
-	  err = nm_unpack(connection, p_req->request_ptr[k], p_datatype->blocklens[j] * p_datatype->old_sizes[j]);
+	  err = nm_unpack(connection, p_req->request_ptr[k], p_datatype->blocklens[j] * p_datatype->p_old_types[j]->size);
 	  k++;
 	  p_req->request_ptr[k] = p_req->request_ptr[k-1] - p_datatype->indices[j];
 	}

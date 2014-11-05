@@ -234,8 +234,8 @@ typedef struct nm_mpi_datatype_s
 
   /** number of basic elements */
   int elements;
-  /** stride, for VECTOR type */
-  int stride;
+  /** stride, for VECTOR type, in bytes */
+  int hstride;
   /** array of indices, for INDEXED, STRUCT */
   MPI_Aint *indices;
   /** block_size, for VECTOR type */
@@ -246,8 +246,6 @@ typedef struct nm_mpi_datatype_s
   struct nm_mpi_datatype_s**p_old_types;
   /** old type for types with single inheritance */
   struct nm_mpi_datatype_s*p_old_type;
-  /** size of old types */
-  size_t* old_sizes;
 } nm_mpi_datatype_t;
 /* @} */
 

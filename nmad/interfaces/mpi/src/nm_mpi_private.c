@@ -234,7 +234,7 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
   nm_tag_t nm_tag, tag_mask;
   nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
-  p_datatype->active_communications ++;
+  p_datatype->refcount++;
   if(p_datatype->is_contig || !(p_datatype->is_optimized))
     {
       void *buffer = (p_datatype->is_contig == 1) ? p_req->buffer : p_req->contig_buffer;
@@ -377,7 +377,7 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
   nm_tag_t nm_tag, tag_mask;
   nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
-  p_datatype->active_communications ++;
+  p_datatype->refcount++;
   nm_session_t p_session = nm_comm_get_session(p_req->p_comm->p_comm);
   if(p_datatype->is_contig || !(p_datatype->is_optimized))
     {

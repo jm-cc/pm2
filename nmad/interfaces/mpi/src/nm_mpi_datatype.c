@@ -28,7 +28,7 @@ static struct nm_mpi_handle_datatype_s nm_mpi_datatypes;
 static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Aint*array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype);
 /** store builtin datatypes */
 static void nm_mpi_datatype_store(int id, size_t size, int elements);
-static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
+static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
 
 
 /* ********************************************************* */
@@ -129,8 +129,7 @@ static void nm_mpi_datatype_store(int id, size_t size, int elements)
   p_datatype->committed = 1;
   p_datatype->is_contig = 1;
   p_datatype->dte_type = NM_MPI_DATATYPE_BASIC;
-  p_datatype->active_communications = 100;
-  p_datatype->free_requested = 0;
+  p_datatype->refcount = 2;
   p_datatype->lb = 0;
   p_datatype->size = size;
   p_datatype->elements = elements;
@@ -207,6 +206,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
   p_newtype->size      = p_oldtype->size;
   p_newtype->extent    = extent;
   p_newtype->lb        = lb;
+  p_newtype->refcount  = 1;
 
   if(p_newtype->dte_type == NM_MPI_DATATYPE_CONTIG)
     {
@@ -264,24 +264,23 @@ int mpi_type_commit(MPI_Datatype *datatype)
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
   p_datatype->committed = 1;
   p_datatype->is_optimized = 0;
-  p_datatype->active_communications = 0;
-  p_datatype->free_requested = 0;
   return MPI_SUCCESS;
 }
 
 int mpi_type_free(MPI_Datatype *datatype)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
-  int err = nm_mpi_datatype_free(p_datatype);
-  if (err == MPI_SUCCESS) 
+  p_datatype->refcount--;
+  *datatype = MPI_DATATYPE_NULL;
+  if(p_datatype->refcount > 0)
     {
-      *datatype = MPI_DATATYPE_NULL;
+      return MPI_ERR_DATATYPE_ACTIVE;
     }
   else
-    { /* err = MPI_ERR_DATATYPE_ACTIVE */
-      err = MPI_SUCCESS;
-    }  
-  return err;
+    {
+      nm_mpi_datatype_free(p_datatype);
+      return MPI_SUCCESS;
+    }
 }
 
 int mpi_type_optimized(MPI_Datatype *datatype, int optimized)
@@ -305,6 +304,7 @@ int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
   p_newtype->elements = count;
   p_newtype->lb = 0;
   p_newtype->extent = p_oldtype->extent * count;
+  p_newtype->refcount = 1;
   return MPI_SUCCESS;
 }
 
@@ -333,6 +333,7 @@ int mpi_type_hvector(int count, int blocklength, int hstride, MPI_Datatype oldty
   p_newtype->hstride = hstride;
   p_newtype->lb = 0;
   p_newtype->extent = p_oldtype->extent * blocklength + (count - 1) * hstride;
+  p_newtype->refcount = 1;
   return MPI_SUCCESS;
 }
 
@@ -375,6 +376,7 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
   p_newtype->elements = count;
   p_newtype->size = 0;
   p_newtype->lb = 0;
+  p_newtype->refcount = 1;
 
   p_newtype->blocklens = malloc(count * sizeof(int));
   p_newtype->indices = malloc(count * sizeof(MPI_Aint));
@@ -431,39 +433,33 @@ nm_mpi_datatype_t* nm_mpi_datatype_get(MPI_Datatype datatype)
 __PUK_SYM_INTERNAL
 int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype)
 {
-  p_datatype->active_communications--;
-  if(p_datatype->active_communications == 0 && p_datatype->free_requested == 1)
+  p_datatype->refcount--;
+  assert(p_datatype->refcount >= 0);
+  if(p_datatype->refcount == 0)
     {
       nm_mpi_datatype_free(p_datatype);
     }
   return MPI_SUCCESS;
 }
 
-static int nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
+static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
 {
-  if(p_datatype->active_communications != 0)
+  assert(p_datatype->refcount == 0);
+  assert(p_datatype->id >= _NM_MPI_DATATYPE_OFFSET);
+  if(p_datatype->p_old_types != &p_datatype->p_old_type)
     {
-      p_datatype->free_requested = 1;
-      return MPI_ERR_DATATYPE_ACTIVE;
+      FREE_AND_SET_NULL(p_datatype->p_old_types);
     }
-  else
+  if(p_datatype->dte_type == NM_MPI_DATATYPE_INDEXED || p_datatype->dte_type == NM_MPI_DATATYPE_STRUCT)
     {
-      if(p_datatype->p_old_types != &p_datatype->p_old_type)
-	{
-	  FREE_AND_SET_NULL(p_datatype->p_old_types);
-	}
-      if(p_datatype->dte_type == NM_MPI_DATATYPE_INDEXED || p_datatype->dte_type == NM_MPI_DATATYPE_STRUCT)
-	{
-	  FREE_AND_SET_NULL(p_datatype->blocklens);
-	  FREE_AND_SET_NULL(p_datatype->indices);
-	}
-      if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR) 
-	{
-	  FREE_AND_SET_NULL(p_datatype->blocklens);
-	}
-      nm_mpi_handle_datatype_free(&nm_mpi_datatypes, p_datatype);
-      return MPI_SUCCESS;
+      FREE_AND_SET_NULL(p_datatype->blocklens);
+      FREE_AND_SET_NULL(p_datatype->indices);
     }
+  if(p_datatype->dte_type == NM_MPI_DATATYPE_VECTOR) 
+    {
+      FREE_AND_SET_NULL(p_datatype->blocklens);
+    }
+  nm_mpi_handle_datatype_free(&nm_mpi_datatypes, p_datatype);
 }
 
 
@@ -483,6 +479,7 @@ static int nm_mpi_datatype_indexed(int count, int*array_of_blocklengths, MPI_Ain
   p_newtype->blocklens = malloc(count * sizeof(int));
   p_newtype->indices = malloc(count * sizeof(MPI_Aint));
   p_newtype->size = 0;
+  p_newtype->refcount = 1;
   for(i = 0; i < count ; i++)
     {
       p_newtype->blocklens[i] = array_of_blocklengths[i];

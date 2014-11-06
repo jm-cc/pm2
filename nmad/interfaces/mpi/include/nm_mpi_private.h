@@ -227,10 +227,8 @@ typedef struct nm_mpi_datatype_s
   MPI_Aint lb;
   /** size of type */
   size_t size;
-  /** number of active communications using this type */
-  int active_communications;
-  /** a free request has been posted for this type while it was still active */
-  int free_requested;
+  /** number of references pointing to this type (active communications, handle) */
+  int refcount;
 
   /** number of basic elements */
   int elements;

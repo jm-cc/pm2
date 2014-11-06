@@ -25,7 +25,6 @@ NM_MPI_HANDLE_TYPE(datatype, nm_mpi_datatype_t, _NM_MPI_DATATYPE_OFFSET, 64);
 static struct nm_mpi_handle_datatype_s nm_mpi_datatypes;
 
 
-static int nm_mpi_datatype_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
 static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Aint*array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype);
 /** store builtin datatypes */
 static void nm_mpi_datatype_store(int id, size_t size, int elements);
@@ -38,6 +37,7 @@ NM_MPI_ALIAS(MPI_Type_size,           mpi_type_size);
 NM_MPI_ALIAS(MPI_Type_get_extent,     mpi_type_get_extent);
 NM_MPI_ALIAS(MPI_Type_extent,         mpi_type_extent);
 NM_MPI_ALIAS(MPI_Type_lb,             mpi_type_lb);
+NM_MPI_ALIAS(MPI_Type_ub,             mpi_type_ub);
 NM_MPI_ALIAS(MPI_Type_create_resized, mpi_type_create_resized);
 NM_MPI_ALIAS(MPI_Type_commit,         mpi_type_commit);
 NM_MPI_ALIAS(MPI_Type_free,           mpi_type_free);
@@ -50,6 +50,7 @@ NM_MPI_ALIAS(MPI_Type_hindexed,       mpi_type_hindexed);
 NM_MPI_ALIAS(MPI_Type_struct,         mpi_type_struct);
 NM_MPI_ALIAS(MPI_Pack,                mpi_pack);
 NM_MPI_ALIAS(MPI_Unpack,              mpi_unpack);
+NM_MPI_ALIAS(MPI_Pack_size,           mpi_pack_size);
 
 /* ********************************************************* */
 
@@ -109,6 +110,8 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_COMPLEX,            2 * sizeof(float), 2);
   nm_mpi_datatype_store(MPI_DOUBLE_COMPLEX,     2 * sizeof(double), 2);
 
+  nm_mpi_datatype_store(MPI_UB,                 0, 0);
+  nm_mpi_datatype_store(MPI_LB,                 0, 0);
 }
 
 __PUK_SYM_INTERNAL
@@ -141,23 +144,48 @@ static void nm_mpi_datatype_store(int id, size_t size, int elements)
 int mpi_type_size(MPI_Datatype datatype, int *size)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
   *size = p_datatype->size;
   return MPI_SUCCESS;
 }
 
-int mpi_type_get_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent)
+int mpi_type_get_extent(MPI_Datatype datatype, MPI_Aint*lb, MPI_Aint*extent)
 {
-  return nm_mpi_datatype_get_lb_and_extent(datatype, lb, extent);
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  if(lb != NULL)
+    *lb = p_datatype->lb;
+  if(extent != NULL)
+    *extent = p_datatype->extent;
+  return MPI_SUCCESS;
 }
 
-int mpi_type_extent(MPI_Datatype datatype, MPI_Aint *extent)
+int mpi_type_extent(MPI_Datatype datatype, MPI_Aint*extent)
 {
-  return nm_mpi_datatype_get_lb_and_extent(datatype, NULL, extent);
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  *extent = p_datatype->extent;
+  return MPI_SUCCESS;
 }
 
-int mpi_type_lb(MPI_Datatype datatype,MPI_Aint *lb)
+int mpi_type_lb(MPI_Datatype datatype,MPI_Aint*lb)
 {
-  return nm_mpi_datatype_get_lb_and_extent(datatype, lb, NULL);
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  *lb = p_datatype->lb;
+  return MPI_SUCCESS;
+}
+int mpi_type_ub(MPI_Datatype datatype, MPI_Aint*displacement)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  *displacement = p_datatype->extent; /* UB is extent since we support only LB=0 */
+  return MPI_SUCCESS;
 }
 
 int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype)
@@ -352,6 +380,7 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
   p_newtype->indices = malloc(count * sizeof(MPI_Aint));
   p_newtype->p_old_types = malloc(count * sizeof(nm_mpi_datatype_t*));
   p_newtype->p_old_type = NULL;
+  p_newtype->extent = -1;
   for(i = 0; i < count; i++)
     {
       nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(array_of_types[i]);
@@ -365,13 +394,24 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
       p_newtype->p_old_types[i] = p_datatype;
       p_newtype->indices[i] = array_of_displacements[i];
       p_newtype->size += p_newtype->blocklens[i] * p_datatype->size;
+      if(array_of_types[i] == MPI_UB)
+	{
+	  p_newtype->extent = array_of_displacements[i];
+	  break;
+	}
+      if(array_of_types[i] == MPI_LB && array_of_displacements[i] != 0)
+	{
+	  ERROR("madmpi: non-zero MPI_LB not supported.\n");
+	  break;
+	}
     }
   /** We suppose here that the last field of the struct does not need
    * an alignment. In case, one sends an array of struct, the 1st
    * field of the 2nd struct immediatly follows the last field of the
    * previous struct.
    */
-  p_newtype->extent = p_newtype->indices[count-1] + p_newtype->blocklens[count-1] * p_newtype->p_old_types[count-1]->extent;
+  if(p_newtype->extent == -1)
+    p_newtype->extent = p_newtype->indices[count-1] + p_newtype->blocklens[count-1] * p_newtype->p_old_types[count-1]->extent;
   return MPI_SUCCESS;
 }
 
@@ -386,20 +426,6 @@ __PUK_SYM_INTERNAL
 nm_mpi_datatype_t* nm_mpi_datatype_get(MPI_Datatype datatype)
 {
   return nm_mpi_handle_datatype_get(&nm_mpi_datatypes, datatype);
-}
-
-static int nm_mpi_datatype_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent)
-{
-  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
-  if(lb)
-    {
-      *lb = p_datatype->lb;
-    }
-  if(extent)
-    {
-      *extent = p_datatype->extent;
-    }
-  return MPI_SUCCESS;
 }
 
 __PUK_SYM_INTERNAL
@@ -632,6 +658,8 @@ void nm_mpi_datatype_unpack(const void*src_ptr, void*dest_ptr, nm_mpi_datatype_t
 int mpi_pack(void*inbuf, int incount, MPI_Datatype datatype, void*outbuf, int outsize, int*position, MPI_Comm comm)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
   size_t size = incount * nm_mpi_datatype_size(p_datatype);
   assert(outsize >= size);
   nm_mpi_datatype_pack(outbuf + *position, inbuf, p_datatype, incount);
@@ -642,9 +670,21 @@ int mpi_pack(void*inbuf, int incount, MPI_Datatype datatype, void*outbuf, int ou
 int mpi_unpack(void*inbuf, int insize, int*position, void*outbuf, int outcount, MPI_Datatype datatype, MPI_Comm comm)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
   size_t size = outcount * nm_mpi_datatype_size(p_datatype);
   assert(insize >= size);
   nm_mpi_datatype_unpack(inbuf + *position, outbuf, p_datatype, outcount);
   *position += size;
   return MPI_SUCCESS;
 }
+
+int mpi_pack_size(int incount, MPI_Datatype datatype, MPI_Comm comm, int*size)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  *size = incount * nm_mpi_datatype_size(p_datatype);
+  return MPI_SUCCESS;
+}
+

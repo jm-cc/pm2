@@ -220,6 +220,73 @@ int MPI_Type_struct(int count,
                     MPI_Datatype *array_of_types,
                     MPI_Datatype *newtype);
 
+/**
+ * Packs a message specified by inbuf, incount, datatype, comm into
+ * the buffer space specified by outbuf and outsize. The input buffer
+ * can be any communication buffer allowed in MPI_SEND. The output
+ * buffer is a contiguous storage area containing outsize bytes,
+ * starting at the address outbuf.
+ * @param inbuf initial address of send buffer
+ * @param incount number of elements in send buffer
+ * @param datatype datatype of each send buffer element
+ * @param outbuf
+ * @param outsize
+ * @param position
+ * @param comm communicator
+ * @return MPI status
+ */
+int MPI_Pack(void* inbuf,
+             int incount,
+             MPI_Datatype datatype,
+             void *outbuf,
+             int outsize,
+             int *position,
+             MPI_Comm comm);
+
+/**
+ * Unpacks a message into the receive buffer specified by outbuf,
+ * outcount, datatype from the buffer space specified by inbuf and
+ * insize. The output buffer can be any communication buffer allowed
+ * in MPI_RECV. The input buffer is a contiguous storage area
+ * containing insize bytes, starting at address inbuf. The input value
+ * of position is the position in the input buffer where one wishes
+ * the unpacking to begin. The output value of position is incremented
+ * by the size of the packed message, so that it can be used as input
+ * to a subsequent call to MPI_UNPACK.
+ * @param inbuf initial address of receive buffer
+ * @param insize number of elements in receive buffer
+ * @param position
+ * @param outbuf
+ * @param outcount
+ * @param datatype datatype of each receive buffer element
+ * @param comm communicator
+ * @return MPI status
+ */
+int MPI_Unpack(void* inbuf,
+               int insize,
+               int *position,
+               void *outbuf,
+               int outcount,
+               MPI_Datatype datatype,
+               MPI_Comm comm);
+
+/**
+ * Returns the upper bound on the amount of space needed to pack a message
+ * @param incount count argument to packing call
+ * @param datatype datatype argument to packing call
+ * @param comm communicator argument to packing call
+ * @apram size upper bound on size of packed message, in bytes 
+ * @return MPI status
+ */
+int MPI_Pack_size(int incount,
+		  MPI_Datatype datatype,
+		  MPI_Comm comm,
+		  int*size);
+/**
+ * Returns the upper bound of a datatype
+ */
+int MPI_Type_ub(MPI_Datatype datatype, MPI_Aint*displacement);
+
 /* @}*/
 /* @}*/
 

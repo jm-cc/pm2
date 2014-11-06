@@ -226,8 +226,11 @@ typedef int MPI_Datatype;
 #define MPI_2INTEGER          ((MPI_Datatype)37)
 #define MPI_2REAL             ((MPI_Datatype)38)
 #define MPI_2DOUBLE_PRECISION ((MPI_Datatype)39)
+/* special types for bounds */
+#define MPI_UB                ((MPI_Datatype)40)
+#define MPI_LB                ((MPI_Datatype)41)
 /* offset for dynamically allocated datatypes */
-#define _NM_MPI_DATATYPE_OFFSET              40
+#define _NM_MPI_DATATYPE_OFFSET              42
 
 /* @} */
 

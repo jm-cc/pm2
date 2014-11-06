@@ -35,9 +35,6 @@ typedef int MPI_Win;
 #define MPI_COMBINER_HINDEXED  4
 #define MPI_COMBINER_STRUCT    5
 
-#define MPI_UB -1
-#define MPI_LB -1
-
 #define MPI_ARGV_NULL (NULL)
 
 int MPI_Comm_get_parent(MPI_Comm *parent);

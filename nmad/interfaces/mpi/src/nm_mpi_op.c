@@ -495,7 +495,7 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
   int i, _len = *len;
   nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type);
 
-  if ((dtype)->dte_type == NM_MPI_DATATYPE_CONTIG && ((dtype)->elements == 2))
+  if ((dtype)->dte_type == MPI_COMBINER_CONTIGUOUS && ((dtype)->elements == 2))
     {
       MPI_Datatype oldtype = (dtype)->p_old_types[0]->id;
       /** Set the actual length */
@@ -535,7 +535,7 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 	  break;
 	}
     }
-  else if((dtype)->dte_type == NM_MPI_DATATYPE_BASIC && (dtype)->elements == 2)
+  else if((dtype)->dte_type == MPI_COMBINER_NAMED && (dtype)->elements == 2)
     {
       _len = *len * (dtype)->elements;
       switch(*type)
@@ -559,7 +559,7 @@ static void nm_mpi_op_minloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
   int i, _len = *len;
   nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type);
 
-  if ((dtype)->dte_type == NM_MPI_DATATYPE_CONTIG && ((dtype)->elements == 2)) {
+  if ((dtype)->dte_type == MPI_COMBINER_CONTIGUOUS && ((dtype)->elements == 2)) {
     MPI_Datatype oldtype = (dtype)->p_old_types[0]->id;
 
     /** Set the actual length */

@@ -27,14 +27,6 @@
 
 typedef int MPI_Win;
 
-#define MPI_COMBINER_NAMED     (-1)
-#define MPI_COMBINER_CONTIGUOUS        0
-#define MPI_COMBINER_VECTOR    1
-#define MPI_COMBINER_HVECTOR   2
-#define MPI_COMBINER_INDEXED   3
-#define MPI_COMBINER_HINDEXED  4
-#define MPI_COMBINER_STRUCT    5
-
 #define MPI_ARGV_NULL (NULL)
 
 int MPI_Comm_get_parent(MPI_Comm *parent);

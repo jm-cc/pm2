@@ -201,20 +201,21 @@ typedef struct nm_mpi_operator_s
 /** Types of datatypes */
 typedef enum 
   {
-    NM_MPI_DATATYPE_BASIC,   /**< basic type built-in MPI */
-    NM_MPI_DATATYPE_CONTIG,  /**< contiguous array */
-    NM_MPI_DATATYPE_VECTOR,  /**< vector with stride */
-    NM_MPI_DATATYPE_INDEXED, /**< indexed type */
-    NM_MPI_DATATYPE_STRUCT   /**< structured type */
+    MPI_COMBINER_NAMED,       /**< basic type built-in MPI */
+    MPI_COMBINER_CONTIGUOUS,  /**< contiguous array */
+    MPI_COMBINER_VECTOR,      /**< vector with stride */
+    MPI_COMBINER_INDEXED,     /**< indexed type */
+    MPI_COMBINER_STRUCT,      /**< structured type */
+    MPI_COMBINER_RESIZED      /**< type is resized from another type */
   }
-  nm_mpi_datatype_type_t;
+  nm_mpi_type_combiner_t;
 
 /** Internal datatype */
 typedef struct nm_mpi_datatype_s
 {
   int id;
   /** type of datatype element this is */
-  nm_mpi_datatype_type_t dte_type;
+  nm_mpi_type_combiner_t dte_type;
   /** whether committed or not */
   int committed;
   /** whether entirely contiguous */

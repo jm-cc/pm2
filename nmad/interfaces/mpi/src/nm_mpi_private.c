@@ -66,142 +66,24 @@ int nm_mpi_check_tag(int tag)
   return tag;
 }
 
-
-#if 0
-
-/**
- * Packs into a NM connection data represented by a vector datatype.
- */
-static inline int nm_mpi_datatype_vector_pack(nm_pack_cnx_t *connection, void *buffer, nm_mpi_datatype_t*p_datatype, int count)
+/** status for nm_mpi_datatype_*_nmpack to stream a datatype to/from nmad pack interface */
+struct nm_mpi_datatype_filter_nmpack_s
 {
-  int i, j, err = MPI_SUCCESS;
-  for(i = 0 ; i<count ; i++)
-    {
-      for(j = 0; j < p_datatype->elements; j++)
-	{
-	  err = nm_pack(connection, buffer, p_datatype->block_size);
-	  buffer += p_datatype->hstride;
-	}
-    }
-  return err;
+  nm_pack_cnx_t*cnx;
+};
+/** pack data to memory */
+static void nm_mpi_datatype_pack_nmpack(void*_status, void*data_ptr, int size)
+{
+  struct nm_mpi_datatype_filter_nmpack_s*status = _status;
+  nm_pack(status->cnx, data_ptr, size);
+}
+/** unpack data from memory */
+static void nm_mpi_datatype_unpack_nmpack(void*_status, void*data_ptr, int size)
+{
+  struct nm_mpi_datatype_filter_nmpack_s*status = _status;
+  nm_unpack(status->cnx, data_ptr, size);
 }
 
-/**
- * Unpacks from a NM connection data represented by a vector datatype.
- */
-static inline int nm_mpi_datatype_vector_unpack(nm_pack_cnx_t *connection, nm_mpi_request_t *p_req, void *buffer, nm_mpi_datatype_t*p_datatype, int count)
-{
-  int i, k=0, err = MPI_SUCCESS;
-  p_req->request_ptr = malloc((count*p_datatype->elements+1) * sizeof(void *));
-  p_req->request_ptr[0] = buffer;
-  for(i = 0; i < count; i++)
-    {
-      int j;
-      for(j = 0; j < p_datatype->elements; j++)
-	{
-	  err = nm_unpack(connection, p_req->request_ptr[k], p_datatype->block_size);
-	  k++;
-	  p_req->request_ptr[k] = p_req->request_ptr[k-1] + p_datatype->block_size;
-	}
-    }
-  if(p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
-  return err;
-}
-
-
-/**
- * Packs into a NM connection data represented by a indexed datatype.
- */
-static inline int nm_mpi_datatype_indexed_pack(nm_pack_cnx_t *connection, void *buffer, nm_mpi_datatype_t*p_datatype, int count)
-{
-  int i, j, err = MPI_SUCCESS;
-  for(i = 0; i < count; i++)
-    {
-      void *ptr = buffer + i * p_datatype->extent;
-      MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*p_datatype->extent);
-      for(j = 0; j < p_datatype->elements; j++)
-	{
-	  void *subptr = ptr + p_datatype->indices[j];
-	  MPI_NMAD_TRACE("Sub-element %d,%d starts at %p (%p + %ld) with size %ld\n", i, j, subptr, ptr,
-			 (long)p_datatype->indices[j], (long)p_datatype->blocklens[j] * p_datatype->p_old_type->size);
-	  err = nm_pack(connection, subptr, p_datatype->blocklens[j] * p_datatype->p_old_type->size);
-	}
-    }
-  return err;
-}
-
-/**
- * Unpacks from a NM connection data represented by a indexed datatype.
- */
-static inline int nm_mpi_datatype_indexed_unpack(nm_pack_cnx_t *connection, nm_mpi_request_t *p_req, void *buffer, nm_mpi_datatype_t*p_datatype, int count)
-{
-  int i, k=0, err = MPI_SUCCESS;
-  p_req->request_ptr = malloc((count*p_datatype->elements+1) * sizeof(void *));
-  p_req->request_ptr[0] = buffer;
-  for(i = 0; i < count ; i++)
-    {
-      int j;
-      for(j = 0; j < p_datatype->elements; j++)
-	{
-	  MPI_NMAD_TRACE("Sub-element %d,%d unpacked at %p (%p + %d) with size %ld\n", i, j,
-			 p_req->request_ptr[k], buffer, (int)(p_req->request_ptr[k]-buffer),
-			 (long)p_datatype->blocklens[j] * p_datatype->p_old_type->size);
-	  err = nm_unpack(connection, p_req->request_ptr[k], p_datatype->blocklens[j] * p_datatype->p_old_type->size);
-	  k++;
-	  p_req->request_ptr[k] = p_req->request_ptr[k-1] + p_datatype->blocklens[j] * p_datatype->p_old_type->size;
-	}
-    }
-  if(p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
-  return err;
-}
-
-
-/**
- * Packs into a NM connection data represented by a struct datatype.
- */
-static inline int nm_mpi_datatype_struct_pack(nm_pack_cnx_t *connection, void *buffer, nm_mpi_datatype_t*p_datatype, int count)
-{
-  int i, j, err = MPI_SUCCESS;
-  for(i = 0; i < count; i++)
-    {
-      void *ptr = buffer + i * p_datatype->extent;
-      MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*p_datatype->extent);
-      for(j = 0; j < p_datatype->elements; j++)
-	{
-	  ptr += p_datatype->indices[j];
-	  MPI_NMAD_TRACE("packing data at %p (+%ld) with a size %d*%ld\n", ptr, (long)p_datatype->indices[j], p_datatype->blocklens[j], (long)p_datatype->p_old_types[j]->size);
-	  err = nm_pack(connection, ptr, p_datatype->blocklens[j] * p_datatype->p_old_types[j]->size);
-	  ptr -= p_datatype->indices[j];
-	}
-    }
-  return err;
-}
-
-/**
- * Unpacks from a NM connection data represented by a struct datatype.
- */
-static inline int nm_mpi_datatype_struct_unpack(nm_pack_cnx_t *connection, nm_mpi_request_t *p_req, void *buffer, nm_mpi_datatype_t*p_datatype, int count)
-{
-  int i, k=0, err = MPI_SUCCESS;
-  p_req->request_ptr = malloc((count*p_datatype->elements+1) * sizeof(void *));
-  for(i = 0; i < count ; i++)
-    {
-      int j;
-      p_req->request_ptr[k] = buffer + i*p_datatype->extent;
-      for(j = 0; j < p_datatype->elements; j++)
-	{
-	  p_req->request_ptr[k] += p_datatype->indices[j];
-	  err = nm_unpack(connection, p_req->request_ptr[k], p_datatype->blocklens[j] * p_datatype->p_old_types[j]->size);
-	  k++;
-	  p_req->request_ptr[k] = p_req->request_ptr[k-1] - p_datatype->indices[j];
-	}
-    }
-  if(p_req->request_type != NM_MPI_REQUEST_ZERO)
-    p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
-  return err;
-}
-
-#endif /* 0 */
 
 __PUK_SYM_INTERNAL
 int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm)
@@ -263,22 +145,11 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
     }
   else
     {
-      nm_pack_cnx_t*connection = &(p_req->request_cnx);
-      nm_begin_packing(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, connection);
-      /*
-      if(p_datatype->combiner == MPI_COMBINER_VECTOR)
-	{
-	  err = nm_mpi_datatype_vector_pack(connection, p_req->buffer, p_datatype, p_req->count);
-	}
-      else if(p_datatype->combiner == MPI_COMBINER_INDEXED) 
-	{
-	  err = nm_mpi_datatype_indexed_pack(connection, p_req->buffer, p_datatype, p_req->count);
-	}
-      else if(p_datatype->combiner == MPI_COMBINER_STRUCT)
-	{
-	  err = nm_mpi_datatype_struct_pack(connection, p_req->buffer, p_datatype, p_req->count);
-	}
-      */
+      nm_pack_cnx_t*cnx = &(p_req->request_cnx);
+      nm_begin_packing(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, cnx);
+      struct nm_mpi_datatype_filter_nmpack_s status = { .cnx = cnx };
+      const struct nm_mpi_datatype_filter_s filter = { .apply = &nm_mpi_datatype_pack_nmpack, &status };
+      nm_mpi_datatype_filter_apply(&filter, (void*)p_req->buffer, p_datatype, p_req->count);
       if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
 	p_req->request_type = NM_MPI_REQUEST_PACK_SEND;
     }
@@ -323,7 +194,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
       if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
 	p_req->request_type = NM_MPI_REQUEST_RECV;
     }
-  else if(p_datatype->combiner == MPI_COMBINER_VECTOR)
+  else
     {
       if(!p_datatype->is_optimized)
 	{
@@ -336,39 +207,6 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 	  if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
 	    p_req->request_type = NM_MPI_REQUEST_RECV;
 	}
-    }
-  else if(p_datatype->combiner == MPI_COMBINER_INDEXED)
-    {
-      if(!p_datatype->is_optimized)
-	{
-	  p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-	  if(p_req->contig_buffer == NULL)
-	    {
-	      ERROR("Cannot allocate memory with size %ld to receive (h)indexed type\n", (long)(p_req->count * p_datatype->size));
-	      return MPI_ERR_INTERN;
-	    }
-	  if(p_req->request_type != NM_MPI_REQUEST_ZERO)
-	    p_req->request_type = NM_MPI_REQUEST_RECV;
-	}
-    }
-  else if(p_datatype->combiner == MPI_COMBINER_STRUCT)
-    {
-      if(!p_datatype->is_optimized)
-	{
-	  p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-	  if(p_req->contig_buffer == NULL)
-	    {
-	      ERROR("Cannot allocate memory with size %ld to receive struct type\n", (long)(p_req->count * p_datatype->size));
-	      return MPI_ERR_INTERN;
-	    }
-	  if(p_req->request_type != NM_MPI_REQUEST_ZERO)
-	    p_req->request_type = NM_MPI_REQUEST_RECV;
-	}
-    }
-  else
-    {
-      ERROR("Do not know how to receive datatype %p\n", p_req->p_datatype);
-      return MPI_ERR_INTERN;
     }
   return MPI_SUCCESS;
 }
@@ -398,26 +236,14 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
     }
   else
     {
-      nm_pack_cnx_t*connection = &(p_req->request_cnx);
+      nm_pack_cnx_t*cnx = &(p_req->request_cnx);
       int err = NM_ESUCCESS;
-      nm_begin_unpacking(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, connection);
-      /*
-      if(p_datatype->combiner == MPI_COMBINER_VECTOR)
-	{
-	  err = nm_mpi_datatype_vector_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
-	}
-      else if(p_datatype->combiner == MPI_COMBINER_INDEXED)
-	{
-	  err = nm_mpi_datatype_indexed_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
-	}
-      else if(p_datatype->combiner == MPI_COMBINER_STRUCT)
-	{
-	  err = nm_mpi_datatype_struct_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
-	}
-      p_req->request_error = err;
+      nm_begin_unpacking(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, cnx);
+      struct nm_mpi_datatype_filter_nmpack_s status = { .cnx = cnx };
+      const struct nm_mpi_datatype_filter_s filter = { .apply = &nm_mpi_datatype_unpack_nmpack, &status };
+      nm_mpi_datatype_filter_apply(&filter, (void*)p_req->buffer, p_datatype, p_req->count);
       if(p_req->request_type != NM_MPI_REQUEST_ZERO)
 	p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
-      */
     }
   return p_req->request_error;
 }

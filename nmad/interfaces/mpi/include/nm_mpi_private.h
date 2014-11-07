@@ -272,9 +272,12 @@ typedef struct nm_mpi_datatype_s
 /** filter used to serialize/deserialize/direct pack/unpack data from datatype */
 struct nm_mpi_datatype_filter_s
 {
-  void (*apply)(void*_status, void*data_ptr, int size);
-  void*_status;
+  void (*apply)(void*_status, void*data_ptr, int size); /**< function applied to datatype blocks */
+  void*_status; /**< internal status of filter */
 };
+
+/** apply a filter to a datatype */
+void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, const void*data_ptr, nm_mpi_datatype_t*p_datatype, int count);
 
 /* @} */
 

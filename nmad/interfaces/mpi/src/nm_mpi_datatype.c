@@ -415,7 +415,8 @@ static int nm_mpi_datatype_indexed(int count, int*array_of_blocklengths, MPI_Ain
   return MPI_SUCCESS;
 }
 
-static void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, const void*data_ptr, nm_mpi_datatype_t*p_datatype, int count)
+__PUK_SYM_INTERNAL
+void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, const void*data_ptr, nm_mpi_datatype_t*p_datatype, int count)
 {
   if(p_datatype->is_contig)
     {
@@ -478,7 +479,7 @@ static void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*f
 /** status for nm_mpi_datatype_*_memcpy */
 struct nm_mpi_datatype_filter_memcpy_s
 {
-  void*pack_ptr;
+  void*pack_ptr; /**< pointer on packed data in memory */
 };
 /** pack data to memory */
 static void nm_mpi_datatype_pack_memcpy(void*_status, void*data_ptr, int size)

@@ -214,10 +214,10 @@ typedef enum
 typedef struct nm_mpi_datatype_s
 {
   int id;
-  /** type of datatype element this is */
-  nm_mpi_type_combiner_t dte_type;
-  /** whether committed or not */
-  int committed;
+  /** combiner of datatype elements */
+  nm_mpi_type_combiner_t combiner;
+  /** number of basic elements */
+  int elements;
   /** whether entirely contiguous */
   int is_contig;
   /** whether optimized or not */
@@ -230,21 +230,43 @@ typedef struct nm_mpi_datatype_s
   size_t size;
   /** number of references pointing to this type (active communications, handle) */
   int refcount;
-
-  /** number of basic elements */
-  int elements;
-  /** stride, for VECTOR type, in bytes */
-  int hstride;
-  /** array of indices, for INDEXED, STRUCT */
-  MPI_Aint *indices;
-  /** block_size, for VECTOR type */
-  size_t block_size;
-  /** array of blocklenghts */
-  int *blocklens;
-  /** old types */
-  struct nm_mpi_datatype_s**p_old_types;
-  /** old type for types with single inheritance */
-  struct nm_mpi_datatype_s*p_old_type;
+  /** whether committed or not */
+  int committed;
+  union
+  {
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
+    } RESIZED;
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
+    } CONTIGUOUS;
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
+      int hstride;
+      int blocklength;
+    } VECTOR;
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
+      struct nm_mpi_type_indexed_map_s
+      {
+	int blocklength;
+	MPI_Aint displacement;
+      } *p_map;
+    } INDEXED;
+    struct
+    {
+      struct nm_mpi_type_struct_map_s
+      {
+	struct nm_mpi_datatype_s*p_old_type;
+	int blocklength;
+	MPI_Aint displacement;
+      } *p_map;
+    } STRUCT;
+  };
 } nm_mpi_datatype_t;
 /* @} */
 

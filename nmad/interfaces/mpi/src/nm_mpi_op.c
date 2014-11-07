@@ -493,13 +493,13 @@ static void nm_mpi_op_bxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
   int i, _len = *len;
-  nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type);
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*type);
 
-  if ((dtype)->dte_type == MPI_COMBINER_CONTIGUOUS && ((dtype)->elements == 2))
+  if(p_datatype->combiner == MPI_COMBINER_CONTIGUOUS && p_datatype->elements == 2)
     {
-      MPI_Datatype oldtype = (dtype)->p_old_types[0]->id;
+      MPI_Datatype oldtype = p_datatype->CONTIGUOUS.p_old_type->id;
       /** Set the actual length */
-      _len = *len * (dtype)->elements;
+      _len = *len * p_datatype->elements;
       /** Perform the operation */
       switch (oldtype) 
 	{
@@ -535,9 +535,9 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 	  break;
 	}
     }
-  else if((dtype)->dte_type == MPI_COMBINER_NAMED && (dtype)->elements == 2)
+  else if(p_datatype->combiner == MPI_COMBINER_NAMED && p_datatype->elements == 2)
     {
-      _len = *len * (dtype)->elements;
+      _len = *len * p_datatype->elements;
       switch(*type)
 	{
 	case MPI_2DOUBLE_PRECISION: { DO_MAXLOC(double); break; }
@@ -549,7 +549,7 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
     }
   else
     {
-      fprintf(stderr, "type %d, elements %d\n",   (dtype)->dte_type, ((dtype)->elements));
+      fprintf(stderr, "type %d, elements %d\n", p_datatype->combiner, p_datatype->elements);
       ERROR("Datatype %d for MAXLOC Reduce operation", *type);
     }
 }
@@ -557,52 +557,51 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 static void nm_mpi_op_minloc(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
   int i, _len = *len;
-  nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type);
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*type);
 
-  if ((dtype)->dte_type == MPI_COMBINER_CONTIGUOUS && ((dtype)->elements == 2)) {
-    MPI_Datatype oldtype = (dtype)->p_old_types[0]->id;
-
-    /** Set the actual length */
-    _len = *len * (dtype)->elements;
-
-    /** Perform the operation */
-    switch (oldtype) {
+  if(p_datatype->combiner == MPI_COMBINER_CONTIGUOUS && p_datatype->elements == 2)
+    {
+      MPI_Datatype oldtype = p_datatype->CONTIGUOUS.p_old_type->id;
+      /** Set the actual length */
+      _len = *len * p_datatype->elements;
+      /** Perform the operation */
+      switch (oldtype) 
+	{
 	  /* todo: this only works for 'simple' types
 	   * Implement this for other types (eg. complex)
 	   */
-
 #define DO_MINLOC(__type__)						\
-	    __type__ *a = (__type__ *)inoutvec; __type__ *b = (__type__ *)invec; \
-	    for ( i=0; i<_len; i+=2 ) {					\
-		    if (a[i] == b[i])					\
-			    a[i+1] = tbx_min(a[i+1],b[i+1]);		\
-		    else if (a[i] > b[i]) {				\
-			    a[i]   = b[i];				\
-			    a[i+1] = b[i+1];				\
-		    }							\
-	    }
-
-  case MPI_CHAR             : { DO_MINLOC(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_MINLOC(unsigned char); break; }
-  case MPI_BYTE             : { DO_MINLOC(uint8_t); break; }
-  case MPI_SHORT            : { DO_MINLOC(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_MINLOC(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_MINLOC(int); break; }
-  case MPI_UNSIGNED         : { DO_MINLOC(unsigned); break; }
-  case MPI_LONG             : { DO_MINLOC(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_MINLOC(unsigned long); break; }
-  case MPI_FLOAT            : { DO_MINLOC(float); break; }
-  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MINLOC(double); break; }
-  case MPI_LONG_DOUBLE      : { DO_MINLOC(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_MINLOC(long long); break; }
-  case MPI_INTEGER4         : { DO_MINLOC(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_MINLOC(uint64_t); break; }
-    default:
-      ERROR("Datatype Contiguous(%d) for MINLOC Reduce operation", *type);
-      break;
+	  __type__ *a = (__type__ *)inoutvec; __type__ *b = (__type__ *)invec; \
+	  for ( i=0; i<_len; i+=2 ) {					\
+	    if (a[i] == b[i])						\
+	      a[i+1] = tbx_min(a[i+1],b[i+1]);				\
+	    else if (a[i] > b[i]) {					\
+	      a[i]   = b[i];						\
+	      a[i+1] = b[i+1];						\
+	    }								\
+	  }
+	case MPI_CHAR             : { DO_MINLOC(char); break; }
+	case MPI_UNSIGNED_CHAR    : { DO_MINLOC(unsigned char); break; }
+	case MPI_BYTE             : { DO_MINLOC(uint8_t); break; }
+	case MPI_SHORT            : { DO_MINLOC(short); break; }
+	case MPI_UNSIGNED_SHORT   : { DO_MINLOC(unsigned short); break; }
+	case MPI_INTEGER: case MPI_INT: { DO_MINLOC(int); break; }
+	case MPI_UNSIGNED         : { DO_MINLOC(unsigned); break; }
+	case MPI_LONG             : { DO_MINLOC(long); break; }
+	case MPI_UNSIGNED_LONG    : { DO_MINLOC(unsigned long); break; }
+	case MPI_FLOAT            : { DO_MINLOC(float); break; }
+	case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MINLOC(double); break; }
+	case MPI_LONG_DOUBLE      : { DO_MINLOC(long double); break; }
+	case MPI_LONG_LONG_INT    : { DO_MINLOC(long long); break; }
+	case MPI_INTEGER4         : { DO_MINLOC(uint32_t); break; }
+	case MPI_INTEGER8         : { DO_MINLOC(uint64_t); break; }
+	default:
+	  ERROR("Datatype Contiguous(%d) for MINLOC Reduce operation", *type);
+	  break;
+	}
     }
-  }
-  else {
-    ERROR("Datatype %d for MINLOC Reduce operation", *type);
-  }
+  else
+    {
+      ERROR("Datatype %d for MINLOC Reduce operation", *type);
+    }
 }

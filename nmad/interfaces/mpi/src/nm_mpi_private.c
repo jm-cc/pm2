@@ -67,6 +67,7 @@ int nm_mpi_check_tag(int tag)
 }
 
 
+#if 0
 
 /**
  * Packs into a NM connection data represented by a vector datatype.
@@ -200,6 +201,7 @@ static inline int nm_mpi_datatype_struct_unpack(nm_pack_cnx_t *connection, nm_mp
   return err;
 }
 
+#endif /* 0 */
 
 __PUK_SYM_INTERNAL
 int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm)
@@ -263,18 +265,20 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
     {
       nm_pack_cnx_t*connection = &(p_req->request_cnx);
       nm_begin_packing(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, connection);
-      if(p_datatype->dte_type == MPI_COMBINER_VECTOR)
+      /*
+      if(p_datatype->combiner == MPI_COMBINER_VECTOR)
 	{
 	  err = nm_mpi_datatype_vector_pack(connection, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if(p_datatype->dte_type == MPI_COMBINER_INDEXED) 
+      else if(p_datatype->combiner == MPI_COMBINER_INDEXED) 
 	{
 	  err = nm_mpi_datatype_indexed_pack(connection, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if(p_datatype->dte_type == MPI_COMBINER_STRUCT)
+      else if(p_datatype->combiner == MPI_COMBINER_STRUCT)
 	{
 	  err = nm_mpi_datatype_struct_pack(connection, p_req->buffer, p_datatype, p_req->count);
 	}
+      */
       if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
 	p_req->request_type = NM_MPI_REQUEST_PACK_SEND;
     }
@@ -319,7 +323,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
       if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
 	p_req->request_type = NM_MPI_REQUEST_RECV;
     }
-  else if(p_datatype->dte_type == MPI_COMBINER_VECTOR)
+  else if(p_datatype->combiner == MPI_COMBINER_VECTOR)
     {
       if(!p_datatype->is_optimized)
 	{
@@ -333,7 +337,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 	    p_req->request_type = NM_MPI_REQUEST_RECV;
 	}
     }
-  else if(p_datatype->dte_type == MPI_COMBINER_INDEXED)
+  else if(p_datatype->combiner == MPI_COMBINER_INDEXED)
     {
       if(!p_datatype->is_optimized)
 	{
@@ -347,7 +351,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
 	    p_req->request_type = NM_MPI_REQUEST_RECV;
 	}
     }
-  else if(p_datatype->dte_type == MPI_COMBINER_STRUCT)
+  else if(p_datatype->combiner == MPI_COMBINER_STRUCT)
     {
       if(!p_datatype->is_optimized)
 	{
@@ -397,21 +401,23 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
       nm_pack_cnx_t*connection = &(p_req->request_cnx);
       int err = NM_ESUCCESS;
       nm_begin_unpacking(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, connection);
-      if(p_datatype->dte_type == MPI_COMBINER_VECTOR)
+      /*
+      if(p_datatype->combiner == MPI_COMBINER_VECTOR)
 	{
 	  err = nm_mpi_datatype_vector_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if(p_datatype->dte_type == MPI_COMBINER_INDEXED)
+      else if(p_datatype->combiner == MPI_COMBINER_INDEXED)
 	{
 	  err = nm_mpi_datatype_indexed_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
 	}
-      else if(p_datatype->dte_type == MPI_COMBINER_STRUCT)
+      else if(p_datatype->combiner == MPI_COMBINER_STRUCT)
 	{
 	  err = nm_mpi_datatype_struct_unpack(connection, p_req, p_req->buffer, p_datatype, p_req->count);
 	}
       p_req->request_error = err;
       if(p_req->request_type != NM_MPI_REQUEST_ZERO)
 	p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
+      */
     }
   return p_req->request_error;
 }

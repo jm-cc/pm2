@@ -268,6 +268,14 @@ typedef struct nm_mpi_datatype_s
     } STRUCT;
   };
 } nm_mpi_datatype_t;
+
+/** filter used to serialize/deserialize/direct pack/unpack data from datatype */
+struct nm_mpi_datatype_filter_s
+{
+  void (*apply)(void*_status, void*data_ptr, int size);
+  void*_status;
+};
+
 /* @} */
 
 /* ********************************************************* */

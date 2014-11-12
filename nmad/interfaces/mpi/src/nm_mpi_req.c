@@ -146,11 +146,41 @@ int mpi_request_free(MPI_Request*request)
   return MPI_SUCCESS;
 }
 
-int mpi_waitsome(int incount, MPI_Request *array_of_requests, int *outcount, int *array_of_indices, MPI_Status *array_of_statuses)
+int mpi_waitsome(int incount, MPI_Request*array_of_requests, int*outcount, int*array_of_indices, MPI_Status*array_of_statuses)
 {
-  ERROR("MPI_Waitsome() not implemented.\n");
-#warning Implement MPI_Waitsome !
-  return MPI_ERR_UNKNOWN;
+  int count = 0;
+  while(count == 0)
+    {
+      int i;
+      int count_null = 0;
+      for(i = 0; i < incount; i++)
+	{
+	  int flag;
+	  nm_mpi_request_t*p_req = nm_mpi_request_get(array_of_requests[i]);
+	  if(p_req == NULL || p_req->request_type == NM_MPI_REQUEST_ZERO)
+	    {
+	      count_null++;
+	      continue;
+	    }
+	  int err = mpi_test(&array_of_requests[i], &flag, &array_of_statuses[i]);
+	  if(err != MPI_SUCCESS)
+	    {
+	      return err;
+	    }
+	  if(flag)
+	    {
+	      array_of_indices[count] = i;
+	      count++;
+	    }
+	}
+      if(count_null == incount)
+	{
+	  *outcount = MPI_UNDEFINED;
+	  return MPI_SUCCESS;
+	}
+    }
+  *outcount = count;
+  return MPI_SUCCESS;
 }
 
 int mpi_wait(MPI_Request*request, MPI_Status*status)
@@ -171,48 +201,39 @@ int mpi_wait(MPI_Request*request, MPI_Status*status)
   return err;
 }
 
-int mpi_waitall(int count, MPI_Request *array_of_requests, MPI_Status *array_of_statuses)
+int mpi_waitall(int count, MPI_Request*array_of_requests, MPI_Status*array_of_statuses)
 {
   int err = NM_ESUCCESS;
   int i;
-  if(array_of_statuses == MPI_STATUSES_IGNORE)
+  for(i = 0; i < count; i++)
     {
-      for (i = 0; i < count; i++)
+      err = mpi_wait(&(array_of_requests[i]),
+		     (array_of_statuses == MPI_STATUSES_IGNORE) ? MPI_STATUS_IGNORE : &array_of_statuses[i]);
+      if(err != NM_ESUCCESS)
 	{
-	  err = mpi_wait(&(array_of_requests[i]), MPI_STATUS_IGNORE);
-	  if(err != NM_ESUCCESS)
-	    goto out;
+	  break;
 	}
     }
-  else
-    {
-      for (i = 0; i < count; i++)
-	{
-	  err = mpi_wait(&(array_of_requests[i]), &(array_of_statuses[i]));
-	  if(err != NM_ESUCCESS)
-	    goto out;
-	}
-    }
- out:
   return err;
 }
 
-int mpi_waitany(int count, MPI_Request *array_of_requests, int *rqindex, MPI_Status *status)
+int mpi_waitany(int count, MPI_Request*array_of_requests, int*rqindex, MPI_Status*status)
 {
   int err = MPI_SUCCESS;
   for(;;)
     {
-      int flag, i;
+      int i;
       int count_null = 0;
       for(i = 0; i < count; i++)
 	{
+	  int flag;
 	  nm_mpi_request_t*p_req = nm_mpi_request_get(array_of_requests[i]);
 	  if(p_req == NULL || p_req->request_type == NM_MPI_REQUEST_ZERO)
 	    {
 	      count_null++;
 	      continue;
 	    }
-	  err = MPI_Test(&(array_of_requests[i]), &flag, status);
+	  err = mpi_test(&(array_of_requests[i]), &flag, status);
 	  if(flag)
 	    {
 	      *rqindex = i;

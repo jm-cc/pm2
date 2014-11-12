@@ -502,6 +502,9 @@ void nm_mpi_datatype_pack(void*dest_ptr, const void*src_ptr, nm_mpi_datatype_t*p
 
 void nm_mpi_datatype_unpack(const void*src_ptr, void*dest_ptr, nm_mpi_datatype_t*p_datatype, int count);
 
+void nm_mpi_datatype_copy(const void*src_buf, nm_mpi_datatype_t*p_src_type, int src_count,
+			  void*dest_buf, nm_mpi_datatype_t*p_dest_type, int dest_count);
+
 /* Reduce operation functionalities */
 
 /**

@@ -421,7 +421,7 @@ void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, 
   if(p_datatype->is_contig)
     {
       assert(p_datatype->lb == 0);
-      (*filter->apply)(filter->_status, data_ptr, count * p_datatype->size);
+      (*filter->apply)(filter->_status, (void*)data_ptr, count * p_datatype->size);
     }
   else
     {
@@ -516,6 +516,28 @@ void nm_mpi_datatype_unpack(const void*src_ptr, void*dest_ptr, nm_mpi_datatype_t
   struct nm_mpi_datatype_filter_memcpy_s status = { .pack_ptr = (void*)src_ptr };
   const struct nm_mpi_datatype_filter_s filter = { .apply = &nm_mpi_datatype_unpack_memcpy, &status };
   nm_mpi_datatype_filter_apply(&filter, (void*)dest_ptr, p_datatype, count);
+}
+
+/** copy data using datatype layout */
+__PUK_SYM_INTERNAL
+void nm_mpi_datatype_copy(const void*src_buf, nm_mpi_datatype_t*p_src_type, int src_count,
+			  void*dest_buf, nm_mpi_datatype_t*p_dest_type, int dest_count)
+{
+  if(p_src_type == p_dest_type && p_src_type->is_contig)
+    {
+      int i;
+      for(i = 0; i < src_count; i++)
+	{
+	  memcpy(dest_buf + i * p_dest_type->extent, src_buf + i * p_src_type->extent, p_src_type->size);
+	}
+    }
+  else
+    {
+      void*ptr = malloc(p_src_type->size * src_count);
+      nm_mpi_datatype_pack(ptr, src_buf, p_src_type, src_count);
+      nm_mpi_datatype_unpack(dest_buf, ptr, p_dest_type, dest_count);
+      free(ptr);
+    }
 }
 
 

@@ -92,6 +92,7 @@ static void nm_mpi_coll_wait(nm_mpi_request_t*p_req)
   nm_mpi_request_free(p_req);
 }
 
+
 /* ********************************************************* */
 
 int mpi_barrier(MPI_Comm comm)
@@ -155,8 +156,8 @@ int mpi_gather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf
       // copy local data for self
       if(sendbuf != MPI_IN_PLACE)
 	{
-	  memcpy(recvbuf + (nm_comm_rank(p_comm->p_comm) * recvcount * p_recv_datatype->extent),
-		 sendbuf, sendcount * p_send_datatype->extent);
+	  nm_mpi_datatype_copy(sendbuf, p_send_datatype, sendcount,
+			       recvbuf + (nm_comm_rank(p_comm->p_comm) * recvcount * p_recv_datatype->extent), p_send_datatype , sendcount);
 	}
       FREE_AND_SET_NULL(requests);
     }
@@ -195,8 +196,8 @@ int mpi_gatherv(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf
       // copy local data for self
       if(sendbuf != MPI_IN_PLACE)
 	{
-	  memcpy(recvbuf + (displs[nm_comm_rank(p_comm->p_comm)] * p_recv_datatype->extent),
-		 sendbuf, sendcount * p_send_datatype->extent);
+	  nm_mpi_datatype_copy(sendbuf, p_send_datatype, sendcount,
+			       recvbuf + (displs[nm_comm_rank(p_comm->p_comm)] * p_recv_datatype->extent), p_recv_datatype, recvcounts[nm_comm_rank(p_comm->p_comm)]);
 	}
       // free memory
       FREE_AND_SET_NULL(requests);
@@ -263,11 +264,11 @@ int mpi_scatter(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbu
 	  if(i == root) continue;
 	  nm_mpi_coll_wait(requests[i]);
 	}
-      // copy local data for itself
+      // copy local data for self
       if(sendbuf != MPI_IN_PLACE)
 	{
-	  memcpy(recvbuf, sendbuf + (nm_comm_rank(p_comm->p_comm) * sendcount * p_recv_datatype->extent),
-		 sendcount * p_send_datatype->extent);
+	  nm_mpi_datatype_copy(sendbuf + (nm_comm_rank(p_comm->p_comm) * sendcount * p_recv_datatype->extent), p_send_datatype, sendcount,
+			       recvbuf, p_recv_datatype, recvcount);
 	}
       FREE_AND_SET_NULL(requests);
     }
@@ -292,9 +293,8 @@ int mpi_alltoall(void* sendbuf, int sendcount, MPI_Datatype sendtype, void*recvb
     {
       if(i == nm_comm_rank(p_comm->p_comm))
 	{
-	  memcpy(recvbuf + (i * recvcount * p_recv_datatype->extent),
-		 sendbuf + (i * sendcount * p_send_datatype->extent),
-		 sendcount * p_send_datatype->extent);
+	  nm_mpi_datatype_copy(sendbuf + (i * sendcount * p_send_datatype->extent), p_send_datatype, sendcount,
+			       recvbuf + (i * recvcount * p_recv_datatype->extent), p_recv_datatype, recvcount);
 	}
       else
 	{
@@ -328,9 +328,8 @@ int mpi_alltoallv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sen
     {
       if(i == nm_comm_rank(p_comm->p_comm))
 	{
-	  memcpy(recvbuf + (rdispls[i] * p_recv_datatype->extent),
-		 sendbuf + (sdispls[i] * p_send_datatype->extent),
-		 sendcounts[i] * p_send_datatype->extent);
+	  nm_mpi_datatype_copy(sendbuf + (sdispls[i] * p_send_datatype->extent), p_send_datatype, sendcounts[i],
+			       recvbuf + (rdispls[i] * p_recv_datatype->extent), p_recv_datatype, recvcounts[i]);
 	}
       else
 	{
@@ -453,9 +452,9 @@ int mpi_reduce_scatter(void*sendbuf, void*recvbuf, int*recvcounts, MPI_Datatype 
 	{
 	  nm_mpi_coll_wait(requests[i]);
 	}
-    // copy local data for itself
-    memcpy(recvbuf, reducebuf, recvcounts[0] * p_datatype->extent);
-    FREE_AND_SET_NULL(requests);
+      // copy local data for self
+      memcpy(recvbuf, reducebuf, recvcounts[0] * p_datatype->extent);
+      FREE_AND_SET_NULL(requests);
     }
   else 
     {

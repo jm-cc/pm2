@@ -149,6 +149,11 @@ int mpi_request_free(MPI_Request*request)
 int mpi_waitsome(int incount, MPI_Request*array_of_requests, int*outcount, int*array_of_indices, MPI_Status*array_of_statuses)
 {
   int count = 0;
+  if(incount <= 0)
+    {
+      *outcount = MPI_UNDEFINED;
+      return MPI_SUCCESS;
+    }
   while(count == 0)
     {
       int i;
@@ -165,6 +170,7 @@ int mpi_waitsome(int incount, MPI_Request*array_of_requests, int*outcount, int*a
 	  int err = mpi_test(&array_of_requests[i], &flag, &array_of_statuses[i]);
 	  if(err != MPI_SUCCESS)
 	    {
+	      *outcount = MPI_UNDEFINED;
 	      return err;
 	    }
 	  if(flag)
@@ -272,7 +278,7 @@ int mpi_test(MPI_Request *request, int *flag, MPI_Status *status)
     { /* err == -NM_EAGAIN */
       *flag = 0;
     }
-  return err;
+  return MPI_SUCCESS;
 }
 
 int mpi_testany(int count, MPI_Request*array_of_requests, int*rqindex, int*flag, MPI_Status*status)
@@ -324,12 +330,12 @@ int mpi_testall(int count, MPI_Request*array_of_requests, int*flag, MPI_Status*s
 	  count_inactive++;
 	  continue;
 	}
-      err = nm_mpi_request_test(p_req);
-      if(err != NM_ESUCCESS)
+      int rc = nm_mpi_request_test(p_req);
+      if(rc != NM_ESUCCESS)
 	{
 	  /* at least one request is not completed */
 	  *flag = 0;
-	  return err;
+	  return MPI_SUCCESS;
 	}
     }
   /* all the requests are completed */
@@ -476,7 +482,7 @@ void nm_mpi_request_complete(nm_mpi_request_t*p_req)
 __PUK_SYM_INTERNAL
 int nm_mpi_request_test(nm_mpi_request_t*p_req)
  {
-  int err = MPI_SUCCESS;
+  int err = NM_ESUCCESS;
   if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
       err = nm_sr_rtest(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);

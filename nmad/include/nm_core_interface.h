@@ -236,7 +236,7 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
  */
 int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
 
-/** probe unexpected packet */
+/** probe unexpected packet, check matching for (packet_tag & tag_mask) == tag */
 int nm_core_iprobe(struct nm_core*p_core,
 		   struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
 		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size);

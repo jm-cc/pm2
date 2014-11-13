@@ -20,11 +20,6 @@
 
 #include <nm_private.h>
 
-static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
-			       nm_len_t len, nm_len_t chunk_offset);
-
-static void init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
-				       nm_len_t len, nm_len_t chunk_offset);
 
 static inline void nm_so_pw_store_pending_large_recv(struct nm_pkt_wrap*p_pw, struct nm_gate*p_gate)
 {
@@ -71,94 +66,66 @@ static void nm_so_post_multi_rtr(struct nm_gate*p_gate, struct nm_pkt_wrap *p_pw
 
 /***************************************/
 
-/** Process a rdv request with a matching unpack already posted
+/** Process a received rendez-vous request with a matching unpack already posted
  */
 int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
                       nm_len_t len, nm_len_t chunk_offset)
 {
+  struct nm_gate*p_gate = p_unpack->p_gate;
   if(p_unpack->status & NM_UNPACK_TYPE_CONTIGUOUS)
     {
       /* The final destination of the data is a contiguous buffer */
-      init_large_contiguous_recv(p_core, p_unpack, len, chunk_offset);
+      struct nm_pkt_wrap *p_pw = NULL;
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      p_pw->p_unpack = p_unpack;
+      nm_so_pw_add_raw(p_pw, p_unpack->data + chunk_offset, len, chunk_offset);
+      nm_so_pw_store_pending_large_recv(p_pw, p_gate);
     }
   else if(p_unpack->status & NM_UNPACK_TYPE_IOV)
     {
-      /* The final destination of the data is an iov */
-      init_large_iov_recv(p_core, p_unpack, len, chunk_offset);
+      /* The received rdv describes a fragment (that may span across multiple entries of the recv-side iovec) */
+      struct iovec*iov      = p_unpack->data;
+      int pending_len = len;
+      nm_len_t offset = 0;
+      int i = 0;
+      /* find the iovec entry for the given chunk_offset */
+      while(offset + iov[i].iov_len <= chunk_offset)
+	{
+	  offset += iov[i].iov_len;
+	  i++;
+	}
+      /* store pending large recv for processing later  */
+      struct nm_pkt_wrap *p_pw = NULL;
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      p_pw->p_unpack = p_unpack;
+      nm_len_t entry_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry */
+      while(pending_len > 0)
+	{
+	  const nm_len_t entry_len = (pending_len > (iov[i].iov_len - entry_offset)) ? (iov[i].iov_len - entry_offset) : pending_len;
+	  nm_so_pw_add_raw(p_pw, iov[i].iov_base + entry_offset, entry_len, 0);
+	  pending_len -= entry_len;
+	  i++;
+	  entry_offset = 0;
+	}
+      p_pw->chunk_offset = chunk_offset;
+      nm_so_pw_store_pending_large_recv(p_pw, p_gate);
     }
   else if(p_unpack->status & NM_UNPACK_TYPE_DATATYPE)
     {
       /* The final destination of the data is a datatype */
       padico_fatal("nmad: rdv success for datatype.");
     }
+  /* enqueue in the list, and immediately process one item 
+   * (not necessarily the one we enqueued) */
+  nm_so_process_large_pending_recv(p_gate);
   return NM_ESUCCESS;
 }
 
-/* ** IOV ************************************************** */
 
-/** The received rdv describes a fragment 
- * (that may span across multiple entries of the recv-side iovec)
+/** Process postponed recv requests
  */
-static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-			       nm_len_t len, nm_len_t chunk_offset)
-{
-  struct iovec*iov      = p_unpack->data;
-  struct nm_gate*p_gate = p_unpack->p_gate;
-  int pending_len = len;
-  nm_len_t offset = 0;
-  int i = 0;
-  /* find the iovec entry for the given chunk_offset */
-  while(offset + iov[i].iov_len <= chunk_offset)
-    {
-      offset += iov[i].iov_len;
-      i++;
-    }
-  /* store pending large recv for processing later  */
-  struct nm_pkt_wrap *p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-  p_pw->p_unpack = p_unpack;
-  nm_len_t entry_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry */
-  while(pending_len > 0)
-    {
-      const nm_len_t entry_len = (pending_len > (iov[i].iov_len - entry_offset)) ? (iov[i].iov_len - entry_offset) : pending_len;
-      nm_so_pw_add_raw(p_pw, iov[i].iov_base + entry_offset, entry_len, 0);
-      pending_len -= entry_len;
-      i++;
-      entry_offset = 0;
-    }
-  p_pw->chunk_offset = chunk_offset;
-  nm_so_pw_store_pending_large_recv(p_pw, p_gate);
-  
-  /* enqueue in the list, and immediately process one item 
-   * (not necessarily the one we enqueued) */
-  nm_so_process_large_pending_recv(p_gate);
-
-  return NM_ESUCCESS;
-}
-
-/* ** Contiguous ******************************************* */
-
-
-static void init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-				       nm_len_t len, nm_len_t chunk_offset)
-{
-  struct nm_gate*p_gate = p_unpack->p_gate;
-  struct nm_pkt_wrap *p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-  p_pw->p_unpack = p_unpack;
-  nm_so_pw_add_raw(p_pw, p_unpack->data + chunk_offset, len, chunk_offset);
-  nm_so_pw_store_pending_large_recv(p_pw, p_gate);
-
-  /* enqueue in the list, and immediately process one item 
-   * (not necessarily the one we enqueued) */
-  nm_so_process_large_pending_recv(p_gate);
-
-}
-
-
 int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 {
-  /* ** Process postponed recv requests */
   if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {
       struct nm_pkt_wrap *p_large_pw = nm_l2so(p_gate->pending_large_recv.next);
@@ -174,8 +141,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	  if(err == NM_ESUCCESS)
 	    {
 	      tbx_fast_list_del(p_gate->pending_large_recv.next);
-	      nm_so_post_multi_rtr(p_gate, p_large_pw,
-				   p_large_pw->chunk_offset, nb_chunks, chunks);
+	      nm_so_post_multi_rtr(p_gate, p_large_pw, p_large_pw->chunk_offset, nb_chunks, chunks);
 	    }
 	}
       else if(p_unpack->status & NM_UNPACK_TYPE_IOV)

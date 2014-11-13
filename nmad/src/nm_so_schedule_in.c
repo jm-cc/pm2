@@ -29,6 +29,9 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
 			   const struct nm_so_ctrl_rdv_header*h, struct nm_pkt_wrap *p_pw);
 
+/* ********************************************************* */
+/* ** unexpected/matching */
+
 /** a chunk of unexpected message to be stored */
 struct nm_unexpected_s
 {
@@ -142,6 +145,9 @@ static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate
     }
   return NULL;
 }
+
+/* ********************************************************* */
+
 
 /** copy received data to its final destination */
 static void nm_so_copy_data(struct nm_unpack_s*p_unpack, nm_len_t chunk_offset, const void *ptr, nm_len_t len)
@@ -608,7 +614,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_so_ctrl
  * @returns the number of processed bytes in global header, 
  *          -1 if done (last chunk)
  */
-int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate)
+static int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate)
 {
   int rc = 0;
   const nm_proto_t proto_id = (*(nm_proto_t *)ptr) & NM_PROTO_ID_MASK;

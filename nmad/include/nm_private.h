@@ -151,8 +151,6 @@ TBX_INTERNAL int nm_so_process_complete_send(struct nm_core *p_core, struct nm_p
 TBX_INTERNAL int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap *p_pw);
 
 
-extern int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate);
-
 /** Compute the cumulated size of an iovec.
  */
 static inline int nm_so_iov_len(const struct iovec *iov, int nb_entries)

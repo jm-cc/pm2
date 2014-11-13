@@ -14,7 +14,7 @@ TESTS := \
 all: buildlam
 
 buildlam:
-	( cd ./lamtests ; ./configure ; make -k )
+	( cd ./lamtests ; ./configure 'CFLAGS=-g' ; make -k )
 
 run:
 	@( for t in $(TESTS); do                           \

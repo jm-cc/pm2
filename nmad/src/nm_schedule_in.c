@@ -192,7 +192,6 @@ void nm_drv_refill_recv(struct nm_drv*p_drv)
 
 void nm_drv_post_recv(struct nm_drv*p_drv)
 {
-  struct nm_core *p_core = p_drv->p_core;
   struct nm_pkt_wrap*p_pw = NULL;
   do
     {

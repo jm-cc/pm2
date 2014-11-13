@@ -169,7 +169,7 @@ static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
 	{
 	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE);
 	}
-      NM_DISPF("# nmad: aggreg- max_small = %d\n", nm_max_small);
+      NM_DISPF("# nmad: aggreg- max_small = %lu\n", nm_max_small);
     }
 
   if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)

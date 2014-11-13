@@ -210,7 +210,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
     }
   else if(p_unpack->cumulated_len > p_unpack->expected_len)
     {
-      fprintf(stderr, "# nmad: received more data than expected in unpack (unpacked = %d; expected = %d; chunk = %d).\n",
+      fprintf(stderr, "# nmad: received more data than expected in unpack (unpacked = %lu; expected = %lu; chunk = %lu).\n",
 	      p_unpack->cumulated_len, p_unpack->expected_len, chunk_len);
       abort();
     }
@@ -223,7 +223,7 @@ static inline void nm_so_data_flags_decode(struct nm_unpack_s*p_unpack, uint8_t 
   const nm_len_t chunk_end = chunk_offset + chunk_len;
   if(chunk_end > p_unpack->expected_len)
     {
-      fprintf(stderr, "# nmad: received more data than expected (received = %d; expected = %d).\n",
+      fprintf(stderr, "# nmad: received more data than expected (received = %lu; expected = %lu).\n",
 	      chunk_offset + chunk_len, p_unpack->expected_len);
       abort();
     }
@@ -252,9 +252,9 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
   nm_unexpected_mem_size++;
   if(nm_unexpected_mem_size > 32*1024)
     {
-      fprintf(stderr, "nmad: WARNING- %d unexpected chunks allocated.\n", (int)nm_unexpected_mem_size);
+      fprintf(stderr, "nmad: WARNING- %lu unexpected chunks allocated.\n", nm_unexpected_mem_size);
       if(nm_unexpected_mem_size > 64*1024)
-	TBX_FAILUREF("nmad: FATAL- %d unexpected chunks allocated; giving up.\n", (int)nm_unexpected_mem_size);
+	TBX_FAILUREF("nmad: FATAL- %lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
     }
 #warning Paulette: lock
   tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
@@ -577,11 +577,11 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_so_ctrl
 	  return;
 	}
     }
-  fprintf(stderr, "nmad: FATAL- cannot find matching packet for received RTR: seq = %d; offset = %d- dumping pending large packets\n", seq, chunk_offset);
+  fprintf(stderr, "nmad: FATAL- cannot find matching packet for received RTR: seq = %d; offset = %lu- dumping pending large packets\n", seq, chunk_offset);
   tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
       const struct nm_pack_s*p_pack = p_large_pw->completions[0].data.contrib.p_pack;
-      fprintf(stderr, "  packet- seq = %d; chunk_offset = %d\n", p_pack->seq, p_large_pw->chunk_offset);
+      fprintf(stderr, "  packet- seq = %d; chunk_offset = %lu\n", p_pack->seq, p_large_pw->chunk_offset);
     }
   abort();
 }

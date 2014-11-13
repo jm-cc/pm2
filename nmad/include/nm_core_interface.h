@@ -115,8 +115,6 @@ typedef nm_status_t nm_so_flag_t;
 #define NM_UNPACK_TYPE_IOV           ((nm_so_flag_t)0x0200)
 /** flag: unpack is a datatype */
 #define NM_UNPACK_TYPE_DATATYPE      ((nm_so_flag_t)0x0400)
-/* flag: unpack datatype through a temporary buffer */
-#define NM_UNPACK_TYPE_COPY_DATATYPE ((nm_so_flag_t)0x0800)
 
 #define NM_PACK_TYPE_CONTIGUOUS ((nm_so_flag_t)0x0100)
 #define NM_PACK_TYPE_IOV        ((nm_so_flag_t)0x0200)

@@ -84,7 +84,7 @@ void nm_pw_contrib_complete(struct nm_pkt_wrap*p_pw, struct nm_pw_completion_s*p
     }
   else if(p_pack->done > p_pack->len)
     { 
-      TBX_FAILUREF("more bytes sent than posted (should have been = %d; actually sent = %d)\n",
+      TBX_FAILUREF("more bytes sent than posted (should have been = %lu; actually sent = %lu)\n",
 		   p_pack->len, p_pack->done);
     }
 }
@@ -200,7 +200,6 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
  */
 void nm_drv_post_send(struct nm_drv *p_drv)
 {
-  struct nm_core *p_core = p_drv->p_core;
   /* post new requests	*/
   nmad_lock_assert();
   struct nm_pkt_wrap*p_pw = NULL;

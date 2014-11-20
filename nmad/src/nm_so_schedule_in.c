@@ -522,12 +522,13 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
   const nm_len_t chunk_offset = h->chunk_offset;
   if(p_unpack)
     {
+      assert(p_unpack->p_gate != NULL);
       nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
-      struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_gate, .chunk_offset = chunk_offset };
+      struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
       nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
       /* enqueue chunks in the list, and immediately process one item 
        * (not necessarily the one we enqueued) */
-      nm_so_process_large_pending_recv(p_gate);
+      nm_so_process_large_pending_recv(p_unpack->p_gate);
     }
   else
     {

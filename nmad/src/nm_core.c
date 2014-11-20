@@ -103,7 +103,7 @@ int nm_schedule(struct nm_core *p_core)
 
   return NM_ESUCCESS;
 #else  /* NMAD_POLL */
-  piom_check_polling(PIOM_POLL_WHEN_FORCED);
+  piom_check_polling(PIOM_POLL_AT_IDLE);
   return 0;
 #endif /* NMAD_POLL */
 }
@@ -160,6 +160,16 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
 	"  </puk:component>"
 	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
 	"</puk:composite>";
+      static const char ib_lz4[] = 
+	"<puk:composite id=\"nm:ib-lz4\">"
+	"  <puk:component id=\"0\" name=\"NewMad_ibverbs_lz4\"/>"
+	"  <puk:component id=\"1\" name=\"NewMad_ibverbs_lz4\"/>"
+	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
+	"  </puk:component>"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
+	"</puk:composite>";
       static const char ib_rcache[] = 
 	"<puk:composite id=\"nm:ib-rcache\">"
 	"  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
@@ -177,6 +187,11 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
 	    {
 	      ib_drv = ib_rcache;
 	      NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
+	    }
+	  else if(getenv("NMAD_IBVERBS_LZ4") != NULL)
+	    {
+	      ib_drv = ib_lz4;
+	      NM_DISPF("# nmad ibverbs: LZ4 forced by environment.\n");
 	    }
 	  else
 	    {

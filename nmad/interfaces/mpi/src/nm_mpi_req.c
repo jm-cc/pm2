@@ -67,14 +67,6 @@ nm_mpi_request_t*nm_mpi_request_alloc(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_request_free(nm_mpi_request_t*p_req)
 {
-  if(p_req->contig_buffer != NULL)
-    {
-      FREE_AND_SET_NULL(p_req->contig_buffer);
-    }
-  if(p_req->request_ptr != NULL)
-    {
-      FREE_AND_SET_NULL(p_req->request_ptr);
-    }
   /* set request to zero to help debug */
   p_req->request_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_handle_request_free(&nm_mpi_requests, p_req);
@@ -99,7 +91,7 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
   status->MPI_TAG = p_req->user_tag;
   status->MPI_ERROR = p_req->request_error;
 
-  if((p_req->request_type == NM_MPI_REQUEST_RECV) || (p_req->request_type == NM_MPI_REQUEST_PACK_RECV))
+  if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
       if(p_req->request_source == MPI_ANY_SOURCE)
 	{
@@ -401,10 +393,6 @@ int mpi_cancel(MPI_Request *request)
       ERROR("Request type %d incorrect\n", p_req->request_type);
     }
   p_req->request_type = NM_MPI_REQUEST_CANCELLED;
-  if(p_req->contig_buffer != NULL)
-    {
-      FREE_AND_SET_NULL(p_req->contig_buffer);
-    }
   return err;
 }
 
@@ -491,16 +479,6 @@ int nm_mpi_request_test(nm_mpi_request_t*p_req)
     {
       err = nm_sr_stest(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
     }
-  else if(p_req->request_type == NM_MPI_REQUEST_PACK_RECV)
-    {
-      nm_pack_cnx_t *connection = &(p_req->request_cnx);
-      err = nm_test_end_unpacking(connection);
-    }
-  else if(p_req->request_type == NM_MPI_REQUEST_PACK_SEND)
-    {
-      nm_pack_cnx_t *connection = &(p_req->request_cnx);
-      err = nm_test_end_packing(connection);
-    }
   else
     {
      ERROR("Request type %d invalid\n", p_req->request_type);
@@ -515,36 +493,10 @@ int nm_mpi_request_wait(nm_mpi_request_t*p_req)
   if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
       err = nm_sr_rwait(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
-      if(!p_req->p_datatype->is_contig && p_req->contig_buffer) 
-	{
-	  nm_mpi_datatype_unpack(p_req->contig_buffer, p_req->buffer, p_req->p_datatype, p_req->count);
-	  if(p_req->request_persistent_type == NM_MPI_REQUEST_ZERO)
-	    {
-	      FREE_AND_SET_NULL(p_req->contig_buffer);
-	      p_req->request_type = NM_MPI_REQUEST_ZERO;
-	    }
-	}
     }
   else if(p_req->request_type == NM_MPI_REQUEST_SEND) 
     {
       err = nm_sr_swait(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
-      if(p_req->request_persistent_type == NM_MPI_REQUEST_ZERO)
-	{
-	  if(p_req->contig_buffer != NULL)
-	    {
-	      FREE_AND_SET_NULL(p_req->contig_buffer);
-	    }
-	}
-    }
-  else if(p_req->request_type == NM_MPI_REQUEST_PACK_RECV)
-    {
-      nm_pack_cnx_t *connection = &(p_req->request_cnx);
-      err = nm_end_unpacking(connection);
-    }
-  else if(p_req->request_type == NM_MPI_REQUEST_PACK_SEND)
-    {
-      nm_pack_cnx_t *connection = &(p_req->request_cnx);
-      err = nm_end_packing(connection);
     }
   else
     {

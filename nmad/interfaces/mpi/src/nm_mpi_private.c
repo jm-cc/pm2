@@ -66,48 +66,17 @@ int nm_mpi_check_tag(int tag)
   return tag;
 }
 
-/** status for nm_mpi_datatype_*_nmpack to stream a datatype to/from nmad pack interface */
-struct nm_mpi_datatype_filter_nmpack_s
-{
-  nm_pack_cnx_t*cnx;
-};
-/** pack data to memory */
-static void nm_mpi_datatype_pack_nmpack(void*_status, void*data_ptr, int size)
-{
-  struct nm_mpi_datatype_filter_nmpack_s*status = _status;
-  nm_pack(status->cnx, data_ptr, size);
-}
-/** unpack data from memory */
-static void nm_mpi_datatype_unpack_nmpack(void*_status, void*data_ptr, int size)
-{
-  struct nm_mpi_datatype_filter_nmpack_s*status = _status;
-  nm_unpack(status->cnx, data_ptr, size);
-}
-
-
 __PUK_SYM_INTERNAL
 int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_comm)
 {
-  nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   int err = MPI_SUCCESS;
   nm_gate_t p_gate = nm_mpi_communicator_get_gate(p_comm, dest);
   if(p_gate == NULL)
     {
       TBX_FAILUREF("Cannot find rank %d in comm %p.\n", dest, p_comm);
-      MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
   p_req->gate = p_gate;
-
-  if(p_datatype->is_contig == 1)
-    {
-      /* nothing to do */
-    }
-  else 
-    {
-      p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-      nm_mpi_datatype_pack(p_req->contig_buffer, p_req->buffer, p_datatype, p_req->count);
-    }
   return err;
 }
 
@@ -119,40 +88,29 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
   nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->refcount++;
-  if(p_datatype->is_contig || !(p_datatype->is_optimized))
+  nm_session_t p_session = nm_comm_get_session(p_req->p_comm->p_comm);
+  struct nm_data_s data;
+  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = p_req->buffer, .p_datatype = p_req->p_datatype, .count = p_req->count });
+  nm_sr_send_init(p_session, &(p_req->request_nmad));
+  nm_sr_send_pack_data(p_session, &(p_req->request_nmad), &data);
+  switch(p_req->communication_mode)
     {
-      void *buffer = (p_datatype->is_contig == 1) ? p_req->buffer : p_req->contig_buffer;
-      switch(p_req->communication_mode)
-	{
-	case NM_MPI_MODE_IMMEDIATE:
-	  err = nm_sr_isend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, buffer,
-			    p_req->count * p_datatype->size, &(p_req->request_nmad));
-	  break;
-	case NM_MPI_MODE_READY:
-	  err = nm_sr_rsend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, buffer,
-			    p_req->count * p_datatype->size, &(p_req->request_nmad));
-	  break;
-	case NM_MPI_MODE_SYNCHRONOUS:
-	  err = nm_sr_issend(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, buffer,
-			     p_req->count * p_datatype->size, &(p_req->request_nmad));
-	  break;
-	default:
-	  ERROR("madmpi: unkown mode %d for isend", p_req->communication_mode);
-	  break;
-	}
-      if(p_req->request_type != NM_MPI_REQUEST_ZERO)
-	p_req->request_type = NM_MPI_REQUEST_SEND;
+    case NM_MPI_MODE_IMMEDIATE:
+      err = nm_sr_send_isend(p_session, &(p_req->request_nmad), p_req->gate, nm_tag);
+      break;
+    case NM_MPI_MODE_READY:
+      err = nm_sr_send_rsend(p_session, &(p_req->request_nmad), p_req->gate, nm_tag);
+      break;
+    case NM_MPI_MODE_SYNCHRONOUS:
+      err = nm_sr_send_issend(p_session, &(p_req->request_nmad), p_req->gate, nm_tag);
+      break;
+    default:
+      ERROR("madmpi: unkown mode %d for isend", p_req->communication_mode);
+      break;
     }
-  else
-    {
-      nm_pack_cnx_t*cnx = &(p_req->request_cnx);
-      nm_begin_packing(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, cnx);
-      struct nm_mpi_datatype_filter_nmpack_s status = { .cnx = cnx };
-      const struct nm_mpi_datatype_filter_s filter = { .apply = &nm_mpi_datatype_pack_nmpack, &status };
-      nm_mpi_datatype_filter_apply(&filter, (void*)p_req->buffer, p_datatype, p_req->count);
-      if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
-	p_req->request_type = NM_MPI_REQUEST_PACK_SEND;
-    }
+  p_req->request_error = err;
+  if(p_req->request_type != NM_MPI_REQUEST_ZERO)
+    p_req->request_type = NM_MPI_REQUEST_SEND;
   return err;
 }
 
@@ -172,7 +130,6 @@ int nm_mpi_isend(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *p_com
 __PUK_SYM_INTERNAL
 int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm)
 {
-  nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   if(tbx_unlikely(source == MPI_ANY_SOURCE)) 
     {
       p_req->gate = NM_ANY_GATE;
@@ -183,31 +140,11 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
       if(tbx_unlikely(p_req->gate == NULL))
 	{
 	  TBX_FAILUREF("Cannot find rank %d in comm %p\n", source, p_comm);
-	  MPI_NMAD_LOG_OUT();
 	  return MPI_ERR_INTERN;
 	}
     }
   p_req->request_source = source;
-
-  if(p_datatype->is_contig == 1)
-    {
-      if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
-	p_req->request_type = NM_MPI_REQUEST_RECV;
-    }
-  else
-    {
-      if(!p_datatype->is_optimized)
-	{
-	  p_req->contig_buffer = malloc(p_req->count * p_datatype->size);
-	  if(p_req->contig_buffer == NULL)
-	    {
-	      ERROR("Cannot allocate memory with size %ld to receive vector type\n", (long)(p_req->count * p_datatype->size));
-	      return MPI_ERR_INTERN;
-	    }
-	  if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
-	    p_req->request_type = NM_MPI_REQUEST_RECV;
-	}
-    }
+  p_req->request_type = NM_MPI_REQUEST_RECV;
   return MPI_SUCCESS;
 }
 
@@ -221,30 +158,14 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->refcount++;
   nm_session_t p_session = nm_comm_get_session(p_req->p_comm->p_comm);
-  if(p_datatype->is_contig || !(p_datatype->is_optimized))
-    {
-      void *buffer = (p_datatype->is_contig == 1) ? p_req->buffer : p_req->contig_buffer;
-      nm_sr_recv_init(p_session, &(p_req->request_nmad));
-      nm_sr_recv_unpack_contiguous(p_session, &(p_req->request_nmad), buffer, p_req->count * p_datatype->size);
-      const int err = nm_sr_recv_irecv(p_session, &(p_req->request_nmad), p_req->gate, nm_tag, tag_mask);
-      p_req->request_error = err;
-      if(p_datatype->is_contig)
-	{
-	  MPI_NMAD_TRACE("Calling irecv_start for contiguous data\n");
-	  if(p_req->request_type != NM_MPI_REQUEST_ZERO) p_req->request_type = NM_MPI_REQUEST_RECV;
-	}
-    }
-  else
-    {
-      nm_pack_cnx_t*cnx = &(p_req->request_cnx);
-      int err = NM_ESUCCESS;
-      nm_begin_unpacking(nm_comm_get_session(p_req->p_comm->p_comm), p_req->gate, nm_tag, cnx);
-      struct nm_mpi_datatype_filter_nmpack_s status = { .cnx = cnx };
-      const struct nm_mpi_datatype_filter_s filter = { .apply = &nm_mpi_datatype_unpack_nmpack, &status };
-      nm_mpi_datatype_filter_apply(&filter, (void*)p_req->buffer, p_datatype, p_req->count);
-      if(p_req->request_type != NM_MPI_REQUEST_ZERO)
-	p_req->request_type = NM_MPI_REQUEST_PACK_RECV;
-    }
+  struct nm_data_s data;
+  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = p_req->buffer, .p_datatype = p_req->p_datatype, .count = p_req->count });
+  nm_sr_recv_init(p_session, &(p_req->request_nmad));
+  nm_sr_recv_unpack_data(p_session, &(p_req->request_nmad), &data);
+  const int err = nm_sr_recv_irecv(p_session, &(p_req->request_nmad), p_req->gate, nm_tag, tag_mask);
+  p_req->request_error = err;
+  if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
+    p_req->request_type = NM_MPI_REQUEST_RECV;
   return p_req->request_error;
 }
 

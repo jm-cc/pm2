@@ -41,7 +41,6 @@ NM_MPI_ALIAS(MPI_Type_ub,             mpi_type_ub);
 NM_MPI_ALIAS(MPI_Type_create_resized, mpi_type_create_resized);
 NM_MPI_ALIAS(MPI_Type_commit,         mpi_type_commit);
 NM_MPI_ALIAS(MPI_Type_free,           mpi_type_free);
-NM_MPI_ALIAS(MPI_Type_optimized,      mpi_type_optimized);
 NM_MPI_ALIAS(MPI_Type_contiguous,     mpi_type_contiguous);
 NM_MPI_ALIAS(MPI_Type_vector,         mpi_type_vector);
 NM_MPI_ALIAS(MPI_Type_hvector,        mpi_type_hvector);
@@ -221,7 +220,6 @@ int mpi_type_commit(MPI_Datatype *datatype)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
   p_datatype->committed = 1;
-  p_datatype->is_optimized = 0;
   return MPI_SUCCESS;
 }
 
@@ -239,13 +237,6 @@ int mpi_type_free(MPI_Datatype *datatype)
       nm_mpi_datatype_free(p_datatype);
       return MPI_SUCCESS;
     }
-}
-
-int mpi_type_optimized(MPI_Datatype *datatype, int optimized)
-{
-  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
-  p_datatype->is_optimized = 0;
-  return MPI_SUCCESS;
 }
 
 int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
@@ -421,7 +412,7 @@ void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, 
   if(p_datatype->is_contig)
     {
       assert(p_datatype->lb == 0);
-      (*filter->apply)(filter->_status, (void*)data_ptr, count * p_datatype->size);
+      (*filter->apply)((void*)data_ptr, count * p_datatype->size, filter->_status);
     }
   else
     {
@@ -476,20 +467,28 @@ void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, 
     }
 }
 
+__PUK_SYM_INTERNAL
+void nm_data_mpi_datatype_traversal(void*_content, nm_data_apply_t apply, void*_context)
+{
+  const struct nm_data_mpi_datatype_s*p_content = _content;
+  const struct nm_mpi_datatype_filter_s filter = { .apply = apply, ._status = _context };
+  nm_mpi_datatype_filter_apply(&filter, p_content->ptr, p_content->p_datatype, p_content->count);
+}
+
 /** status for nm_mpi_datatype_*_memcpy */
 struct nm_mpi_datatype_filter_memcpy_s
 {
   void*pack_ptr; /**< pointer on packed data in memory */
 };
 /** pack data to memory */
-static void nm_mpi_datatype_pack_memcpy(void*_status, void*data_ptr, int size)
+static void nm_mpi_datatype_pack_memcpy(void*data_ptr, nm_len_t size, void*_status)
 {
   struct nm_mpi_datatype_filter_memcpy_s*status = _status;
   memcpy(status->pack_ptr, data_ptr, size);
   status->pack_ptr += size;
 }
 /** unpack data from memory */
-static void nm_mpi_datatype_unpack_memcpy(void*_status, void*data_ptr, int size)
+static void nm_mpi_datatype_unpack_memcpy(void*data_ptr, nm_len_t size, void*_status)
 {
   struct nm_mpi_datatype_filter_memcpy_s*status = _status;
   memcpy(data_ptr, status->pack_ptr, size);

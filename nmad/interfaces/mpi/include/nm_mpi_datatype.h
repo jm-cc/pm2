@@ -111,19 +111,6 @@ int MPI_Type_commit(MPI_Datatype *datatype);
 int MPI_Type_free(MPI_Datatype *datatype);
 
 /**
- * This function does not belong to the MPI standard:
- * Marks the datatype object associated with datatype as being
- * optimized, i.e the pack interface can be used for communications
- * requests using that type, instead of copying the data into a
- * contiguous buffer. 
- * @param datatype datatype that is set as optimised or not
- * @param optimized specified if the datatype should be marked as optimised or not
- * @return MPI status
- */
-int MPI_Type_optimized(MPI_Datatype *datatype,
-                       int optimized);
-
-/**
  * Constructs a typemap consisting of the replication of a datatype
  * into contiguous locations.
  * @param count replication count

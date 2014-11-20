@@ -128,8 +128,6 @@ typedef int nm_mpi_request_type_t;
 #define NM_MPI_REQUEST_ZERO      ((nm_mpi_request_type_t)0)
 #define NM_MPI_REQUEST_SEND      ((nm_mpi_request_type_t)1)
 #define NM_MPI_REQUEST_RECV      ((nm_mpi_request_type_t)2)
-#define NM_MPI_REQUEST_PACK_SEND ((nm_mpi_request_type_t)3)
-#define NM_MPI_REQUEST_PACK_RECV ((nm_mpi_request_type_t)4)
 #define NM_MPI_REQUEST_CANCELLED ((nm_mpi_request_type_t)5)
 
 /** @name Extended modes */
@@ -149,18 +147,8 @@ typedef struct nm_mpi_request_s
   nm_mpi_request_type_t request_type;
   /** persistent type of the request */
   nm_mpi_request_type_t request_persistent_type;
-
-  union
-  {
-    /** handle to the NM request when data are exchanged with the \ref sr_interface */
-    nm_sr_request_t request_nmad;
-    /** handle to the NM connexion when data are exchanged with the \ref pack_interface */
-    nm_pack_cnx_t request_cnx;
-  };
-  /** buffer used when non-contiguous data are exchanged with the \ref sr_interface */
-  void *contig_buffer;
-  /** array of pointers used when non-contiguous data are exchanged with the \ref pack_interface */
-  void **request_ptr;
+  /** nmad request for sendrecv interface */
+  nm_sr_request_t request_nmad;
   /** tag given by the user*/
   int user_tag;
   /** rank of the source node (used for incoming request) */
@@ -220,8 +208,6 @@ typedef struct nm_mpi_datatype_s
   int elements;
   /** whether entirely contiguous */
   int is_contig;
-  /** whether optimized or not */
-  int is_optimized;
   /** extent of type */
   size_t extent;
   /** lower bound of type */
@@ -272,12 +258,22 @@ typedef struct nm_mpi_datatype_s
 /** filter used to serialize/deserialize/direct pack/unpack data from datatype */
 struct nm_mpi_datatype_filter_s
 {
-  void (*apply)(void*_status, void*data_ptr, int size); /**< function applied to datatype blocks */
-  void*_status; /**< internal status of filter */
+  nm_data_apply_t apply; /**< function applied to datatype blocks */
+  void*_status;          /**< internal status of filter */
 };
 
 /** apply a filter to a datatype */
 void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, const void*data_ptr, nm_mpi_datatype_t*p_datatype, int count);
+
+/** content for datatype traversal */
+struct nm_data_mpi_datatype_s
+{
+  void*ptr;
+  struct nm_mpi_datatype_s*p_datatype;
+  int count;
+};
+void nm_data_mpi_datatype_traversal(void*_content, nm_data_apply_t apply, void*_context);
+NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_data_mpi_datatype_traversal);
 
 /* @} */
 
@@ -883,9 +879,6 @@ int mpi_type_create_resized(MPI_Datatype oldtype,
 int mpi_type_commit(MPI_Datatype *datatype);
 
 int mpi_type_free(MPI_Datatype *datatype);
-
-int mpi_type_optimized(MPI_Datatype *datatype,
-                       int optimized);
 
 int mpi_type_contiguous(int count,
                         MPI_Datatype oldtype,

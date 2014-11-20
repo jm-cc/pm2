@@ -205,82 +205,6 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
   status->nb_packets++;
 }
 
-static void
-strat_split_balance_agregate_datatype(void*_status, struct nm_pack_s*p_pack,
-				      nm_len_t len, const void*_datatype)
-{
-#if 0
-  struct nm_pkt_wrap *p_pw;
-  struct nm_so_strat_split_balance*status = _status;
-
-  // Look for a wrapper to fullfill
-  if(len <= 512 || status->nb_packets >= 2)
-    {
-      /* We first try to find an existing packet to form an aggregate */
-      tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
-	{
-	  nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
-	  nm_len_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
-	  if(size <= h_rlen)
-	    {
-	      nm_so_pw_add_datatype(p_pw, p_pack, len, segp);
-	      return;
-	    }
-	}
-    }
-  // We don't find any free wrapper so we build a new one
-  int flags = NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY;
-  nm_so_pw_alloc(flags, &p_pw);
-  nm_so_pw_add_datatype(p_pw, p_pack, len, segp);
-  tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
-  status->nb_packets++;
-#endif
-}
-
-static void
-strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
-					  nm_len_t len, const void*_datatype)
-{
-#if 0
-  struct nm_pkt_wrap *p_pw = NULL;
-  
-  /* First allocate a packet wrapper */
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-  /* store datatype into iovec- flatten into contiguous
-   * or convert into iovec depending on density
-   */
-  DLOOP_Offset first = 0;
-  DLOOP_Offset last  = first + len;
-  int nb_blocks = 0;
-  CCSI_Segment_count_contig_blocks(p_pw->segp, first, &last, &nb_blocks);
-  const int density = len / nb_blocks; /* average block size */
-  if(density <= NM_SO_DATATYPE_BLOCKSIZE)
-    {
-      /* low density => flatten into a contiguous buffer (by copy) */
-      p_pw->v[0].iov_base = TBX_MALLOC(len);
-      p_pw->flags |= NM_PW_DYNAMIC_V0;
-      CCSI_Segment_pack((struct DLOOP_Segment*)segp, first, &last, p_pw->v[0].iov_base);
-      p_pw->v[0].iov_len = last - first;
-      p_pw->v_nb = 1;
-    }
-  else
-    {
-      /* high-density => pack into an iovec */
-      nm_pw_grow_n(p_pw, nb_blocks);
-      CCSI_Segment_pack_vector((struct DLOOP_Segment*)segp, first, &last, (DLOOP_VECTOR *)p_pw->v, &nb_blocks);
-      p_pw->v_nb = nb_blocks;
-      p_pw->length = last - first;
-    }
-  /* Then place it into the appropriate list of large pending "sends". */
-  tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
-
-  /* Finally, generate a RdV request */
-  union nm_so_generic_ctrl_header ctrl;
-  nm_so_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
-  strat_split_balance_pack_ctrl(_status, p_pack->p_gate, &ctrl);
-#endif
-}
-
 static int strat_split_balance_todo(void*_status,
 				    struct nm_gate *p_gate)
 {
@@ -289,57 +213,38 @@ static int strat_split_balance_todo(void*_status,
   return !(tbx_fast_list_empty(out_list));
 }
 
+struct nm_strat_split_balance_push_s
+{
+  struct nm_pack_s*p_pack;
+  struct nm_so_strat_split_balance*status;
+};
+/** push message chunk */
+static void nm_strat_split_balance_push(void*ptr, nm_len_t len, void*_context)
+{
+  const struct nm_strat_split_balance_push_s*p_context = _context;
+  struct nm_so_strat_split_balance*status = p_context->status;
+  const nm_len_t offset = p_context->p_pack->scheduled;
+  tbx_bool_t is_last_chunk = (p_context->p_pack->scheduled + len >= p_context->p_pack->len);
+  if(len <= status->nm_so_max_small)
+    {
+      /* Small packet */
+      strat_split_balance_try_to_agregate_small(status, p_context->p_pack, ptr, len, offset, is_last_chunk);
+    }
+  else
+    {
+      /* Large packets are split in 2 chunks. */
+      strat_split_balance_launch_large_chunk(status, p_context->p_pack, ptr, len, offset, is_last_chunk);
+    }
+}
+
+
 /* Handle the arrival of a new packet. The strategy may already apply
    some optimizations at this point */
 static int strat_split_balance_pack(void *_status, struct nm_pack_s*p_pack)
 {
   struct nm_so_strat_split_balance*status = _status;
-  const nm_len_t len = p_pack->len;
-  if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)
-    {
-      if(len <= status->nm_so_max_small)
-	{
-	  /* Small packet */
-	  strat_split_balance_try_to_agregate_small(_status, p_pack, p_pack->data, len, 0, 1);
-	}
-      else
-	{
-	  /* Large packets are split in 2 chunks. */
-	  strat_split_balance_launch_large_chunk(_status, p_pack, p_pack->data, len, 0, 1);
-	}
-    }
-  else if(p_pack->status & NM_PACK_TYPE_IOV)
-    {
-      struct iovec*iov = p_pack->data;
-      nm_len_t offset = 0;
-      int i;
-      for(i = 0; offset < len; i++)
-	{
-	  tbx_bool_t is_last_chunk = (offset + iov[i].iov_len >= len);
-	  if(iov[i].iov_len <= status->nm_so_max_small) 
-	    {
-	      /* Small packet */
-	      strat_split_balance_try_to_agregate_small(_status, p_pack, iov[i].iov_base, iov[i].iov_len, offset, is_last_chunk);
-	    }
-	  else 
-	    {
-	      /* Large packets are splited in 2 chunks. */
-	      strat_split_balance_launch_large_chunk(_status, p_pack, iov[i].iov_base, iov[i].iov_len, offset, is_last_chunk);
-	    }
-	  offset += iov[i].iov_len;
-	}
-    }
-  else if(p_pack->status & NM_PACK_TYPE_DATATYPE)
-    {
-      if(len <= status->nm_so_max_small)
-	{
-	  strat_split_balance_agregate_datatype(_status, p_pack, len, NULL);
-	}
-      else 
-	{
-	  strat_split_balance_launch_large_datatype(_status, p_pack, len, NULL);
-	}
-    }
+  struct nm_strat_split_balance_push_s context = { .p_pack = p_pack, .status = status };
+  nm_data_traversal_apply(p_pack->p_data, &nm_strat_split_balance_push, &context);
   return NM_ESUCCESS;
 }
 

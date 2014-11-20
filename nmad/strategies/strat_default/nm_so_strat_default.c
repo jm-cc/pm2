@@ -129,6 +129,28 @@ static int strat_default_todo(void* _status, struct nm_gate*p_gate)
   return !(tbx_fast_list_empty(&status->out_list));
 }
 
+/** context for the push function */
+struct nm_strat_default_push_s
+{
+  struct nm_pack_s*p_pack;
+  struct nm_so_strat_default*status;
+};
+/** push a message chunk */
+static void nm_strat_default_push(void*ptr, nm_len_t len, void*_context)
+{
+  const struct nm_strat_default_push_s*p_context = _context;
+  const nm_len_t offset = p_context->p_pack->scheduled;
+  if(len <= p_context->status->nm_so_max_small)
+    {
+      nm_tactic_pack_small_new_pw(p_context->p_pack, ptr, len, offset, 
+				  p_context->status->nm_so_copy_on_send_threshold, &p_context->status->out_list);
+    }
+  else
+    {
+      nm_tactic_pack_rdv(p_context->p_pack, ptr, len, offset);
+    }
+}
+
 /** Handle a new packet submitted by the user code.
  *
  *  @note The strategy may already apply some optimizations at this point.
@@ -142,44 +164,8 @@ static int strat_default_todo(void* _status, struct nm_gate*p_gate)
 static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 {
   struct nm_so_strat_default*status = _status;
-
-  if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)
-    {
-      const void*data = p_pack->data;
-      const int len = p_pack->len;
-      if(len <= status->nm_so_max_small)
-	{
-	  nm_tactic_pack_small_new_pw(p_pack, data, len, 0, status->nm_so_copy_on_send_threshold, &status->out_list);
-	}
-      else
-	{
-	  nm_tactic_pack_rdv(p_pack, data, len, 0);
-	}
-    }
-  else if(p_pack->status & NM_PACK_TYPE_IOV)
-    {
-      struct iovec*iov = p_pack->data;
-      nm_len_t offset = 0;
-      int i;
-      for(i = 0; offset < p_pack->len; i++)
-	{
-	  const char*data = iov[i].iov_base;
-	  const int len = iov[i].iov_len;
-	  if(len <= status->nm_so_max_small)
-	    {
-	      nm_tactic_pack_small_new_pw(p_pack, data, len, offset, status->nm_so_copy_on_send_threshold, &status->out_list);
-	    }
-	  else
-	    {
-	      nm_tactic_pack_rdv(p_pack, data, len, offset);
-	    }
-	  offset += len;
-	}
-    }
-  else
-    {
-      return -NM_ENOTIMPL;
-    }
+  struct nm_strat_default_push_s context = { .p_pack = p_pack, .status = status };
+  nm_data_traversal_apply(p_pack->p_data, &nm_strat_default_push, &context);
   return NM_ESUCCESS;
 }
 

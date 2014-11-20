@@ -146,51 +146,73 @@ static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate
   return NULL;
 }
 
-/* ********************************************************* */
-
-
-/** copy received data to its final destination */
-static void nm_so_copy_data(struct nm_unpack_s*p_unpack, nm_len_t chunk_offset, const void *ptr, nm_len_t len)
+/** Process postponed recv requests
+ */
+static int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 {
-  assert(chunk_offset + len <= p_unpack->expected_len);
-  assert(p_unpack->cumulated_len + len <= p_unpack->expected_len);
-  if(len > 0)
+  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {
-      /* Copy data to its final destination */
-      if(p_unpack->status & NM_UNPACK_TYPE_CONTIGUOUS)
+      struct nm_pkt_wrap *p_pw = nm_l2so(p_gate->pending_large_recv.next);
+      int nb_chunks = p_gate->p_core->nb_drivers;
+      struct nm_rdv_chunk chunks[nb_chunks];
+      const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
+      int err = strategy->driver->rdv_accept(strategy->_status, p_gate, p_pw->length, &nb_chunks, chunks);
+      if(err == NM_ESUCCESS)
 	{
-	  /* contiguous data */
-	  void*const data = p_unpack->data;
-	  memcpy(data + chunk_offset, ptr, len);
-	}
-      else if(p_unpack->status & NM_UNPACK_TYPE_IOV)
-	{
-	  /* destination is non contiguous */
-	  struct iovec*const iov = p_unpack->data;
-	  nm_len_t pending_len = len;
-	  nm_len_t offset = 0; /* current offset in the destination */
-	  int i = 0;
-	  while(offset + iov[i].iov_len <= chunk_offset)
+	  tbx_fast_list_del(p_gate->pending_large_recv.next);
+	  int i;
+	  nm_len_t chunk_offset = p_pw->chunk_offset;
+	  const nm_seq_t seq = p_pw->p_unpack->seq;
+	  const nm_core_tag_t tag = p_pw->p_unpack->tag;
+	  struct nm_pkt_wrap *p_pw2 = NULL;
+	  for(i = 0; i < nb_chunks; i++)
 	    {
-	      offset += iov[i].iov_len;
-	      i++;
+	      if(chunks[i].len < p_pw->length)
+		{
+		  /* create a new pw with the remaining data */
+		  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
+		  p_pw2->p_drv    = p_pw->p_drv;
+		  p_pw2->trk_id   = p_pw->trk_id;
+		  p_pw2->p_gate   = p_pw->p_gate;
+		  p_pw2->p_gdrv   = p_pw->p_gdrv;
+		  p_pw2->p_unpack = p_pw->p_unpack;
+		  /* populate p_pw2 iovec */
+		  nm_so_pw_split_data(p_pw, p_pw2, chunks[i].len);
+		  assert(p_pw->length == chunks[i].len);
+		}
+	      nm_core_post_recv(p_pw, p_gate, chunks[i].trk_id, chunks[i].p_drv);
+	      p_pw = p_pw2;
+	      p_pw2 = NULL;
 	    }
-	  assert(offset <= p_unpack->expected_len);
-	  nm_len_t entry_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0;
-	  while(pending_len > 0)
+	  for(i = 0; i < nb_chunks; i++)
 	    {
-	      const nm_len_t entry_len = (pending_len > (iov[i].iov_len - entry_offset)) ? (iov[i].iov_len - entry_offset) : pending_len;
-	      memcpy(iov[i].iov_base + entry_offset, ptr + len - pending_len, entry_len);
-	      pending_len -= entry_len;
-	      i++;
-	      entry_offset = 0;
+	      nm_so_post_rtr(p_gate, tag, seq, chunks[i].p_drv, chunks[i].trk_id, chunk_offset, chunks[i].len);
+	      chunk_offset += chunks[i].len;
 	    }
 	}
-      else if(p_unpack->status & NM_UNPACK_TYPE_DATATYPE)
-	{
-	  padico_fatal("nmad: copy data for datatype- not supported");
-	}	    
     }
+  return NM_ESUCCESS;
+}
+
+/** register a large pending pw for each chunk in the rdv
+ */
+struct nm_large_chunk_s
+{
+  struct nm_unpack_s*p_unpack;
+  struct nm_gate*p_gate;
+  nm_len_t chunk_offset;
+};
+static void nm_large_chunk_store(void*ptr, nm_len_t len, void*_context)
+{
+  struct nm_large_chunk_s*p_large_chunk = _context;
+  struct nm_pkt_wrap *p_pw = NULL;
+  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  p_pw->p_unpack = p_large_chunk->p_unpack;
+  nm_so_pw_add_raw(p_pw, ptr, len, p_large_chunk->chunk_offset);
+  assert(p_pw->p_drv == NULL);
+  p_pw->p_gate = p_large_chunk->p_gate;
+  tbx_fast_list_add_tail(&p_pw->link, &p_large_chunk->p_gate->pending_large_recv);
+  p_large_chunk->chunk_offset += len;
 }
 
 /** mark 'chunk_len' data as received in the given unpack, and check for unpack completion */
@@ -260,19 +282,12 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
   tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
 }
 
-void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct iovec*iov, int num_entries)
+void nm_core_unpack_filter(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*p_data)
 { 
-  p_unpack->status = NM_UNPACK_TYPE_IOV;
-  p_unpack->data = (void*)iov;
+  p_unpack->status = NM_STATUS_NONE;
+  p_unpack->p_data = p_data;
   p_unpack->cumulated_len = 0;
-  p_unpack->expected_len = nm_so_iov_len(iov, num_entries);
-
-}
-
-void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack, void*_datatype)
-{ 
-  p_unpack->status = NM_UNPACK_TYPE_DATATYPE;
-  padico_fatal("nmad: unpack datatype- not supported.");
+  p_unpack->expected_len = nm_data_size(p_data);
 }
 
 /** Handle an unpack request.
@@ -436,7 +451,9 @@ static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 	{
 	  const uint8_t flags = NM_PROTO_FLAG_LASTCHUNK;
 	  nm_so_data_flags_decode(p_unpack, flags, chunk_offset, len);
-	  nm_so_copy_data(p_unpack, chunk_offset, ptr, len);
+	  assert(chunk_offset + len <= p_unpack->expected_len);
+	  assert(p_unpack->cumulated_len + len <= p_unpack->expected_len);
+	  nm_data_copy(p_unpack->p_data, chunk_offset, ptr, len);
 	  nm_so_unpack_check_completion(p_core, p_unpack, len);
 	}
     }
@@ -469,7 +486,9 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
       if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
 	{
 	  nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
-	  nm_so_copy_data(p_unpack, chunk_offset, ptr, chunk_len);
+	  assert(chunk_offset + len <= p_unpack->expected_len);
+	  assert(p_unpack->cumulated_len + len <= p_unpack->expected_len);
+	  nm_data_copy(p_unpack->p_data, chunk_offset, ptr, chunk_len);
 	  nm_so_unpack_check_completion(p_core, p_unpack, chunk_len);
 	}
     }
@@ -504,7 +523,11 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
   if(p_unpack)
     {
       nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
-      nm_so_rdv_success(p_core, p_unpack, chunk_len, chunk_offset);
+      struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_gate, .chunk_offset = chunk_offset };
+      nm_data_chunk_filter_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+      /* enqueue chunks in the list, and immediately process one item 
+       * (not necessarily the one we enqueued) */
+      nm_so_process_large_pending_recv(p_gate);
     }
   else
     {

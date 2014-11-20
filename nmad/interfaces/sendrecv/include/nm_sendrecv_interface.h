@@ -134,8 +134,8 @@ static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*
 					const void*, nm_len_t len);
 static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 				       const struct iovec*iov, int num_entries);
-static inline void nm_sr_send_pack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
-					    const struct CCSI_Segment*segp);
+static inline void nm_sr_send_pack_filter(nm_session_t p_session, nm_sr_request_t*p_request, 
+					  struct nm_data_s*p_data);
 static inline int  nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_request,
 				    nm_gate_t p_gate, nm_tag_t tag);
 static inline int  nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -151,8 +151,8 @@ static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_
 					  void*, nm_len_t len);
 static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 					 struct iovec*iov, int num_entry);
-static inline void nm_sr_recv_unpack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
-					      struct CCSI_Segment*segp);
+static inline void nm_sr_recv_unpack_filter(nm_session_t p_session, nm_sr_request_t*p_request, 
+					    struct nm_data_s*p_data);
 static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
 				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask);
 
@@ -262,26 +262,23 @@ static inline int nm_sr_isend_iov_with_ref(nm_session_t p_session,
   return err;
 }
 
-/** Test for the completion of a non blocking send request.
- *  @param p_session a pointer to a nmad session object.
- *  @param p_gate a pointer to the destination gate.
- *  @param tag the message tag.
- *  @param segp
- *  @param p_request the request to check.
- *  @return The NM status.
- */
-static inline int nm_sr_isend_datatype(nm_session_t p_session,
-				       nm_gate_t p_gate, nm_tag_t tag,
-				       const struct CCSI_Segment *segp,
-				       nm_sr_request_t *p_request)
+static inline int nm_sr_isend_filter(nm_session_t p_session,
+				     nm_gate_t p_gate, nm_tag_t tag,
+				     struct nm_data_s*filter,
+				     nm_sr_request_t *p_request)
 {
   nm_sr_send_init(p_session, p_request);
-  nm_sr_send_pack_datatype(p_session, p_request, segp);
+  nm_sr_send_pack_filter(p_session, p_request, filter);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
 }
 
 
+/** Test for the completion of a non blocking send request.
+ *  @param p_session a pointer to a nmad session object.
+ *  @param p_request the request to check.
+ *  @return The NM status.
+ */
 extern int nm_sr_stest(nm_session_t p_session,
 		       nm_sr_request_t *p_request);
 
@@ -378,27 +375,27 @@ static inline int nm_sr_irecv_iov_with_ref(nm_session_t p_session,
   return err;
 }
 
-static inline int nm_sr_irecv_datatype(nm_session_t p_session,
-				       nm_gate_t p_gate, nm_tag_t tag,
-				       struct CCSI_Segment *segp,
-				       nm_sr_request_t *p_request)
+static inline int nm_sr_irecv_filter(nm_session_t p_session,
+				     nm_gate_t p_gate, nm_tag_t tag,
+				     struct nm_data_s*filter,
+				     nm_sr_request_t *p_request)
 {
   nm_sr_recv_init(p_session, p_request);
-  nm_sr_recv_unpack_datatype(p_session, p_request, segp);
+  nm_sr_recv_unpack_filter(p_session, p_request, filter);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
 
 
-static inline int nm_sr_irecv_datatype_with_ref(nm_session_t p_session,
-						nm_gate_t p_gate, nm_tag_t tag,
-						struct CCSI_Segment *segp,
-						nm_sr_request_t *p_request,
-						void *ref)
+static inline int nm_sr_irecv_filter_with_ref(nm_session_t p_session,
+					      nm_gate_t p_gate, nm_tag_t tag,
+					      struct nm_data_s*filter,
+					      nm_sr_request_t *p_request,
+					      void *ref)
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
-  nm_sr_recv_unpack_datatype(p_session, p_request, segp);
+  nm_sr_recv_unpack_filter(p_session, p_request, filter);
   if(ref != NULL)
     nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);

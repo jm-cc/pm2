@@ -140,6 +140,36 @@ static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
   return !(tbx_fast_list_empty(&status->out_list));
 }
 
+struct nm_strat_aggreg_push_s
+{
+  struct nm_pack_s*p_pack;
+  struct nm_so_strat_aggreg_gate*status;
+};
+/** push message chunk */
+static void nm_strat_aggreg_push(void*ptr, nm_len_t len, void*_context)
+{
+  const struct nm_strat_aggreg_push_s*p_context = _context;
+  struct nm_so_strat_aggreg_gate*status = p_context->status;
+  const nm_len_t offset = p_context->p_pack->scheduled;
+  if(len <= nm_max_small)
+    {
+      struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_DATA_HEADER_SIZE, len);
+      if(p_pw)
+	{
+	  nb_data_aggregation++;
+	  nm_tactic_pack_small_into_pw(p_context->p_pack, ptr, len, offset, status->nm_copy_on_send_threshold, p_pw);
+	}
+      else
+	{
+	  nm_tactic_pack_small_new_pw(p_context->p_pack, ptr, len, offset, status->nm_copy_on_send_threshold, &status->out_list);
+	}
+    }
+  else
+    {
+      nm_tactic_pack_rdv(p_context->p_pack, ptr, len, offset);
+    }
+}
+
 /** Handle a new packet submitted by the user code.
  *
  *  @note The strategy may already apply some optimizations at this point.
@@ -172,62 +202,8 @@ static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
       NM_DISPF("# nmad: aggreg- max_small = %lu\n", nm_max_small);
     }
 
-  if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)
-    {
-      const nm_len_t len = p_pack->len;
-      if(len <= nm_max_small) 
-	{
-	  /* Small packet */
-	  struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_DATA_HEADER_SIZE, len);
-	  if(p_pw)
-	    {
-	      nb_data_aggregation++;
-	      nm_tactic_pack_small_into_pw(p_pack, p_pack->data, len, 0, status->nm_copy_on_send_threshold, p_pw);
-	    }
-	  else
-	    {
-	      nm_tactic_pack_small_new_pw(p_pack, p_pack->data, len, 0, status->nm_copy_on_send_threshold, &status->out_list);
-	    }
-	}
-      else 
-	{
-	  /* Large packet */
-	  nm_tactic_pack_rdv(p_pack, p_pack->data, len, 0);
-	}
-    }
-  else if(p_pack->status & NM_PACK_TYPE_IOV)
-    {
-      struct iovec*iov = p_pack->data;
-      nm_len_t offset = 0;
-      int i;
-      for(i = 0; offset < p_pack->len; i++)
-	{
-	  const void*data = iov[i].iov_base;
-	  const int len = iov[i].iov_len;
-	  if(len <= nm_max_small) 
-	    {
-	      /* Small packet */
-	      struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_DATA_HEADER_SIZE, len);
-	      if(p_pw)
-		{
-		  nb_data_aggregation++;
-		  nm_tactic_pack_small_into_pw(p_pack, data, len, offset, status->nm_copy_on_send_threshold, p_pw);
-		}
-	      else
-		{
-		  nm_tactic_pack_small_new_pw(p_pack, data, len, offset, status->nm_copy_on_send_threshold, &status->out_list);
-		}
-	    }
-	  else 
-	    {
-	      /* Large packets */
-	      nm_tactic_pack_rdv(p_pack, data, len, offset);
-	    }
-	  offset += iov[i].iov_len;
-	}
-    }
-  else
-    TBX_FAILURE("strat_aggreg does not support datatypes.");
+  struct nm_strat_aggreg_push_s context = { .p_pack = p_pack, .status = status };
+  nm_data_traversal_apply(p_pack->p_data, &nm_strat_aggreg_push, &context);
 
   return NM_ESUCCESS;
 }

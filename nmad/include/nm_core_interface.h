@@ -94,6 +94,7 @@ typedef nm_status_t nm_so_flag_t;
 
 /* ** status and flags, used in pack/unpack requests and events */
 
+#define NM_STATUS_NONE                     ((nm_status_t)0x0000)
 /** sending operation has completed */
 #define NM_STATUS_PACK_COMPLETED           ((nm_status_t)0x0001)
 /** unpack operation has completed */
@@ -109,18 +110,71 @@ typedef nm_status_t nm_so_flag_t;
 /** ack received for the given pack */
 #define NM_STATUS_ACK_RECEIVED             ((nm_status_t)0x0080)
 
-/** flag: unpack is contiguous */
-#define NM_UNPACK_TYPE_CONTIGUOUS    ((nm_so_flag_t)0x0100)
-/** flag: unpack is an iovec */
-#define NM_UNPACK_TYPE_IOV           ((nm_so_flag_t)0x0200)
-/** flag: unpack is a datatype */
-#define NM_UNPACK_TYPE_DATATYPE      ((nm_so_flag_t)0x0400)
-
-#define NM_PACK_TYPE_CONTIGUOUS ((nm_so_flag_t)0x0100)
-#define NM_PACK_TYPE_IOV        ((nm_so_flag_t)0x0200)
-#define NM_PACK_TYPE_DATATYPE   ((nm_so_flag_t)0x0400)
 /** flag pack as synchronous (i.e. request the receiver to send an ack) */
 #define NM_PACK_SYNCHRONOUS     ((nm_so_flag_t)0x1000)
+
+#define _NM_DATA_CONTENT_SIZE 32
+
+struct nm_data_s;
+/** function apply to each data chunk upon traversal */
+typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
+
+/** traversal function for data descriptors */
+typedef void (*nm_data_traversal_t)(void*_content, nm_data_apply_t apply, void*_context);
+
+/** a data descriptor, used to pack/unpack data from app layout to/from contiguous buffers */
+struct nm_data_s
+{
+  /** funtion to traverse data with app layout, i.e. map
+   * @param p_data data descriptor
+   * @param apply function to apply to all chunks
+   * @param _context context pointer given to apply function
+   */
+  nm_data_traversal_t traversal;
+  /** placeholder for type-dependant content */
+  char _content[_NM_DATA_CONTENT_SIZE];
+};
+#define NM_DATA_TYPE(ENAME, TYPE, TRAVERSAL)				\
+  static inline void nm_data_##ENAME##_set(struct nm_data_s*p_data, TYPE value) \
+  {									\
+    p_data->traversal = TRAVERSAL;					\
+    assert(sizeof(TYPE) <= _NM_DATA_CONTENT_SIZE);			\
+    TYPE*p_##ENAME = (TYPE*)&p_data->_content[0];			\
+    *p_##ENAME = value;							\
+  }
+
+/** data descriptor for contiguous data 
+ */
+struct nm_data_contiguous_s
+{
+  void*ptr;
+  nm_len_t len;
+};
+void nm_data_traversal_contiguous(void*_content, nm_data_apply_t apply, void*_context);
+NM_DATA_TYPE(contiguous, struct nm_data_contiguous_s, &nm_data_traversal_contiguous);
+/** data descriptor for iov data
+ */
+struct nm_data_iov_s
+{
+  struct iovec*v;
+  int n;
+};
+void nm_data_traversal_iov(void*_content, nm_data_apply_t apply, void*_context);
+NM_DATA_TYPE(iov, struct nm_data_iov_s, &nm_data_traversal_iov);
+
+/** helper function to apply iterator to data
+ */
+static inline void nm_data_traversal_apply(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context)
+{
+  (*p_data->traversal)((void*)p_data->_content, apply, _context);
+}
+
+void nm_data_chunk_filter_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
+				    nm_data_apply_t apply, void*_context);
+
+nm_len_t nm_data_size(const struct nm_data_s*p_data);
+
+void nm_data_copy(const struct nm_data_s*p_data, nm_len_t chunk_offset, const void *ptr, nm_len_t len);
 
 /** Sequence number */
 typedef uint16_t nm_seq_t;
@@ -163,7 +217,7 @@ struct nm_unpack_s
 {
   struct tbx_fast_list_head _link;
   nm_status_t status;
-  void *data;
+  const struct nm_data_s*p_data;
   nm_len_t expected_len;
   nm_len_t cumulated_len;
   nm_gate_t p_gate;
@@ -177,7 +231,7 @@ struct nm_pack_s
 {
   struct tbx_fast_list_head _link;
   nm_status_t status;
-  void*data; /**< actually, char*, struct iovec*, or DLOOP_Segment* depending on pack type (see status) */
+  const struct nm_data_s*p_data;
   nm_len_t len;       /**< cumulated data length */
   nm_len_t scheduled; /**< cumulated length of data scheduled for sending */
   nm_len_t done;      /**< cumulated length of data sent so far */
@@ -187,44 +241,29 @@ struct nm_pack_s
 };
 
 /** build a pack request for contiguous data */
-static inline void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack,
-				     const void*data, nm_len_t len)
-{
-  p_pack->status = NM_PACK_TYPE_CONTIGUOUS;
-  p_pack->data   = (void*)data;
-  p_pack->len    = len;
-  p_pack->done   = 0;
-  p_pack->scheduled = 0;
-}
+void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const void*data, nm_len_t len);
 
 /** build pack request from iov.
  * iov and data pointed by iov should remain valid until pack completion.
  */
 void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct iovec*iov, int num_entries);
 
-/** build a pack request for datatype (obsolete) */
-void nm_core_pack_datatype(nm_core_t p_core, struct nm_pack_s*p_pack, const void*_datatype);
+/** build a pack request from data filter */
+void nm_core_pack_filter(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*filter);
 
 /** post a pack request */
 int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
 
 /** build an unpack request for contiguous data (do not post request) */
-static inline void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-				       void *data, nm_len_t len)
-{
-  p_unpack->status = NM_UNPACK_TYPE_CONTIGUOUS;
-  p_unpack->data = data;
-  p_unpack->cumulated_len = 0;
-  p_unpack->expected_len = len;
-}
+void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack, void *data, nm_len_t len);
 
 /** build an unpack request from iov (do not post)
  * iov should remain valid until unpack completion.
  */
 void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct iovec*iov, int num_entries);
 
-/** build an unpack request from datatype (obsolete) */
-void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack, void*_datatype);
+/** build an unpack request from data filter */
+void nm_core_unpack_filter(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*filter);
 
 /** post an unpack request */
 int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);

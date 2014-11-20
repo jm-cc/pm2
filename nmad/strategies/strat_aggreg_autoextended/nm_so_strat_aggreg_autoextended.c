@@ -183,25 +183,20 @@ static int strat_aggreg_autoextended_todo(void*_status,
   return !(tbx_fast_list_empty(out_list));
 }
 
-/** Handle a new packet submitted by the user code.
- *
- *  @note The strategy may already apply some optimizations at this point.
- *  @param p_gate a pointer to the gate object.
- *  @param tag the message tag.
- *  @param seq the fragment sequence number.
- *  @param data the data fragment pointer.
- *  @param len the data fragment length.
- *  @return The NM status.
- */
-static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
+
+struct nm_strat_aggreg_autoextended_push_s
 {
-  struct nm_so_strat_aggreg_autoextended_gate *status = _status;
+  struct nm_pack_s*p_pack;
+  struct nm_so_strat_aggreg_autoextended_gate*status;
+};
+/** push message chunk */
+static void nm_strat_aggreg_autoextended_push(void*ptr, nm_len_t len, void*_context)
+{
+  const struct nm_strat_aggreg_autoextended_push_s*p_context = _context;
+  struct nm_so_strat_aggreg_autoextended_gate*status = p_context->status;
+  const nm_len_t offset = p_context->p_pack->scheduled;
   struct nm_pkt_wrap *p_pw = NULL;
   int flags = 0;
-  const nm_len_t len = p_pack->len;
-
-  if(!(p_pack->status & NM_PACK_TYPE_CONTIGUOUS))
-    TBX_FAILURE("strat_aggreg_autoextended supports only contiguous packs.");
 
   if(len <= status->nm_so_max_small)
     {
@@ -221,29 +216,47 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
 		{
 		  flags = NM_SO_DATA_USE_COPY;
 		}
-	      nm_so_pw_add_data(p_pw, p_pack, p_pack->data, len, 0, flags);
+	      nm_so_pw_add_data(p_pw, p_context->p_pack, ptr, len, offset, flags);
 	      nb_data_aggregation ++;
-	      goto out;
+	      return;
 	    }
 	}
       /* cannot aggregate- create a new pw */
       flags = NM_PW_GLOBAL_HEADER;
       if(len <= status->nm_so_copy_on_send_threshold)
 	flags |= NM_SO_DATA_USE_COPY;
-      nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, 1, flags, &p_pw);
+      nm_so_pw_alloc_and_fill_with_data(p_context->p_pack, ptr, len, offset, 1, flags, &p_pw);
       tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
     }
   else
     {
       /* large packet */
-      nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, 1, NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_alloc_and_fill_with_data(p_context->p_pack, ptr, len, offset, 1, NM_PW_NOHEADER, &p_pw);
       nm_so_pw_finalize(p_pw);
-      tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
+      tbx_fast_list_add_tail(&p_pw->link, &p_context->p_pack->p_gate->pending_large_send);
       union nm_so_generic_ctrl_header ctrl;
-      nm_so_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
-      strat_aggreg_autoextended_pack_ctrl(status, p_pack->p_gate, &ctrl);
+      nm_so_init_rdv(&ctrl, p_context->p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
+      strat_aggreg_autoextended_pack_ctrl(status, p_context->p_pack->p_gate, &ctrl);
     }
- out:
+}
+
+/** Handle a new packet submitted by the user code.
+ *
+ *  @note The strategy may already apply some optimizations at this point.
+ *  @param p_gate a pointer to the gate object.
+ *  @param tag the message tag.
+ *  @param seq the fragment sequence number.
+ *  @param data the data fragment pointer.
+ *  @param len the data fragment length.
+ *  @return The NM status.
+ */
+static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
+{
+  struct nm_so_strat_aggreg_autoextended_gate *status = _status;
+ 
+  struct nm_strat_aggreg_autoextended_push_s context = { .p_pack = p_pack, .status = status };
+  nm_data_traversal_apply(p_pack->p_data, &nm_strat_aggreg_autoextended_push, &context);
+
   return NM_ESUCCESS;
 }
 

@@ -22,20 +22,13 @@
 
 PADICO_MODULE_HOOK(NewMad_Core);
 
-void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct iovec*iov, int num_entries)
-{
-  p_pack->status = NM_PACK_TYPE_IOV;
-  p_pack->data   = (void*)iov;
-  p_pack->len    = nm_so_iov_len(iov, num_entries);
-  p_pack->done   = 0;
-  p_pack->scheduled = 0;
-}
 
-void nm_core_pack_datatype(nm_core_t p_core, struct nm_pack_s*p_pack, const void*datatype)
+void nm_core_pack_filter(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*p_data)
 {
-  /* TODO- opaque generic datatype */
-  p_pack->status = NM_PACK_TYPE_DATATYPE;
-  p_pack->done   = 0;
+  p_pack->status    = NM_STATUS_NONE;
+  p_pack->p_data    = p_data;
+  p_pack->len       = nm_data_size(p_data);
+  p_pack->done      = 0;
   p_pack->scheduled = 0;
 }
 
@@ -59,7 +52,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
     }
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
   int err = (*r->driver->pack)(r->_status, p_pack);
-  p_pack->data = NULL;
+  p_pack->p_data = NULL;
   nm_unlock_interface(p_core);
   nmad_unlock();
   return err;

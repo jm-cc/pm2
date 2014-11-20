@@ -133,15 +133,6 @@ TBX_INTERNAL void nm_out_prefetch(struct nm_core*p_core);
 
 TBX_INTERNAL void nm_drv_post_all(struct nm_drv*p_drv);
 
-
-/* ** SchedOpt internal functions */
-
-TBX_INTERNAL int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*unpack,
-				   nm_len_t len, nm_len_t chunk_offset);
-
-TBX_INTERNAL int nm_so_process_large_pending_recv(struct nm_gate*p_gate);
-
-
 /** Process a complete successful outgoing request.
  */
 TBX_INTERNAL int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw);
@@ -149,19 +140,5 @@ TBX_INTERNAL int nm_so_process_complete_send(struct nm_core *p_core, struct nm_p
 /** Process complete incoming request.
  */
 TBX_INTERNAL int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap *p_pw);
-
-
-/** Compute the cumulated size of an iovec.
- */
-static inline int nm_so_iov_len(const struct iovec *iov, int nb_entries)
-{
-  nm_len_t len = 0;
-  int i;
-  for(i = 0; i < nb_entries; i++)
-    {
-      len += iov[i].iov_len;
-    }
-  return len;
-}
 
 #endif /* NM_PRIVATE_H */

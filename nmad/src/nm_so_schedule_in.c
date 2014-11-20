@@ -486,8 +486,8 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
       if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
 	{
 	  nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
-	  assert(chunk_offset + len <= p_unpack->expected_len);
-	  assert(p_unpack->cumulated_len + len <= p_unpack->expected_len);
+	  assert(chunk_offset + chunk_len <= p_unpack->expected_len);
+	  assert(p_unpack->cumulated_len + chunk_len <= p_unpack->expected_len);
 	  nm_data_copy(p_unpack->p_data, chunk_offset, ptr, chunk_len);
 	  nm_so_unpack_check_completion(p_core, p_unpack, chunk_len);
 	}

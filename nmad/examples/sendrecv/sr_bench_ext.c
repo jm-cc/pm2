@@ -143,7 +143,7 @@ static void bench_ext_sranytag_server(void)
   static const int len = sizeof(buf);
   nm_sr_request_t request;
   nm_sr_recv_init(p_session, &request);
-  nm_sr_recv_unpack_data(p_session, &request, &buf, len);
+  nm_sr_recv_unpack_contiguous(p_session, &request, &buf, len);
   nm_sr_recv_irecv(p_session, &request, p_gate, 0, NM_TAG_MASK_NONE);
   nm_sr_rwait(p_session, &request);
   nm_sr_isend(p_session, p_gate, 0, &buf, len, &request);
@@ -158,7 +158,7 @@ static void bench_ext_sranytag_client(void)
   nm_sr_isend(p_session, p_gate, 0, &buf, len, &request);
   nm_sr_swait(p_session, &request);
   nm_sr_recv_init(p_session, &request);
-  nm_sr_recv_unpack_data(p_session, &request, &buf, len);
+  nm_sr_recv_unpack_contiguous(p_session, &request, &buf, len);
   nm_sr_recv_irecv(p_session, &request, p_gate, 0, NM_TAG_MASK_NONE);
   nm_sr_rwait(p_session, &request);
 }
@@ -245,7 +245,7 @@ static void bench_ext_success_server(void)
   nm_sr_request_t*p_request = NULL;
 
   nm_sr_recv_init(p_session, &request);
-  nm_sr_recv_unpack_data(p_session, &request, &buf, len);
+  nm_sr_recv_unpack_contiguous(p_session, &request, &buf, len);
   nm_sr_request_set_completion_queue(p_session, &request);
   nm_sr_recv_irecv(p_session, &request, p_gate, 0, NM_TAG_MASK_FULL);
   while(nm_sr_recv_success(p_session, &p_request) != -NM_ESUCCESS)
@@ -253,7 +253,7 @@ static void bench_ext_success_server(void)
     };
 
   nm_sr_send_init(p_session, &request);
-  nm_sr_send_pack_data(p_session, &request, &buf, len);
+  nm_sr_send_pack_contiguous(p_session, &request, &buf, len);
   nm_sr_request_set_completion_queue(p_session, &request);
   nm_sr_send_isend(p_session, &request, p_gate, 0);
   while(nm_sr_send_success(p_session, &p_request) != -NM_ESUCCESS)
@@ -269,7 +269,7 @@ static void bench_ext_success_client(void)
   nm_sr_request_t*p_request = NULL;
 
   nm_sr_send_init(p_session, &request);
-  nm_sr_send_pack_data(p_session, &request, &buf, len);
+  nm_sr_send_pack_contiguous(p_session, &request, &buf, len);
   nm_sr_request_set_completion_queue(p_session, &request);
   nm_sr_send_isend(p_session, &request, p_gate, 0);
   while(nm_sr_send_success(p_session, &p_request) != -NM_ESUCCESS)
@@ -277,7 +277,7 @@ static void bench_ext_success_client(void)
     };
 
   nm_sr_recv_init(p_session, &request);
-  nm_sr_recv_unpack_data(p_session, &request, &buf, len);
+  nm_sr_recv_unpack_contiguous(p_session, &request, &buf, len);
   nm_sr_request_set_completion_queue(p_session, &request);
   nm_sr_recv_irecv(p_session, &request, p_gate, 0, NM_TAG_MASK_FULL);
   while(nm_sr_recv_success(p_session, &p_request) != -NM_ESUCCESS)

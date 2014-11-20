@@ -130,12 +130,12 @@ static inline int nm_sr_get_stag(nm_session_t p_session, nm_sr_request_t *p_requ
 /* ** Building blocks for send ***************************** */
 
 static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_request);
-static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					const void*, nm_len_t len);
+static inline void nm_sr_send_pack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
+					      const void*, nm_len_t len);
 static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 				       const struct iovec*iov, int num_entries);
-static inline void nm_sr_send_pack_filter(nm_session_t p_session, nm_sr_request_t*p_request, 
-					  struct nm_data_s*p_data);
+static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
+					struct nm_data_s*p_data);
 static inline int  nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_request,
 				    nm_gate_t p_gate, nm_tag_t tag);
 static inline int  nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -147,12 +147,12 @@ static inline int  nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_re
 /* ** Building blocks for recv ***************************** */
 
 static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request);
-static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					  void*, nm_len_t len);
+static inline void nm_sr_recv_unpack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
+						void*ptr, nm_len_t len);
 static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 					 struct iovec*iov, int num_entry);
-static inline void nm_sr_recv_unpack_filter(nm_session_t p_session, nm_sr_request_t*p_request, 
-					    struct nm_data_s*p_data);
+static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
+					  struct nm_data_s*p_data);
 static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
 				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask);
 
@@ -166,7 +166,7 @@ static inline int nm_sr_issend(nm_session_t p_session,
 			       nm_sr_request_t *p_request)
 {
   nm_sr_send_init(p_session, p_request);
-  nm_sr_send_pack_data(p_session, p_request, data, len);
+  nm_sr_send_pack_contiguous(p_session, p_request, data, len);
   const int err = nm_sr_send_issend(p_session, p_request, p_gate, tag);
   return err;
 }
@@ -186,7 +186,7 @@ static inline int nm_sr_isend(nm_session_t p_session,
 			      nm_sr_request_t *p_request)
 {
   nm_sr_send_init(p_session, p_request);
-  nm_sr_send_pack_data(p_session, p_request, data, len);
+  nm_sr_send_pack_contiguous(p_session, p_request, data, len);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
 }
@@ -199,7 +199,7 @@ static inline int nm_sr_isend_with_ref(nm_session_t p_session,
 {
   nm_sr_send_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
-  nm_sr_send_pack_data(p_session, p_request, data, len);
+  nm_sr_send_pack_contiguous(p_session, p_request, data, len);
   if(ref != NULL)
     nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
@@ -222,7 +222,7 @@ static inline int nm_sr_rsend(nm_session_t p_session,
 			      nm_sr_request_t *p_request)
 {
   nm_sr_send_init(p_session, p_request);
-  nm_sr_send_pack_data(p_session, p_request, data, len);
+  nm_sr_send_pack_contiguous(p_session, p_request, data, len);
   const int err = nm_sr_send_rsend(p_session, p_request, p_gate, tag);
   return err;
 }
@@ -268,7 +268,7 @@ static inline int nm_sr_isend_filter(nm_session_t p_session,
 				     nm_sr_request_t *p_request)
 {
   nm_sr_send_init(p_session, p_request);
-  nm_sr_send_pack_filter(p_session, p_request, filter);
+  nm_sr_send_pack_data(p_session, p_request, filter);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
 }
@@ -320,7 +320,7 @@ static inline int nm_sr_irecv(nm_session_t p_session,
 			      nm_sr_request_t *p_request)
 {
   nm_sr_recv_init(p_session, p_request);
-  nm_sr_recv_unpack_data(p_session, p_request, data, len);
+  nm_sr_recv_unpack_contiguous(p_session, p_request, data, len);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
@@ -343,7 +343,7 @@ static inline int nm_sr_irecv_with_ref(nm_session_t p_session,
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
-  nm_sr_recv_unpack_data(p_session, p_request, data, len);
+  nm_sr_recv_unpack_contiguous(p_session, p_request, data, len);
   if(ref != NULL)
     nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
@@ -381,7 +381,7 @@ static inline int nm_sr_irecv_filter(nm_session_t p_session,
 				     nm_sr_request_t *p_request)
 {
   nm_sr_recv_init(p_session, p_request);
-  nm_sr_recv_unpack_filter(p_session, p_request, filter);
+  nm_sr_recv_unpack_data(p_session, p_request, filter);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
@@ -395,7 +395,7 @@ static inline int nm_sr_irecv_filter_with_ref(nm_session_t p_session,
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
-  nm_sr_recv_unpack_filter(p_session, p_request, filter);
+  nm_sr_recv_unpack_data(p_session, p_request, filter);
   if(ref != NULL)
     nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);

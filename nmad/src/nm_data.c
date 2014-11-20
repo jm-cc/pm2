@@ -49,7 +49,7 @@ void nm_data_traversal_iov(void*_content, nm_data_apply_t apply, void*_context)
 
 /** filter function application to a delimited sub-set of data
  */
-struct nm_data_chunk_filter_s
+struct nm_data_chunk_extractor_s
 {
   nm_len_t chunk_offset; /**< offset for begin of copy at destination */
   nm_len_t chunk_len;    /**< length to copy */
@@ -57,9 +57,9 @@ struct nm_data_chunk_filter_s
   nm_data_apply_t apply; /**< composed function to apply to chunk */
   void*_context;         /**< context for composaed apply function */
 };
-static void nm_data_chunk_filter_apply(void*ptr, nm_len_t len, void*_context)
+static void nm_data_chunk_extractor_apply(void*ptr, nm_len_t len, void*_context)
 {
-  struct nm_data_chunk_filter_s*p_context = _context;
+  struct nm_data_chunk_extractor_s*p_context = _context;
   const nm_len_t chunk_offset = p_context->chunk_offset;
   const nm_len_t chunk_len = p_context->chunk_len;
   if( (!(p_context->done + len <= p_context->chunk_offset))                   /* data before chunk- do nothing */
@@ -75,13 +75,13 @@ static void nm_data_chunk_filter_apply(void*ptr, nm_len_t len, void*_context)
   p_context->done += len;
 }
 /** apply function to only a given chunk of data */
-void nm_data_chunk_filter_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
-				    nm_data_apply_t apply, void*_context)
+void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
+				       nm_data_apply_t apply, void*_context)
 {
-  struct nm_data_chunk_filter_s chunk_filter = 
+  struct nm_data_chunk_extractor_s chunk_extractor = 
     { .chunk_offset = chunk_offset, .chunk_len = chunk_len, .done = 0,
       .apply = apply, ._context = _context };
-  nm_data_traversal_apply(p_data, &nm_data_chunk_filter_apply, &chunk_filter);
+  nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
 }
 
 /* ********************************************************* */
@@ -124,10 +124,10 @@ void nm_data_copy(const struct nm_data_s*p_data, nm_len_t chunk_offset, const vo
   if(len > 0)
     {
       struct nm_data_copy_s copy = { .ptr = ptr };
-      struct nm_data_chunk_filter_s chunk_filter = 
+      struct nm_data_chunk_extractor_s chunk_extractor = 
 	{ .chunk_offset = chunk_offset, .chunk_len = len, .done = 0, 
 	  .apply = &nm_data_copy_apply, ._context = &copy };
-      nm_data_traversal_apply(p_data, &nm_data_chunk_filter_apply, &chunk_filter);
+      nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
     }
 }
 

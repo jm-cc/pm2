@@ -169,8 +169,8 @@ static inline void nm_data_traversal_apply(const struct nm_data_s*p_data, nm_dat
   (*p_data->traversal)((void*)p_data->_content, apply, _context);
 }
 
-void nm_data_chunk_filter_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
-				    nm_data_apply_t apply, void*_context);
+void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
+				       nm_data_apply_t apply, void*_context);
 
 nm_len_t nm_data_size(const struct nm_data_s*p_data);
 
@@ -240,30 +240,14 @@ struct nm_pack_s
   nm_seq_t seq;
 };
 
-/** build a pack request for contiguous data */
-void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const void*data, nm_len_t len);
-
-/** build pack request from iov.
- * iov and data pointed by iov should remain valid until pack completion.
- */
-void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct iovec*iov, int num_entries);
-
-/** build a pack request from data filter */
-void nm_core_pack_filter(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*filter);
+/** build a pack request from data descriptor */
+void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*p_data);
 
 /** post a pack request */
 int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
 
-/** build an unpack request for contiguous data (do not post request) */
-void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack, void *data, nm_len_t len);
-
-/** build an unpack request from iov (do not post)
- * iov should remain valid until unpack completion.
- */
-void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct iovec*iov, int num_entries);
-
-/** build an unpack request from data filter */
-void nm_core_unpack_filter(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*filter);
+/** build an unpack request from data descriptor */
+void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*p_data);
 
 /** post an unpack request */
 int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);

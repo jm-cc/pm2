@@ -282,7 +282,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
   tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
 }
 
-void nm_core_unpack_filter(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*p_data)
+void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*p_data)
 { 
   p_unpack->status = NM_STATUS_NONE;
   p_unpack->p_data = p_data;
@@ -524,7 +524,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
     {
       nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
       struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_gate, .chunk_offset = chunk_offset };
-      nm_data_chunk_filter_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+      nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
       /* enqueue chunks in the list, and immediately process one item 
        * (not necessarily the one we enqueued) */
       nm_so_process_large_pending_recv(p_gate);

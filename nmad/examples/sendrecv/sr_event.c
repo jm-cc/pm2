@@ -85,7 +85,7 @@ int main(int argc, char **argv)
       /* per-request event. */
       memset(buf, 0, long_len);
       nm_sr_recv_init(p_session, &request0);
-      nm_sr_recv_unpack_data(p_session, &request0, buf, short_len);
+      nm_sr_recv_unpack_contiguous(p_session, &request0, buf, short_len);
       nm_sr_request_monitor(p_session, &request0, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
       nm_sr_recv_irecv(p_session, &request0, NM_ANY_GATE, 0, NM_TAG_MASK_FULL);
       nm_sr_rwait(p_session, &request0);

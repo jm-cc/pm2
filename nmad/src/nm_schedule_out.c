@@ -23,7 +23,7 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
-void nm_core_pack_filter(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*p_data)
+void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*p_data)
 {
   p_pack->status    = NM_STATUS_NONE;
   p_pack->p_data    = p_data;

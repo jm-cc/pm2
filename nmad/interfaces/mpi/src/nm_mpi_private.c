@@ -225,7 +225,7 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
     {
       void *buffer = (p_datatype->is_contig == 1) ? p_req->buffer : p_req->contig_buffer;
       nm_sr_recv_init(p_session, &(p_req->request_nmad));
-      nm_sr_recv_unpack_data(p_session, &(p_req->request_nmad), buffer, p_req->count * p_datatype->size);
+      nm_sr_recv_unpack_contiguous(p_session, &(p_req->request_nmad), buffer, p_req->count * p_datatype->size);
       const int err = nm_sr_recv_irecv(p_session, &(p_req->request_nmad), p_req->gate, nm_tag, tag_mask);
       p_req->request_error = err;
       if(p_datatype->is_contig)

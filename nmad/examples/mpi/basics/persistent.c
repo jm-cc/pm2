@@ -128,12 +128,6 @@ void persistent_index(int ping_side, int rank_dst, int optimized) {
   MPI_Type_indexed(3, blocklengths, strides, MPI_CHAR, &mytype);
   MPI_Type_commit(&mytype);
 
-#if defined(MAD_MPI)
-  if (optimized) {
-    MPI_Type_optimized(&mytype, 1);
-  }
-#endif /* MAD_MPI */
-
   if (ping_side) {
     MPI_Request send_request;
     MPI_Request recv_request;

@@ -75,13 +75,6 @@ void contig_datatype(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Type_contiguous(2, mytype, &mytype2);
   MPI_Type_commit(&mytype2);
 
-#if defined(MAD_MPI)
-  if (optimized) {
-    MPI_Type_optimized(&mytype, 1);
-    MPI_Type_optimized(&mytype2, 1);
-  }
-#endif /* MAD_MPI */
-
   if (ping_side) {
     int buffer[4] = {1, 2, 3, 4};
     MPI_Send(buffer, 4, MPI_INT, rank_dst, 10, MPI_COMM_WORLD);
@@ -125,13 +118,6 @@ void vector_datatype(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Type_commit(&mytype);
   MPI_Type_hvector(8, 3, 8*sizeof(float), MPI_FLOAT, &mytype2);
   MPI_Type_commit(&mytype2);
-
-#if defined(MAD_MPI)
-  if (optimized) {
-    MPI_Type_optimized(&mytype, 1);
-    MPI_Type_optimized(&mytype2, 1);
-  }
-#endif /* MAD_MPI */
 
   if (ping_side) {
     int i;
@@ -206,13 +192,6 @@ void indexed_datatype(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Type_commit(&mytype);
   MPI_Type_hindexed(3, blocklengths, strides2, MPI_CHAR, &mytype2);
   MPI_Type_commit(&mytype2);
-
-#if defined(MAD_MPI)
-  if (optimized) {
-    MPI_Type_optimized(&mytype, 1);
-    MPI_Type_optimized(&mytype2, 1);
-  }
-#endif /* MAD_MPI */
 
   if (ping_side) {
     char buffer[26] = {'a', 'b', 'c', 'd', 'e', 'f', 'g','h', 'i' ,'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
@@ -296,12 +275,6 @@ void struct_datatype(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Type_struct(3, blocklens, displacements, types, &mytype);
   MPI_Type_commit(&mytype);
 
-#if defined(MAD_MPI)
-  if (optimized) {
-    MPI_Type_optimized(&mytype, 1);
-  }
-#endif /* MAD_MPI */
-
   if (ping_side) {
     struct part_s particles[10];
     for(i=0 ; i<10 ; i++) {
@@ -371,12 +344,6 @@ void struct_and_indexed(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Type_struct(2, struct_blocklens, struct_displacements, types, &struct_type);
   MPI_Type_commit(&struct_type);
 
-#if defined(MAD_MPI)
-  if (optimized) {
-    MPI_Type_optimized(&struct_type, 1);
-  }
-#endif /* MAD_MPI */
-
   MPI_Type_lb(struct_type, &lb);
   MPI_Type_extent(struct_type, &extent);
   if (extent != sizeof(struct part_s)) {
@@ -389,11 +356,6 @@ void struct_and_indexed(int rank, int ping_side, int rank_dst, int optimized) {
   }
 
   MPI_Type_commit(&indexed_type);
-#if defined(MAD_MPI)
-  if (optimized) {
-    MPI_Type_optimized(&indexed_type, 1);
-  }
-#endif /* MAD_MPI */
 
   //printf("Sizeof particle is %lud\n", sizeof(struct part_s));
   if (ping_side) {

@@ -203,11 +203,11 @@ static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p
   nm_data_iov_set(&p_request->data, (struct nm_data_iov_s){ .v = (struct iovec*)iov, .n = num_entries });
   nm_core_pack_data(p_core, &p_request->req.pack, &p_request->data);
 }
-static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					struct nm_data_s*p_data)
+static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_core_pack_data(p_core, &p_request->req.pack, p_data);
+  p_request->data = *p_data;
+  nm_core_pack_data(p_core, &p_request->req.pack, &p_request->data);
 }
 
 static inline int nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -266,11 +266,11 @@ static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t
   nm_core_unpack_data(p_core, &p_request->req.unpack, &p_request->data);
 }
 
-static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					  struct nm_data_s*p_data)
+static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_core_unpack_data(p_core, &p_request->req.unpack, p_data);
+  p_request->data = *p_data;
+  nm_core_unpack_data(p_core, &p_request->req.unpack, &p_request->data);
 }
 
 static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,

@@ -135,7 +135,7 @@ static inline void nm_sr_send_pack_contiguous(nm_session_t p_session, nm_sr_requ
 static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 				       const struct iovec*iov, int num_entries);
 static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					struct nm_data_s*p_data);
+					const struct nm_data_s*p_data);
 static inline int  nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_request,
 				    nm_gate_t p_gate, nm_tag_t tag);
 static inline int  nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -152,7 +152,7 @@ static inline void nm_sr_recv_unpack_contiguous(nm_session_t p_session, nm_sr_re
 static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 					 struct iovec*iov, int num_entry);
 static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					  struct nm_data_s*p_data);
+					  const struct nm_data_s*p_data);
 static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
 				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask);
 

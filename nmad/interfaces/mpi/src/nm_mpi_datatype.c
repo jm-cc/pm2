@@ -209,7 +209,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
   nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_RESIZED, p_oldtype->size, 1);
   *newtype = p_newtype->id;
-  p_newtype->is_contig = p_oldtype->is_contig;
+  p_newtype->is_contig = (p_oldtype->is_contig && (lb == 0) && (extent == p_oldtype->size));
   p_newtype->extent    = extent;
   p_newtype->lb        = lb;
   p_newtype->RESIZED.p_old_type = p_oldtype;
@@ -421,12 +421,16 @@ void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, 
 	{
 	  switch(p_datatype->combiner)
 	    {
-	    case MPI_COMBINER_RESIZED:
-	      nm_mpi_datatype_filter_apply(filter, data_ptr, p_datatype->RESIZED.p_old_type, 1);
+	    case MPI_COMBINER_NAMED:
+	      (*filter->apply)((void*)data_ptr, p_datatype->size, filter->_status);
 	      break;
-	      
+
 	    case MPI_COMBINER_CONTIGUOUS:
 	      nm_mpi_datatype_filter_apply(filter, data_ptr, p_datatype->CONTIGUOUS.p_old_type, p_datatype->elements);
+	      break;
+
+	    case MPI_COMBINER_RESIZED:
+	      nm_mpi_datatype_filter_apply(filter, data_ptr, p_datatype->RESIZED.p_old_type, 1);
 	      break;
 	      
 	    case MPI_COMBINER_VECTOR:
@@ -451,12 +455,6 @@ void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, 
 		  nm_mpi_datatype_filter_apply(filter, data_ptr + p_datatype->STRUCT.p_map[j].displacement,
 					       p_datatype->STRUCT.p_map[j].p_old_type, p_datatype->STRUCT.p_map[j].blocklength);
 		}
-	      break;
-	      
-	    case MPI_COMBINER_NAMED:
-	      {
-		ERROR("madmpi: trying to apply filter to NAMED datatype as sparse (should be contiguous).\n");
-	      }
 	      break;
 	      
 	    default:

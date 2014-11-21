@@ -142,7 +142,7 @@ void vector_datatype(int rank, int ping_side, int rank_dst, int optimized) {
 	{
 	  int value = ((i % 10) == 0 || (i % 10) == 1) ? i : 0;
 	  int ok = (buffer[i] == value);
-	  fprintf(stderr, "# ok = %d; expected = %2d; received = %2d\n", ok, value, buffer[i]);
+	  /* fprintf(stderr, "# ok = %d; expected = %2d; received = %2d\n", ok, value, buffer[i]); */
 	  success &= ok;
         }
       if(success)
@@ -163,7 +163,7 @@ void vector_datatype(int rank, int ping_side, int rank_dst, int optimized) {
 	{
 	  float value = ((i % 8) == 0 || (i % 8) == 1 || (i % 8) == 2) ? i : 0.0;
 	  int ok = (buffer2[i] == value);
-	  fprintf(stderr, "# ok = %d; expected = %8.3f; received = %3.2f\n", ok, value, buffer2[i]);
+	  /* fprintf(stderr, "# ok = %d; expected = %8.3f; received = %3.2f\n", ok, value, buffer2[i]); */
 	  success &= ok;
 	}
 
@@ -197,7 +197,7 @@ void indexed_datatype(int rank, int ping_side, int rank_dst, int optimized) {
     char buffer[26] = {'a', 'b', 'c', 'd', 'e', 'f', 'g','h', 'i' ,'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
     MPI_Send(buffer, 3, mytype, rank_dst, 10, MPI_COMM_WORLD);
-    MPI_Send(buffer, 2, mytype2, rank_dst, 10, MPI_COMM_WORLD);
+    MPI_Send(buffer, 3, mytype2, rank_dst, 10, MPI_COMM_WORLD);
   }
   else {
     char buffer[26] = { 0 };
@@ -211,7 +211,7 @@ void indexed_datatype(int rank, int ping_side, int rank_dst, int optimized) {
 	{
 	  char value = ((i % 8) == 1 || (i % 8) == 5) ? 0 : 'a' + i;
 	  int ok = (buffer[i] == value);
-	  fprintf(stderr, "# ok = %d; expected = %3d; received = %3d\n", ok, (int)value, (int)buffer[i]);
+	  /* fprintf(stderr, "# ok = %d; expected = %3d; received = %3d\n", ok, (int)value, (int)buffer[i]); */
 	  success &= ok;
 	}
 
@@ -233,7 +233,7 @@ void indexed_datatype(int rank, int ping_side, int rank_dst, int optimized) {
 	{
 	  char value = ((i % 8) == 1 || (i % 8) == 5) ? 0 : 'a' + i;
 	  int ok = (buffer2[i] == value);
-	  fprintf(stderr, "# ok = %d; expected = %3d; received = %3d\n", ok, (int)value, (int)buffer2[i]);
+	  /* fprintf(stderr, "# ok = %d; expected = %3d; received = %3d\n", ok, (int)value, (int)buffer2[i]); */
 	  success &= ok;
 	}
 

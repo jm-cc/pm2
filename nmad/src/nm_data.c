@@ -23,7 +23,7 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 /* ********************************************************* */
 
-void nm_data_traversal_contiguous(void*_content, nm_data_apply_t apply, void*_context)
+void nm_data_traversal_contiguous(const void*_content, nm_data_apply_t apply, void*_context)
 {
   const struct nm_data_contiguous_s*p_contiguous = _content;
   void*ptr = p_contiguous->ptr;
@@ -33,7 +33,7 @@ void nm_data_traversal_contiguous(void*_content, nm_data_apply_t apply, void*_co
 
 /* ********************************************************* */
 
-void nm_data_traversal_iov(void*_content, nm_data_apply_t apply, void*_context)
+void nm_data_traversal_iov(const void*_content, nm_data_apply_t apply, void*_context)
 {
   const struct nm_data_iov_s*p_iov = _content;
   const struct iovec*const v = p_iov->v;

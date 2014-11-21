@@ -120,7 +120,7 @@ struct nm_data_s;
 typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
 
 /** traversal function for data descriptors */
-typedef void (*nm_data_traversal_t)(void*_content, nm_data_apply_t apply, void*_context);
+typedef void (*nm_data_traversal_t)(const void*_content, nm_data_apply_t apply, void*_context);
 
 /** a data descriptor, used to pack/unpack data from app layout to/from contiguous buffers */
 struct nm_data_s
@@ -150,7 +150,7 @@ struct nm_data_contiguous_s
   void*ptr;
   nm_len_t len;
 };
-void nm_data_traversal_contiguous(void*_content, nm_data_apply_t apply, void*_context);
+void nm_data_traversal_contiguous(const void*_content, nm_data_apply_t apply, void*_context);
 NM_DATA_TYPE(contiguous, struct nm_data_contiguous_s, &nm_data_traversal_contiguous);
 /** data descriptor for iov data
  */
@@ -159,7 +159,7 @@ struct nm_data_iov_s
   struct iovec*v;
   int n;
 };
-void nm_data_traversal_iov(void*_content, nm_data_apply_t apply, void*_context);
+void nm_data_traversal_iov(const void*_content, nm_data_apply_t apply, void*_context);
 NM_DATA_TYPE(iov, struct nm_data_iov_s, &nm_data_traversal_iov);
 
 /** helper function to apply iterator to data

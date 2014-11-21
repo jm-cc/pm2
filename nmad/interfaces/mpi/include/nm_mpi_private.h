@@ -262,7 +262,7 @@ struct nm_data_mpi_datatype_s
   struct nm_mpi_datatype_s*p_datatype;  /**< datatype describing data layout */
   int count;                            /**< number of elements */
 };
-void nm_mpi_datatype_traversal_apply(void*_content, nm_data_apply_t apply, void*_context);
+void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context);
 NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_traversal_apply);
 
 /* @} */

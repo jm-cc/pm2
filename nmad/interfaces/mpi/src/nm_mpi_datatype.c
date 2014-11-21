@@ -408,7 +408,7 @@ static int nm_mpi_datatype_indexed(int count, int*array_of_blocklengths, MPI_Ain
 
 /** apply a function to every chunk of data in datatype */
 __PUK_SYM_INTERNAL
-void nm_mpi_datatype_traversal_apply(void*_content, nm_data_apply_t apply, void*_context)
+void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context)
 {
   const struct nm_data_mpi_datatype_s*const p_data = _content;
   const struct nm_mpi_datatype_s*const p_datatype = p_data->p_datatype;

@@ -406,13 +406,18 @@ static int nm_mpi_datatype_indexed(int count, int*array_of_blocklengths, MPI_Ain
   return MPI_SUCCESS;
 }
 
+/** apply a function to every chunk of data in datatype */
 __PUK_SYM_INTERNAL
-void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, const void*data_ptr, nm_mpi_datatype_t*p_datatype, int count)
+void nm_mpi_datatype_traversal_apply(void*_content, nm_data_apply_t apply, void*_context)
 {
+  const struct nm_data_mpi_datatype_s*const p_data = _content;
+  const struct nm_mpi_datatype_s*const p_datatype = p_data->p_datatype;
+  const int count = p_data->count;
+  void*ptr = p_data->ptr;
   if(p_datatype->is_contig)
     {
       assert(p_datatype->lb == 0);
-      (*filter->apply)((void*)data_ptr, count * p_datatype->size, filter->_status);
+      (*apply)((void*)ptr, count * p_datatype->size, _context);
     }
   else
     {
@@ -422,55 +427,64 @@ void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, 
 	  switch(p_datatype->combiner)
 	    {
 	    case MPI_COMBINER_NAMED:
-	      (*filter->apply)((void*)data_ptr, p_datatype->size, filter->_status);
+	      (*apply)((void*)ptr, p_datatype->size, _context);
 	      break;
 
 	    case MPI_COMBINER_CONTIGUOUS:
-	      nm_mpi_datatype_filter_apply(filter, data_ptr, p_datatype->CONTIGUOUS.p_old_type, p_datatype->elements);
+	      {
+		const struct nm_data_mpi_datatype_s sub = 
+		  { .ptr = ptr, .p_datatype = p_datatype->CONTIGUOUS.p_old_type, .count = p_datatype->elements };
+		nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+	      }
 	      break;
 
 	    case MPI_COMBINER_RESIZED:
-	      nm_mpi_datatype_filter_apply(filter, data_ptr, p_datatype->RESIZED.p_old_type, 1);
+	      {
+		const struct nm_data_mpi_datatype_s sub = 
+		  { .ptr = ptr, .p_datatype = p_datatype->RESIZED.p_old_type, .count = 1 };
+		nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+	      }
 	      break;
 	      
 	    case MPI_COMBINER_VECTOR:
 	      for(j = 0; j < p_datatype->elements; j++)
 		{
-		  nm_mpi_datatype_filter_apply(filter, data_ptr + j * p_datatype->VECTOR.hstride,
-					       p_datatype->VECTOR.p_old_type, p_datatype->VECTOR.blocklength);
+		  const struct nm_data_mpi_datatype_s sub = 
+		    { .ptr        = ptr + j * p_datatype->VECTOR.hstride, 
+		      .p_datatype = p_datatype->VECTOR.p_old_type,
+		      .count      = p_datatype->VECTOR.blocklength };
+		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 		}
 	      break;
 	      
 	    case MPI_COMBINER_INDEXED:
 	      for(j = 0; j < p_datatype->elements; j++)
 		{
-		  nm_mpi_datatype_filter_apply(filter, data_ptr + p_datatype->INDEXED.p_map[j].displacement, 
-					       p_datatype->INDEXED.p_old_type, p_datatype->INDEXED.p_map[j].blocklength);
+		  const struct nm_data_mpi_datatype_s sub = 
+		    { .ptr        = ptr + p_datatype->INDEXED.p_map[j].displacement,
+		      .p_datatype = p_datatype->INDEXED.p_old_type,
+		      .count      = p_datatype->INDEXED.p_map[j].blocklength };
+		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 		}
 	      break;
 	      
 	    case MPI_COMBINER_STRUCT:
 	      for(j = 0; j < p_datatype->elements; j++)
 		{
-		  nm_mpi_datatype_filter_apply(filter, data_ptr + p_datatype->STRUCT.p_map[j].displacement,
-					       p_datatype->STRUCT.p_map[j].p_old_type, p_datatype->STRUCT.p_map[j].blocklength);
+		  const struct nm_data_mpi_datatype_s sub = 
+		    { .ptr        = ptr + p_datatype->STRUCT.p_map[j].displacement,
+		      .p_datatype = p_datatype->STRUCT.p_map[j].p_old_type,
+		      .count      = p_datatype->STRUCT.p_map[j].blocklength };
+		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 		}
 	      break;
 	      
 	    default:
 	      ERROR("madmpi: cannot filter datatype with combiner %d\n", p_datatype->combiner);
 	    }
-	  data_ptr += p_datatype->extent;
+	  ptr += p_datatype->extent;
 	}
     }
-}
-
-__PUK_SYM_INTERNAL
-void nm_data_mpi_datatype_traversal(void*_content, nm_data_apply_t apply, void*_context)
-{
-  const struct nm_data_mpi_datatype_s*p_content = _content;
-  const struct nm_mpi_datatype_filter_s filter = { .apply = apply, ._status = _context };
-  nm_mpi_datatype_filter_apply(&filter, p_content->ptr, p_content->p_datatype, p_content->count);
 }
 
 /** status for nm_mpi_datatype_*_memcpy */
@@ -478,14 +492,16 @@ struct nm_mpi_datatype_filter_memcpy_s
 {
   void*pack_ptr; /**< pointer on packed data in memory */
 };
-/** pack data to memory */
+/** Pack data to memory 
+ */
 static void nm_mpi_datatype_pack_memcpy(void*data_ptr, nm_len_t size, void*_status)
 {
   struct nm_mpi_datatype_filter_memcpy_s*status = _status;
   memcpy(status->pack_ptr, data_ptr, size);
   status->pack_ptr += size;
 }
-/** unpack data from memory */
+/** Unpack data from memory
+ */
 static void nm_mpi_datatype_unpack_memcpy(void*data_ptr, nm_len_t size, void*_status)
 {
   struct nm_mpi_datatype_filter_memcpy_s*status = _status;
@@ -493,29 +509,28 @@ static void nm_mpi_datatype_unpack_memcpy(void*data_ptr, nm_len_t size, void*_st
   status->pack_ptr += size;
 }
 
-/**
- * Pack data into a contiguous buffers.
+/** Pack data into a contiguous buffers.
  */
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_pack(void*pack_ptr, const void*data_ptr, nm_mpi_datatype_t*p_datatype, int count)
 {
-  struct nm_mpi_datatype_filter_memcpy_s status = { .pack_ptr = (void*)pack_ptr };
-  const struct nm_mpi_datatype_filter_s filter = { .apply = &nm_mpi_datatype_pack_memcpy, &status };
-  nm_mpi_datatype_filter_apply(&filter, (void*)data_ptr, p_datatype, count);
+  struct nm_mpi_datatype_filter_memcpy_s context = { .pack_ptr = (void*)pack_ptr };
+  const struct nm_data_mpi_datatype_s content = { .ptr = (void*)data_ptr, .p_datatype = p_datatype, .count = count };
+  nm_mpi_datatype_traversal_apply(&content, &nm_mpi_datatype_pack_memcpy, &context);
 }
 
-/**
- * Unpack data from a contiguous buffers.
+/** Unpack data from a contiguous buffers.
  */
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_unpack(const void*src_ptr, void*dest_ptr, nm_mpi_datatype_t*p_datatype, int count)
 {
-  struct nm_mpi_datatype_filter_memcpy_s status = { .pack_ptr = (void*)src_ptr };
-  const struct nm_mpi_datatype_filter_s filter = { .apply = &nm_mpi_datatype_unpack_memcpy, &status };
-  nm_mpi_datatype_filter_apply(&filter, (void*)dest_ptr, p_datatype, count);
+  struct nm_mpi_datatype_filter_memcpy_s context = { .pack_ptr = (void*)src_ptr };
+  const struct nm_data_mpi_datatype_s content = { .ptr = dest_ptr, .p_datatype = p_datatype, .count = count };
+  nm_mpi_datatype_traversal_apply(&content, &nm_mpi_datatype_unpack_memcpy, &context);
 }
 
-/** copy data using datatype layout */
+/** Copy data using datatype layout
+ */
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_copy(const void*src_buf, nm_mpi_datatype_t*p_src_type, int src_count,
 			  void*dest_buf, nm_mpi_datatype_t*p_dest_type, int dest_count)

@@ -255,25 +255,15 @@ typedef struct nm_mpi_datatype_s
   };
 } nm_mpi_datatype_t;
 
-/** filter used to serialize/deserialize/direct pack/unpack data from datatype */
-struct nm_mpi_datatype_filter_s
-{
-  nm_data_apply_t apply; /**< function applied to datatype blocks */
-  void*_status;          /**< internal status of filter */
-};
-
-/** apply a filter to a datatype */
-void nm_mpi_datatype_filter_apply(const struct nm_mpi_datatype_filter_s*filter, const void*data_ptr, nm_mpi_datatype_t*p_datatype, int count);
-
 /** content for datatype traversal */
 struct nm_data_mpi_datatype_s
 {
-  void*ptr;
-  struct nm_mpi_datatype_s*p_datatype;
-  int count;
+  void*ptr;                             /**< pointer to base data */
+  struct nm_mpi_datatype_s*p_datatype;  /**< datatype describing data layout */
+  int count;                            /**< number of elements */
 };
-void nm_data_mpi_datatype_traversal(void*_content, nm_data_apply_t apply, void*_context);
-NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_data_mpi_datatype_traversal);
+void nm_mpi_datatype_traversal_apply(void*_content, nm_data_apply_t apply, void*_context);
+NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_traversal_apply);
 
 /* @} */
 

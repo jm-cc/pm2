@@ -24,11 +24,6 @@
 /* Number of preallocated iovec entries within packet wrappers */
 #define NM_SO_PREALLOC_IOV_LEN 8
 
-/** Threshold (in bytes) between by-copy / zero-copy with multi-ack methods
- * for datatype transfers
- */
-#define NM_SO_DATATYPE_BLOCKSIZE (2*1024)
-
 
 #define NM_SO_ALIGN_TYPE      uint32_t
 #define NM_SO_ALIGN_FRONTIER  sizeof(NM_SO_ALIGN_TYPE)

@@ -23,23 +23,6 @@
 /** @name Functions: User-defined datatypes and packing */
 /* @{ */
 
-/**
- * Returns the byte address of location.
- * @param location location in caller memory
- * @param address address of location
- * @return MPI status
- */
-int MPI_Get_address(void *location,
-		    MPI_Aint *address);
-
-/**
- * Returns the byte address of location.
- * @param location location in caller memory
- * @param address address of location
- * @return MPI status
- */
-int MPI_Address(void *location,
-		MPI_Aint *address);
 
 /**
  * Returns the total size, in bytes, of the entries in the type

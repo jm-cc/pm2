@@ -69,6 +69,7 @@
 #define MPI_ERR_INTERN       16
 #define MPI_ERR_IN_STATUS    17
 #define MPI_ERR_PENDING      18
+#define MPI_ERR_INFO         19
 /* extended error codes, not a class */
 #define MPI_ERR_REQUEST      32
 #define MPI_ERR_KEYVAL       33
@@ -104,6 +105,13 @@
 /* @} */
 
 typedef uintptr_t MPI_Aint;
+
+/** An info opaque object */
+typedef int MPI_Info;
+#define MPI_INFO_NULL       ((MPI_Info)0)
+#define _NM_MPI_INFO_OFFSET ((MPI_Info)1)
+#define MPI_MAX_INFO_KEY 255
+#define MPI_MAX_INFO_VAL 1024
 
 /** @name Status of receive operation */
 /* @{ */

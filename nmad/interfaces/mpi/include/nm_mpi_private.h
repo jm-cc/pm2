@@ -89,6 +89,13 @@ struct nm_mpi_errhandler_s
 
 #define NM_MPI_TAG_PRIVATE_COMMSPLIT     (NM_MPI_TAG_PRIVATE_BASE | 0xF1)
 
+/** content for MPI_Info */
+struct nm_mpi_info_s
+{
+  int id; /**< object ID */
+  puk_hashtable_t content; /**< hashtable of <keys, values> */
+};
+
 /** @name Communicators */
 /* @{ */
 

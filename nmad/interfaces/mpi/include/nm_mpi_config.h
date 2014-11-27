@@ -134,6 +134,56 @@ int MPI_Comm_set_errhandler(MPI_Comm comm, MPI_Errhandler errhandler);
 
 int MPI_Comm_get_errhandler(MPI_Comm comm, MPI_Errhandler*errhandler);
 
+/**
+ * Returns the byte address of location.
+ * @param location location in caller memory
+ * @param address address of location
+ * @return MPI status
+ */
+int MPI_Get_address(void *location,
+		    MPI_Aint *address);
+
+/**
+ * Returns the byte address of location.
+ * @param location location in caller memory
+ * @param address address of location
+ * @return MPI status
+ */
+int MPI_Address(void *location,
+		MPI_Aint *address);
+
+/** Allocate memory for message passing 
+ */
+int MPI_Alloc_mem(MPI_Aint size,
+		  MPI_Info info,
+		  void*baseptr);
+
+/** Free memory allocated with MPI_Alloc_mem
+ */
+int MPI_Free_mem(void*base);
+
+/** Creates a new info object
+ */
+int MPI_Info_create(MPI_Info*info);
+
+/** Frees an info object
+ */
+int MPI_Info_free(MPI_Info*info);
+
+/** Adds a <key, value> pair to info object
+ */
+int MPI_Info_set(MPI_Info info,
+		 char*key,
+		 char*value);
+
+/** Retrieves the value associated with a key
+ */
+int MPI_Info_get(MPI_Info info,
+		 char*key,
+		 int valuelen,
+		 char*value,
+		 int*flag);
+
 
 /* @} */
 /* @}*/

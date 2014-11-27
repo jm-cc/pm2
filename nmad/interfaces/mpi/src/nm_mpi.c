@@ -27,6 +27,9 @@ static int init_done = 0;
 NM_MPI_HANDLE_TYPE(errhandler, struct nm_mpi_errhandler_s, _NM_MPI_ERRHANDLER_OFFSET, 8);
 static struct nm_mpi_handle_errhandler_s nm_mpi_errhandlers;
 
+NM_MPI_HANDLE_TYPE(info, struct nm_mpi_info_s, _NM_MPI_INFO_OFFSET, 8);
+static struct nm_mpi_handle_info_s nm_mpi_infos;
+
 /* ********************************************************* */
 /* Aliases */
 
@@ -51,6 +54,12 @@ NM_MPI_ALIAS(MPI_Get_version, mpi_get_version);
 NM_MPI_ALIAS(MPI_Get_count, mpi_get_count);
 NM_MPI_ALIAS(MPI_Get_address, mpi_get_address);
 NM_MPI_ALIAS(MPI_Address, mpi_address);
+NM_MPI_ALIAS(MPI_Alloc_mem, mpi_alloc_mem);
+NM_MPI_ALIAS(MPI_Free_mem, mpi_free_mem);
+NM_MPI_ALIAS(MPI_Info_create, mpi_info_create);
+NM_MPI_ALIAS(MPI_Info_free, mpi_info_free);
+NM_MPI_ALIAS(MPI_Info_set, mpi_info_set);
+NM_MPI_ALIAS(MPI_Info_get, mpi_info_get);
 NM_MPI_ALIAS(MPI_Pcontrol, mpi_pcontrol);
 NM_MPI_ALIAS(MPI_Status_c2f, mpi_status_c2f);
 NM_MPI_ALIAS(MPI_Status_f2c, mpi_status_f2c);
@@ -83,6 +92,7 @@ static void nm_mpi_errhandler_fatal_function(MPI_Comm*comm, int*err, ...)
 
 int mpi_init(int*argc, char ***argv)
 {
+  nm_mpi_handle_info_init(&nm_mpi_infos);
   nm_mpi_handle_errhandler_init(&nm_mpi_errhandlers);
   struct nm_mpi_errhandler_s*p_errhandler_return = nm_mpi_handle_errhandler_store(&nm_mpi_errhandlers, MPI_ERRORS_RETURN);
   p_errhandler_return->function = &nm_mpi_errhandler_return_function;
@@ -128,6 +138,7 @@ int mpi_finalize(void)
   nm_mpi_comm_exit();
   nm_mpi_request_exit();
   nm_mpi_handle_errhandler_finalize(&nm_mpi_errhandlers);
+  nm_mpi_handle_info_finalize(&nm_mpi_infos);
   init_done = 0;
   return err;
 }
@@ -328,6 +339,78 @@ int mpi_address(void *location, MPI_Aint *address)
 {
   return MPI_Get_address(location, address);
 }
+
+int mpi_alloc_mem(MPI_Aint size, MPI_Info info, void*_ptr)
+{
+  void**ptr = _ptr;
+  *ptr = malloc(size);
+  return MPI_SUCCESS;
+}
+
+int mpi_free_mem(void*ptr)
+{
+  free(ptr);
+  return MPI_SUCCESS;
+}
+
+int mpi_info_create(MPI_Info*info)
+{
+  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_alloc(&nm_mpi_infos);
+  *info = p_info->id;
+  p_info->content = puk_hashtable_new_string();
+  return MPI_SUCCESS;
+}
+
+int mpi_info_free(MPI_Info*info)
+{
+  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_get(&nm_mpi_infos, *info);
+  if(p_info == NULL)
+    return MPI_ERR_INFO;
+  puk_hashtable_delete(p_info->content);
+  nm_mpi_handle_info_free(&nm_mpi_infos, p_info);
+  *info = MPI_INFO_NULL;
+  return MPI_SUCCESS;
+}
+
+int mpi_info_set(MPI_Info info, char*key, char*value)
+{
+  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_get(&nm_mpi_infos, info);
+  if(p_info == NULL)
+    return MPI_ERR_INFO;
+  if(puk_hashtable_probe(p_info->content, key))
+    {
+      void*oldkey = NULL, *oldvalue = NULL;
+      puk_hashtable_lookup2(p_info->content, key, &oldkey, &oldvalue);
+      puk_hashtable_remove(p_info->content, key);
+      free(oldkey);
+      free(oldvalue);
+    }
+  puk_hashtable_insert(p_info->content, strdup(key), strdup(value));
+  return MPI_SUCCESS;
+}
+
+int mpi_info_get(MPI_Info info, char*key, int valuelen, char*value, int*flag)
+{
+  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_get(&nm_mpi_infos, info);
+  if(p_info == NULL)
+    return MPI_ERR_INFO;
+  char*v = puk_hashtable_lookup(p_info->content, key);
+  if(v == NULL)
+    {
+      *flag = 0;
+    }
+  else
+    {
+      if(strlen(v) > valuelen)
+	{
+	  return MPI_ERR_OTHER;
+	}
+      strcpy(value, v);
+      *flag = 1;
+    }
+  return MPI_SUCCESS;
+}
+
 
 /** stub implementation to be overriden by profiling library */
 int MPI_Pcontrol(const int level, ...) __attribute__((weak));

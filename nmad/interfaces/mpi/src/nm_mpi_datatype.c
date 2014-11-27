@@ -43,8 +43,10 @@ NM_MPI_ALIAS(MPI_Type_free,           mpi_type_free);
 NM_MPI_ALIAS(MPI_Type_contiguous,     mpi_type_contiguous);
 NM_MPI_ALIAS(MPI_Type_vector,         mpi_type_vector);
 NM_MPI_ALIAS(MPI_Type_hvector,        mpi_type_hvector);
+NM_MPI_ALIAS(MPI_Type_create_hvector, mpi_type_hvector);
 NM_MPI_ALIAS(MPI_Type_indexed,        mpi_type_indexed);
 NM_MPI_ALIAS(MPI_Type_hindexed,       mpi_type_hindexed);
+NM_MPI_ALIAS(MPI_Type_create_hindexed, mpi_type_create_hindexed);
 NM_MPI_ALIAS(MPI_Type_struct,         mpi_type_struct);
 NM_MPI_ALIAS(MPI_Pack,                mpi_pack);
 NM_MPI_ALIAS(MPI_Unpack,              mpi_unpack);
@@ -262,7 +264,7 @@ int mpi_type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype
   return MPI_SUCCESS;
 }
 
-int mpi_type_hvector(int count, int blocklength, int hstride, MPI_Datatype oldtype, MPI_Datatype *newtype)
+int mpi_type_hvector(int count, int blocklength, MPI_Aint hstride, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_HVECTOR, p_oldtype->size * count * blocklength, count);
@@ -313,6 +315,11 @@ int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_
   p_newtype->extent = (p_newtype->HINDEXED.p_map[count - 1].displacement + 
 		       p_oldtype->extent * p_newtype->HINDEXED.p_map[count - 1].blocklength);
   return MPI_SUCCESS;
+}
+
+int mpi_type_create_hindexed(int count, const int array_of_blocklengths[], const MPI_Aint array_of_displacements[], MPI_Datatype oldtype, MPI_Datatype*newtype)
+{
+  return mpi_type_hindexed(count, (int*)array_of_blocklengths, (MPI_Aint*)array_of_displacements, oldtype, newtype);
 }
 
 int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_displacements, MPI_Datatype *array_of_types, MPI_Datatype *newtype)

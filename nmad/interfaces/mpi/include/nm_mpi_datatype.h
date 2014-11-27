@@ -135,9 +135,9 @@ int MPI_Type_vector(int count,
  */
 int MPI_Type_hvector(int count,
                      int blocklength,
-                     int stride,
+                     MPI_Aint stride,
                      MPI_Datatype oldtype,
-                     MPI_Datatype *newtype);
+                     MPI_Datatype*newtype);
 
 /**
  * Constructs a typemap consisting of the replication of a datatype
@@ -189,6 +189,20 @@ int MPI_Type_struct(int count,
                     MPI_Aint *array_of_displacements,
                     MPI_Datatype *array_of_types,
                     MPI_Datatype *newtype);
+
+
+int MPI_Type_create_hindexed(int count,
+			     const int array_of_blocklengths[],
+			     const MPI_Aint array_of_displacements[],
+			     MPI_Datatype oldtype,
+			     MPI_Datatype*newtype);
+
+int MPI_Type_create_hvector(int count,
+			    int blocklength,
+			    MPI_Aint hstride,
+			    MPI_Datatype oldtype,
+			    MPI_Datatype*newtype);
+
 
 /**
  * Packs a message specified by inbuf, incount, datatype, comm into

@@ -232,7 +232,7 @@ typedef struct nm_mpi_datatype_s
     struct
     {
       struct nm_mpi_datatype_s*p_old_type;
-      int hstride;
+      MPI_Aint hstride;
       int blocklength;
     } HVECTOR;
     struct
@@ -892,7 +892,7 @@ int mpi_type_vector(int count,
 
 int mpi_type_hvector(int count,
                      int blocklength,
-                     int stride,
+                     MPI_Aint stride,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype);
 

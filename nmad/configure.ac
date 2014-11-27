@@ -396,7 +396,7 @@ dnl --
 
 NMAD_LDFLAGS="${NMAD_CORE_LDFLAGS} -Wl,--export-dynamic"
 
-NMAD_CORE_CFLAGS="\$(BASE_CFLAGS) -DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include"
+NMAD_CORE_CFLAGS="\$(BASE_CFLAGS) -DNMAD -DNMAD_BUILD -I${nmad_srcdir}/include -I${nmad_builddir}/include"
 if test "x${NMAD_ENABLE_OPTIMIZE}" = "xyes"; then
    NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} \$(OPT_CFLAGS)"
    NMAD_CORE_LDFLAGS="${NMAD_CORE_LDFLAGS} \$(OPT_LDFLAGS)"

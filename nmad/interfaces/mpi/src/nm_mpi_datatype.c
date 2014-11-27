@@ -25,7 +25,6 @@ NM_MPI_HANDLE_TYPE(datatype, nm_mpi_datatype_t, _NM_MPI_DATATYPE_OFFSET, 64);
 static struct nm_mpi_handle_datatype_s nm_mpi_datatypes;
 
 
-static int nm_mpi_datatype_indexed(int count, int *array_of_blocklengths, MPI_Aint*array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype);
 /** store builtin datatypes */
 static void nm_mpi_datatype_store(int id, size_t size, int elements);
 static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
@@ -252,50 +251,68 @@ int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
 
 int mpi_type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
-  nm_mpi_datatype_t*p_old_type = nm_mpi_datatype_get(oldtype);
-  const int hstride = stride * nm_mpi_datatype_size(p_old_type);
-  return mpi_type_hvector(count, blocklength, hstride, oldtype, newtype);
+  nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
+  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_VECTOR, p_oldtype->size * count * blocklength, count);
+  *newtype = p_newtype->id;
+  p_newtype->is_contig = 0;
+  p_newtype->extent = p_oldtype->extent * blocklength + (count - 1) * stride * p_oldtype->size;
+  p_newtype->VECTOR.p_old_type = p_oldtype;
+  p_newtype->VECTOR.stride = stride;
+  p_newtype->VECTOR.blocklength = blocklength;
+  return MPI_SUCCESS;
 }
 
 int mpi_type_hvector(int count, int blocklength, int hstride, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
-  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_VECTOR, p_oldtype->size * count * blocklength, count);
+  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_HVECTOR, p_oldtype->size * count * blocklength, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
   p_newtype->extent = p_oldtype->extent * blocklength + (count - 1) * hstride;
-  p_newtype->VECTOR.p_old_type = p_oldtype;
-  p_newtype->VECTOR.hstride = hstride;
-  p_newtype->VECTOR.blocklength = blocklength;
+  p_newtype->HVECTOR.p_old_type = p_oldtype;
+  p_newtype->HVECTOR.hstride = hstride;
+  p_newtype->HVECTOR.blocklength = blocklength;
   return MPI_SUCCESS;
 }
 
 int mpi_type_indexed(int count, int *array_of_blocklengths, int *array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
-  MPI_Aint *displacements = malloc(count * sizeof(MPI_Aint));
-  nm_mpi_datatype_t*p_old_type = nm_mpi_datatype_get(oldtype);
-  const int old_size = nm_mpi_datatype_size(p_old_type);
   int i;
-  for(i = 0; i < count; i++)
+  nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
+  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_INDEXED, 0, count);
+  *newtype = p_newtype->id;
+  p_newtype->is_contig = 0;
+  p_newtype->INDEXED.p_old_type = p_oldtype;
+  p_newtype->INDEXED.p_map = malloc(count * sizeof(struct nm_mpi_type_indexed_map_s));
+  for(i = 0; i < count ; i++)
     {
-      displacements[i] = array_of_displacements[i] * old_size;
+      p_newtype->INDEXED.p_map[i].blocklength = array_of_blocklengths[i];
+      p_newtype->INDEXED.p_map[i].displacement = array_of_displacements[i];
+      p_newtype->size += p_oldtype->size * array_of_blocklengths[i];
     }
-  int err = nm_mpi_datatype_indexed(count, array_of_blocklengths, displacements, oldtype, newtype);
-  FREE_AND_SET_NULL(displacements);
-  return err;
+  p_newtype->extent = (p_newtype->INDEXED.p_map[count - 1].displacement * p_oldtype->size + 
+		       p_oldtype->extent * p_newtype->INDEXED.p_map[count - 1].blocklength);
+  return MPI_SUCCESS;
 }
 
 int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype) 
 {
-  MPI_Aint *displacements = malloc(count * sizeof(MPI_Aint));
   int i;
-  for(i = 0; i < count; i++)
+  nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
+  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_HINDEXED, 0, count);
+  *newtype = p_newtype->id;
+  p_newtype->is_contig = 0;
+  p_newtype->HINDEXED.p_old_type = p_oldtype;
+  p_newtype->HINDEXED.p_map = malloc(count * sizeof(struct nm_mpi_type_hindexed_map_s));
+  for(i = 0; i < count ; i++)
     {
-      displacements[i] = array_of_displacements[i];
+      p_newtype->HINDEXED.p_map[i].blocklength = array_of_blocklengths[i];
+      p_newtype->HINDEXED.p_map[i].displacement = array_of_displacements[i];
+      p_newtype->size += p_oldtype->size * array_of_blocklengths[i];
     }
-  int err = nm_mpi_datatype_indexed(count, array_of_blocklengths, displacements, oldtype, newtype);
-  FREE_AND_SET_NULL(displacements);
-  return err;
+  p_newtype->extent = (p_newtype->HINDEXED.p_map[count - 1].displacement + 
+		       p_oldtype->extent * p_newtype->HINDEXED.p_map[count - 1].blocklength);
+  return MPI_SUCCESS;
 }
 
 int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_displacements, MPI_Datatype *array_of_types, MPI_Datatype *newtype)
@@ -376,6 +393,10 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
       if(p_datatype->INDEXED.p_map != NULL)
 	FREE_AND_SET_NULL(p_datatype->INDEXED.p_map);
       break;
+    case MPI_COMBINER_HINDEXED:
+      if(p_datatype->HINDEXED.p_map != NULL)
+	FREE_AND_SET_NULL(p_datatype->HINDEXED.p_map);
+      break;
     case MPI_COMBINER_STRUCT:
       if(p_datatype->STRUCT.p_map != NULL)
 	FREE_AND_SET_NULL(p_datatype->STRUCT.p_map);
@@ -386,25 +407,6 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
   nm_mpi_handle_datatype_free(&nm_mpi_datatypes, p_datatype);
 }
 
-
-static int nm_mpi_datatype_indexed(int count, int*array_of_blocklengths, MPI_Aint*array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype)
-{
-  int i;
-  nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
-  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_INDEXED, 0, count);
-  *newtype = p_newtype->id;
-  p_newtype->is_contig = 0;
-  p_newtype->INDEXED.p_old_type = p_oldtype;
-  p_newtype->INDEXED.p_map = malloc(count * sizeof(struct nm_mpi_type_indexed_map_s));
-  for(i = 0; i < count ; i++)
-    {
-      p_newtype->INDEXED.p_map[i].blocklength = array_of_blocklengths[i];
-      p_newtype->INDEXED.p_map[i].displacement = array_of_displacements[i];
-      p_newtype->size += p_oldtype->size * array_of_blocklengths[i];
-    }
-  p_newtype->extent = (p_newtype->INDEXED.p_map[count - 1].displacement + p_oldtype->extent * p_newtype->INDEXED.p_map[count - 1].blocklength);
-  return MPI_SUCCESS;
-}
 
 /** apply a function to every chunk of data in datatype */
 __PUK_SYM_INTERNAL
@@ -450,9 +452,20 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	      for(j = 0; j < p_datatype->elements; j++)
 		{
 		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + j * p_datatype->VECTOR.hstride, 
+		    { .ptr        = ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->size,
 		      .p_datatype = p_datatype->VECTOR.p_old_type,
 		      .count      = p_datatype->VECTOR.blocklength };
+		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+		}
+	      break;
+
+	    case MPI_COMBINER_HVECTOR:
+	      for(j = 0; j < p_datatype->elements; j++)
+		{
+		  const struct nm_data_mpi_datatype_s sub = 
+		    { .ptr        = ptr + j * p_datatype->HVECTOR.hstride, 
+		      .p_datatype = p_datatype->HVECTOR.p_old_type,
+		      .count      = p_datatype->HVECTOR.blocklength };
 		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 		}
 	      break;
@@ -461,9 +474,20 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	      for(j = 0; j < p_datatype->elements; j++)
 		{
 		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + p_datatype->INDEXED.p_map[j].displacement,
+		    { .ptr        = ptr + p_datatype->INDEXED.p_map[j].displacement * p_datatype->INDEXED.p_old_type->size,
 		      .p_datatype = p_datatype->INDEXED.p_old_type,
 		      .count      = p_datatype->INDEXED.p_map[j].blocklength };
+		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+		}
+	      break;
+
+	    case MPI_COMBINER_HINDEXED:
+	      for(j = 0; j < p_datatype->elements; j++)
+		{
+		  const struct nm_data_mpi_datatype_s sub = 
+		    { .ptr        = ptr + p_datatype->HINDEXED.p_map[j].displacement,
+		      .p_datatype = p_datatype->HINDEXED.p_old_type,
+		      .count      = p_datatype->HINDEXED.p_map[j].blocklength };
 		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 		}
 	      break;

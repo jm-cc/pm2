@@ -238,7 +238,9 @@ typedef enum
     MPI_COMBINER_NAMED,       /**< basic type built-in MPI */
     MPI_COMBINER_CONTIGUOUS,  /**< contiguous array */
     MPI_COMBINER_VECTOR,      /**< vector with stride */
+    MPI_COMBINER_HVECTOR,     /**< vector with stride in bytes */
     MPI_COMBINER_INDEXED,     /**< indexed type */
+    MPI_COMBINER_HINDEXED,    /**< indexed type, offset in bytes */
     MPI_COMBINER_STRUCT,      /**< structured type */
     MPI_COMBINER_RESIZED      /**< type is resized from another type */
   }

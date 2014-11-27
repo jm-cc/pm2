@@ -219,9 +219,15 @@ typedef struct nm_mpi_datatype_s
     struct
     {
       struct nm_mpi_datatype_s*p_old_type;
-      int hstride;
+      int stride;
       int blocklength;
     } VECTOR;
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
+      int hstride;
+      int blocklength;
+    } HVECTOR;
     struct
     {
       struct nm_mpi_datatype_s*p_old_type;
@@ -231,6 +237,15 @@ typedef struct nm_mpi_datatype_s
 	MPI_Aint displacement;
       } *p_map;
     } INDEXED;
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
+      struct nm_mpi_type_hindexed_map_s
+      {
+	int blocklength;
+	MPI_Aint displacement;
+      } *p_map;
+    } HINDEXED;
     struct
     {
       struct nm_mpi_type_struct_map_s

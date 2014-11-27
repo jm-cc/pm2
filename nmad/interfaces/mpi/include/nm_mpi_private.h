@@ -186,18 +186,6 @@ typedef struct nm_mpi_operator_s
 /** @name Datatypes */
 /* @{ */
 
-/** Types of datatypes */
-typedef enum 
-  {
-    MPI_COMBINER_NAMED,       /**< basic type built-in MPI */
-    MPI_COMBINER_CONTIGUOUS,  /**< contiguous array */
-    MPI_COMBINER_VECTOR,      /**< vector with stride */
-    MPI_COMBINER_INDEXED,     /**< indexed type */
-    MPI_COMBINER_STRUCT,      /**< structured type */
-    MPI_COMBINER_RESIZED      /**< type is resized from another type */
-  }
-  nm_mpi_type_combiner_t;
-
 /** Internal datatype */
 typedef struct nm_mpi_datatype_s
 {

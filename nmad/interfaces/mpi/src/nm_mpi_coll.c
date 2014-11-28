@@ -400,7 +400,8 @@ int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI
     }
   else
     {
-      nm_mpi_request_t*p_req = nm_mpi_coll_isend(sendbuf, count, p_datatype, root, tag, p_comm);
+      void*ptr = (sendbuf == MPI_IN_PLACE) ? recvbuf : sendbuf;
+      nm_mpi_request_t*p_req = nm_mpi_coll_isend(ptr, count, p_datatype, root, tag, p_comm);
       nm_mpi_coll_wait(p_req);
       return MPI_SUCCESS;
     }

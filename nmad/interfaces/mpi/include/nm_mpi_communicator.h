@@ -274,6 +274,7 @@ int MPI_Cart_rank(MPI_Comm comm, int*coords, int*rank);
 
 int MPI_Cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest);
 
+int MPI_Cart_get(MPI_Comm comm, int maxdims, int*dims, int*periods, int*coords);
 
 /* @}*/
 /* @}*/

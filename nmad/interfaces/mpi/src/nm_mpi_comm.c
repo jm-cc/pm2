@@ -63,6 +63,7 @@ NM_MPI_ALIAS(MPI_Cart_create,           mpi_cart_create);
 NM_MPI_ALIAS(MPI_Cart_coords,           mpi_cart_coords)
 NM_MPI_ALIAS(MPI_Cart_rank,             mpi_cart_rank);
 NM_MPI_ALIAS(MPI_Cart_shift,            mpi_cart_shift);
+NM_MPI_ALIAS(MPI_Cart_get,              mpi_cart_get);
 NM_MPI_ALIAS(MPI_Group_size,            mpi_group_size);
 NM_MPI_ALIAS(MPI_Group_rank,            mpi_group_rank);
 NM_MPI_ALIAS(MPI_Group_union,           mpi_group_union);
@@ -589,8 +590,8 @@ int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reo
 
 int mpi_cart_coords(MPI_Comm comm, int rank, int ndims, int*coords)
 {
-  nm_mpi_communicator_t*mpir_comm_cart = nm_mpi_communicator_get(comm);
-  struct nm_mpi_cart_topology_s*cart = &mpir_comm_cart->cart_topology;
+  nm_mpi_communicator_t*p_comm_cart = nm_mpi_communicator_get(comm);
+  struct nm_mpi_cart_topology_s*cart = &p_comm_cart->cart_topology;
   if(ndims < cart->ndims)
     return MPI_ERR_DIMS;
   int d;
@@ -606,8 +607,8 @@ int mpi_cart_coords(MPI_Comm comm, int rank, int ndims, int*coords)
 
 int mpi_cart_rank(MPI_Comm comm, int*coords, int*rank)
 {
-  nm_mpi_communicator_t*mpir_comm_cart = nm_mpi_communicator_get(comm);
-  struct nm_mpi_cart_topology_s*cart = &mpir_comm_cart->cart_topology;
+  nm_mpi_communicator_t*p_comm_cart = nm_mpi_communicator_get(comm);
+  struct nm_mpi_cart_topology_s*cart = &p_comm_cart->cart_topology;
   const int ndims = cart->ndims;
   *rank = 0;
   int multiplier = 1;
@@ -660,6 +661,24 @@ int mpi_cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest
   free(coords);
   return MPI_SUCCESS;
 }
+
+int mpi_cart_get(MPI_Comm comm, int maxdims, int*dims, int*periods, int*coords)
+{
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  const struct nm_mpi_cart_topology_s*cart = &p_comm->cart_topology;
+  if(maxdims < cart->ndims)
+    return MPI_ERR_DIMS;
+  int i;
+  for(i = 0; i < cart->ndims; i++)
+    {
+      dims[i] = cart->dims[i];
+      periods[i] = cart->periods[i];
+    }
+  const int rank = nm_comm_rank(p_comm->p_comm);
+  mpi_cart_coords(comm, rank, maxdims, coords);
+  return MPI_SUCCESS;
+}
+
 
 int mpi_group_size(MPI_Group group, int*size)
 {

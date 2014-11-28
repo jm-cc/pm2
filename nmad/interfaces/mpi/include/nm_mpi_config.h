@@ -184,6 +184,22 @@ int MPI_Info_get(MPI_Info info,
 		 char*value,
 		 int*flag);
 
+/** Deletes a <key, value> pair from info object
+ */
+int MPI_Info_delete(MPI_Info info,
+		    char*key);
+
+/** Returns the number of currently defined keys in info
+ */
+int MPI_Info_get_nkeys(MPI_Info info,
+		       int*nkeys);
+
+/** Retrieves the length of the value associated with a key
+ */
+int MPI_Info_get_valuelen(MPI_Info info,
+			  char*key,
+			  int*valuelen,
+			  int*flag);
 
 /* @} */
 /* @}*/

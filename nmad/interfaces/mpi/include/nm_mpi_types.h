@@ -74,6 +74,7 @@
 #define MPI_ERR_REQUEST      32
 #define MPI_ERR_KEYVAL       33
 #define MPI_ERR_DATATYPE_ACTIVE  34 /**< Datatype still in use */
+#define MPI_ERR_INFO_NOKEY       35
 /* error codes for MPI-IO, not used internally */
 #define MPI_ERR_FILE                  64
 #define MPI_ERR_IO                    65

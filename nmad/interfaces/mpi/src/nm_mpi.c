@@ -60,6 +60,9 @@ NM_MPI_ALIAS(MPI_Info_create, mpi_info_create);
 NM_MPI_ALIAS(MPI_Info_free, mpi_info_free);
 NM_MPI_ALIAS(MPI_Info_set, mpi_info_set);
 NM_MPI_ALIAS(MPI_Info_get, mpi_info_get);
+NM_MPI_ALIAS(MPI_Info_delete, mpi_info_delete);
+NM_MPI_ALIAS(MPI_Info_get_nkeys, mpi_info_get_nkeys);
+NM_MPI_ALIAS(MPI_Info_get_valuelen, mpi_info_get_valuelen);
 NM_MPI_ALIAS(MPI_Pcontrol, mpi_pcontrol);
 NM_MPI_ALIAS(MPI_Status_c2f, mpi_status_c2f);
 NM_MPI_ALIAS(MPI_Status_f2c, mpi_status_f2c);
@@ -410,6 +413,49 @@ int mpi_info_get(MPI_Info info, char*key, int valuelen, char*value, int*flag)
     }
   return MPI_SUCCESS;
 }
+
+int mpi_info_delete(MPI_Info info, char*key)
+{
+  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_get(&nm_mpi_infos, info);
+  if(p_info == NULL)
+    return MPI_ERR_INFO;
+  if(!puk_hashtable_probe(p_info->content, key))
+      return MPI_ERR_INFO_NOKEY;
+  void*oldkey = NULL, *oldvalue = NULL;
+  puk_hashtable_lookup2(p_info->content, key, &oldkey, &oldvalue);
+  puk_hashtable_remove(p_info->content, key);
+  free(oldkey);
+  free(oldvalue);
+  return MPI_SUCCESS;
+}
+
+int mpi_info_get_nkeys(MPI_Info info, int*nkeys)
+{
+  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_get(&nm_mpi_infos, info);
+  if(p_info == NULL)
+    return MPI_ERR_INFO;
+  *nkeys = puk_hashtable_size(p_info->content);
+  return MPI_SUCCESS;
+}
+
+int mpi_info_get_valuelen(MPI_Info info, char*key, int*valuelen, int*flag)
+{
+  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_get(&nm_mpi_infos, info);
+  if(p_info == NULL)
+    return MPI_ERR_INFO;
+  char*v = puk_hashtable_lookup(p_info->content, key);
+  if(v == NULL)
+    {
+      *flag = 0;
+    }
+  else
+    {
+      *valuelen = strlen(v);
+      *flag = 1;
+    }
+  return MPI_SUCCESS;
+}
+
 
 
 /** stub implementation to be overriden by profiling library */

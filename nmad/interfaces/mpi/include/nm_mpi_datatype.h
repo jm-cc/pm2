@@ -204,6 +204,21 @@ int MPI_Type_create_hvector(int count,
 			    MPI_Datatype*newtype);
 
 
+int MPI_Type_get_envelope(MPI_Datatype datatype,
+			  int*num_integers,
+			  int*num_addresses,
+			  int*num_datatypes,
+			  int*combiner);
+
+int MPI_Type_get_contents(MPI_Datatype datatype,
+			  int max_integers,
+			  int max_addresses,
+			  int max_datatypes,
+			  int array_of_integers[],
+			  MPI_Aint array_of_addresses[],
+			  MPI_Datatype array_of_datatypes[]);
+
+
 /**
  * Packs a message specified by inbuf, incount, datatype, comm into
  * the buffer space specified by outbuf and outsize. The input buffer

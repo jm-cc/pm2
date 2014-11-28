@@ -48,6 +48,8 @@ NM_MPI_ALIAS(MPI_Type_indexed,        mpi_type_indexed);
 NM_MPI_ALIAS(MPI_Type_hindexed,       mpi_type_hindexed);
 NM_MPI_ALIAS(MPI_Type_create_hindexed, mpi_type_create_hindexed);
 NM_MPI_ALIAS(MPI_Type_struct,         mpi_type_struct);
+NM_MPI_ALIAS(MPI_Type_get_envelope,   mpi_type_get_envelope);
+NM_MPI_ALIAS(MPI_Type_get_contents,   mpi_type_get_contents);
 NM_MPI_ALIAS(MPI_Pack,                mpi_pack);
 NM_MPI_ALIAS(MPI_Unpack,              mpi_unpack);
 NM_MPI_ALIAS(MPI_Pack_size,           mpi_pack_size);
@@ -366,6 +368,100 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
 }
 
 
+int mpi_type_get_envelope(MPI_Datatype datatype, int*num_integers, int*num_addresses, int*num_datatypes, int*combiner)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  *combiner = p_datatype->combiner;
+  switch(p_datatype->combiner)
+    {
+    case MPI_COMBINER_NAMED:
+      *num_integers  = 0;
+      *num_addresses = 0;
+      *num_datatypes = 0;
+      break;
+    case MPI_COMBINER_CONTIGUOUS:
+      *num_integers  = 1;
+      *num_addresses = 0;
+      *num_datatypes = 1;
+      break;
+    case MPI_COMBINER_RESIZED:
+      *num_integers  = 0;
+      *num_addresses = 0;
+      *num_datatypes = 1;
+      break;
+    case MPI_COMBINER_VECTOR:
+      *num_integers  = 3;
+      *num_addresses = 0;
+      *num_datatypes = 1;
+      break;
+    case MPI_COMBINER_HVECTOR:
+      *num_integers  = 2;
+      *num_addresses = 0;
+      *num_datatypes = 1;
+      break;
+    case MPI_COMBINER_INDEXED:
+      *num_integers  = p_datatype->elements;
+      *num_addresses = p_datatype->elements;
+      *num_datatypes = 1;
+      break;
+    case MPI_COMBINER_HINDEXED:
+      *num_integers  = p_datatype->elements;
+      *num_addresses = p_datatype->elements;
+      *num_datatypes = 1;
+      break;
+    case MPI_COMBINER_STRUCT:
+      *num_integers  = p_datatype->elements;
+      *num_addresses = p_datatype->elements;
+      *num_datatypes = p_datatype->elements;
+      break;
+    }
+  return MPI_SUCCESS;
+}
+
+int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addresses, int max_datatypes,
+			  int array_of_integers[], MPI_Aint array_of_addresses[], MPI_Datatype array_of_datatypes[])
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
+  switch(p_datatype->combiner)
+    {
+    case MPI_COMBINER_NAMED:
+      break;
+    case MPI_COMBINER_CONTIGUOUS:
+      array_of_datatypes[0] = p_datatype->CONTIGUOUS.p_old_type->id;
+      break;
+    case MPI_COMBINER_RESIZED:
+      array_of_integers[0]  = p_datatype->elements;
+      array_of_datatypes[0] = p_datatype->RESIZED.p_old_type->id;
+      break;
+    case MPI_COMBINER_VECTOR:
+      array_of_integers[0]  = p_datatype->elements;
+      array_of_integers[1]  = p_datatype->VECTOR.stride;
+      array_of_integers[2]  = p_datatype->VECTOR.blocklength;
+      array_of_datatypes[0] = p_datatype->VECTOR.p_old_type->id;
+      break;
+    case MPI_COMBINER_HVECTOR:
+      array_of_integers[0]  = p_datatype->elements;
+      array_of_integers[1]  = p_datatype->HVECTOR.hstride;
+      array_of_integers[2]  = p_datatype->HVECTOR.blocklength;
+      array_of_datatypes[0] = p_datatype->HVECTOR.p_old_type->id;
+      break;
+    case MPI_COMBINER_INDEXED:
+      array_of_integers[0]  = p_datatype->elements;
+      break;
+    case MPI_COMBINER_HINDEXED:
+      break;
+    case MPI_COMBINER_STRUCT:
+      break;
+    }
+  return MPI_SUCCESS;
+}
+
+
 __PUK_SYM_INTERNAL
 size_t nm_mpi_datatype_size(nm_mpi_datatype_t*p_datatype)
 {
@@ -423,7 +519,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
   const struct nm_mpi_datatype_s*const p_datatype = p_data->p_datatype;
   const int count = p_data->count;
   void*ptr = p_data->ptr;
-  if(p_datatype->is_contig)
+  if(p_datatype->is_contig || (count == 0))
     {
       assert(p_datatype->lb == 0);
       (*apply)((void*)ptr, count * p_datatype->size, _context);

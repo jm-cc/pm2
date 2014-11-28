@@ -4,9 +4,10 @@ DRIVER  = ibverbs
 TIMEOUT = 15
 
 TESTS := \
+  info/00_create info/10_set info/20_delete info/30_get info/40_getvaluelen info/50_getnkeys \
   ccl/allgather ccl/allgatherv ccl/allreduce ccl/alltoall ccl/barrier ccl/bcast ccl/bcast_struct ccl/gather ccl/op ccl/reduce ccl/reduce_scatter ccl/scatter ccl/struct_gatherv \
   comm/attr comm/commdup comm/commfree  comm/compare comm/mpisplit \
-  dtyp/bottom dtyp/fint2_f dtyp/fint4_f dtyp/fint8_f dtyp/freal16_f dtyp/freal4_f dtyp/freal8_f dtyp/loop dtyp/paktest dtyp/structsr dtyp/structsr2 dtyp/transp dtyp/transp2 dtyp/transp3 dtyp/transpa \
+  dtyp/bottom dtyp/fint2_f dtyp/fint4_f dtyp/fint8_f dtyp/freal16_f dtyp/freal4_f dtyp/freal8_f dtyp/loop dtyp/paktest dtyp/strangest1 dtyp/structsr dtyp/structsr2 dtyp/transp dtyp/transp2 dtyp/transp3 dtyp/transpa \
   env/abort env/err env/final env/initialized env/init_thread env/pcontrol env/procname env/wtime \
   group/group group/groupfree group/range \
   pt2pt/free pt2pt/getcount pt2pt/interf pt2pt/iprobe pt2pt/probe pt2pt/rsend pt2pt/send pt2pt/send2 pt2pt/sendrecv pt2pt/sendrecv_f pt2pt/seq pt2pt/ssend pt2pt/test1 pt2pt/test2 pt2pt/test3 pt2pt/testall pt2pt/testany pt2pt/testsome pt2pt/waitany pt2pt/waitnull pt2pt/waitsome pt2pt/wildcard

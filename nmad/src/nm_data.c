@@ -55,7 +55,7 @@ struct nm_data_chunk_extractor_s
   nm_len_t chunk_len;    /**< length to copy */
   nm_len_t done;         /**< offset done so far at destination */
   nm_data_apply_t apply; /**< composed function to apply to chunk */
-  void*_context;         /**< context for composaed apply function */
+  void*_context;         /**< context for composed apply function */
 };
 static void nm_data_chunk_extractor_apply(void*ptr, nm_len_t len, void*_context)
 {
@@ -69,7 +69,7 @@ static void nm_data_chunk_extractor_apply(void*ptr, nm_len_t len, void*_context)
       /* data in chunk */
       const nm_len_t block_offset = (p_context->done < chunk_offset) ? (chunk_offset - p_context->done) : 0;
       const nm_len_t block_len = (chunk_offset + chunk_len > p_context->done + len) ? 
-	(len - block_offset) : (chunk_offset + chunk_len - p_context->done);
+	(len - block_offset) : (chunk_offset + chunk_len - p_context->done - block_offset);
       (*p_context->apply)(ptr + block_offset, block_len, p_context->_context);
     }
   p_context->done += len;

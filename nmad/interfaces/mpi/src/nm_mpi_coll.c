@@ -104,6 +104,8 @@ int mpi_bcast(void*buffer, int count, MPI_Datatype datatype, int root, MPI_Comm 
   const int tag = NM_MPI_TAG_PRIVATE_BCAST;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
   if(nm_comm_rank(p_comm->p_comm) == root)
     {
       nm_mpi_request_t**requests = malloc(nm_comm_size(p_comm->p_comm) * sizeof(nm_mpi_request_t*));

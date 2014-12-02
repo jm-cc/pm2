@@ -324,6 +324,8 @@ int mpi_alltoallv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sen
     {
       if(i == nm_comm_rank(p_comm->p_comm))
 	{
+	  recv_requests[i] = NULL;
+	  send_requests[i] = NULL;
 	  nm_mpi_datatype_copy(sendbuf + (sdispls[i] * p_send_datatype->extent), p_send_datatype, sendcounts[i],
 			       recvbuf + (rdispls[i] * p_recv_datatype->extent), p_recv_datatype, recvcounts[i]);
 	}
@@ -360,6 +362,8 @@ int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_operator_t*p_operator = nm_mpi_operator_get(op);
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  assert(p_datatype->is_contig);
+  assert(p_datatype->size == p_datatype->extent);
   const int size = nm_comm_size(p_comm->p_comm);
   if(p_operator->function == NULL)
     {
@@ -425,6 +429,7 @@ int mpi_reduce_scatter(void*sendbuf, void*recvbuf, int*recvcounts, MPI_Datatype 
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   const int tag = NM_MPI_TAG_PRIVATE_REDUCESCATTER;
   void *reducebuf = NULL;
+  assert(p_datatype->is_contig);
   for(i = 0; i < nm_comm_size(p_comm->p_comm) ; i++)
     {
       count += recvcounts[i];

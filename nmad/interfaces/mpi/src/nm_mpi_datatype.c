@@ -217,6 +217,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
   p_newtype->extent    = extent;
   p_newtype->lb        = lb;
   p_newtype->RESIZED.p_old_type = p_oldtype;
+  p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
 
@@ -251,6 +252,7 @@ int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
   p_newtype->is_contig = p_oldtype->is_contig;
   p_newtype->extent = p_oldtype->extent * count;
   p_newtype->CONTIGUOUS.p_old_type = p_oldtype;
+  p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
 
@@ -264,6 +266,7 @@ int mpi_type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype
   p_newtype->VECTOR.p_old_type = p_oldtype;
   p_newtype->VECTOR.stride = stride;
   p_newtype->VECTOR.blocklength = blocklength;
+  p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
 
@@ -277,6 +280,7 @@ int mpi_type_hvector(int count, int blocklength, MPI_Aint hstride, MPI_Datatype 
   p_newtype->HVECTOR.p_old_type = p_oldtype;
   p_newtype->HVECTOR.hstride = hstride;
   p_newtype->HVECTOR.blocklength = blocklength;
+  p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
 
@@ -297,6 +301,7 @@ int mpi_type_indexed(int count, int *array_of_blocklengths, int *array_of_displa
     }
   p_newtype->extent = (p_newtype->INDEXED.p_map[count - 1].displacement * p_oldtype->size + 
 		       p_oldtype->extent * p_newtype->INDEXED.p_map[count - 1].blocklength);
+  p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
 
@@ -317,6 +322,7 @@ int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_
     }
   p_newtype->extent = (p_newtype->HINDEXED.p_map[count - 1].displacement + 
 		       p_oldtype->extent * p_newtype->HINDEXED.p_map[count - 1].blocklength);
+  p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
 
@@ -346,6 +352,7 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
       p_newtype->STRUCT.p_map[i].blocklength  = array_of_blocklengths[i];
       p_newtype->STRUCT.p_map[i].displacement = array_of_displacements[i];
       p_newtype->size += p_newtype->STRUCT.p_map[i].blocklength * p_datatype->size;
+      p_datatype->refcount++;
       if(array_of_types[i] == MPI_UB)
 	{
 	  p_newtype->extent = array_of_displacements[i];
@@ -525,6 +532,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
   const struct nm_mpi_datatype_s*const p_datatype = p_data->p_datatype;
   const int count = p_data->count;
   void*ptr = p_data->ptr;
+  assert(p_datatype->refcount > 0);
   if(p_datatype->is_contig || (count == 0))
     {
       assert(p_datatype->lb == 0);

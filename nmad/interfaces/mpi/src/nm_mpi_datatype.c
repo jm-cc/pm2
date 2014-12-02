@@ -83,6 +83,7 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_UNSIGNED_LONG_LONG, sizeof(unsigned long long int), 1);
 
   /* FORTRAN types */
+  nm_mpi_datatype_store(MPI_CHARACTER,          sizeof(char), 1);
   nm_mpi_datatype_store(MPI_LOGICAL,            sizeof(float), 1);
   nm_mpi_datatype_store(MPI_REAL,               sizeof(float), 1);
   nm_mpi_datatype_store(MPI_REAL4,              4, 1);

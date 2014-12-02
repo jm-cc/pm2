@@ -48,6 +48,7 @@ NM_MPI_ALIAS(MPI_Type_indexed,        mpi_type_indexed);
 NM_MPI_ALIAS(MPI_Type_hindexed,       mpi_type_hindexed);
 NM_MPI_ALIAS(MPI_Type_create_hindexed, mpi_type_create_hindexed);
 NM_MPI_ALIAS(MPI_Type_struct,         mpi_type_struct);
+NM_MPI_ALIAS(MPI_Type_create_struct,  mpi_type_create_struct);
 NM_MPI_ALIAS(MPI_Type_get_envelope,   mpi_type_get_envelope);
 NM_MPI_ALIAS(MPI_Type_get_contents,   mpi_type_get_contents);
 NM_MPI_ALIAS(MPI_Pack,                mpi_pack);
@@ -365,6 +366,11 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
     p_newtype->extent = p_newtype->STRUCT.p_map[count - 1].displacement + 
       p_newtype->STRUCT.p_map[count - 1].blocklength * p_newtype->STRUCT.p_map[count - 1].p_old_type->extent;
   return MPI_SUCCESS;
+}
+
+int mpi_type_create_struct(int count, int array_of_blocklengths[], MPI_Aint array_of_displacements[], MPI_Datatype array_of_types[], MPI_Datatype *newtype)
+{
+  return mpi_type_struct(count, array_of_blocklengths, array_of_displacements, array_of_types, newtype);
 }
 
 

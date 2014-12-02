@@ -203,6 +203,11 @@ int MPI_Type_create_hvector(int count,
 			    MPI_Datatype oldtype,
 			    MPI_Datatype*newtype);
 
+int MPI_Type_create_struct(int count,
+			   int array_of_blocklengths[],
+			   MPI_Aint array_of_displacements[],
+			   MPI_Datatype array_of_types[],
+			   MPI_Datatype *newtype);
 
 int MPI_Type_get_envelope(MPI_Datatype datatype,
 			  int*num_integers,

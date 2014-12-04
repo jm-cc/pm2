@@ -112,382 +112,245 @@ int mpi_op_free(MPI_Op*op)
 }
 
 
+/** apply a macro to integers <MPI type, C type> pairs */
+#define NM_MPI_TYPES_APPLY_INTEGERS(TYPE_FUNC)			\
+  TYPE_FUNC(MPI_CHAR,             char);			\
+  TYPE_FUNC(MPI_UNSIGNED_CHAR,    unsigned char);		\
+  TYPE_FUNC(MPI_SIGNED_CHAR,      signed char);			\
+  TYPE_FUNC(MPI_BYTE,             uint8_t);			\
+  TYPE_FUNC(MPI_SHORT,            short);			\
+  TYPE_FUNC(MPI_UNSIGNED_SHORT,   unsigned short);		\
+  TYPE_FUNC(MPI_INTEGER,          int);				\
+  TYPE_FUNC(MPI_INT,              int);				\
+  TYPE_FUNC(MPI_UNSIGNED,         unsigned);			\
+  TYPE_FUNC(MPI_LONG,             long);			\
+  TYPE_FUNC(MPI_UNSIGNED_LONG,    unsigned long);		\
+  TYPE_FUNC(MPI_LONG_LONG_INT,    long long int);		\
+  TYPE_FUNC(MPI_CHARACTER,        char);			\
+  TYPE_FUNC(MPI_INTEGER1,         uint8_t);			\
+  TYPE_FUNC(MPI_INTEGER2,         uint16_t);			\
+  TYPE_FUNC(MPI_INTEGER4,         uint32_t);			\
+  TYPE_FUNC(MPI_INTEGER8,         uint64_t);			\
+  TYPE_FUNC(MPI_INT8_T,           int8_t);			\
+  TYPE_FUNC(MPI_INT16_T,          int16_t);			\
+  TYPE_FUNC(MPI_INT32_T,          int32_t);			\
+  TYPE_FUNC(MPI_INT64_T,          int64_t);			\
+  TYPE_FUNC(MPI_UINT8_T,          uint8_t);			\
+  TYPE_FUNC(MPI_UINT16_T,         uint16_t);			\
+  TYPE_FUNC(MPI_UINT32_T,         uint32_t);			\
+  TYPE_FUNC(MPI_UINT64_T,         uint64_t);
+
+/** apply a macro to floating point <MPI type, C type> pairs */
+#define NM_MPI_TYPES_APPLY_FLOATS(TYPE_FUNC)			\
+  TYPE_FUNC(MPI_FLOAT,            float);			\
+  TYPE_FUNC(MPI_DOUBLE_PRECISION, double);			\
+  TYPE_FUNC(MPI_DOUBLE,           double);			\
+  TYPE_FUNC(MPI_LONG_DOUBLE,      long double);			\
+
+/** generate a switch case stanza for a given type and operation */
+#define CASE_OP(__mpi_type__, __type__, BODY)	\
+  case __mpi_type__:							\
+  {									\
+    int i;								\
+    __type__*i_invec = (__type__*)invec;				\
+    __type__*i_inoutvec = (__type__*)inoutvec;				\
+    for(i = 0; i < *len; i++)						\
+      {									\
+	BODY;								\
+      }									\
+    break;								\
+  }
+
 static void nm_mpi_op_max(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
-#warning Implement Operations on complex types
-#define DO_MAX(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;			\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  for(i=0 ; i<*len ; i++) {					\
-		  if (i_invec[i] > i_inoutvec[i]) i_inoutvec[i] = i_invec[i]; \
-	  }
-
-  case MPI_CHAR             : { DO_MAX(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_MAX(unsigned char); break; }
-  case MPI_BYTE             : { DO_MAX(uint8_t); break; }
-  case MPI_SHORT            : { DO_MAX(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_MAX(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_MAX(int); break; }
-  case MPI_UNSIGNED         : { DO_MAX(unsigned); break; }
-  case MPI_LONG             : { DO_MAX(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_MAX(unsigned long); break; }
-  case MPI_FLOAT            : { DO_MAX(float); break; }
-  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MAX(double); break; }
-  case MPI_LONG_DOUBLE      : { DO_MAX(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_MAX(long long); break; }
-  case MPI_INTEGER4         : { DO_MAX(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_MAX(uint64_t); break; }
-    default : {
-      ERROR("Datatype %d for MAX Reduce operation", *type);
-      break;
+#define CASE_OP_MAX(__mpi_type__, __type__)				\
+  CASE_OP(__mpi_type__, __type__,					\
+	  if(i_invec[i] > i_inoutvec[i])				\
+	    i_inoutvec[i] = i_invec[i];					\
+	  )
+  switch(*type)
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_MAX);
+      NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_MAX);
+      
+    default: 
+      {
+	ERROR("Datatype %d for MAX Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_min(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
-#define DO_MIN(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;			\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  for(i=0 ; i<*len ; i++) {					\
-		  if (i_invec[i] < i_inoutvec[i]) i_inoutvec[i] = i_invec[i]; \
-	  }
-
-  case MPI_CHAR             : { DO_MIN(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_MIN(unsigned char); break; }
-  case MPI_BYTE             : { DO_MIN(uint8_t); break; }
-  case MPI_SHORT            : { DO_MIN(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_MIN(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_MIN(int); break; }
-  case MPI_UNSIGNED         : { DO_MIN(unsigned); break; }
-  case MPI_LONG             : { DO_MIN(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_MIN(unsigned long); break; }
-  case MPI_FLOAT            : { DO_MIN(float); break; }
-  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MIN(double); break; }
-  case MPI_LONG_DOUBLE      : { DO_MIN(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_MIN(long long); break; }
-  case MPI_INTEGER4         : { DO_MIN(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_MIN(uint64_t); break; }
-
-    default : {
-      ERROR("Datatype %d for MIN Reduce operation", *type);
-      break;
+#define CASE_OP_MIN(__mpi_type__, __type__)				\
+  CASE_OP(__mpi_type__, __type__,					\
+	  if(i_invec[i] < i_inoutvec[i])				\
+	    i_inoutvec[i] = i_invec[i];					\
+	  )
+  switch(*type)
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_MIN);
+      NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_MIN);
+      
+    default:
+      {
+	ERROR("Datatype %d for MIN Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_sum(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-#define DO_SUM(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;			\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  nm_mpi_datatype_t *dtype = nm_mpi_datatype_get(*type); \
-	  for(i=0 ; i<*len* (dtype)->elements ; i++) {			\
-		  i_inoutvec[i] += i_invec[i];				\
-	  }
-
-  case MPI_CHAR             : { DO_SUM(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_SUM(unsigned char); break; }
-  case MPI_BYTE             : { DO_SUM(uint8_t); break; }
-  case MPI_SHORT            : { DO_SUM(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_SUM(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_SUM(int); break; }
-  case MPI_UNSIGNED         : { DO_SUM(unsigned); break; }
-  case MPI_LONG             : { DO_SUM(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_SUM(unsigned long); break; }
-  case MPI_FLOAT            : { DO_SUM(float); break; }
-  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_SUM(double); break; }
-  case MPI_LONG_DOUBLE      : { DO_SUM(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_SUM(long long); break; }
-  case MPI_INTEGER4         : { DO_SUM(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_SUM(uint64_t); break; }
-  case MPI_DOUBLE_COMPLEX   : { DO_SUM(double); break; }
-  case MPI_COMPLEX          : { DO_SUM(float); break; }
-
-    default : {
-      ERROR("Datatype %d for SUM Reduce operation", *type);
-      break;
+#define CASE_OP_SUM(__mpi_type__, __type__)				\
+  CASE_OP(__mpi_type__, __type__,					\
+	  i_inoutvec[i] += i_invec[i];					\
+	  )
+  switch(*type) 
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_SUM);
+      NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_SUM);
+      
+    default:
+      {
+	ERROR("Datatype %d for SUM Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_prod(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
-#define DO_PROD(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;	\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;	\
-	  for(i=0 ; i<*len ; i++) {			\
-		  i_inoutvec[i] *= i_invec[i];		\
-      }
+#define CASE_OP_PROD(__mpi_type__, __type__)	\
+  CASE_OP(__mpi_type__, __type__,		\
+	  i_inoutvec[i] *= i_invec[i];		\
+	  )
+  switch(*type)
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_PROD);
+      NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_PROD);
 
-  case MPI_CHAR             : { DO_PROD(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_PROD(unsigned char); break; }
-  case MPI_BYTE             : { DO_PROD(uint8_t); break; }
-  case MPI_SHORT            : { DO_PROD(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_PROD(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_PROD(int); break; }
-  case MPI_UNSIGNED         : { DO_PROD(unsigned); break; }
-  case MPI_LONG             : { DO_PROD(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_PROD(unsigned long); break; }
-  case MPI_FLOAT            : { DO_PROD(float); break; }
-  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_PROD(double); break; }
-  case MPI_LONG_DOUBLE      : { DO_PROD(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_PROD(long long); break; }
-  case MPI_INTEGER4         : { DO_PROD(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_PROD(uint64_t); break; }
-    default : {
-      ERROR("Datatype %d for PROD Reduce operation", *type);
-      break;
+    default:
+      {
+	ERROR("Datatype %d for PROD Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_land(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
+#define CASE_OP_LAND(__mpi_type__, __type__)				\
+  CASE_OP(__mpi_type__, __type__,					\
+	  i_inoutvec[i] = i_inoutvec[i] && i_invec[i];			\
+	  )
+  switch(*type)
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_LAND);
+      NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_LAND);
 
-#define DO_LAND(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;			\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  for(i=0 ; i<*len ; i++) {					\
-		  i_inoutvec[i] = i_inoutvec[i] && i_invec[i];		\
-	  }
-
-  case MPI_CHAR             : { DO_LAND(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_LAND(unsigned char); break; }
-  case MPI_BYTE             : { DO_LAND(uint8_t); break; }
-  case MPI_SHORT            : { DO_LAND(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_LAND(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_LAND(int); break; }
-  case MPI_UNSIGNED         : { DO_LAND(unsigned); break; }
-  case MPI_LONG             : { DO_LAND(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_LAND(unsigned long); break; }
-  case MPI_FLOAT            : { DO_LAND(float); break; }
-  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_LAND(double); break; }
-  case MPI_LONG_DOUBLE      : { DO_LAND(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_LAND(long long); break; }
-  case MPI_INTEGER4         : { DO_LAND(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_LAND(uint64_t); break; }
-    default : {
-      ERROR("Datatype %d for LAND Reduce operation", *type);
-      break;
+    default : 
+      {
+	ERROR("Datatype %d for LAND Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_band(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
-
-#define DO_BAND(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;			\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  for(i=0 ; i<*len ; i++) {					\
-		  i_inoutvec[i] = i_inoutvec[i] & i_invec[i];		\
-	  }
-
-  case MPI_CHAR             : { DO_BAND(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_BAND(unsigned char); break; }
-  case MPI_BYTE             : { DO_BAND(uint8_t); break; }
-  case MPI_SHORT            : { DO_BAND(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_BAND(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_BAND(int); break; }
-  case MPI_UNSIGNED         : { DO_BAND(unsigned); break; }
-  case MPI_LONG             : { DO_BAND(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_BAND(unsigned long); break; }
-//  case MPI_FLOAT            : { DO_BAND(float); break; }
-//  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_BAND(double); break; }
-//  case MPI_LONG_DOUBLE      : { DO_BAND(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_BAND(long long); break; }
-  case MPI_INTEGER4         : { DO_BAND(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_BAND(uint64_t); break; }
-
-    default : {
-      ERROR("Datatype %d for BAND Reduce operation", *type);
-      break;
+#define CASE_OP_BAND(__mpi_type__, __type__)				\
+  CASE_OP(__mpi_type__, __type__,					\
+	  i_inoutvec[i] = i_inoutvec[i] & i_invec[i];			\
+	  )
+  switch(*type)
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_BAND);
+      
+    default:
+      {
+	ERROR("Datatype %d for BAND Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_lor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
+#define CASE_OP_LOR(__mpi_type__, __type__)				\
+  CASE_OP(__mpi_type__, __type__,					\
+	  i_inoutvec[i] = i_inoutvec[i] || i_invec[i];			\
+	  )
+  switch(*type)
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_LOR);
+      NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_LOR);
 
-#define DO_LOR(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;			\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  for(i=0 ; i<*len ; i++) {					\
-		  i_inoutvec[i] = i_inoutvec[i] || i_invec[i];		\
-	  }
-
-  case MPI_CHAR             : { DO_LOR(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_LOR(unsigned char); break; }
-  case MPI_BYTE             : { DO_LOR(uint8_t); break; }
-  case MPI_SHORT            : { DO_LOR(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_LOR(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_LOR(int); break; }
-  case MPI_UNSIGNED         : { DO_LOR(unsigned); break; }
-  case MPI_LONG             : { DO_LOR(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_LOR(unsigned long); break; }
-  case MPI_FLOAT            : { DO_LOR(float); break; }
-  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_LOR(double); break; }
-  case MPI_LONG_DOUBLE      : { DO_LOR(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_LOR(long long); break; }
-  case MPI_INTEGER4         : { DO_LOR(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_LOR(uint64_t); break; }
-
-    default : {
-      ERROR("Datatype %d for LOR Reduce operation", *type);
-      break;
+    default: 
+      {
+	ERROR("Datatype %d for LOR Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_bor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
+#define CASE_OP_BOR(__mpi_type__, __type__)				\
+  CASE_OP(__mpi_type__, __type__,					\
+	  i_inoutvec[i] = i_inoutvec[i] | i_invec[i];			\
+	  )
+  switch(*type)
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_BOR);
 
-#define DO_BOR(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;			\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  for(i=0 ; i<*len ; i++) {					\
-		  i_inoutvec[i] = i_inoutvec[i] | i_invec[i];		\
-	  }
-
-  case MPI_CHAR             : { DO_BOR(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_BOR(unsigned char); break; }
-  case MPI_BYTE             : { DO_BOR(uint8_t); break; }
-  case MPI_SHORT            : { DO_BOR(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_BOR(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_BOR(int); break; }
-  case MPI_UNSIGNED         : { DO_BOR(unsigned); break; }
-  case MPI_LONG             : { DO_BOR(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_BOR(unsigned long); break; }
-//  case MPI_FLOAT            : { DO_BOR(float); break; }
-//  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_BOR(double); break; }
-//  case MPI_LONG_DOUBLE      : { DO_BOR(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_BOR(long long); break; }
-  case MPI_INTEGER4         : { DO_BOR(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_BOR(uint64_t); break; }
-
-    default : {
-      ERROR("Datatype %d for BOR Reduce operation", *type);
-      break;
+    default:
+      {
+	ERROR("Datatype %d for BOR Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_lxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
+#define CASE_OP_LXOR(__mpi_type__, __type__)				\
+  CASE_OP(__mpi_type__, __type__,					\
+	  if((!i_inoutvec[i] && i_invec[i]) ||				\
+	     (i_inoutvec[i] && !i_invec[i]))				\
+	    i_inoutvec[i] = 1;						\
+	  else								\
+	    i_inoutvec[i] = 0;						\
+	  )
+  switch(*type)
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_LXOR);
 
-#define DO_LXOR(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;			\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  for(i=0 ; i<*len ; i++) {					\
-		  if ((!i_inoutvec[i] && i_invec[i]) ||			\
-		      (i_inoutvec[i] && !i_invec[i]))			\
-			  i_inoutvec[i] = 1;				\
-		  else							\
-			  i_inoutvec[i] = 0;				\
-	  }
-
-  case MPI_CHAR             : { DO_LXOR(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_LXOR(unsigned char); break; }
-  case MPI_BYTE             : { DO_LXOR(uint8_t); break; }
-  case MPI_SHORT            : { DO_LXOR(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_LXOR(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_LXOR(int); break; }
-  case MPI_UNSIGNED         : { DO_LXOR(unsigned); break; }
-  case MPI_LONG             : { DO_LXOR(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_LXOR(unsigned long); break; }
-  case MPI_FLOAT            : { DO_LXOR(float); break; }
-  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_LXOR(double); break; }
-  case MPI_LONG_DOUBLE      : { DO_LXOR(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_LXOR(long long); break; }
-  case MPI_INTEGER4         : { DO_LXOR(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_LXOR(uint64_t); break; }
-
-    default : {
-      ERROR("Datatype %d for LXOR Reduce operation", *type);
-      break;
+    default:
+      {
+	ERROR("Datatype %d for LXOR Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_bxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
-  int i;
-  switch (*type) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
+#define CASE_OP_BXOR(__mpi_type__, __type__)				\
+  CASE_OP(__mpi_type__, __type__,					\
+	  i_inoutvec[i] = i_inoutvec[i] ^ i_invec[i];			\
+	  )
+  switch (*type)
+    {
+      NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_BXOR);
 
-#define DO_BXOR(__type__)						\
-	  __type__ *i_invec = (__type__ *) invec;			\
-	  __type__ *i_inoutvec = (__type__ *) inoutvec;			\
-	  for(i=0 ; i<*len ; i++) {					\
-		  i_inoutvec[i] = i_inoutvec[i] ^ i_invec[i];		\
-	  }
-
-  case MPI_CHAR             : { DO_BXOR(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_BXOR(unsigned char); break; }
-  case MPI_BYTE             : { DO_BXOR(uint8_t); break; }
-  case MPI_SHORT            : { DO_BXOR(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_BXOR(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_BXOR(int); break; }
-  case MPI_UNSIGNED         : { DO_BXOR(unsigned); break; }
-  case MPI_LONG             : { DO_BXOR(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_BXOR(unsigned long); break; }
-//  case MPI_FLOAT            : { DO_BXOR(float); break; }
-//  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_BXOR(double); break; }
-//  case MPI_LONG_DOUBLE      : { DO_BXOR(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_BXOR(long long); break; }
-  case MPI_INTEGER4         : { DO_BXOR(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_BXOR(uint64_t); break; }
-
-    default : {
-      ERROR("Datatype %d for BXOR Reduce operation", *type);
-      break;
+    default:
+      {
+	ERROR("Datatype %d for BXOR Reduce operation", *type);
+	break;
+      }
     }
-  }
 }
 
 static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*type)

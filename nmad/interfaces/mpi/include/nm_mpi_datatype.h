@@ -223,6 +223,10 @@ int MPI_Type_get_contents(MPI_Datatype datatype,
 			  MPI_Aint array_of_addresses[],
 			  MPI_Datatype array_of_datatypes[]);
 
+int MPI_Type_set_name(MPI_Datatype datatype, char*type_name);
+
+int MPI_Type_get_name(MPI_Datatype datatype, char*type_name, int*resultlen);
+
 
 /**
  * Packs a message specified by inbuf, incount, datatype, comm into

@@ -59,6 +59,8 @@ NM_MPI_ALIAS(MPI_Comm_dup,              mpi_comm_dup);
 NM_MPI_ALIAS(MPI_Comm_free,             mpi_comm_free);
 NM_MPI_ALIAS(MPI_Comm_compare,          mpi_comm_compare);
 NM_MPI_ALIAS(MPI_Comm_test_inter,       mpi_comm_test_inter);
+NM_MPI_ALIAS(MPI_Comm_set_name,         mpi_comm_set_name);
+NM_MPI_ALIAS(MPI_Comm_get_name,         mpi_comm_get_name);
 NM_MPI_ALIAS(MPI_Cart_create,           mpi_cart_create);
 NM_MPI_ALIAS(MPI_Cart_coords,           mpi_cart_coords)
 NM_MPI_ALIAS(MPI_Cart_rank,             mpi_cart_rank);
@@ -92,10 +94,12 @@ void nm_mpi_comm_init(void)
   p_comm_world->p_comm = nm_comm_world();
   p_comm_world->attrs = NULL;
   p_comm_world->p_errhandler = nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL);
+  p_comm_world->name = strdup("MPI_COMM_WORLD");
   nm_mpi_communicator_t*p_comm_self = nm_mpi_handle_communicator_store(&nm_mpi_communicators, MPI_COMM_SELF);
   p_comm_self->p_comm = nm_comm_self();
   p_comm_self->attrs = NULL;
   p_comm_self->p_errhandler = nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL);
+  p_comm_self->name = strdup("MPI_COMM_SELF");
 
   /* built-in group */
   nm_mpi_group_t*p_group_empty = nm_mpi_handle_group_store(&nm_mpi_groups, MPI_GROUP_EMPTY);
@@ -135,6 +139,16 @@ __PUK_SYM_INTERNAL
 int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t p_gate)
 {
   return nm_comm_get_dest(p_comm->p_comm, p_gate);
+}
+
+static inline nm_mpi_communicator_t*nm_mpi_communicator_alloc(nm_comm_t p_nm_comm, struct nm_mpi_errhandler_s*p_errhandler)
+{
+  nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
+  p_new_comm->p_comm = p_nm_comm;
+  p_new_comm->attrs = NULL;
+  p_new_comm->p_errhandler = p_errhandler;
+  p_new_comm->name = NULL;
+  return p_new_comm;
 }
 
 /* ********************************************************* */
@@ -348,6 +362,35 @@ int mpi_attr_delete(MPI_Comm comm, int keyval)
   return err;
 }
 
+int mpi_comm_set_name(MPI_Comm comm, char*comm_name)
+{
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL)
+    return MPI_ERR_COMM;
+  if(p_comm->name != NULL)
+    {
+      free(p_comm->name);
+    }
+  p_comm->name = strndup(comm_name, MPI_MAX_OBJECT_NAME);
+  return MPI_SUCCESS;
+}
+
+int mpi_comm_get_name(MPI_Comm comm, char*comm_name, int*resultlen)
+{
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL)
+    return MPI_ERR_COMM;
+  if(p_comm->name != NULL)
+    {
+      strncpy(comm_name, p_comm->name, MPI_MAX_OBJECT_NAME);
+    }
+  else
+    {
+      comm_name[0] = '\0';
+    }
+  *resultlen = strlen(comm_name);
+  return MPI_SUCCESS;
+}
 
 int mpi_comm_test_inter(MPI_Comm comm, int*flag)
 {
@@ -410,10 +453,7 @@ int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
   nm_comm_t p_nm_comm = nm_comm_create(p_old_comm->p_comm, p_new_group->p_nm_group);
   if(p_nm_comm == NULL)
     return MPI_ERR_COMM;
-  nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
-  p_new_comm->p_comm = p_nm_comm;
-  p_new_comm->attrs = NULL;
-  p_new_comm->p_errhandler = p_old_comm->p_errhandler;
+  nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, p_old_comm->p_errhandler);
   *newcomm = p_new_comm->id;
   return MPI_SUCCESS;
 }
@@ -469,10 +509,7 @@ int mpi_comm_split(MPI_Comm oldcomm, int color, int key, MPI_Comm *newcomm)
 	    }
 	  else if(p_nm_comm != NULL)
 	    {
-	      nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
-	      p_new_comm->p_comm = p_nm_comm;
-	      p_new_comm->attrs = NULL;
-	      p_new_comm->p_errhandler = p_old_comm->p_errhandler;
+	      nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, p_old_comm->p_errhandler);
 	      *newcomm = p_new_comm->id;
 	    }
 	  nm_group_free(newgroup);
@@ -503,11 +540,8 @@ int mpi_comm_dup(MPI_Comm oldcomm, MPI_Comm *newcomm)
     }
   else
     {
-      nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
-      p_new_comm->p_comm = nm_comm_dup(p_old_comm->p_comm);
-      p_new_comm->attrs = NULL;
+      nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_dup(p_old_comm->p_comm), p_old_comm->p_errhandler);
       int err = nm_mpi_comm_attrs_copy(p_old_comm, &p_new_comm->attrs);
-      p_new_comm->p_errhandler = p_old_comm->p_errhandler;
       if(err)
 	{
 	  *newcomm = MPI_COMM_NULL;
@@ -578,10 +612,7 @@ int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reo
     {
       nm_gate_vect_push_back(cart_group, nm_comm_get_gate(p_old_comm->p_comm, i));
     }
-  nm_mpi_communicator_t*p_new_comm = nm_mpi_handle_communicator_alloc(&nm_mpi_communicators);
-  p_new_comm->p_comm = nm_comm_create(p_old_comm->p_comm, cart_group);
-  p_new_comm->attrs = NULL;
-  p_new_comm->p_errhandler = p_old_comm->p_errhandler;
+  nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_create(p_old_comm->p_comm, cart_group), p_old_comm->p_errhandler);
   p_new_comm->cart_topology = cart;
   *newcomm = p_new_comm->id;
   nm_group_free(cart_group);

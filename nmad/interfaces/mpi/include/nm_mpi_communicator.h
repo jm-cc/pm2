@@ -261,6 +261,10 @@ int MPI_Comm_free(MPI_Comm *comm);
  */
 int MPI_Comm_test_inter(MPI_Comm comm, int*flag);
 
+int MPI_Comm_set_name(MPI_Comm comm, char *comm_name);
+
+int MPI_Comm_get_name(MPI_Comm comm, char *comm_name, int *resultlen);
+
 /**
  * Compares two communicators
  */

@@ -51,6 +51,8 @@ NM_MPI_ALIAS(MPI_Type_struct,         mpi_type_struct);
 NM_MPI_ALIAS(MPI_Type_create_struct,  mpi_type_create_struct);
 NM_MPI_ALIAS(MPI_Type_get_envelope,   mpi_type_get_envelope);
 NM_MPI_ALIAS(MPI_Type_get_contents,   mpi_type_get_contents);
+NM_MPI_ALIAS(MPI_Type_set_name,       mpi_type_set_name);
+NM_MPI_ALIAS(MPI_Type_get_name,       mpi_type_get_name);
 NM_MPI_ALIAS(MPI_Pack,                mpi_pack);
 NM_MPI_ALIAS(MPI_Unpack,              mpi_unpack);
 NM_MPI_ALIAS(MPI_Pack_size,           mpi_pack_size);
@@ -81,6 +83,14 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_LONG_DOUBLE,        sizeof(long double), 1);
   nm_mpi_datatype_store(MPI_LONG_LONG_INT,      sizeof(long long int), 1);
   nm_mpi_datatype_store(MPI_UNSIGNED_LONG_LONG, sizeof(unsigned long long int), 1);
+  nm_mpi_datatype_store(MPI_INT8_T,             sizeof(int8_t), 1);
+  nm_mpi_datatype_store(MPI_INT16_T,            sizeof(int16_t), 1);
+  nm_mpi_datatype_store(MPI_INT32_T,            sizeof(int32_t), 1);
+  nm_mpi_datatype_store(MPI_INT64_T,            sizeof(int64_t), 1);
+  nm_mpi_datatype_store(MPI_UINT8_T,            sizeof(uint8_t), 1);
+  nm_mpi_datatype_store(MPI_UINT16_T,           sizeof(uint16_t), 1);
+  nm_mpi_datatype_store(MPI_UINT32_T,           sizeof(uint32_t), 1);
+  nm_mpi_datatype_store(MPI_UINT64_T,           sizeof(uint64_t), 1);
 
   /* FORTRAN types */
   nm_mpi_datatype_store(MPI_CHARACTER,          sizeof(char), 1);
@@ -728,3 +738,32 @@ int mpi_pack_size(int incount, MPI_Datatype datatype, MPI_Comm comm, int*size)
   return MPI_SUCCESS;
 }
 
+int mpi_type_set_name(MPI_Datatype datatype, char*type_name)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  if(p_datatype->name != NULL)
+    {
+      free(p_datatype->name);
+    }
+  p_datatype->name = strndup(type_name, MPI_MAX_OBJECT_NAME);
+  return MPI_SUCCESS;
+}
+
+int mpi_type_get_name(MPI_Datatype datatype, char*type_name, int*resultlen)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  if(p_datatype->name != NULL)
+    {
+      strncpy(type_name, p_datatype->name, MPI_MAX_OBJECT_NAME);
+    }
+  else
+    {
+      type_name[0] = '\0';
+    }
+  *resultlen = strlen(type_name);
+  return MPI_SUCCESS;
+}

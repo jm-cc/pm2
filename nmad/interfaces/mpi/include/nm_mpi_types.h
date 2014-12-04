@@ -289,6 +289,7 @@ typedef int MPI_Op;
 #define MPI_MAX_PROCESSOR_NAME 256
 #define MPI_MAX_ERROR_STRING   512
 #define MPI_MAX_NAME_STRING    256
+#define MPI_MAX_OBJECT_NAME    256
 
 /** @name Error handlers */
 /* @{ */

@@ -125,6 +125,8 @@ typedef struct nm_mpi_communicator_s
   } cart_topology;
   /** error handler attached to communicator */
   struct nm_mpi_errhandler_s*p_errhandler;
+  /** communicator name */
+  char*name;
 } nm_mpi_communicator_t;
 /* @} */
 
@@ -263,6 +265,7 @@ typedef struct nm_mpi_datatype_s
       } *p_map;
     } STRUCT;
   };
+  char*name;
 } nm_mpi_datatype_t;
 
 /** content for datatype traversal */

@@ -26,7 +26,7 @@ static struct nm_mpi_handle_datatype_s nm_mpi_datatypes;
 
 
 /** store builtin datatypes */
-static void nm_mpi_datatype_store(int id, size_t size, int elements);
+static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*name);
 static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
 
 
@@ -69,64 +69,64 @@ void nm_mpi_datatype_init(void)
   /* Initialise the basic datatypes */
 
   /* C types */
-  nm_mpi_datatype_store(MPI_CHAR,               sizeof(char), 1);
-  nm_mpi_datatype_store(MPI_UNSIGNED_CHAR,      sizeof(unsigned char), 1);
-  nm_mpi_datatype_store(MPI_SIGNED_CHAR,        sizeof(signed char), 1);
-  nm_mpi_datatype_store(MPI_BYTE,               1, 1);
-  nm_mpi_datatype_store(MPI_SHORT,              sizeof(signed short), 1);
-  nm_mpi_datatype_store(MPI_UNSIGNED_SHORT,     sizeof(unsigned short), 1);
-  nm_mpi_datatype_store(MPI_INT,                sizeof(signed int), 1);
-  nm_mpi_datatype_store(MPI_UNSIGNED,           sizeof(unsigned int), 1);
-  nm_mpi_datatype_store(MPI_LONG,               sizeof(signed long), 1);
-  nm_mpi_datatype_store(MPI_UNSIGNED_LONG,      sizeof(unsigned long), 1);
-  nm_mpi_datatype_store(MPI_FLOAT,              sizeof(float), 1);
-  nm_mpi_datatype_store(MPI_DOUBLE,             sizeof(double), 1);
-  nm_mpi_datatype_store(MPI_LONG_DOUBLE,        sizeof(long double), 1);
-  nm_mpi_datatype_store(MPI_LONG_LONG_INT,      sizeof(long long int), 1);
-  nm_mpi_datatype_store(MPI_UNSIGNED_LONG_LONG, sizeof(unsigned long long int), 1);
-  nm_mpi_datatype_store(MPI_INT8_T,             sizeof(int8_t), 1);
-  nm_mpi_datatype_store(MPI_INT16_T,            sizeof(int16_t), 1);
-  nm_mpi_datatype_store(MPI_INT32_T,            sizeof(int32_t), 1);
-  nm_mpi_datatype_store(MPI_INT64_T,            sizeof(int64_t), 1);
-  nm_mpi_datatype_store(MPI_UINT8_T,            sizeof(uint8_t), 1);
-  nm_mpi_datatype_store(MPI_UINT16_T,           sizeof(uint16_t), 1);
-  nm_mpi_datatype_store(MPI_UINT32_T,           sizeof(uint32_t), 1);
-  nm_mpi_datatype_store(MPI_UINT64_T,           sizeof(uint64_t), 1);
+  nm_mpi_datatype_store(MPI_CHAR,               sizeof(char), 1, "MPI_CHAR");
+  nm_mpi_datatype_store(MPI_UNSIGNED_CHAR,      sizeof(unsigned char), 1, "MPI_UNSIGNED_CHAR");
+  nm_mpi_datatype_store(MPI_SIGNED_CHAR,        sizeof(signed char), 1, "MPI_SIGNED_CHAR");
+  nm_mpi_datatype_store(MPI_BYTE,               1, 1, "MPI_BYTE");
+  nm_mpi_datatype_store(MPI_SHORT,              sizeof(signed short), 1, "MPI_SHORT");
+  nm_mpi_datatype_store(MPI_UNSIGNED_SHORT,     sizeof(unsigned short), 1, "MPI_UNSIGNED_INT");
+  nm_mpi_datatype_store(MPI_INT,                sizeof(signed int), 1, "MPI_INT");
+  nm_mpi_datatype_store(MPI_UNSIGNED,           sizeof(unsigned int), 1, "MPI_UNSIGNED");
+  nm_mpi_datatype_store(MPI_LONG,               sizeof(signed long), 1, "MPI_LONG");
+  nm_mpi_datatype_store(MPI_UNSIGNED_LONG,      sizeof(unsigned long), 1, "MPI_UNSIGNED_LONG");
+  nm_mpi_datatype_store(MPI_FLOAT,              sizeof(float), 1, "MPI_FLOAT");
+  nm_mpi_datatype_store(MPI_DOUBLE,             sizeof(double), 1, "MPI_DOUBLE");
+  nm_mpi_datatype_store(MPI_LONG_DOUBLE,        sizeof(long double), 1, "MPI_LONG_DOUBLE");
+  nm_mpi_datatype_store(MPI_LONG_LONG_INT,      sizeof(long long int), 1, "MPI_LONG_LONG_INT");
+  nm_mpi_datatype_store(MPI_UNSIGNED_LONG_LONG, sizeof(unsigned long long int), 1, "MPI_UNSIGNED_LONG_LONG");
+  nm_mpi_datatype_store(MPI_INT8_T,             sizeof(int8_t), 1, "MPI_INT8_T");
+  nm_mpi_datatype_store(MPI_INT16_T,            sizeof(int16_t), 1, "MPI_INT16_T");
+  nm_mpi_datatype_store(MPI_INT32_T,            sizeof(int32_t), 1, "MPI_INT32_T");
+  nm_mpi_datatype_store(MPI_INT64_T,            sizeof(int64_t), 1, "MPI_INT64_T");
+  nm_mpi_datatype_store(MPI_UINT8_T,            sizeof(uint8_t), 1, "MPI_UINT8_T");
+  nm_mpi_datatype_store(MPI_UINT16_T,           sizeof(uint16_t), 1, "MPI_UINT16_T");
+  nm_mpi_datatype_store(MPI_UINT32_T,           sizeof(uint32_t), 1, "MPI_UINT32_T");
+  nm_mpi_datatype_store(MPI_UINT64_T,           sizeof(uint64_t), 1, "MPI_UINT64_T");
 
   /* FORTRAN types */
-  nm_mpi_datatype_store(MPI_CHARACTER,          sizeof(char), 1);
-  nm_mpi_datatype_store(MPI_LOGICAL,            sizeof(float), 1);
-  nm_mpi_datatype_store(MPI_REAL,               sizeof(float), 1);
-  nm_mpi_datatype_store(MPI_REAL4,              4, 1);
-  nm_mpi_datatype_store(MPI_REAL8,              8, 1);
-  nm_mpi_datatype_store(MPI_REAL16,             16, 1);
-  nm_mpi_datatype_store(MPI_DOUBLE_PRECISION,   sizeof(double), 1);
-  nm_mpi_datatype_store(MPI_INTEGER,            sizeof(float), 1);
-  nm_mpi_datatype_store(MPI_INTEGER1,           1, 1);
-  nm_mpi_datatype_store(MPI_INTEGER2,           2, 1);
-  nm_mpi_datatype_store(MPI_INTEGER4,           4, 1);
-  nm_mpi_datatype_store(MPI_INTEGER8,           8, 1);
-  nm_mpi_datatype_store(MPI_PACKED,             sizeof(char), 1);
+  nm_mpi_datatype_store(MPI_CHARACTER,          sizeof(char), 1, "MPI_CHARACTER");
+  nm_mpi_datatype_store(MPI_LOGICAL,            sizeof(float), 1, "MPI_LOGICAL");
+  nm_mpi_datatype_store(MPI_REAL,               sizeof(float), 1, "MPI_REAL");
+  nm_mpi_datatype_store(MPI_REAL4,              4, 1, "MPI_REAL4");
+  nm_mpi_datatype_store(MPI_REAL8,              8, 1, "MPI_REAL8");
+  nm_mpi_datatype_store(MPI_REAL16,             16, 1, "MPI_REAL16");
+  nm_mpi_datatype_store(MPI_DOUBLE_PRECISION,   sizeof(double), 1, "MPI_DOUBLE_PRECISION");
+  nm_mpi_datatype_store(MPI_INTEGER,            sizeof(float), 1, "MPI_INTEGER");
+  nm_mpi_datatype_store(MPI_INTEGER1,           1, 1, "MPI_INTEGER1");
+  nm_mpi_datatype_store(MPI_INTEGER2,           2, 1, "MPI_INTEGER2");
+  nm_mpi_datatype_store(MPI_INTEGER4,           4, 1, "MPI_INTEGER4");
+  nm_mpi_datatype_store(MPI_INTEGER8,           8, 1, "MPI_INTEGER8");
+  nm_mpi_datatype_store(MPI_PACKED,             sizeof(char), 1, "MPI_PACKED");
 
   /* C struct types */
-  nm_mpi_datatype_store(MPI_2INT,               sizeof(int) + sizeof(int), 2);
-  nm_mpi_datatype_store(MPI_SHORT_INT,          sizeof(short) + sizeof(int), 2);
-  nm_mpi_datatype_store(MPI_LONG_INT,           sizeof(long) + sizeof(int), 2);
-  nm_mpi_datatype_store(MPI_FLOAT_INT,          sizeof(float) + sizeof(int), 2);
-  nm_mpi_datatype_store(MPI_DOUBLE_INT,         sizeof(double) + sizeof(int), 2);
+  nm_mpi_datatype_store(MPI_2INT,               sizeof(int) + sizeof(int), 2, "MPI_2INT");
+  nm_mpi_datatype_store(MPI_SHORT_INT,          sizeof(short) + sizeof(int), 2, "MPI_SHORT_INT");
+  nm_mpi_datatype_store(MPI_LONG_INT,           sizeof(long) + sizeof(int), 2, "MPI_LONG_INT");
+  nm_mpi_datatype_store(MPI_FLOAT_INT,          sizeof(float) + sizeof(int), 2, "MPI_FLOAT_INT");
+  nm_mpi_datatype_store(MPI_DOUBLE_INT,         sizeof(double) + sizeof(int), 2, "MPI_DOUBLE_INT");
 
   /* FORTRAN struct types */
-  nm_mpi_datatype_store(MPI_2INTEGER,           sizeof(float) + sizeof(float), 2);
-  nm_mpi_datatype_store(MPI_2REAL,              sizeof(float) + sizeof(float), 2);
-  nm_mpi_datatype_store(MPI_2DOUBLE_PRECISION,  sizeof(double) + sizeof(double), 2);
+  nm_mpi_datatype_store(MPI_2INTEGER,           sizeof(float) + sizeof(float), 2, "MPI_2INTEGER");
+  nm_mpi_datatype_store(MPI_2REAL,              sizeof(float) + sizeof(float), 2, "MPI_2REAL");
+  nm_mpi_datatype_store(MPI_2DOUBLE_PRECISION,  sizeof(double) + sizeof(double), 2, "MPI_2DOUBLE_PRECISION");
   
   /* TODO- Fortran types: 2COMPLEX, 2DOUBLE_COMPLEX; check mapping for: COMPLEX, DOUBLE_COMPLEX. */
 
-  nm_mpi_datatype_store(MPI_COMPLEX,            2 * sizeof(float), 2);
-  nm_mpi_datatype_store(MPI_DOUBLE_COMPLEX,     2 * sizeof(double), 2);
+  nm_mpi_datatype_store(MPI_COMPLEX,            2 * sizeof(float), 2, "MPI_COMPLEX");
+  nm_mpi_datatype_store(MPI_DOUBLE_COMPLEX,     2 * sizeof(double), 2, "MPI_DOUBLE_COMPLEX");
 
-  nm_mpi_datatype_store(MPI_UB,                 0, 0);
-  nm_mpi_datatype_store(MPI_LB,                 0, 0);
+  nm_mpi_datatype_store(MPI_UB,                 0, 0, "MPI_UB");
+  nm_mpi_datatype_store(MPI_LB,                 0, 0, "MPI_LB");
 }
 
 __PUK_SYM_INTERNAL
@@ -138,7 +138,7 @@ void nm_mpi_datatype_exit(void)
 /* ********************************************************* */
 
 /** store a basic datatype */
-static void nm_mpi_datatype_store(int id, size_t size, int elements)
+static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*name)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_handle_datatype_store(&nm_mpi_datatypes, id);
   p_datatype->committed = 1;
@@ -149,6 +149,7 @@ static void nm_mpi_datatype_store(int id, size_t size, int elements)
   p_datatype->size = size;
   p_datatype->elements = elements;
   p_datatype->extent = size;
+  p_datatype->name = strdup(name);
 }
 
 /** allocate a new datatype and init with default values */
@@ -163,6 +164,7 @@ static nm_mpi_datatype_t*nm_mpi_datatype_alloc(nm_mpi_type_combiner_t combiner, 
   p_newtype->extent = size;
   p_newtype->refcount = 1;
   p_newtype->is_contig = 0;
+  p_newtype->name = NULL;
   return p_newtype;
 }
 
@@ -553,6 +555,10 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
       break;
     default:
       break;
+    }
+  if(p_datatype->name != NULL)
+    {
+      free(p_datatype->name);
     }
   nm_mpi_handle_datatype_free(&nm_mpi_datatypes, p_datatype);
 }

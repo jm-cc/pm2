@@ -238,8 +238,17 @@ typedef int MPI_Datatype;
 /* special types for bounds */
 #define MPI_UB                ((MPI_Datatype)40)
 #define MPI_LB                ((MPI_Datatype)41)
+/* MPI-2 C types */
+#define MPI_INT8_T            ((MPI_Datatype)42)
+#define MPI_INT16_T           ((MPI_Datatype)43)
+#define MPI_INT32_T           ((MPI_Datatype)44)
+#define MPI_INT64_T           ((MPI_Datatype)45)
+#define MPI_UINT8_T           ((MPI_Datatype)46)
+#define MPI_UINT16_T          ((MPI_Datatype)47)
+#define MPI_UINT32_T          ((MPI_Datatype)48)
+#define MPI_UINT64_T          ((MPI_Datatype)49)
 /* offset for dynamically allocated datatypes */
-#define _NM_MPI_DATATYPE_OFFSET              42
+#define _NM_MPI_DATATYPE_OFFSET              50
 
 /** Types of datatypes */
 typedef enum 

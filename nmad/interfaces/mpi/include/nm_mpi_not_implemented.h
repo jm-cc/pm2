@@ -31,6 +31,15 @@ typedef int MPI_Win;
 
 int MPI_Comm_get_parent(MPI_Comm *parent);
 
+int MPI_Intercomm_create(MPI_Comm local_comm,
+			 int local_leader,
+			 MPI_Comm peer_comm,
+			 int remote_leader,
+			 int tag,
+			 MPI_Comm *newintercomm);
+
+int MPI_Comm_remote_size(MPI_Comm comm, int *size);
+
 int MPI_Get(void *origin_addr,
 	    int origin_count,
 	    MPI_Datatype origin_datatype,
@@ -48,8 +57,6 @@ int MPI_Put(void *origin_addr,
             int target_count,
 	    MPI_Datatype target_datatype,
 	    MPI_Win win);
-
-int MPI_Comm_remote_size(MPI_Comm comm, int *size);
 
 MPI_Win MPI_Win_f2c(MPI_Fint win);
 

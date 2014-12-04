@@ -938,3 +938,14 @@ int MPI_Comm_remote_size(MPI_Comm comm, int *size)
   ERROR("<%s> not implemented\n", __FUNCTION__);
   return MPI_ERR_UNKNOWN;
 }
+
+int MPI_Intercomm_create(MPI_Comm local_comm,
+			 int local_leader,
+			 MPI_Comm peer_comm,
+			 int remote_leader,
+			 int tag,
+			 MPI_Comm *newintercomm)
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
+}

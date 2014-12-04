@@ -677,7 +677,7 @@ __PUK_SYM_INTERNAL
 void nm_mpi_datatype_copy(const void*src_buf, nm_mpi_datatype_t*p_src_type, int src_count,
 			  void*dest_buf, nm_mpi_datatype_t*p_dest_type, int dest_count)
 {
-  if(p_src_type == p_dest_type && p_src_type->is_contig)
+  if(p_src_type == p_dest_type && p_src_type->is_contig && src_count == dest_count)
     {
       int i;
       for(i = 0; i < src_count; i++)
@@ -685,7 +685,7 @@ void nm_mpi_datatype_copy(const void*src_buf, nm_mpi_datatype_t*p_src_type, int 
 	  memcpy(dest_buf + i * p_dest_type->extent, src_buf + i * p_src_type->extent, p_src_type->size);
 	}
     }
-  else
+  else if(src_count > 0)
     {
       void*ptr = malloc(p_src_type->size * src_count);
       nm_mpi_datatype_pack(ptr, src_buf, p_src_type, src_count);

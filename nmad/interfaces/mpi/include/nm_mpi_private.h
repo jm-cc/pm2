@@ -220,6 +220,10 @@ typedef struct nm_mpi_datatype_s
     struct
     {
       struct nm_mpi_datatype_s*p_old_type;
+    } DUP;
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
     } RESIZED;
     struct
     {

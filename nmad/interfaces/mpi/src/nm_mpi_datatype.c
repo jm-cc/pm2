@@ -37,6 +37,7 @@ NM_MPI_ALIAS(MPI_Type_get_extent,     mpi_type_get_extent);
 NM_MPI_ALIAS(MPI_Type_extent,         mpi_type_extent);
 NM_MPI_ALIAS(MPI_Type_lb,             mpi_type_lb);
 NM_MPI_ALIAS(MPI_Type_ub,             mpi_type_ub);
+NM_MPI_ALIAS(MPI_Type_dup,            mpi_type_dup);
 NM_MPI_ALIAS(MPI_Type_create_resized, mpi_type_create_resized);
 NM_MPI_ALIAS(MPI_Type_commit,         mpi_type_commit);
 NM_MPI_ALIAS(MPI_Type_free,           mpi_type_free);
@@ -211,6 +212,19 @@ int mpi_type_ub(MPI_Datatype datatype, MPI_Aint*displacement)
   if(p_datatype == NULL)
     return MPI_ERR_TYPE;
   *displacement = p_datatype->extent; /* UB is extent since we support only LB=0 */
+  return MPI_SUCCESS;
+}
+
+int mpi_type_dup(MPI_Datatype oldtype, MPI_Datatype*newtype)
+{
+  nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
+  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_DUP, p_oldtype->size, 1);
+  *newtype = p_newtype->id;
+  p_newtype->is_contig = p_oldtype->is_contig;
+  p_newtype->extent    = p_oldtype->extent;
+  p_newtype->lb        = p_oldtype->lb;
+  p_newtype->DUP.p_old_type = p_oldtype;
+  p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
 
@@ -410,6 +424,11 @@ int mpi_type_get_envelope(MPI_Datatype datatype, int*num_integers, int*num_addre
       *num_addresses = 0;
       *num_datatypes = 1;
       break;
+    case MPI_COMBINER_DUP:
+      *num_integers  = 0;
+      *num_addresses = 0;
+      *num_datatypes = 1;
+      break;
     case MPI_COMBINER_RESIZED:
       *num_integers  = 0;
       *num_addresses = 0;
@@ -457,6 +476,10 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
       break;
     case MPI_COMBINER_CONTIGUOUS:
       array_of_datatypes[0] = p_datatype->CONTIGUOUS.p_old_type->id;
+      break;
+    case MPI_COMBINER_DUP:
+      array_of_integers[0]  = p_datatype->elements;
+      array_of_datatypes[0] = p_datatype->DUP.p_old_type->id;
       break;
     case MPI_COMBINER_RESIZED:
       array_of_integers[0]  = p_datatype->elements;
@@ -564,6 +587,14 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	      {
 		const struct nm_data_mpi_datatype_s sub = 
 		  { .ptr = ptr, .p_datatype = p_datatype->CONTIGUOUS.p_old_type, .count = p_datatype->elements };
+		nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+	      }
+	      break;
+
+	    case MPI_COMBINER_DUP:
+	      {
+		const struct nm_data_mpi_datatype_s sub = 
+		  { .ptr = ptr, .p_datatype = p_datatype->DUP.p_old_type, .count = 1 };
 		nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 	      }
 	      break;

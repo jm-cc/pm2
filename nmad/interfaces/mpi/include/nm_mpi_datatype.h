@@ -78,6 +78,9 @@ int MPI_Type_create_resized(MPI_Datatype oldtype,
 			    MPI_Aint extent,
 			    MPI_Datatype *newtype);
 
+int MPI_Type_dup(MPI_Datatype oldtype,
+		 MPI_Datatype*newtype);
+
 /**
  * Commits the datatype.
  * @param datatype datatype that is committed

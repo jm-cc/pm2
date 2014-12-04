@@ -260,7 +260,8 @@ typedef enum
     MPI_COMBINER_INDEXED,     /**< indexed type */
     MPI_COMBINER_HINDEXED,    /**< indexed type, offset in bytes */
     MPI_COMBINER_STRUCT,      /**< structured type */
-    MPI_COMBINER_RESIZED      /**< type is resized from another type */
+    MPI_COMBINER_RESIZED,     /**< type is resized from another type */
+    MPI_COMBINER_DUP          /**< type is duplicated from another type */
   }
   nm_mpi_type_combiner_t;
 

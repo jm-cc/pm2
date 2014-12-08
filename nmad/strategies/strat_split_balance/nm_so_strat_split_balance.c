@@ -32,16 +32,16 @@ static int strat_split_balance_todo(void*, struct nm_gate*);
 static int strat_split_balance_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_split_balance_try_and_commit(void*, struct nm_gate*);
-static int strat_split_balance_rdv_accept(void*, struct nm_gate*, nm_len_t, int*, struct nm_rdv_chunk*);
+static void strat_split_balance_rdv_accept(void*, struct nm_gate*);
 
 static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
   {
     .pack               = &strat_split_balance_pack,
     .pack_ctrl          = &strat_split_balance_pack_ctrl,
     .try_and_commit     = &strat_split_balance_try_and_commit,
-    .rdv_accept          = &strat_split_balance_rdv_accept,
-    .flush               = NULL,
-    .todo                = &strat_split_balance_todo
+    .rdv_accept         = &strat_split_balance_rdv_accept,
+    .flush              = NULL,
+    .todo               = &strat_split_balance_todo
 };
 
 static void*strat_split_balance_instanciate(puk_instance_t, puk_context_t);
@@ -280,45 +280,45 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
   return NM_ESUCCESS;
 }
 
-/* Warning: drv_id and trk_id are IN/OUT parameters. They initially
-   hold values "suggested" by the caller. */
-static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate, nm_len_t len,
-					  int*nb_chunks, struct nm_rdv_chunk*chunks)
-
+/** Emit RTR for received RDV requests
+ */
+static void strat_split_balance_rdv_accept(void*_status, struct nm_gate*p_gate)
 {
-  int nb_drivers = p_gate->p_core->nb_drivers;
-  int chunk_index = 0;
-  const nm_trk_id_t trk_id = NM_TRK_LARGE;
-  struct nm_drv*const*ordered_drv_id_by_bw = NULL;
-  nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw, &nb_drivers);
-  
-  int i;
-  for(i = 0; i < nb_drivers && chunk_index < *nb_chunks; i++)
+  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {
-      nm_drv_t p_drv = ordered_drv_id_by_bw[i];
-      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-      if(p_gdrv != NULL && p_gdrv->active_recv[trk_id] == 0)
+      struct nm_pkt_wrap*p_pw = nm_l2so(p_gate->pending_large_recv.next);
+      int nb_drivers = p_gate->p_core->nb_drivers;
+      int chunk_index = 0;
+      struct nm_rdv_chunk chunks[nb_drivers];
+      const nm_trk_id_t trk_id = NM_TRK_LARGE;
+      struct nm_drv*const*ordered_drv_id_by_bw = NULL;
+      nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw, &nb_drivers);
+      int i;
+      for(i = 0; i < nb_drivers; i++)
 	{
-	  chunks[chunk_index].p_drv = p_drv;
-	  chunks[chunk_index].trk_id = NM_TRK_LARGE;
-	  chunk_index++;
+	  nm_drv_t p_drv = ordered_drv_id_by_bw[i];
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+	  if(p_gdrv != NULL && p_gdrv->active_recv[trk_id] == 0)
+	    {
+	      chunks[chunk_index].p_drv = p_drv;
+	      chunks[chunk_index].trk_id = NM_TRK_LARGE;
+	      chunk_index++;
+	    }
 	}
-    }
-  *nb_chunks = chunk_index;
-  if(chunk_index == 1)
-    {
-      chunks[0].len = len;
-      return NM_ESUCCESS;
-    }
-  else if(chunk_index > 1)
-    {
-      nm_ns_multiple_split_ratio(len, p_gate->p_core, nb_chunks, chunks);
-      return NM_ESUCCESS;
-    }      
-  else
-    {
-      /* postpone the acknowledgement. */
-      return -NM_EAGAIN;
+      int nb_chunks = chunk_index;
+      if(nb_chunks == 1)
+	{
+	  chunks[0].len = p_pw->length;
+	}
+      else if(nb_chunks > 1)
+	{
+	  nm_ns_multiple_split_ratio(p_pw->length, p_gate->p_core, &nb_chunks, chunks);
+	}      
+      if(nb_chunks > 0)
+	{
+	  tbx_fast_list_del(p_gate->pending_large_recv.next);
+	  nm_tactic_rtr_pack(p_pw, nb_chunks, chunks);
+	}
     }
 }
 

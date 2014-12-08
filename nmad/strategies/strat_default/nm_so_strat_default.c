@@ -36,7 +36,7 @@ static int strat_default_todo(void*, struct nm_gate*);/* todo: s/nm_gate/nm_pack
 static int strat_default_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_default_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_default_try_and_commit(void*, struct nm_gate*);
-static int strat_default_rdv_accept(void*, struct nm_gate*, nm_len_t, int*, struct nm_rdv_chunk*);
+static void strat_default_rdv_accept(void*, struct nm_gate*);
 
 static const struct nm_strategy_iface_s nm_strat_default_driver =
   {
@@ -44,8 +44,8 @@ static const struct nm_strategy_iface_s nm_strat_default_driver =
     .pack               = &strat_default_pack,
     .pack_ctrl          = &strat_default_pack_ctrl,
     .try_and_commit     = &strat_default_try_and_commit,
-    .rdv_accept          = &strat_default_rdv_accept,
-    .flush               = NULL
+    .rdv_accept         = &strat_default_rdv_accept,
+    .flush              = NULL
 };
 
 static void*strat_default_instanciate(puk_instance_t, puk_context_t);
@@ -266,30 +266,22 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
   return NM_ESUCCESS;
 }
 
-/** Accept or refuse a RDV on the suggested (driver/track/gate).
- *
- *  @warning @p drv_id and @p trk_id are IN/OUT parameters. They initially
- *  hold values "suggested" by the caller.
- *  @param p_gate a pointer to the gate object.
- *  @param drv_id the suggested driver id.
- *  @param trk_id the suggested track id.
- *  @return The NM status.
+/** Emit RTR for received RDV requests
  */
-static int strat_default_rdv_accept(void*_status, struct nm_gate *p_gate, nm_len_t len,
-				    int*nb_chunks, struct nm_rdv_chunk*chunks)
+static void strat_default_rdv_accept(void*_status, struct nm_gate*p_gate)
 {
-  *nb_chunks = 1;
-  nm_drv_t p_drv = nm_drv_default(p_gate);
-  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
+  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {
-      /* The large-packet track is available! */
-      chunks[0].len = len;
-      chunks[0].p_drv = p_drv;
-      chunks[0].trk_id = NM_TRK_LARGE;
-      return NM_ESUCCESS;
+      struct nm_pkt_wrap*p_pw = nm_l2so(p_gate->pending_large_recv.next);
+      nm_drv_t p_drv = nm_drv_default(p_gate);
+      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+      if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
+	{
+	  /* The large-packet track is available- post recv and RTR */
+	  struct nm_rdv_chunk chunk = 
+	    { .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_LARGE };
+	  tbx_fast_list_del(p_gate->pending_large_recv.next);
+	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
+	}
     }
-  else
-    /* postpone the acknowledgement. */
-    return -NM_EAGAIN;
 }

@@ -146,53 +146,6 @@ static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate
   return NULL;
 }
 
-/** Process postponed recv requests
- */
-static int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
-{
-  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
-    {
-      struct nm_pkt_wrap *p_pw = nm_l2so(p_gate->pending_large_recv.next);
-      int nb_chunks = p_gate->p_core->nb_drivers;
-      struct nm_rdv_chunk chunks[nb_chunks];
-      const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-      int err = strategy->driver->rdv_accept(strategy->_status, p_gate, p_pw->length, &nb_chunks, chunks);
-      if(err == NM_ESUCCESS)
-	{
-	  tbx_fast_list_del(p_gate->pending_large_recv.next);
-	  int i;
-	  nm_len_t chunk_offset = p_pw->chunk_offset;
-	  const nm_seq_t seq = p_pw->p_unpack->seq;
-	  const nm_core_tag_t tag = p_pw->p_unpack->tag;
-	  struct nm_pkt_wrap *p_pw2 = NULL;
-	  for(i = 0; i < nb_chunks; i++)
-	    {
-	      if(chunks[i].len < p_pw->length)
-		{
-		  /* create a new pw with the remaining data */
-		  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
-		  p_pw2->p_drv    = p_pw->p_drv;
-		  p_pw2->trk_id   = p_pw->trk_id;
-		  p_pw2->p_gate   = p_pw->p_gate;
-		  p_pw2->p_gdrv   = p_pw->p_gdrv;
-		  p_pw2->p_unpack = p_pw->p_unpack;
-		  /* populate p_pw2 iovec */
-		  nm_so_pw_split_data(p_pw, p_pw2, chunks[i].len);
-		  assert(p_pw->length == chunks[i].len);
-		}
-	      nm_core_post_recv(p_pw, p_gate, chunks[i].trk_id, chunks[i].p_drv);
-	      p_pw = p_pw2;
-	      p_pw2 = NULL;
-	    }
-	  for(i = 0; i < nb_chunks; i++)
-	    {
-	      nm_so_post_rtr(p_gate, tag, seq, chunks[i].p_drv, chunks[i].trk_id, chunk_offset, chunks[i].len);
-	      chunk_offset += chunks[i].len;
-	    }
-	}
-    }
-  return NM_ESUCCESS;
-}
 
 /** register a large pending pw for each chunk in the rdv
  */
@@ -526,9 +479,6 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
       nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
       struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
       nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
-      /* enqueue chunks in the list, and immediately process one item 
-       * (not necessarily the one we enqueued) */
-      nm_so_process_large_pending_recv(p_unpack->p_gate);
     }
   else
     {
@@ -790,7 +740,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       const nm_len_t len = p_pw->length;
       /* ** Large packet, data received directly in its final destination */
       nm_so_unpack_check_completion(p_core, p_unpack, len);
-      nm_so_process_large_pending_recv(p_gate);
     }
   
   nm_pw_ref_dec(p_pw);

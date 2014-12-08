@@ -208,26 +208,6 @@ void nm_drv_post_send(struct nm_drv *p_drv)
   while(p_pw);
 }
 
-void nm_try_and_commit(struct nm_core *p_core)
-{
-  /* schedule new requests on all gates */
-  struct nm_gate*p_gate = NULL;
-  NM_LOG_IN();
-  nmad_lock_assert();
-  NM_FOR_EACH_GATE(p_gate, p_core)
-    {
-      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-	{
-	  int err = nm_strat_try_and_commit(p_gate);
-	  if (err < 0)
-	    {
-	      NM_WARN("sched.schedule_out returned %d", err);
-	    }
-	}
-    }
-  NM_LOG_OUT();
-}
-
 int nm_core_flush(nm_gate_t p_gate)
 {
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;

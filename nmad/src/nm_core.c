@@ -48,6 +48,33 @@ void nm_drv_post_all(struct nm_drv*p_drv)
   nm_drv_post_recv(p_drv);
 }
 
+/** apply strategy
+ */
+void nm_strat_apply(struct nm_core*p_core)
+{
+  struct nm_gate*p_gate = NULL;
+  nmad_lock_assert();
+  NM_FOR_EACH_GATE(p_gate, p_core)
+    {
+      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
+	{
+	  /* schedule new requests on all gates */
+	  int err = nm_strat_try_and_commit(p_gate);
+	  if (err < 0)
+	    {
+	      NM_WARN("sched.schedule_out returned %d", err);
+	    }
+	  /* process postponed recv requests */
+	  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
+	    {
+	      const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
+	      strategy->driver->rdv_accept(strategy->_status, p_gate);
+	    }
+
+	}
+    }
+}
+
 /** Main function of the core scheduler loop.
  *
  * This is the heart of NewMadeleine...
@@ -63,7 +90,7 @@ int nm_schedule(struct nm_core *p_core)
   scheduling_in_progress = 1;  
 #endif /* DEBUG */
 
-  nm_try_and_commit(p_core);
+  nm_strat_apply(p_core);
 
   /* post new requests	*/
   struct nm_drv*p_drv = NULL;

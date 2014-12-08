@@ -88,5 +88,55 @@ static inline struct nm_pkt_wrap*nm_tactic_try_to_aggregate(struct tbx_fast_list
   return NULL;
 }
 
+/** a chunk of rdv data. 
+ * Use one for regular rendezvous; use nb_driver chunks for multi-rail.
+ */
+struct nm_rdv_chunk
+{
+  nm_drv_t p_drv;
+  nm_trk_id_t trk_id;
+  nm_len_t len;
+};
+
+/** Packs a series of RTR for multiple chunks of a pw, and post corresponding recv
+*/
+static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap*p_pw, int nb_chunks, const struct nm_rdv_chunk*chunks)
+{
+  int i;
+  nm_len_t chunk_offset = p_pw->chunk_offset;
+  const nm_seq_t seq = p_pw->p_unpack->seq;
+  const nm_core_tag_t tag = p_pw->p_unpack->tag;
+  struct nm_gate*p_gate = p_pw->p_gate;
+  struct nm_pkt_wrap*p_pw2 = NULL;
+  for(i = 0; i < nb_chunks; i++)
+    {
+      if(chunks[i].len < p_pw->length)
+	{
+	  /* create a new pw with the remaining data */
+	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
+	  p_pw2->p_drv    = p_pw->p_drv;
+	  p_pw2->trk_id   = p_pw->trk_id;
+	  p_pw2->p_gate   = p_pw->p_gate;
+	  p_pw2->p_gdrv   = p_pw->p_gdrv;
+	  p_pw2->p_unpack = p_pw->p_unpack;
+	  /* populate p_pw2 iovec */
+	  nm_so_pw_split_data(p_pw, p_pw2, chunks[i].len);
+	  assert(p_pw->length == chunks[i].len);
+	}
+      if(chunks[i].trk_id == NM_TRK_LARGE)
+	{
+	  nm_core_post_recv(p_pw, p_pw->p_gate, chunks[i].trk_id, chunks[i].p_drv);
+	}
+      else
+	{
+	  nm_so_pw_free(p_pw);
+	}
+      nm_so_post_rtr(p_gate, tag, seq, chunks[i].p_drv, chunks[i].trk_id, chunk_offset, chunks[i].len);
+      chunk_offset += chunks[i].len;
+      p_pw = p_pw2;
+      p_pw2 = NULL;
+    }
+}
+
 #endif /* NM_TACTICS_H */
 

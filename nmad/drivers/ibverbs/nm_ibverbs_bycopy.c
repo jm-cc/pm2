@@ -355,6 +355,7 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
   while( ( (bycopy->recv.msg_size == -1) || (!complete) ) &&
 	 (packet->header.status != 0) ) 
     {
+      assert(bycopy->recv.msg_size <= bycopy->recv.size_posted);
       if(bycopy->recv.msg_size == -1) 
 	{
 	  assert((packet->header.status & NM_IBVERBS_BYCOPY_STATUS_DATA) != 0);

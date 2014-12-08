@@ -292,15 +292,18 @@ static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t 
       const nm_len_t block_payload = block_size - lr2_hsize;
       nm_len_t chunk_done = 0;
       nm_len_t chunk_offset = 0;
-      assert(size > block_payload * (chunk_size/block_size));
-      while(chunk_offset < chunk_size)
+      if(size > block_payload * (chunk_size/block_size))
 	{
-	  struct lr2_header_s*h = (struct lr2_header_s*)(&lr2->buffer.sbuf[chunk_offset] + block_payload);
-	  h->checksum = 1 | nm_ibverbs_memcpy_and_checksum(&lr2->buffer.sbuf[chunk_offset], ptr + chunk_done, block_payload);
-	  chunk_done   += block_payload;
+	  /* prefetch only in case first step is complete */
+	  while(chunk_offset < chunk_size)
+	    {
+	      struct lr2_header_s*h = (struct lr2_header_s*)(&lr2->buffer.sbuf[chunk_offset] + block_payload);
+	      h->checksum = 1 | nm_ibverbs_memcpy_and_checksum(&lr2->buffer.sbuf[chunk_offset], ptr + chunk_done, block_payload);
+	      chunk_done   += block_payload;
 	  chunk_offset += block_size;
+	    }
+	  lr2->send.prefetch = ptr;
 	}
-      lr2->send.prefetch = ptr;
     }
 }
 

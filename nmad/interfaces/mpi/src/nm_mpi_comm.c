@@ -849,10 +849,18 @@ int mpi_group_excl(MPI_Group group, int n, int*ranks, MPI_Group*newgroup)
   else
     {
       nm_mpi_group_t*p_group = nm_mpi_handle_group_get(&nm_mpi_groups, group);
-      nm_mpi_group_t*p_new_group = nm_mpi_handle_group_alloc(&nm_mpi_groups);
-      p_new_group->p_nm_group = nm_group_excl(p_group->p_nm_group, n, ranks);
-      MPI_Group new_id = p_new_group->id;
-      *newgroup = new_id;
+      nm_group_t p_nm_group = nm_group_excl(p_group->p_nm_group, n, ranks);
+      if(nm_group_size(p_nm_group) == 0)
+	{
+	  *newgroup = MPI_GROUP_EMPTY;
+	}
+      else
+	{
+	  nm_mpi_group_t*p_new_group = nm_mpi_handle_group_alloc(&nm_mpi_groups);
+	  p_new_group->p_nm_group = p_nm_group;
+	  MPI_Group new_id = p_new_group->id;
+	  *newgroup = new_id;
+	}
     }
   return MPI_SUCCESS;
 }
@@ -892,13 +900,13 @@ int mpi_group_range_excl(MPI_Group group, int n, int ranges[][3], MPI_Group*newg
 int mpi_group_free(MPI_Group*group)
 {
   const int id = *group;
-  if(id != MPI_GROUP_NULL)
+  if(id != MPI_GROUP_NULL && id != MPI_GROUP_EMPTY)
     {
       nm_mpi_group_t*p_group = nm_mpi_handle_group_get(&nm_mpi_groups, id);
       nm_group_free(p_group->p_nm_group);
       nm_mpi_handle_group_free(&nm_mpi_groups, p_group);
-      *group = MPI_GROUP_NULL;
     }
+  *group = MPI_GROUP_NULL;
   return MPI_SUCCESS;
 }
 

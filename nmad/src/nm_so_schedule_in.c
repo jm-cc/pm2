@@ -676,7 +676,7 @@ static int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct 
       break;
       
     default:
-      padico_fatal("nmad: received header with invalid proto_id %d\n", proto_id);
+      padico_fatal("nmad: received header with invalid proto_id 0x%02X\n", proto_id);
       break;
       
     }

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,9 +23,8 @@ typedef const union nm_so_generic_ctrl_header*nm_generic_header_t;
  */
 struct nm_strategy_iface_s
 {
-  /** Handle the submission of a new packet. The strategy may already apply
-      some optimizations at this point */
-  int (*pack)(void*_status, struct nm_pack_s*p_pack);
+  /** Submit a chunk of data to the strategy */
+  void (*pack_chunk)(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 
   int (*pack_ctrl)(void*_status, struct nm_gate*p_gate, nm_generic_header_t p_ctrl);
   

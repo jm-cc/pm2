@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,15 +28,15 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_split_balance, &nm_strat_split_balance_loa
 /* Components structures:
  */
 
-static int strat_split_balance_todo(void*, struct nm_gate*);
-static int strat_split_balance_pack(void*_status, struct nm_pack_s*p_pack);
-static int strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
-static int strat_split_balance_try_and_commit(void*, struct nm_gate*);
+static int  strat_split_balance_todo(void*, struct nm_gate*);
+static void strat_split_balance_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
+static int  strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
+static int  strat_split_balance_try_and_commit(void*, struct nm_gate*);
 static void strat_split_balance_rdv_accept(void*, struct nm_gate*);
 
 static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
   {
-    .pack               = &strat_split_balance_pack,
+    .pack_chunk         = &strat_split_balance_pack_chunk,
     .pack_ctrl          = &strat_split_balance_pack_ctrl,
     .try_and_commit     = &strat_split_balance_try_and_commit,
     .rdv_accept         = &strat_split_balance_rdv_accept,
@@ -213,39 +213,21 @@ static int strat_split_balance_todo(void*_status,
   return !(tbx_fast_list_empty(out_list));
 }
 
-struct nm_strat_split_balance_push_s
-{
-  struct nm_pack_s*p_pack;
-  struct nm_so_strat_split_balance*status;
-};
 /** push message chunk */
-static void nm_strat_split_balance_push(void*ptr, nm_len_t len, void*_context)
+static void strat_split_balance_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
-  const struct nm_strat_split_balance_push_s*p_context = _context;
-  struct nm_so_strat_split_balance*status = p_context->status;
-  const nm_len_t offset = p_context->p_pack->scheduled;
-  tbx_bool_t is_last_chunk = (p_context->p_pack->scheduled + len >= p_context->p_pack->len);
+  struct nm_so_strat_split_balance*status = _status;
+  tbx_bool_t is_last_chunk = (chunk_offset + len >= p_pack->len);
   if(len <= status->nm_so_max_small)
     {
       /* Small packet */
-      strat_split_balance_try_to_agregate_small(status, p_context->p_pack, ptr, len, offset, is_last_chunk);
+      strat_split_balance_try_to_agregate_small(status, p_pack, ptr, len, chunk_offset, is_last_chunk);
     }
   else
     {
       /* Large packets are split in 2 chunks. */
-      strat_split_balance_launch_large_chunk(status, p_context->p_pack, ptr, len, offset, is_last_chunk);
+      strat_split_balance_launch_large_chunk(status, p_pack, ptr, len, chunk_offset, is_last_chunk);
     }
-}
-
-
-/* Handle the arrival of a new packet. The strategy may already apply
-   some optimizations at this point */
-static int strat_split_balance_pack(void *_status, struct nm_pack_s*p_pack)
-{
-  struct nm_so_strat_split_balance*status = _status;
-  struct nm_strat_split_balance_push_s context = { .p_pack = p_pack, .status = status };
-  nm_data_traversal_apply(p_pack->p_data, &nm_strat_split_balance_push, &context);
-  return NM_ESUCCESS;
 }
 
 

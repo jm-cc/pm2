@@ -32,16 +32,16 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_default, &nm_strat_default_load, NULL, NUL
 /* Components structures:
  */
 
-static int strat_default_todo(void*, struct nm_gate*);/* todo: s/nm_gate/nm_pack/ ? */
-static int strat_default_pack(void*_status, struct nm_pack_s*p_pack);
-static int strat_default_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
-static int strat_default_try_and_commit(void*, struct nm_gate*);
+static int  strat_default_todo(void*, struct nm_gate*);/* todo: s/nm_gate/nm_pack/ ? */
+static void strat_default_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
+static int  strat_default_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
+static int  strat_default_try_and_commit(void*, struct nm_gate*);
 static void strat_default_rdv_accept(void*, struct nm_gate*);
 
 static const struct nm_strategy_iface_s nm_strat_default_driver =
   {
     .todo               = &strat_default_todo,
-    .pack               = &strat_default_pack,
+    .pack_chunk         = &strat_default_pack_chunk,
     .pack_ctrl          = &strat_default_pack_ctrl,
     .try_and_commit     = &strat_default_try_and_commit,
     .rdv_accept         = &strat_default_rdv_accept,
@@ -60,7 +60,8 @@ static const struct puk_adapter_driver_s nm_strat_default_adapter_driver =
 
 /** Per-gate status for strat default instances
  */
-struct nm_so_strat_default {
+struct nm_so_strat_default
+{
   /** List of raw outgoing packets. */
   struct tbx_fast_list_head out_list;
   int nm_so_max_small;
@@ -129,45 +130,21 @@ static int strat_default_todo(void* _status, struct nm_gate*p_gate)
   return !(tbx_fast_list_empty(&status->out_list));
 }
 
-/** context for the push function */
-struct nm_strat_default_push_s
-{
-  struct nm_pack_s*p_pack;
-  struct nm_so_strat_default*status;
-};
 /** push a message chunk */
-static void nm_strat_default_push(void*ptr, nm_len_t len, void*_context)
+static void strat_default_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
-  const struct nm_strat_default_push_s*p_context = _context;
-  const nm_len_t offset = p_context->p_pack->scheduled;
-  if(len <= p_context->status->nm_so_max_small)
+  struct nm_so_strat_default*status = _status;
+  if(len <= status->nm_so_max_small)
     {
-      nm_tactic_pack_small_new_pw(p_context->p_pack, ptr, len, offset, 
-				  p_context->status->nm_so_copy_on_send_threshold, &p_context->status->out_list);
+      nm_tactic_pack_small_new_pw(p_pack, ptr, len, chunk_offset, 
+				  status->nm_so_copy_on_send_threshold, &status->out_list);
     }
   else
     {
-      nm_tactic_pack_rdv(p_context->p_pack, ptr, len, offset);
+      nm_tactic_pack_rdv(p_pack, ptr, len, chunk_offset);
     }
 }
 
-/** Handle a new packet submitted by the user code.
- *
- *  @note The strategy may already apply some optimizations at this point.
- *  @param p_gate a pointer to the gate object.
- *  @param tag the message tag.
- *  @param seq the fragment sequence number.
- *  @param data the data fragment pointer.
- *  @param len the data fragment length.
- *  @return The NM status.
- */
-static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
-{
-  struct nm_so_strat_default*status = _status;
-  struct nm_strat_default_push_s context = { .p_pack = p_pack, .status = status };
-  nm_data_traversal_apply(p_pack->p_data, &nm_strat_default_push, &context);
-  return NM_ESUCCESS;
-}
 
 /** Compute and apply the best possible packet rearrangement, then
  *  return next packet to send.

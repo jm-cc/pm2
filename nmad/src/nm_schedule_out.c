@@ -32,9 +32,26 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct n
   p_pack->scheduled = 0;
 }
 
+/** context for chunk packing */
+struct nm_core_pack_context_s
+{
+  struct nm_pack_s*p_pack;
+};
+/** data iterator to call strategy pack on every chunk of data */
+static void nm_core_pack_chunk(void*ptr, nm_len_t len, void*_context)
+{
+  const struct nm_core_pack_context_s*p_context = _context;
+  struct nm_pack_s*p_pack = p_context->p_pack;
+  const nm_len_t offset = p_pack->scheduled;
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
+  assert(r->driver->pack_chunk != NULL);
+  (*r->driver->pack_chunk)(r->_status, p_pack, ptr, len, offset);
+}
+
 int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
 		      nm_so_flag_t flags)
 {
+  int err = NM_ESUCCESS;
   nmad_lock();
   nm_lock_interface(p_core);
   assert(p_gate != NULL);
@@ -50,8 +67,8 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
 #warning Paulette: lock
       tbx_fast_list_add_tail(&p_pack->_link, &p_core->pending_packs);
     }
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  int err = (*r->driver->pack)(r->_status, p_pack);
+  struct nm_core_pack_context_s context = { .p_pack = p_pack };
+  nm_data_traversal_apply(p_pack->p_data, &nm_core_pack_chunk, &context);
   p_pack->p_data = NULL;
   nm_unlock_interface(p_core);
   nmad_unlock();

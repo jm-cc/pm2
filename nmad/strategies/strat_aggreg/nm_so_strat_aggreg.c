@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2014 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,15 +28,15 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg, &nm_strat_aggreg_load, NULL, NULL)
 /* Components structures:
  */
 
-static int strat_aggreg_todo(void*, struct nm_gate*);
-static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack);
-static int strat_aggreg_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
-static int strat_aggreg_try_and_commit(void*, struct nm_gate*);
+static int  strat_aggreg_todo(void*, struct nm_gate*);
+static void strat_aggreg_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
+static int  strat_aggreg_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
+static int  strat_aggreg_try_and_commit(void*, struct nm_gate*);
 static void strat_aggreg_rdv_accept(void*, struct nm_gate*);
 
-static const struct nm_strategy_iface_s nm_so_strat_aggreg_driver =
+static const struct nm_strategy_iface_s nm_strat_aggreg_driver =
   {
-    .pack               = &strat_aggreg_pack,
+    .pack_chunk         = &strat_aggreg_pack_chunk,
     .pack_ctrl          = &strat_aggreg_pack_ctrl,
     .try_and_commit     = &strat_aggreg_try_and_commit,
     .rdv_accept         = &strat_aggreg_rdv_accept,
@@ -47,7 +47,7 @@ static const struct nm_strategy_iface_s nm_so_strat_aggreg_driver =
 static void*strat_aggreg_instanciate(puk_instance_t, puk_context_t);
 static void strat_aggreg_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_so_strat_aggreg_adapter_driver =
+static const struct puk_adapter_driver_s nm_strat_aggreg_adapter_driver =
   {
     .instanciate = &strat_aggreg_instanciate,
     .destroy     = &strat_aggreg_destroy
@@ -55,7 +55,8 @@ static const struct puk_adapter_driver_s nm_so_strat_aggreg_adapter_driver =
 
 /** Per-gate status for strat aggreg instances.
  */
-struct nm_so_strat_aggreg_gate {
+struct nm_strat_aggreg_gate 
+{
   /** List of raw outgoing packets. */
   struct tbx_fast_list_head out_list;
   int nm_copy_on_send_threshold;
@@ -65,14 +66,39 @@ static int num_instances = 0;
 static int nb_data_aggregation = 0;
 static int nb_ctrl_aggregation = 0;
 
-static ssize_t nm_max_small = -1;
+
+static inline nm_len_t strat_aggreg_max_small(struct nm_core*p_core)
+{
+  static ssize_t nm_max_small = -1;
+    /* lazy init */
+  if(nm_max_small > 0)
+    return nm_max_small;
+  else
+    {
+      
+      struct nm_drv*p_drv;
+      NM_FOR_EACH_DRIVER(p_drv, p_core)
+	{
+	  if(nm_max_small <= 0 || (p_drv->driver->capabilities.max_unexpected > 0 && p_drv->driver->capabilities.max_unexpected < nm_max_small))
+	    {
+	      nm_max_small = p_drv->driver->capabilities.max_unexpected;
+	    }
+	}
+      if(nm_max_small <= 0 || nm_max_small > (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE))
+	{
+	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE);
+	}
+      NM_DISPF("# nmad: aggreg- max_small = %lu\n", nm_max_small);
+    }
+  return nm_max_small;
+}
 
 /** Component declaration */
 static int nm_strat_aggreg_load(void)
 {
   puk_component_declare("NewMad_Strategy_aggreg",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_so_strat_aggreg_adapter_driver),
-			puk_component_provides("NewMad_Strategy", "strat", &nm_so_strat_aggreg_driver),
+			puk_component_provides("PadicoAdapter", "adapter", &nm_strat_aggreg_adapter_driver),
+			puk_component_provides("NewMad_Strategy", "strat", &nm_strat_aggreg_driver),
 			puk_component_attr("nm_copy_on_send_threshold", "4096"));
   return NM_ESUCCESS;
 }
@@ -82,7 +108,7 @@ static int nm_strat_aggreg_load(void)
  */
 static void*strat_aggreg_instanciate(puk_instance_t ai, puk_context_t context)
 {
-  struct nm_so_strat_aggreg_gate*status = TBX_MALLOC(sizeof(struct nm_so_strat_aggreg_gate));
+  struct nm_strat_aggreg_gate*status = TBX_MALLOC(sizeof(struct nm_strat_aggreg_gate));
 
   num_instances++;
   TBX_INIT_FAST_LIST_HEAD(&status->out_list);
@@ -119,7 +145,7 @@ static void strat_aggreg_destroy(void*status)
 static int strat_aggreg_pack_ctrl(void*_status, struct nm_gate *p_gate,
 				  const union nm_so_generic_ctrl_header *p_ctrl)
 {
-  struct nm_so_strat_aggreg_gate *status = _status;
+  struct nm_strat_aggreg_gate *status = _status;
   struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_CTRL_HEADER_SIZE, 0);
   if(p_pw)
     {
@@ -136,77 +162,31 @@ static int strat_aggreg_pack_ctrl(void*_status, struct nm_gate *p_gate,
 
 static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
 {
-  struct nm_so_strat_aggreg_gate *status = _status;
+  struct nm_strat_aggreg_gate *status = _status;
   return !(tbx_fast_list_empty(&status->out_list));
 }
 
-struct nm_strat_aggreg_push_s
-{
-  struct nm_pack_s*p_pack;
-  struct nm_so_strat_aggreg_gate*status;
-};
 /** push message chunk */
-static void nm_strat_aggreg_push(void*ptr, nm_len_t len, void*_context)
+static void strat_aggreg_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
-  const struct nm_strat_aggreg_push_s*p_context = _context;
-  struct nm_so_strat_aggreg_gate*status = p_context->status;
-  const nm_len_t offset = p_context->p_pack->scheduled;
-  assert(nm_max_small > 0);
-  if(len <= nm_max_small)
+  struct nm_strat_aggreg_gate*status = _status;
+  if(len <= strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_DATA_HEADER_SIZE, len);
       if(p_pw)
 	{
 	  nb_data_aggregation++;
-	  nm_tactic_pack_small_into_pw(p_context->p_pack, ptr, len, offset, status->nm_copy_on_send_threshold, p_pw);
+	  nm_tactic_pack_small_into_pw(p_pack, ptr, len, chunk_offset, status->nm_copy_on_send_threshold, p_pw);
 	}
       else
 	{
-	  nm_tactic_pack_small_new_pw(p_context->p_pack, ptr, len, offset, status->nm_copy_on_send_threshold, &status->out_list);
+	  nm_tactic_pack_small_new_pw(p_pack, ptr, len, chunk_offset, status->nm_copy_on_send_threshold, &status->out_list);
 	}
     }
   else
     {
-      nm_tactic_pack_rdv(p_context->p_pack, ptr, len, offset);
+      nm_tactic_pack_rdv(p_pack, ptr, len, chunk_offset);
     }
-}
-
-/** Handle a new packet submitted by the user code.
- *
- *  @note The strategy may already apply some optimizations at this point.
- *  @param p_gate a pointer to the gate object.
- *  @param tag the message tag.
- *  @param seq the fragment sequence number.
- *  @param data the data fragment pointer.
- *  @param len the data fragment length.
- *  @return The NM status.
- */
-static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
-{
-  struct nm_so_strat_aggreg_gate *status = _status;
-  /* lazy init */
-  if(nm_max_small <= 0)
-    {
-      
-      struct nm_drv*p_drv;
-      NM_FOR_EACH_DRIVER(p_drv, p_pack->p_gate->p_core)
-	{
-	  if(nm_max_small <= 0 || (p_drv->driver->capabilities.max_unexpected > 0 && p_drv->driver->capabilities.max_unexpected < nm_max_small))
-	    {
-	      nm_max_small = p_drv->driver->capabilities.max_unexpected;
-	    }
-	}
-      if(nm_max_small <= 0 || nm_max_small > (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE))
-	{
-	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE);
-	}
-      NM_DISPF("# nmad: aggreg- max_small = %lu\n", nm_max_small);
-    }
-
-  struct nm_strat_aggreg_push_s context = { .p_pack = p_pack, .status = status };
-  nm_data_traversal_apply(p_pack->p_data, &nm_strat_aggreg_push, &context);
-
-  return NM_ESUCCESS;
 }
 
 /** Compute and apply the best possible packet rearrangement, then
@@ -215,10 +195,9 @@ static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
  *  @param p_gate a pointer to the gate object.
  *  @return The NM status.
  */
-static int strat_aggreg_try_and_commit(void *_status,
-				       struct nm_gate *p_gate)
+static int strat_aggreg_try_and_commit(void *_status, struct nm_gate *p_gate)
 {
-  struct nm_so_strat_aggreg_gate *status = _status;
+  struct nm_strat_aggreg_gate *status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
@@ -241,12 +220,23 @@ static void strat_aggreg_rdv_accept(void*_status, struct nm_gate *p_gate)
     {
       struct nm_pkt_wrap*p_pw = nm_l2so(p_gate->pending_large_recv.next);
       nm_drv_t p_drv = nm_drv_default(p_gate);
-      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-      if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
+      if(p_pw->length > strat_aggreg_max_small(p_drv->p_core))
 	{
-	  /* The large-packet track is available- post recv and RTR */
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+	  if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
+	    {
+	      /* The large-packet track is available- post recv and RTR */
+	      struct nm_rdv_chunk chunk = 
+		{ .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_LARGE };
+	      tbx_fast_list_del(p_gate->pending_large_recv.next);
+	      nm_tactic_rtr_pack(p_pw, 1, &chunk);
+	    }
+	}
+      else
+	{
+	  /* small chunk in a large packet- send on trk#0 */
 	  struct nm_rdv_chunk chunk = 
-	    { .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_LARGE };
+	    { .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_SMALL };
 	  tbx_fast_list_del(p_gate->pending_large_recv.next);
 	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	}

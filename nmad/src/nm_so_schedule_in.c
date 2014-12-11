@@ -514,7 +514,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_so_ctrl
     {
       assert(p_large_pw->n_completions == 1);
       const struct nm_pw_contrib_s*p_contrib = &p_large_pw->completions[0].data.contrib;
-      const struct nm_pack_s*p_pack = p_contrib->p_pack;
+      struct nm_pack_s*p_pack = p_contrib->p_pack;
       NM_TRACEF("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
 		p_pack->seq, p_large_pw->chunk_offset);
       if((p_pack->seq == seq) && nm_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
@@ -547,7 +547,21 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_so_ctrl
 	    }
 	  /* send the data */
 	  nm_drv_t p_drv = nm_drv_get_by_index(p_gate, header->drv_index);
-	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, p_drv);
+	  if(header->trk_id == NM_TRK_LARGE)
+	    {
+	      nm_core_post_send(p_gate, p_large_pw, header->trk_id, p_drv);
+	    }
+	  else
+	    {
+	      /* rdv eventually accepted on trk#0- rollback and repack */
+	      void*ptr = p_large_pw->v[0].iov_base;
+	      /* rollback chunk on trk#1 */
+	      p_pack->scheduled -= chunk_len; 
+	      nm_so_pw_free(p_large_pw);
+	      /* repack chunk on trk#0 */
+	      struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
+	      (*r->driver->pack_chunk)(r->_status, p_pack, ptr, chunk_len, chunk_offset);
+	    }
 	  return;
 	}
     }

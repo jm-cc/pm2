@@ -304,7 +304,8 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 
   /* add the contrib ref to the pw */
   nm_pw_add_contrib(p_pw, p_pack, len);
-  if(p_pack->scheduled == p_pack->len)
+  assert(offset + len <= p_pack->len);
+  if(offset + len == p_pack->len)
     {
       proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
     }
@@ -312,12 +313,12 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
     {
       proto_flags |= NM_PROTO_FLAG_ACKREQ;
     }
-
-  if(p_pw->flags & NM_PW_GLOBAL_HEADER) /* ** Data with a global header in v[0] */
+  if(p_pw->flags & NM_PW_GLOBAL_HEADER)
     {
-      /* Small data case */
+      /* ** Data with a global header in v[0] */
       if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
 	{
+	  /* Small data case */
 	  nm_so_pw_add_short_data(p_pw, tag, seq, data, len);
 	}
       else if(flags & NM_SO_DATA_USE_COPY)

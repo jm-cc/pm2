@@ -34,7 +34,7 @@ static int  strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union n
 static int  strat_split_balance_try_and_commit(void*, struct nm_gate*);
 static void strat_split_balance_rdv_accept(void*, struct nm_gate*);
 
-static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
+static const struct nm_strategy_iface_s nm_strat_split_balance_driver =
   {
     .pack_chunk         = &strat_split_balance_pack_chunk,
     .pack_ctrl          = &strat_split_balance_pack_ctrl,
@@ -47,28 +47,29 @@ static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
 static void*strat_split_balance_instanciate(puk_instance_t, puk_context_t);
 static void strat_split_balance_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_so_strat_split_balance_adapter_driver =
+static const struct puk_adapter_driver_s nm_strat_split_balance_adapter_driver =
   {
     .instanciate = &strat_split_balance_instanciate,
     .destroy     = &strat_split_balance_destroy
   };
 
-struct nm_so_strat_split_balance {
+struct nm_strat_split_balance
+{
   /* list of raw outgoing packets */
   struct tbx_fast_list_head out_list;
   unsigned nb_packets;
-  int nm_so_max_small;
-  int nm_so_copy_on_send_threshold;
+  int nm_max_small;
+  int nm_copy_on_send_threshold;
 };
 
 /** Component declaration */
 static int nm_strat_split_balance_load(void)
 {
   puk_component_declare("NewMad_Strategy_split_balance",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_so_strat_split_balance_adapter_driver),
-			puk_component_provides("NewMad_Strategy", "strat", &nm_so_strat_split_balance_driver),
-			puk_component_attr("nm_so_max_small", "16342"),
-			puk_component_attr("nm_so_copy_on_send_threshold", "4096"));
+			puk_component_provides("PadicoAdapter", "adapter", &nm_strat_split_balance_adapter_driver),
+			puk_component_provides("NewMad_Strategy", "strat", &nm_strat_split_balance_driver),
+			puk_component_attr("nm_max_small", "16342"),
+			puk_component_attr("nm_copy_on_send_threshold", "4096"));
   return NM_ESUCCESS;
 }
 
@@ -77,7 +78,7 @@ static int nm_strat_split_balance_load(void)
  */
 static void*strat_split_balance_instanciate(puk_instance_t ai, puk_context_t context)
 {
-  struct nm_so_strat_split_balance *status = TBX_MALLOC(sizeof(struct nm_so_strat_split_balance));
+  struct nm_strat_split_balance *status = TBX_MALLOC(sizeof(struct nm_strat_split_balance));
 
   TBX_INIT_FAST_LIST_HEAD(&status->out_list);
 
@@ -85,13 +86,13 @@ static void*strat_split_balance_instanciate(puk_instance_t ai, puk_context_t con
 
   NM_LOGF("[loading strategy: <split_balance>]");
 
-  const char*nm_so_max_small = puk_instance_getattr(ai, "nm_so_max_small");
-  status->nm_so_max_small = atoi(nm_so_max_small);
-  NM_LOGF("[nm_so_max_small=%i]", status->nm_so_max_small);
+  const char*nm_max_small = puk_instance_getattr(ai, "nm_max_small");
+  status->nm_max_small = atoi(nm_max_small);
+  NM_LOGF("[nm_max_small=%i]", status->nm_max_small);
 
-  const char*nm_so_copy_on_send_threshold = puk_instance_getattr(ai, "nm_so_copy_on_send_threshold");
-  status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
-  NM_LOGF("[nm_so_copy_on_send_threshold=%i]", status->nm_so_copy_on_send_threshold);
+  const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
+  status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
+  NM_LOGF("[nm_copy_on_send_threshold=%i]", status->nm_copy_on_send_threshold);
 
   return (void*)status;
 }
@@ -110,7 +111,7 @@ strat_split_balance_pack_ctrl(void *_status,
 			      const union nm_so_generic_ctrl_header *p_ctrl)
 {
   struct nm_pkt_wrap *p_so_pw = NULL;
-  struct nm_so_strat_split_balance*status = _status;
+  struct nm_strat_split_balance*status = _status;
   int err;
 
   if(!tbx_fast_list_empty(&status->out_list)) {
@@ -165,7 +166,7 @@ static void
 strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack,
 					  const void *data, nm_len_t len, nm_len_t chunk_offset, uint8_t is_last_chunk)
 {
-  struct nm_so_strat_split_balance*status = _status;
+  struct nm_strat_split_balance*status = _status;
   struct nm_pkt_wrap *p_pw;
   int flags = 0;
 
@@ -208,7 +209,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 static int strat_split_balance_todo(void*_status,
 				    struct nm_gate *p_gate)
 {
-  struct nm_so_strat_split_balance *status = _status;
+  struct nm_strat_split_balance *status = _status;
   struct tbx_fast_list_head *out_list = &(status)->out_list;
   return !(tbx_fast_list_empty(out_list));
 }
@@ -216,9 +217,9 @@ static int strat_split_balance_todo(void*_status,
 /** push message chunk */
 static void strat_split_balance_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
-  struct nm_so_strat_split_balance*status = _status;
+  struct nm_strat_split_balance*status = _status;
   tbx_bool_t is_last_chunk = (chunk_offset + len >= p_pack->len);
-  if(len <= status->nm_so_max_small)
+  if(len <= status->nm_max_small)
     {
       /* Small packet */
       strat_split_balance_try_to_agregate_small(status, p_pack, ptr, len, chunk_offset, is_last_chunk);
@@ -235,7 +236,7 @@ static void strat_split_balance_pack_chunk(void*_status, struct nm_pack_s*p_pack
    return next packet to send */
 static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_gate)
 {
-  struct nm_so_strat_split_balance*status = _status;
+  struct nm_strat_split_balance*status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
   int nb_drivers = p_gate->p_core->nb_drivers;
   int n = 0;

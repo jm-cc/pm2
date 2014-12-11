@@ -19,9 +19,7 @@
 
 
 #include <nm_trace.h>
-
 #include <nm_private.h>
-
 #include <Padico/Module.h>
 
 static int nm_strat_default_load(void);
@@ -60,12 +58,12 @@ static const struct puk_adapter_driver_s nm_strat_default_adapter_driver =
 
 /** Per-gate status for strat default instances
  */
-struct nm_so_strat_default
+struct nm_strat_default
 {
   /** List of raw outgoing packets. */
   struct tbx_fast_list_head out_list;
-  int nm_so_max_small;
-  int nm_so_copy_on_send_threshold;
+  int nm_max_small;
+  int nm_copy_on_send_threshold;
 };
 
 /** Component declaration */
@@ -74,8 +72,8 @@ static int nm_strat_default_load(void)
   puk_component_declare("NewMad_Strategy_default",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_strat_default_adapter_driver),
 			puk_component_provides("NewMad_Strategy", "strat", &nm_strat_default_driver),
-			puk_component_attr("nm_so_max_small", "16342"),
-			puk_component_attr("nm_so_copy_on_send_threshold", "4096"));
+			puk_component_attr("nm_max_small", "16342"),
+			puk_component_attr("nm_copy_on_send_threshold", "4096"));
   return NM_ESUCCESS;
 }
 
@@ -84,20 +82,12 @@ static int nm_strat_default_load(void)
  */
 static void*strat_default_instanciate(puk_instance_t ai, puk_context_t context)
 {
-  struct nm_so_strat_default *status = TBX_MALLOC(sizeof(struct nm_so_strat_default));
-
+  struct nm_strat_default *status = TBX_MALLOC(sizeof(struct nm_strat_default));
   TBX_INIT_FAST_LIST_HEAD(&status->out_list);
-
-  NM_LOGF("[loading strategy: <default>]");
-
-  const char*nm_so_max_small = puk_instance_getattr(ai, "nm_so_max_small");
-  status->nm_so_max_small = atoi(nm_so_max_small);
-  NM_LOGF("[nm_so_max_small=%i]", status->nm_so_max_small);
-
-  const char*nm_so_copy_on_send_threshold = puk_instance_getattr(ai, "nm_so_copy_on_send_threshold");
-  status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
-  NM_LOGF("[nm_so_copy_on_send_threshold=%i]", status->nm_so_copy_on_send_threshold);
-
+  const char*nm_max_small = puk_instance_getattr(ai, "nm_max_small");
+  status->nm_max_small = atoi(nm_max_small);
+  const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
+  status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
   return (void*)status;
 }
 
@@ -119,25 +109,25 @@ static int strat_default_pack_ctrl(void*_status,
                                    struct nm_gate*p_gate,
 				   const union nm_so_generic_ctrl_header *p_ctrl)
 {
-  struct nm_so_strat_default*status = _status;
+  struct nm_strat_default*status = _status;
   nm_tactic_pack_ctrl(p_ctrl, &status->out_list);
   return NM_ESUCCESS;
 }
 
 static int strat_default_todo(void* _status, struct nm_gate*p_gate)
 {
-  struct nm_so_strat_default*status = _status;
+  struct nm_strat_default*status = _status;
   return !(tbx_fast_list_empty(&status->out_list));
 }
 
 /** push a message chunk */
 static void strat_default_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
-  struct nm_so_strat_default*status = _status;
-  if(len <= status->nm_so_max_small)
+  struct nm_strat_default*status = _status;
+  if(len <= status->nm_max_small)
     {
       nm_tactic_pack_small_new_pw(p_pack, ptr, len, chunk_offset, 
-				  status->nm_so_copy_on_send_threshold, &status->out_list);
+				  status->nm_copy_on_send_threshold, &status->out_list);
     }
   else
     {
@@ -160,7 +150,7 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
   static long long int send_size = 0;
   static tbx_tick_t t_orig;
 #endif /* PROFILE_NMAD */
-  struct nm_so_strat_default*status = _status;
+  struct nm_strat_default*status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
 
 #ifdef NMAD_TRACE

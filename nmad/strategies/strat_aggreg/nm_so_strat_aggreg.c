@@ -18,7 +18,6 @@
 #include <assert.h>
 
 #include <nm_private.h>
-
 #include <Padico/Module.h>
 
 static int nm_strat_aggreg_load(void);
@@ -109,16 +108,10 @@ static int nm_strat_aggreg_load(void)
 static void*strat_aggreg_instanciate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_strat_aggreg_gate*status = TBX_MALLOC(sizeof(struct nm_strat_aggreg_gate));
-
   num_instances++;
   TBX_INIT_FAST_LIST_HEAD(&status->out_list);
-
-  NM_LOGF("[loading strategy: <aggreg>]");
-
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
   status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
-  NM_LOGF("[nm_copy_on_send_threshold=%i]", status->nm_copy_on_send_threshold);
-
   return (void*)status;
 }
 

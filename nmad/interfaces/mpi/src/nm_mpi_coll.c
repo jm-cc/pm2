@@ -341,7 +341,8 @@ int mpi_alltoallv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sen
     }
   for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
     {
-      if (i == nm_comm_rank(p_comm->p_comm)) continue;
+      if(i == nm_comm_rank(p_comm->p_comm))
+	continue;
       nm_mpi_coll_wait(recv_requests[i]);
       nm_mpi_coll_wait(send_requests[i]);
     }
@@ -416,11 +417,10 @@ int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI
 int mpi_allreduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
   int err;
-  MPI_NMAD_LOG_IN();
-  mpi_reduce(sendbuf, recvbuf, count, datatype, op, 0, comm);
+  const int root = 0;
+  err = mpi_reduce(sendbuf, recvbuf, count, datatype, op, root, comm);
   // Broadcast the result to all processes
-  err = mpi_bcast(recvbuf, count, datatype, 0, comm);
-  MPI_NMAD_LOG_OUT();
+  err = mpi_bcast(recvbuf, count, datatype, root, comm);
   return err;
 }
 

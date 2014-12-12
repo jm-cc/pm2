@@ -578,7 +578,7 @@ int mpi_comm_free(MPI_Comm *comm)
 int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*newcomm)
 {
   MPI_Comm comm_cart = MPI_COMM_NULL;
-  int err = MPI_Comm_dup(comm_old, &comm_cart);
+  int err = mpi_comm_dup(comm_old, &comm_cart);
   if(err != MPI_SUCCESS)
     {
       return err;

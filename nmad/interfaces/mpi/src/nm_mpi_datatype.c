@@ -701,20 +701,20 @@ static void nm_mpi_datatype_unpack_memcpy(void*data_ptr, nm_len_t size, void*_st
 /** Pack data into a contiguous buffers.
  */
 __PUK_SYM_INTERNAL
-void nm_mpi_datatype_pack(void*pack_ptr, const void*data_ptr, nm_mpi_datatype_t*p_datatype, int count)
+void nm_mpi_datatype_pack(void*outbuf, const void*inbuf, nm_mpi_datatype_t*p_datatype, int count)
 {
-  struct nm_mpi_datatype_filter_memcpy_s context = { .pack_ptr = (void*)pack_ptr };
-  const struct nm_data_mpi_datatype_s content = { .ptr = (void*)data_ptr, .p_datatype = p_datatype, .count = count };
+  struct nm_mpi_datatype_filter_memcpy_s context = { .pack_ptr = (void*)outbuf };
+  const struct nm_data_mpi_datatype_s content = { .ptr = (void*)inbuf, .p_datatype = p_datatype, .count = count };
   nm_mpi_datatype_traversal_apply(&content, &nm_mpi_datatype_pack_memcpy, &context);
 }
 
 /** Unpack data from a contiguous buffers.
  */
 __PUK_SYM_INTERNAL
-void nm_mpi_datatype_unpack(const void*src_ptr, void*dest_ptr, nm_mpi_datatype_t*p_datatype, int count)
+void nm_mpi_datatype_unpack(const void*inbuf, void*outbuf, nm_mpi_datatype_t*p_datatype, int count)
 {
-  struct nm_mpi_datatype_filter_memcpy_s context = { .pack_ptr = (void*)src_ptr };
-  const struct nm_data_mpi_datatype_s content = { .ptr = dest_ptr, .p_datatype = p_datatype, .count = count };
+  struct nm_mpi_datatype_filter_memcpy_s context = { .pack_ptr = (void*)inbuf };
+  const struct nm_data_mpi_datatype_s content = { .ptr = outbuf, .p_datatype = p_datatype, .count = count };
   nm_mpi_datatype_traversal_apply(&content, &nm_mpi_datatype_unpack_memcpy, &context);
 }
 
@@ -736,7 +736,7 @@ void nm_mpi_datatype_copy(const void*src_buf, nm_mpi_datatype_t*p_src_type, int 
     {
       void*ptr = malloc(p_src_type->size * src_count);
       nm_mpi_datatype_pack(ptr, src_buf, p_src_type, src_count);
-      nm_mpi_datatype_unpack(dest_buf, ptr, p_dest_type, dest_count);
+      nm_mpi_datatype_unpack(ptr, dest_buf, p_dest_type, dest_count);
       free(ptr);
     }
 }

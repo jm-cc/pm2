@@ -333,18 +333,24 @@ int mpi_alltoallv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sen
 	}
       else
 	{
-	  recv_requests[i] = nm_mpi_coll_irecv(recvbuf + (rdispls[i] * p_recv_datatype->extent),
-					       recvcounts[i], p_recv_datatype, i, tag, p_comm);
-	  send_requests[i] = nm_mpi_coll_isend(sendbuf + (sdispls[i] * p_send_datatype->extent),
-					       sendcounts[i], p_send_datatype, i, tag, p_comm);
+	  if(recvcounts[i] > 0)
+	    recv_requests[i] = nm_mpi_coll_irecv(recvbuf + (rdispls[i] * p_recv_datatype->extent),
+						 recvcounts[i], p_recv_datatype, i, tag, p_comm);
+	  else
+	    recv_requests[i] = NULL;
+	  if(sendcounts[i] > 0)
+	    send_requests[i] = nm_mpi_coll_isend(sendbuf + (sdispls[i] * p_send_datatype->extent),
+						 sendcounts[i], p_send_datatype, i, tag, p_comm);
+	  else
+	    send_requests[i] = NULL;
 	}
     }
   for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
     {
-      if(i == nm_comm_rank(p_comm->p_comm))
-	continue;
-      nm_mpi_coll_wait(recv_requests[i]);
-      nm_mpi_coll_wait(send_requests[i]);
+      if(recv_requests[i] != NULL)
+	nm_mpi_coll_wait(recv_requests[i]);
+      if(send_requests[i] != NULL)
+	nm_mpi_coll_wait(send_requests[i]);
     }
   FREE_AND_SET_NULL(send_requests);
   FREE_AND_SET_NULL(recv_requests);

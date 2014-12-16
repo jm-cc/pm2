@@ -28,6 +28,7 @@ static struct nm_mpi_handle_datatype_s nm_mpi_datatypes;
 /** store builtin datatypes */
 static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*name);
 static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
+static void nm_mpi_datatype_iscontig(nm_mpi_datatype_t*p_datatype);
 
 
 /* ********************************************************* */
@@ -251,6 +252,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
 int mpi_type_commit(MPI_Datatype *datatype)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
+  nm_mpi_datatype_iscontig(p_datatype);
   p_datatype->committed = 1;
   return MPI_SUCCESS;
 }
@@ -573,7 +575,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
   const int count = p_data->count;
   void*ptr = p_data->ptr;
   assert(p_datatype->refcount > 0);
-  if(p_datatype->is_contig || (count == 0))
+  if((p_datatype->is_contig && (p_datatype->size == p_datatype->extent)) || (count == 0))
     {
       assert(p_datatype->lb == 0);
       (*apply)((void*)ptr, count * p_datatype->size, _context);
@@ -674,6 +676,29 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	  ptr += p_datatype->extent;
 	}
     }
+}
+
+struct nm_mpi_datatype_iscontig_s
+{
+  int is_contig; /**< is contiguous up to current position */
+  void*blockend; /**< end of previous block */
+};
+static void nm_mpi_datatype_iscontig_apply(void*ptr, nm_len_t size, void*_context)
+{
+  struct nm_mpi_datatype_iscontig_s*context = _context;
+  if(context->is_contig)
+    {
+      if(ptr != context->blockend)
+	context->is_contig = 0;
+      context->blockend = ptr + size;
+    }
+}
+static void nm_mpi_datatype_iscontig(nm_mpi_datatype_t*p_datatype)
+{
+  struct nm_mpi_datatype_iscontig_s context = { .is_contig = 1, .blockend = NULL };
+  const struct nm_data_mpi_datatype_s content = { .ptr = NULL, .p_datatype = p_datatype, .count = 1 };
+  nm_mpi_datatype_traversal_apply(&content, &nm_mpi_datatype_iscontig_apply, &context);
+  p_datatype->is_contig = context.is_contig;
 }
 
 /** status for nm_mpi_datatype_*_memcpy */

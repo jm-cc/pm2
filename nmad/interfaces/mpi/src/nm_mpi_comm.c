@@ -61,6 +61,7 @@ NM_MPI_ALIAS(MPI_Comm_compare,          mpi_comm_compare);
 NM_MPI_ALIAS(MPI_Comm_test_inter,       mpi_comm_test_inter);
 NM_MPI_ALIAS(MPI_Comm_set_name,         mpi_comm_set_name);
 NM_MPI_ALIAS(MPI_Comm_get_name,         mpi_comm_get_name);
+NM_MPI_ALIAS(MPI_Comm_get_parent,       mpi_comm_get_parent);
 NM_MPI_ALIAS(MPI_Cart_create,           mpi_cart_create);
 NM_MPI_ALIAS(MPI_Cart_coords,           mpi_cart_coords)
 NM_MPI_ALIAS(MPI_Cart_rank,             mpi_cart_rank);
@@ -575,6 +576,13 @@ int mpi_comm_free(MPI_Comm *comm)
   return MPI_SUCCESS;
 }
 
+int mpi_comm_get_parent(MPI_Comm*parent)
+{
+  if(parent != NULL)
+    *parent = MPI_COMM_NULL;
+  return MPI_SUCCESS;
+}
+
 int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*newcomm)
 {
   MPI_Comm comm_cart = MPI_COMM_NULL;
@@ -931,14 +939,6 @@ int mpi_group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group gr
 
 /* ********************************************************* */
 
-
-int MPI_Comm_get_parent(MPI_Comm *parent)
-{
-  ERROR("<%s> not implemented\n", __FUNCTION__);
-  if(parent)
-    *parent = MPI_COMM_NULL;
-  return MPI_SUCCESS;
-}
 
 
 int MPI_Comm_remote_size(MPI_Comm comm, int *size)

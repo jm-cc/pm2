@@ -265,6 +265,8 @@ int MPI_Comm_set_name(MPI_Comm comm, char *comm_name);
 
 int MPI_Comm_get_name(MPI_Comm comm, char *comm_name, int *resultlen);
 
+int MPI_Comm_get_parent(MPI_Comm*parent);
+
 /**
  * Compares two communicators
  */

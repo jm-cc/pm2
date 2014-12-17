@@ -32,14 +32,23 @@ void nm_coll_bcast(nm_comm_t comm, int root, void*buffer, nm_len_t len, nm_tag_t
   if(comm->rank == root)
     {
       const int size = nm_group_size(comm->group);
+      nm_sr_request_t*requests = malloc(size * sizeof(nm_sr_request_t));
       int i;
       for(i = 0; i < size; i++)
 	{
 	  if(i != root)
 	    {
-	      nm_sr_send(comm->p_session, nm_gate_vect_at(comm->group, i), tag, buffer, len);
+	      nm_sr_isend(comm->p_session, nm_gate_vect_at(comm->group, i), tag, buffer, len, &requests[i]);
 	    }
 	}
+      for(i = 0; i < size; i++)
+	{
+	  if(i != root)
+	    {
+	      nm_sr_swait(comm->p_session, &requests[i]);
+	    }
+	}
+      free(requests);
     }
   else
     {
@@ -53,16 +62,24 @@ void nm_coll_scatter(nm_comm_t comm, int root, const void*sbuf, nm_len_t slen, v
   if(comm->rank == root)
     {
       const int size = nm_group_size(comm->group);
+      nm_sr_request_t*requests = malloc(size * sizeof(nm_sr_request_t));
       int i;
       for(i = 0; i < size; i++)
 	{
 	  if(i != root)
 	    {
-	      nm_sr_send(comm->p_session, nm_gate_vect_at(comm->group, i), tag, sbuf + i*slen, slen);
+	      nm_sr_isend(comm->p_session, nm_gate_vect_at(comm->group, i), tag, sbuf + i*slen, slen, &requests[i]);
 	    }
 	}
       if(slen > 0)
 	memcpy(rbuf + root * rlen, sbuf, slen);
+      for(i = 0; i < size; i++)
+	{
+	  if(i != root)
+	    {
+	      nm_sr_swait(comm->p_session, &requests[i]);
+	    }
+	}
     }
   else
     {
@@ -76,16 +93,25 @@ void nm_coll_gather(nm_comm_t comm, int root, const void*sbuf, nm_len_t slen, vo
   if(comm->rank == root)
     {
       const int size = nm_group_size(comm->group);
+      nm_sr_request_t*requests = malloc(size * sizeof(nm_sr_request_t));
       int i;
       for(i = 0; i < size; i++)
 	{
 	  if(i != root)
 	    {
-	      nm_sr_recv(comm->p_session, nm_gate_vect_at(comm->group, i), tag, rbuf + i*rlen, rlen);
+	      nm_sr_irecv(comm->p_session, nm_gate_vect_at(comm->group, i), tag, rbuf + i*rlen, rlen, &requests[i]);
 	    }
 	}
       if(slen > 0)
 	memcpy(rbuf + root * rlen, sbuf, slen);
+      for(i = 0; i < size; i++)
+	{
+	  if(i != root)
+	    {
+	      nm_sr_rwait(comm->p_session, &requests[i]);
+	    }
+	}
+      free(requests);
     }
   else
     {

@@ -130,28 +130,28 @@ int mpi_bcast(void*buffer, int count, MPI_Datatype datatype, int root, MPI_Comm 
   return MPI_SUCCESS;
 }
 
-int mpi_gather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
+int mpi_gather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_GATHER;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
+  const int size = nm_comm_size(p_comm->p_comm);
   if(nm_comm_rank(p_comm->p_comm) == root)
     {
-      nm_mpi_request_t**requests = malloc(nm_comm_size(p_comm->p_comm) * sizeof(nm_mpi_request_t*));
+      nm_mpi_request_t**requests = malloc(size * sizeof(nm_mpi_request_t*));
       int i;
-      for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
+      for(i = 0; i < size; i++)
 	{
 	  if(i == root) continue;
 	  requests[i] = nm_mpi_coll_irecv(recvbuf + (i * recvcount * p_recv_datatype->extent),
 					  recvcount, p_recv_datatype, i, tag, p_comm);
 	}
-      for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
+      for(i = 0; i < size; i++)
 	{
 	  if(i == root) continue;
 	  nm_mpi_coll_wait(requests[i]);
 	}
-      // copy local data for self
       if(sendbuf != MPI_IN_PLACE)
 	{
 	  nm_mpi_datatype_copy(sendbuf, p_send_datatype, sendcount,
@@ -208,14 +208,48 @@ int mpi_gatherv(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf
   return MPI_SUCCESS;
 }
 
-int mpi_allgather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+int mpi_allgather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
 {
+#if 0
   int err;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   mpi_gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, 0, comm);
   // Broadcast the result to all processes
   err = mpi_bcast(recvbuf, nm_comm_size(p_comm->p_comm)*recvcount, recvtype, 0, comm);
   return err;
+#else
+  /* allgather as a alltoall, as long as gather and bcast are not optimized */
+  const int tag = NM_MPI_TAG_PRIVATE_ALLGATHER;
+  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
+  const int size = nm_comm_size(p_comm->p_comm);
+  const int rank = nm_comm_rank(p_comm->p_comm);
+  nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
+  nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
+  nm_mpi_request_t**rreqs = malloc(size * sizeof(nm_mpi_request_t*));
+  nm_mpi_request_t**sreqs = malloc(size * sizeof(nm_mpi_request_t*));
+  int i;
+  for(i = 0; i < size; i++)
+    {
+      if(i == rank) continue;
+      rreqs[i] = nm_mpi_coll_irecv(recvbuf + (i * recvcount * p_recv_datatype->extent),
+				   recvcount, p_recv_datatype, i, tag, p_comm);
+      sreqs[i] = nm_mpi_coll_isend(sendbuf, sendcount, p_send_datatype, i, tag, p_comm);
+    }
+  for(i = 0; i < size; i++)
+    {
+      if(i == rank) continue;
+      nm_mpi_coll_wait(rreqs[i]);
+      nm_mpi_coll_wait(sreqs[i]);
+    }
+  if(sendbuf != MPI_IN_PLACE)
+    {
+      nm_mpi_datatype_copy(sendbuf, p_send_datatype, sendcount,
+			   recvbuf + (nm_comm_rank(p_comm->p_comm) * recvcount * p_recv_datatype->extent), p_send_datatype , sendcount);
+    }
+  FREE_AND_SET_NULL(sreqs);
+  FREE_AND_SET_NULL(rreqs);
+  return MPI_SUCCESS;
+#endif
 }
 
 int mpi_allgatherv(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int *recvcounts, int *displs, MPI_Datatype recvtype, MPI_Comm comm)

@@ -52,6 +52,22 @@ Usefull configure flags (see ./configure --help)
     --with-mx               use Myrinet MX [default=check]
 
 
+Building application code
+-------------------------
+
+To build an application using NewMadeleine, get the required flags
+through pkg-config. For CFLAGS:
+
+    % pkg-config --cflags nmad
+
+For libraries:
+
+    % pkg-config --libs nmad
+
+For an MPI applicatiion using Mad-MPI, use the standard `mpicc`,
+`mpif77` and `mpif90` compiler frontends to build and link.
+
+
 Launcher
 --------
 

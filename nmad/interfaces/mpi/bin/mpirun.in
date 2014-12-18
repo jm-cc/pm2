@@ -37,7 +37,8 @@ mpirun [<mpirun_option>...] <progname> [<option>...]
             Define environment variable <label> with value <value> in 
             each process base environnment.
 
-For advanced configuration, see padico-launch --help
+For advanced configuration, such as debug, valgrind, eztrace, lib
+preload, process binding, see padico-launch --help
 
 On exit, mpirun returns a status of zero unless mpirun detected a problem, in
 which case it returns a non-zero status.

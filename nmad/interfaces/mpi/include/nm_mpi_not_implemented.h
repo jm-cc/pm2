@@ -29,8 +29,6 @@ typedef int MPI_Win;
 
 #define MPI_ARGV_NULL (NULL)
 
-int MPI_Comm_get_parent(MPI_Comm *parent);
-
 int MPI_Intercomm_create(MPI_Comm local_comm,
 			 int local_leader,
 			 MPI_Comm peer_comm,

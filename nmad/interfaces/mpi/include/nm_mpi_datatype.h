@@ -286,7 +286,7 @@ int MPI_Unpack(void* inbuf,
  * @param incount count argument to packing call
  * @param datatype datatype argument to packing call
  * @param comm communicator argument to packing call
- * @apram size upper bound on size of packed message, in bytes 
+ * @param size upper bound on size of packed message, in bytes 
  * @return MPI status
  */
 int MPI_Pack_size(int incount,

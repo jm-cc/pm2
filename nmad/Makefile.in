@@ -75,7 +75,6 @@ docs: doxygen
 
 doxygen: @nmad_srcdir@/doc/Doxyfile $(SRC_FILES) README.md
 	@mkdir -p @nmad_builddir@/doc/html/
-	@cp @nmad_srcdir@/doc/*.css @nmad_srcdir@/doc/*.png @nmad_srcdir@/doc/*.gif @nmad_builddir@/doc/html/
 	env NMAD_SRCDIR=@nmad_srcdir@ NMAD_BUILDDIR=@nmad_builddir@ doxygen @nmad_srcdir@/doc/Doxyfile
 	@echo
 	@echo "# documentation generated in: @nmad_builddir@/doc/html/index.html"

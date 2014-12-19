@@ -6,7 +6,7 @@ This document describes pioman installation and configuration.
 
 for any question, mailto: Alexandre.Denis@inria.fr
 
-for information on what pioman is, see http://runtime.bordeaux.inria.fr/pioman/
+for information on what pioman is, see http://pm2.gforge.inria.fr/pioman/
 
 Requirements
 ------------

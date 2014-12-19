@@ -24,7 +24,7 @@ made of basic communication flows operations such as packet
 merging or reordering.
 
 More information on NewMadeleine can be
- found at http://runtime.bordeaux.inria.fr/newmadeleine/.
+ found at http://pm2.gforge.inria.fr/newmadeleine/.
 
 
 User APIs

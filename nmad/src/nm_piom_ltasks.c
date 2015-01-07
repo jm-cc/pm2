@@ -20,6 +20,7 @@ struct nm_ltask_policy_s
 {
   enum
     {
+      NM_POLICY_NONE,  /**< not initialized */
       NM_POLICY_APP,   /**< near the application (current location) */
       NM_POLICY_DEV,   /**< near the network device */
       NM_POLICY_ANY,   /**< anywhere, no policy */
@@ -31,22 +32,77 @@ struct nm_ltask_policy_s
 
 static struct nm_ltask_policy_s ltask_policy =
   {
-    .location = NM_POLICY_DEV,
-    .level    = PIOM_TOPO_SOCKET,
+    .location = NM_POLICY_NONE,
+    .level    = PIOM_TOPO_NONE,
     .custom   = -1
   };
 
 /** retrieve the binding policy */
 void nm_ltask_set_policy(void)
 {
-  const char* policy = getenv("PIOM_BINDING_POLICY");
+  const char*policy = getenv("PIOM_BINDING_POLICY");
+  const char*level = getenv("PIOM_BINDING_LVEL");
   if(!policy)
     {
-      NM_DISPF("# nmad: default binding policy.\n");
+      NM_DISPF("# nmad: default pioman binding policy.\n");
+      ltask_policy.location = NM_POLICY_DEV;
     }
   else
     {
-#warning TODO- set policy
+      NM_DISPF("# nmad: set pioman binding policy = %s\n", policy);
+      if(strcmp(policy, "app") == 0)
+	{
+	  ltask_policy.location = NM_POLICY_APP;
+	}
+      else if(strcmp(policy, "dev") == 0)
+	{
+	  ltask_policy.location = NM_POLICY_DEV;
+	}
+      else if(strcmp(policy, "any") == 0)
+	{
+	  ltask_policy.location = NM_POLICY_ANY;
+	}
+      else if(strcmp(policy, "custom") == 0)
+	{
+	  ltask_policy.location = NM_POLICY_CUSTOM;
+	  padico_fatal("nmad: pioman custom policy not supported yet.\n");
+	}
+      else
+	{
+	  padico_fatal("nmad: unknown pioman binding policy %s.\n", policy);
+	}
+    }
+  if(!level)
+    {
+      ltask_policy.level = PIOM_TOPO_SOCKET;
+    }
+  else
+    {
+      NM_DISPF("# nmad: set pioman custom binding level = %s\n", level);
+      if(strcmp(level, "machine") == 0)
+	{
+	  ltask_policy.level = PIOM_TOPO_MACHINE;
+	}
+      else if(strcmp(level, "node") == 0)
+	{
+	  ltask_policy.location = PIOM_TOPO_NODE;
+	}
+      else if(strcmp(level, "socket") == 0)
+	{
+	  ltask_policy.location = PIOM_TOPO_SOCKET;
+	}
+      else if(strcmp(level, "core") == 0)
+	{
+	  ltask_policy.location = PIOM_TOPO_CORE;
+	}
+      else if(strcmp(level, "pu") == 0)
+	{
+	  ltask_policy.location = PIOM_TOPO_PU;
+	}
+      else
+	{
+	  padico_fatal("nmad: unknown pioman binding level %s.\n", level);
+	}
     }
   return ;
 }
@@ -86,7 +142,8 @@ static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
       /* TODO */
       break;
     default:
-      break;
+      padico_fatal("nmad: pioman binding policy not defined.\n");
+     break;
     }
   return binding;
 }

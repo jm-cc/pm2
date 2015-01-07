@@ -29,10 +29,12 @@
 #define piom_ltask_current_obj()  &marcel_topo_levels[marcel_topo_nblevels - 1][marcel_current_vp()]
 enum piom_topo_level_e
     {
+	PIOM_TOPO_NONE    = -1,
 	PIOM_TOPO_MACHINE = MARCEL_LEVEL_MACHINE,
 	PIOM_TOPO_NODE    = MARCEL_LEVEL_NODE,
 	PIOM_TOPO_SOCKET  = MARCEL_LEVEL_DIE,
-	PIOM_TOPO_CORE    = MARCEL_LEVEL_CORE
+	PIOM_TOPO_CORE    = MARCEL_LEVEL_CORE,
+	PIOM_TOPO_PU      = MARCEL_LEVEL_PROC
     };
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
 #include <hwloc.h>
@@ -40,10 +42,12 @@ enum piom_topo_level_e
 #define piom_topo_full    hwloc_get_root_obj(__piom_ltask_topology)
 enum piom_topo_level_e
     {
+	PIOM_TOPO_NONE    = -1,
 	PIOM_TOPO_MACHINE = HWLOC_OBJ_MACHINE,
 	PIOM_TOPO_NODE    = HWLOC_OBJ_NODE,
 	PIOM_TOPO_SOCKET  = HWLOC_OBJ_SOCKET,
-	PIOM_TOPO_CORE    = HWLOC_OBJ_CORE
+	PIOM_TOPO_CORE    = HWLOC_OBJ_CORE,
+	PIOM_TOPO_PU      = HWLOC_OBJ_PU
     };
 extern hwloc_topology_t __piom_ltask_topology;
 extern piom_topo_obj_t piom_ltask_current_obj(void);
@@ -53,10 +57,12 @@ extern piom_topo_obj_t piom_ltask_current_obj(void);
 #define piom_ltask_current_obj() NULL
 enum piom_topo_level_e
     {
+	PIOM_TOPO_NONE    = -1,
 	PIOM_TOPO_MACHINE,
 	PIOM_TOPO_NODE,
 	PIOM_TOPO_SOCKET,
 	PIOM_TOPO_CORE,
+	PIOM_TOPO_PU
     };
 #endif /* PIOMAN_TOPOLOGY_* */
 

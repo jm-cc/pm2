@@ -41,7 +41,7 @@ static struct nm_ltask_policy_s ltask_policy =
 void nm_ltask_set_policy(void)
 {
   const char*policy = getenv("PIOM_BINDING_POLICY");
-  const char*level = getenv("PIOM_BINDING_LVEL");
+  const char*level = getenv("PIOM_BINDING_LEVEL");
   if(!policy)
     {
       NM_DISPF("# nmad: default pioman binding policy.\n");

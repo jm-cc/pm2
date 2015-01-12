@@ -85,19 +85,19 @@ void nm_ltask_set_policy(void)
 	}
       else if(strcmp(level, "node") == 0)
 	{
-	  ltask_policy.location = PIOM_TOPO_NODE;
+	  ltask_policy.level = PIOM_TOPO_NODE;
 	}
       else if(strcmp(level, "socket") == 0)
 	{
-	  ltask_policy.location = PIOM_TOPO_SOCKET;
+	  ltask_policy.level = PIOM_TOPO_SOCKET;
 	}
       else if(strcmp(level, "core") == 0)
 	{
-	  ltask_policy.location = PIOM_TOPO_CORE;
+	  ltask_policy.level = PIOM_TOPO_CORE;
 	}
       else if(strcmp(level, "pu") == 0)
 	{
-	  ltask_policy.location = PIOM_TOPO_PU;
+	  ltask_policy.level = PIOM_TOPO_PU;
 	}
       else
 	{

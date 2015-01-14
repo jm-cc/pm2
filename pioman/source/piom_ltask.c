@@ -577,7 +577,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 	    piom_check_polling(PIOM_POLL_AT_IDLE);
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), min_prio);
-	    if(piom_parameters.idle_granularity > 0 && piom_parameters.idle_granularity < 50)
+	    if(piom_parameters.idle_granularity > 0 && piom_parameters.idle_granularity < 10)
 		{
 		    double d = 0.0;
 		    do

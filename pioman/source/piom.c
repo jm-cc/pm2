@@ -24,6 +24,7 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 	.busy_wait_granularity = 100,
 	.enable_progression = 1,
 	.idle_granularity   = 20,
+	.idle_level          = PIOM_TOPO_SOCKET,
 	.timer_period       = 4000,
 	.spare_lwp          = 0
     };
@@ -71,14 +72,18 @@ void pioman_init(int*argc, char**argv)
 	}
     if(s_idle_level)
 	{
-	    piom_parameters.idle_level =
+	    enum piom_topo_level_e level = 
 		(strcmp(s_idle_level, "machine") == 0) ? PIOM_TOPO_MACHINE :
 		(strcmp(s_idle_level, "node")    == 0) ? PIOM_TOPO_NODE :
 		(strcmp(s_idle_level, "socket")  == 0) ? PIOM_TOPO_SOCKET :
 		(strcmp(s_idle_level, "core")    == 0) ? PIOM_TOPO_CORE :
 		(strcmp(s_idle_level, "pu")      == 0) ? PIOM_TOPO_PU :
 		PIOM_TOPO_NONE;
-	    fprintf(stderr, "# pioman: custom PIOM_IDLE_LEVEL = %s (%d)\n", s_idle_level, piom_parameters.idle_level);
+	    if(level != PIOM_TOPO_NONE)
+		{
+		    piom_parameters.idle_level = level;
+		    fprintf(stderr, "# pioman: custom PIOM_IDLE_LEVEL = %s (%d)\n", s_idle_level, piom_parameters.idle_level);
+		}
 	}
     if(s_timer_period)
 	{

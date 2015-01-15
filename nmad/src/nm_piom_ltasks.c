@@ -288,14 +288,17 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
   piom_ltask_submit(&p_pw->ltask);
 }
 
-void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv*p_drv)
+void nm_ltask_submit_post_drv(struct nm_drv*p_drv)
 {
-  piom_topo_obj_t task_binding = nm_get_binding_policy(p_drv);
-  piom_ltask_create(task, &nm_task_post_on_drv, p_drv,
+  if(p_drv->ltask_binding == NULL)
+    {
+      p_drv->ltask_binding = nm_get_binding_policy(p_drv);
+    }
+  piom_ltask_create(&p_drv->p_ltask, &nm_task_post_on_drv, p_drv,
 		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT,
-		    task_binding);
-  piom_ltask_set_name(task, "nmad: post_on_drv");
-  piom_ltask_submit(task);  
+		    p_drv->ltask_binding);
+  piom_ltask_set_name(&p_drv->p_ltask, "nmad: post_on_drv");
+  piom_ltask_submit(&p_drv->p_ltask);
 }
 
 void nm_ltask_submit_offload(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)

@@ -367,7 +367,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
   struct nm_drv*p_drv;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      piom_ltask_cancel(&p_drv->task);
+      piom_ltask_cancel(&p_drv->p_ltask);
       if(p_drv->p_in_rq)
 	{
 	  struct nm_pkt_wrap*p_pw = p_drv->p_in_rq;

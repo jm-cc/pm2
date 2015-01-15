@@ -34,7 +34,7 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw);
 
 /** submit an ltask to post requests on a given driver (both send and recv).
  */
-void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv *p_drv);
+void nm_ltask_submit_post_drv(struct nm_drv*p_drv);
 
 /** submit an ltask to offload a pw processing (not implemented yet).
  */

@@ -56,7 +56,10 @@ struct nm_drv
   struct nm_drv_profile_s profile;
 
 #ifdef PIOMAN
-  struct piom_ltask task;
+  /** task used to poll on the driver */
+  struct piom_ltask p_ltask;
+  /** binding for the pioman ltask */
+  piom_topo_obj_t ltask_binding;
 #endif	/* PIOMAN */
   /* NM core object. */
   struct nm_core *p_core;

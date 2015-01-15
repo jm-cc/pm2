@@ -131,7 +131,8 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->assembly->name);
 
 #ifdef PIOMAN_POLL
-  nm_ltask_submit_post_drv(&p_drv->task, p_drv);
+  p_drv->ltask_binding = NULL;
+  nm_ltask_submit_post_drv(p_drv);
 #endif
 
   nm_ns_update(p_core, p_drv);
@@ -238,7 +239,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
        */
       nmad_unlock();
       nm_unlock_interface(p_core);
-      piom_ltask_cancel(&p_drv->task);
+      piom_ltask_cancel(&p_drv->p_ltask);
 #endif /* PIOMAN_POLL */
       /* cancel any pending active recv request 
        */

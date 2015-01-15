@@ -1,7 +1,7 @@
 
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001-2015 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -198,8 +198,8 @@ piom_task_read(int fildes, void *buf, size_t nbytes)
 			piom_ltask_create(&ev.task, 
 					  piom_io_task_poll, 
 					  &ev,
-					  PIOM_LTASK_OPTION_REPEAT, 
-					  task_binding);
+					  PIOM_LTASK_OPTION_REPEAT);
+			piom_ltask_set_binding(&ev.task, task_binding);
 			piom_ltask_submit(&ev.task);
 			PIOM_LOGF("Reading in fd %i\n", fildes);
 			piom_sem_P(&ev.sem);
@@ -231,8 +231,8 @@ piom_task_readv(int fildes, const struct iovec *iov, int iovcnt)
 		piom_ltask_create(&ev.task, 
 				  piom_io_task_poll, 
 				  &ev,
-				  PIOM_LTASK_OPTION_REPEAT, 
-				  task_binding);
+				  PIOM_LTASK_OPTION_REPEAT);
+		piom_ltask_set_binding(&ev.task, task_binding);
 		piom_ltask_submit(&ev.task);
 		piom_sem_P(&ev.sem);
 		piom_ltask_wait(&ev.task);
@@ -263,8 +263,8 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 			piom_ltask_create(&ev.task, 
 					  piom_io_task_poll, 
 					  &ev, 
-					  PIOM_LTASK_OPTION_REPEAT,
-					  task_binding);
+					  PIOM_LTASK_OPTION_REPEAT);
+			piom_ltask_set_binding(&ev.task, task_binding);
 			piom_ltask_submit(&ev.task);
 			PIOM_LOGF("IO writing fd %i", fildes);
 			piom_sem_P(&ev.sem);
@@ -296,8 +296,8 @@ piom_task_writev(int fildes, const struct iovec *iov, int iovcnt)
 		piom_ltask_create(&ev.task, 
 				  piom_io_task_poll, 
 				  &ev, 
-				  PIOM_LTASK_OPTION_REPEAT,
-				  task_binding);
+				  PIOM_LTASK_OPTION_REPEAT);
+		piom_ltask_set_binding(&ev.task, task_binding);
 		piom_ltask_submit(&ev.task);
 		PIOM_LOGF("IO writing fd %i", fildes);
 		piom_sem_P(&ev.sem);
@@ -327,8 +327,8 @@ piom_task_select(int nfds, fd_set * __restrict rfds,
 		piom_ltask_create(&ev.task, 
 				  piom_io_task_poll, 
 				  &ev, 
-				  PIOM_LTASK_OPTION_REPEAT,
-				  task_binding);
+				  PIOM_LTASK_OPTION_REPEAT);
+		piom_ltask_set_binding(&ev.task, task_binding);
 		piom_ltask_submit(&ev.task);
 		
 		return ev.ret_val >= 0 ? ev.ret_val :

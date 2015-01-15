@@ -259,7 +259,8 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
 {
   piom_topo_obj_t task_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_recv,  p_pw,
-		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT, task_binding);
+		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT);
+  piom_ltask_set_binding(&p_pw->ltask, task_binding);
   piom_ltask_set_name(&p_pw->ltask, "nmad: poll_recv");
   piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
   nm_pw_ref_inc(p_pw);
@@ -275,7 +276,8 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
 {
   piom_topo_obj_t task_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw, 
-		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT, task_binding);
+		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT);
+  piom_ltask_set_binding(&p_pw->ltask, task_binding);
   piom_ltask_set_name(&p_pw->ltask, "nmad: poll_send");
   piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
   nm_pw_ref_inc(p_pw);
@@ -295,22 +297,22 @@ void nm_ltask_submit_post_drv(struct nm_drv*p_drv)
       p_drv->ltask_binding = nm_get_binding_policy(p_drv);
     }
   piom_ltask_create(&p_drv->p_ltask, &nm_task_post_on_drv, p_drv,
-		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT,
-		    p_drv->ltask_binding);
+		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT);
+  piom_ltask_set_binding(&p_drv->p_ltask, p_drv->ltask_binding);
   piom_ltask_set_name(&p_drv->p_ltask, "nmad: post_on_drv");
   piom_ltask_submit(&p_drv->p_ltask);
 }
 
-void nm_ltask_submit_offload(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
+void nm_ltask_submit_offload(struct piom_ltask*p_ltask, struct nm_pkt_wrap *p_pw)
 {
   piom_topo_obj_t task_binding = nm_get_binding_policy(p_pw->p_drv);
-  piom_ltask_create(task, &nm_task_offload, p_pw,
-		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_NOWAIT, 
-		    task_binding);
-  piom_ltask_set_name(task, "nmad: offload");
+  piom_ltask_create(p_ltask, &nm_task_offload, p_pw,
+		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_NOWAIT);
+  piom_ltask_set_binding(p_ltask, task_binding);
+  piom_ltask_set_name(p_ltask, "nmad: offload");
   piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
   nm_pw_ref_inc(p_pw);
-  piom_ltask_submit(task);	
+  piom_ltask_submit(p_ltask);
 }
 
 #else /* PIOMAN_POLL */

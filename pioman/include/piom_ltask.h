@@ -1,7 +1,7 @@
 /* -*- Mode: C; c-basic-offset:4 ; -*- */
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001-2015 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -101,7 +101,7 @@ struct piom_ltask
     piom_ltask_func_t blocking_func;   /**< function used for blocking system call (passive wait) */
     struct timespec origin;            /**< time origin for blocking call timeout */
     int blocking_delay;                /**< time (in usec.) to poll before switching to blocking call */
-    piom_topo_obj_t binding;
+    piom_topo_obj_t binding;           /**< location binding for the task */
     struct piom_ltask_queue*queue;     /**< current queue where ltask has been submitted */
     const char*name;                   /**< name given to the ltask, usefull for debug */
     void (*destructor)(struct piom_ltask*);
@@ -180,9 +180,9 @@ static inline void piom_ltask_init(struct piom_ltask*ltask)
 }
 
 /** create a new ltask. */
-static inline void piom_ltask_create(struct piom_ltask *task,
-				     piom_ltask_func_t func_ptr, void *data_ptr,
-				     piom_ltask_option_t options, piom_topo_obj_t binding)
+static inline void piom_ltask_create(struct piom_ltask*task,
+				     piom_ltask_func_t func_ptr, void*data_ptr,
+				     piom_ltask_option_t options)
 {
     task->masked = 0;
     task->func_ptr = func_ptr;
@@ -190,11 +190,15 @@ static inline void piom_ltask_create(struct piom_ltask *task,
     task->blocking_func = NULL;
     task->options = options;
     task->state = PIOM_LTASK_STATE_NONE;
-    task->binding = binding;
+    task->binding = NULL;
     task->queue = NULL;
     task->name = NULL;
     task->destructor = NULL;
     piom_cond_init(&task->done, 0);
+}
+static inline void piom_ltask_set_binding(struct piom_ltask*task, piom_topo_obj_t binding)
+{
+    task->binding = binding;
 }
 
 extern void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int delay_usec);

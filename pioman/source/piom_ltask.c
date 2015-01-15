@@ -1,7 +1,7 @@
 /* -*- Mode: C; c-basic-offset:4 ; -*- */
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001-2015 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -338,15 +338,17 @@ static void piom_tasklet_unmask(void)
  */
 static inline piom_ltask_queue_t*__piom_get_queue(piom_topo_obj_t obj)
 {
+    if(obj == NULL)
+	{
+	    obj = piom_topo_full;
+	}
 #if defined(PIOMAN_TOPOLOGY_HWLOC)
-    assert(obj != NULL);
     while(obj != NULL && obj->userdata == NULL)
 	{
 	    obj = obj->parent;
 	}
     return (obj != NULL) ? obj->userdata : NULL;
 #elif defined(PIOMAN_TOPOLOGY_MARCEL)
-    assert(obj != NULL);
     return obj->ltask_data;
 #elif defined(PIOMAN_TOPOLOGY_NONE)
     return &global_queue;

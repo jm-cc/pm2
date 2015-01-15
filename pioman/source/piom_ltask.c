@@ -729,7 +729,7 @@ void piom_init_ltasks(void)
 		    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);
 		    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
-		    const hwloc_obj_type_t level = PIOM_TOPO_SOCKET;
+		    const hwloc_obj_type_t level = piom_parameters.idle_level;
 		    hwloc_obj_t o = NULL;
 		    int i = 0;
 		    do

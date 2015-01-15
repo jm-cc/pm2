@@ -46,6 +46,7 @@ void pioman_init(int*argc, char**argv)
     const char*s_busy_wait_granularity = getenv("PIOM_BUSY_WAIT_GRANULARITY");
     const char*s_enable_progression    = getenv("PIOM_ENABLE_PROGRESSION");
     const char*s_idle_granularity      = getenv("PIOM_IDLE_GRANULARITY");
+    const char*s_idle_level            = getenv("PIOM_IDLE_LEVEL");
     const char*s_timer_period          = getenv("PIOM_TIMER_PERIOD");
     const char*s_spare_lwp             = getenv("PIOM_SPARE_LWP");
     if(s_busy_wait_usec)
@@ -67,6 +68,17 @@ void pioman_init(int*argc, char**argv)
 	{
 	    piom_parameters.idle_granularity = atoi(s_idle_granularity);
 	    fprintf(stderr, "# pioman: custom PIOM_IDLE_GRANULARITY = %d\n", piom_parameters.idle_granularity);
+	}
+    if(s_idle_level)
+	{
+	    piom_parameters.idle_level =
+		(strcmp(s_idle_level, "machine") == 0) ? PIOM_TOPO_MACHINE :
+		(strcmp(s_idle_level, "node")    == 0) ? PIOM_TOPO_NODE :
+		(strcmp(s_idle_level, "socket")  == 0) ? PIOM_TOPO_SOCKET :
+		(strcmp(s_idle_level, "core")    == 0) ? PIOM_TOPO_CORE :
+		(strcmp(s_idle_level, "pu")      == 0) ? PIOM_TOPO_PU :
+		PIOM_TOPO_NONE;
+	    fprintf(stderr, "# pioman: custom PIOM_IDLE_LEVEL = %s (%d)\n", s_idle_level, piom_parameters.idle_level);
 	}
     if(s_timer_period)
 	{

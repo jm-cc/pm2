@@ -52,7 +52,8 @@ TBX_INTERNAL struct piom_parameters_s
     int busy_wait_usec;     /**< time to do a busy wait before blocking, in usec; default: 5 */
     int busy_wait_granularity; /**< number of busy wait loops between timestamps to amortize clock_gettime() */
     int enable_progression; /**< whether to enable background progression (idle thread and sighandler); default 1 */
-    int idle_granularity;   /**< in usec. */
+    int idle_granularity;   /**< granularity for polling on idle, in usec. */
+    enum piom_topo_level_e idle_level; /**< hierarchy level where to bind idle threads; default: socket */
     int timer_period;       /**< period for timer-based polling (in usec); default: 4000 */
     int spare_lwp;          /**< number of spare LWPs for blocking calls; default: 0 */
 } piom_parameters;

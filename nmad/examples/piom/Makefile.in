@@ -17,8 +17,18 @@ TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 CFLAGS  = $(shell env PKG_CONFIG_PATH=@nmad_root@/lib/pkgconfig pkg-config --cflags nmad)
 LIBS    = $(shell env PKG_CONFIG_PATH=@nmad_root@/lib/pkgconfig pkg-config --libs nmad) -lm
-
+LDFLAGS =
+ifeq (@NMAD_ENABLE_OPTIMIZE@,yes)
+CFLAGS  += $(OPT_LDFLAGS)
+LDFLAGS += $(OPT_LDFLAGS)
+endif
+ifeq (@NMAD_ENABLE_DEBUG,yes)
+CFLAGS += $(DEBUG_CFLAGS)
+endif
 include @puk_root@/etc/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
+BENCH += pio_offload piom_1toN
+
+include @nmad_srcdir@/nmad-tests.mk

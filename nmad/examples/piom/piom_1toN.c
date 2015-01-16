@@ -22,7 +22,7 @@
 #include "piom_helper.h"
 
 #define COUNT 100
-#define MAX_THREADS 128
+#define MAX_THREADS 32
 #define INTERLEAVE 1
 
 static int comp_double(const void*_a, const void*_b)
@@ -84,7 +84,7 @@ int main(int argc, char**argv)
 		  nm_sr_rwait(p_session, &rreqs[k]);
 		}
 	      TBX_GET_TICK(t2);
-	      lats[j] = TBX_TIMING_DELAY(t1, t2) / i;
+	      lats[j] = TBX_TIMING_DELAY(t1, t2) / 2 / i;
 	    }
 	  qsort(lats, COUNT, sizeof(double), &comp_double);
 	  printf("%d  \t %8.2f \t %8.2f \t %8.2f\n", i, lats[COUNT/2], lats[0], lats[COUNT-2]);

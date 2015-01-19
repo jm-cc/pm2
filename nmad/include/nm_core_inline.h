@@ -382,7 +382,7 @@ static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_core_tag_t tag, nm_s
  */
 static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const event, nm_status_t*p_status)
 {
-  nm_core_monitor_itor_t i;
+  nm_core_monitor_vect_itor_t i;
   if(p_status)
     *p_status |= event->status;
   puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)

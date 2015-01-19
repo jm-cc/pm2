@@ -144,7 +144,7 @@ void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m)
 
 void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m)
 {
-  nm_core_monitor_itor_t i = nm_core_monitor_vect_find(&p_core->monitors, m);
+  nm_core_monitor_vect_itor_t i = nm_core_monitor_vect_find(&p_core->monitors, m);
   if(i)
     {
       nm_core_monitor_vect_erase(&p_core->monitors, i);

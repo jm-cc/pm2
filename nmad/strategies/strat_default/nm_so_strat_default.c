@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 #include <assert.h>
 
 
-#include <nm_trace.h>
 #include <nm_private.h>
 #include <Padico/Module.h>
 
@@ -153,39 +152,6 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
   struct nm_strat_default*status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
 
-#ifdef NMAD_TRACE
-  int trace_co_id = p_gate->trace_connections_id;
-  int aux;
-  nm_len_t size_outlist = 0;
-  int nb_pw = 0;
-  int smaller_pw_size = NM_SO_MAX_UNEXPECTED;
-  int max_reamaining_data_area = 0;
-  struct tbx_fast_list_head *pos;
-  struct nm_pkt_wrap *p_pw_trace;
-  struct nm_pack_s*p_pack_trace;
-
-  if (!tbx_fast_list_empty(out_list))
-    {
-      nmad_trace_event(TOPO_CONNECTION, NMAD_TRACE_EVENT_TRY_COMMIT, NULL, trace_co_id);
-      tbx_fast_list_for_each(pos,out_list)
-	{
-	  p_pw_trace = nm_l2so(pos);	  
-	  size_outlist = size_outlist + p_pw_trace->length;
-	  aux = nm_so_pw_remaining_data(p_pw_trace);
-	  if (aux > max_reamaining_data_area )
-	    max_reamaining_data_area = aux;
-	  if (p_pw_trace->length < smaller_pw_size)
-	    smaller_pw_size = p_pw_trace->length ;
-	  nb_pw++;
-	}
-      p_pw_trace = nm_l2so(out_list->next);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw, nb_pw, trace_co_id);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Outlist_Pw_Size, size_outlist, trace_co_id);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Next_Pw_Size, p_pw_trace->length, trace_co_id);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area, nm_so_pw_remaining_data(p_pw_trace), trace_co_id);
-    }
-#endif
-
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   if((p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
@@ -211,14 +177,6 @@ static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
       tbx_fast_list_del(out_list->next);
       /* Post packet on track 0 */
       nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, p_drv);
-
-#ifdef NMAD_TRACE
-	  nmad_trace_event(TOPO_CONNECTION, NMAD_TRACE_EVENT_Pw_Submited, NULL, trace_co_id);
-	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Pw_Submitted_Size, p_so_pw->length, trace_co_id);
-	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Latency, p_gdrv->p_drv->profile.latency, trace_co_id);
-	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Bandwidth, p_gdrv->p_drv->profile.bandwidth, trace_co_id);
-#endif
-
     }
   else if((p_gdrv->active_send[NM_TRK_SMALL] != 0) && !(tbx_fast_list_empty(out_list)))
     {

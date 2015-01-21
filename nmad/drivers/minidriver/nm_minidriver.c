@@ -145,7 +145,7 @@ static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_para
   if(composite_driver)
     {
       struct puk_composite_content_s*content = composite_driver->content;
-      puk_component_conn_itor_t conn;
+      puk_component_conn_vect_itor_t conn;
       puk_vect_foreach(conn, puk_component_conn, &content->entry_points)
 	{
 	  context = conn->context;

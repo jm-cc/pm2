@@ -26,14 +26,16 @@
  */
 #define PIOM_MAX_LTASK 256
 
+/** type for lock-free queue of ltasks */
 PIOM_LFQUEUE_TYPE(piom_ltask, struct piom_ltask*, NULL, PIOM_MAX_LTASK);
 
-enum piom_trace_event_e {
-    PIOM_TRACE_EVENT_TIMER_POLL, PIOM_TRACE_EVENT_IDLE_POLL,
-    PIOM_TRACE_EVENT_SUBMIT, PIOM_TRACE_EVENT_SUCCESS,
-    PIOM_TRACE_STATE_INIT, PIOM_TRACE_STATE_POLL, PIOM_TRACE_STATE_NONE,
-    PIOM_TRACE_VAR_LTASKS
-} event;
+enum piom_trace_event_e
+    {
+	PIOM_TRACE_EVENT_TIMER_POLL, PIOM_TRACE_EVENT_IDLE_POLL,
+	PIOM_TRACE_EVENT_SUBMIT, PIOM_TRACE_EVENT_SUCCESS,
+	PIOM_TRACE_STATE_INIT, PIOM_TRACE_STATE_POLL, PIOM_TRACE_STATE_NONE,
+	PIOM_TRACE_VAR_LTASKS
+    } event;
 #ifdef PIOMAN_TRACE
 #define PIOMAN_TRACE_MAX (1024*1024*8)
 struct piom_trace_queue_s
@@ -56,6 +58,7 @@ static struct
 } __piom_trace = { .last = 0 };
 #endif /* PIOMAN_TRACE */
 
+/** state for a queue of tasks */
 typedef enum
     {
 	/* not yet initialized */
@@ -69,19 +72,27 @@ typedef enum
 	PIOM_LTASK_QUEUE_STATE_STOPPED
     } piom_ltask_queue_state_t;
 
+/** an ltask queue- one queue instanciated per hwloc object */
 typedef struct piom_ltask_queue
 {
+    /** the queue of tasks ready to be scheduled */
     struct piom_ltask_lfqueue_s       ltask_queue;
+    /** separate queue for task submission, to reduce contention */
     struct piom_ltask_lfqueue_s       submit_queue;
-    volatile int                      processing;
+    /** flag whether scheduling is disabled for the queue */
+    volatile int                      masked;
+    /** state to control queue lifecycle */
     volatile piom_ltask_queue_state_t state;
+    /** where this queue is located */
     piom_topo_obj_t                   binding;
+    /** parent queue in the tree */
     struct piom_ltask_queue          *parent;
 #ifdef PIOMAN_TRACE
     const char                       *cont_type;
     const char                       *cont_name;
     struct piom_trace_queue_s         trace_info;
 #endif /* PIOMAN_TRACE */
+    /** number of times scheduling was skipped, to reduce contention */
     int skip;
 } piom_ltask_queue_t;
 
@@ -364,7 +375,7 @@ static inline void __piom_init_queue(piom_ltask_queue_t*queue)
     queue->state = PIOM_LTASK_QUEUE_STATE_NONE;
     piom_ltask_lfqueue_init(&queue->ltask_queue);
     piom_ltask_lfqueue_init(&queue->submit_queue);
-    queue->processing = 0;
+    queue->masked = 0;
     queue->parent = NULL;
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
@@ -376,17 +387,16 @@ static inline void __piom_init_queue(piom_ltask_queue_t*queue)
  */
 static inline void __piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int count)
 {
-    if((queue->state != PIOM_LTASK_QUEUE_STATE_RUNNING)
-       && (queue->state != PIOM_LTASK_QUEUE_STATE_STOPPING)) 
-	{
-	    return;
-	}
 #ifdef PIOMAN_MULTITHREAD
-    if(__sync_fetch_and_add(&queue->processing, 1) != 0)
+    if(__sync_fetch_and_add(&queue->masked, 1) != 0)
 	{
-	    __sync_fetch_and_sub(&queue->processing, 1);
+	    __sync_fetch_and_sub(&queue->masked, 1);
 	    return;
 	}
+#else /* PIOMAN_MULTITHREAD */
+    if(queue->masked > 0)
+	return;
+    queue->masked++;
 #endif /* PIOMAN_MULTITHREAD */
     int i;
     for(i = 0; i < count; i++)
@@ -490,7 +500,7 @@ static inline void __piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int cou
 		(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING) )
 		{
 		    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
-		    break;
+		    return; /* purposely return while holding the lock */
 		}
 	    if(success)
 		{
@@ -498,7 +508,9 @@ static inline void __piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int cou
 		}
 	}
 #ifdef PIOMAN_MULTITHREAD
-    __sync_fetch_and_sub(&queue->processing, 1);
+    __sync_fetch_and_sub(&queue->masked, 1);
+#else
+    queue->masked--;
 #endif /* PIOMAN_MULTITHREAD */
 }
 

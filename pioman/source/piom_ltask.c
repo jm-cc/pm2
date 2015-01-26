@@ -285,15 +285,36 @@ static inline void piom_trace_queue_var(piom_ltask_queue_t*queue, enum piom_trac
 { /* empty */ }
 #endif /* PIOMAN_TRACE */
 
-
-/** refcounter on piom_ltask */
-static int piom_ltask_initialized = 0;
-
+/** block of static state for pioman ltask */
+static struct
+{
+    /** refcounter on piom_ltask */
+    int initialized;
 #if defined(PIOMAN_TOPOLOGY_NONE)
-static struct piom_ltask_queue global_queue;
+    /** global queue in case topology is unknown */
+    struct piom_ltask_queue global_queue;
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
-/** node topology */
-hwloc_topology_t __piom_ltask_topology = NULL;
+    /** node topology */
+    hwloc_topology_t topology;
+    /** thread-local location information  */
+    pthread_key_t local_key;
+#endif /* PIOMAN_TOPOLOGY_* */
+#ifdef PIOMAN_PTHREAD
+    /** number of spare LWPs running */
+    int lwps_num;
+    /** number of available LWPs */
+    int lwps_avail;
+    /** signal new tasks to LWPs */
+    sem_t lwps_ready;
+    /** ltasks queue to feed LWPs */
+    struct piom_ltask_lfqueue_s lwps_queue;
+#endif /* PIOMAN_PTHREAD */    
+} __piom_ltask =
+    {
+	.initialized = 0
+    };
+
+#if defined(PIOMAN_TOPOLOGY_HWLOC)
 /** locality information */
 struct piom_ltask_local_s
 {
@@ -303,19 +324,9 @@ struct piom_ltask_local_s
     tbx_tick_t timestamp;
     int count;
 };
-pthread_key_t __piom_ltask_local_key;
-#endif /* PIOMAN_TOPOLOGY_* */
+#endif /* PIOMAN_TOPOLOGY_HWLOC */
 
 #ifdef PIOMAN_PTHREAD
-/** number of spare LWPs running */
-static int                __piom_ltask_lwps_num = 0;
-/** number of available LWPs */
-static int                __piom_ltask_lwps_avail = 0;
-/** signal new tasks to LWPs */
-static sem_t              __piom_ltask_lwps_ready;
-/** ltasks queue to feed LWPs */
-static struct piom_ltask_lfqueue_s __piom_ltask_lwps_queue;
-
 static void*__piom_ltask_lwp_worker(void*_dummy);
 #endif /* PIOMAN_PTHREAD */
 
@@ -362,7 +373,7 @@ static inline piom_ltask_queue_t*__piom_get_queue(piom_topo_obj_t obj)
 #elif defined(PIOMAN_TOPOLOGY_MARCEL)
     return obj->ltask_data;
 #elif defined(PIOMAN_TOPOLOGY_NONE)
-    return &global_queue;
+    return &__piom_ltask.global_queue;
 #else /* PIOMAN_TOPOLOGY_* */
 #error
     return NULL;
@@ -618,15 +629,15 @@ static void*__piom_ltask_lwp_worker(void*_dummy)
     __piom_pthread_setname("_pioman_lwp");
     for(;;)
 	{
-	    sem_wait(&__piom_ltask_lwps_ready);
-	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue(&__piom_ltask_lwps_queue);
+	    sem_wait(&__piom_ltask.lwps_ready);
+	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue(&__piom_ltask.lwps_queue);
 	    const int options = task->options;
 	    assert(task != NULL);
 	    piom_ltask_state_set(task, PIOM_LTASK_STATE_BLOCKED);
 	    (*task->blocking_func)(task->data_ptr);
 	    if(!(options & PIOM_LTASK_OPTION_DESTROY))
 		piom_ltask_state_unset(task, PIOM_LTASK_STATE_BLOCKED);
-	    __sync_fetch_and_add(&__piom_ltask_lwps_avail, 1);
+	    __sync_fetch_and_add(&__piom_ltask.lwps_avail, 1);
 	}
     return NULL;
 }
@@ -635,12 +646,12 @@ static void*__piom_ltask_lwp_worker(void*_dummy)
 
 void piom_init_ltasks(void)
 {
-    if (!piom_ltask_initialized)
+    if (!__piom_ltask.initialized)
 	{
 
 #if defined(PIOMAN_TOPOLOGY_NONE)
-	    __piom_init_queue(&global_queue);
-	    global_queue.binding = piom_topo_full;
+	    __piom_init_queue(&__piom_ltask.global_queue);
+	    __piom_ltask.global_queue.binding = piom_topo_full;
 #elif defined(PIOMAN_TOPOLOGY_MARCEL)
  	    int i, j;
 	    for(i = 0; i < marcel_topo_nblevels; i++)
@@ -656,22 +667,22 @@ void piom_init_ltasks(void)
 			}
 		}
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
-	    hwloc_topology_init(&__piom_ltask_topology);
-	    hwloc_topology_load(__piom_ltask_topology);
-	    const int depth = hwloc_topology_get_depth(__piom_ltask_topology);
+	    hwloc_topology_init(&__piom_ltask.topology);
+	    hwloc_topology_load(__piom_ltask.topology);
+	    const int depth = hwloc_topology_get_depth(__piom_ltask.topology);
 	    int d, i;
 	    for(d = 0; d < depth; d++)
 		{
-		    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask_topology, d, 0);
+		    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, 0);
 		    if(o->type == HWLOC_OBJ_MACHINE ||
 		       o->type == HWLOC_OBJ_NODE ||
 		       o->type == HWLOC_OBJ_SOCKET ||
 		       o->type == HWLOC_OBJ_CORE)
 			{
-			    const int nb = hwloc_get_nbobjs_by_depth(__piom_ltask_topology, d);
+			    const int nb = hwloc_get_nbobjs_by_depth(__piom_ltask.topology, d);
 			    for (i = 0; i < nb; i++)
 				{
-				    o = hwloc_get_obj_by_depth(__piom_ltask_topology, d, i);
+				    o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, i);
 				    /* TODO- allocate memory on given obj */
 				    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof(piom_ltask_queue_t));
 				    __piom_init_queue(queue);
@@ -712,7 +723,7 @@ void piom_init_ltasks(void)
 				}
 			}
 		}
-	    pthread_key_create(&__piom_ltask_local_key, NULL); /* TODO- detructor */
+	    pthread_key_create(&__piom_ltask.local_key, NULL); /* TODO- detructor */
 #endif	/* PIOMAN_TOPOLOGY_* */
 
 #ifdef PIOMAN_MARCEL
@@ -748,12 +759,12 @@ void piom_init_ltasks(void)
 		    int i = 0;
 		    do
 			{
-			    o = hwloc_get_obj_by_type(__piom_ltask_topology, level, i);
+			    o = hwloc_get_obj_by_type(__piom_ltask.topology, level, i);
 			    if(o == NULL)
 				break;
 #ifdef DEBUG
 			    char string[128];
-			    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask_topology, o, "#", 0);
+			    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask.topology, o, "#", 0);
 			    fprintf(stderr, "# pioman: idle #%d on %s\n", i, string);
 #endif /* DEBUG */
 			    piom_ltask_queue_t*queue = __piom_get_queue(o);
@@ -765,7 +776,7 @@ void piom_init_ltasks(void)
 			    pthread_attr_setschedpolicy(&attr, SCHED_IDLE);
 #endif /* SCHED_IDLE */
 			    pthread_create(&idle_thread, &attr, &__piom_ltask_idle_worker, queue);
-			    int rc = hwloc_set_thread_cpubind(__piom_ltask_topology, idle_thread, o->cpuset, HWLOC_CPUBIND_THREAD);
+			    int rc = hwloc_set_thread_cpubind(__piom_ltask.topology, idle_thread, o->cpuset, HWLOC_CPUBIND_THREAD);
 			    if(rc != 0)
 				{
 				    fprintf(stderr, "# pioman: WARNING- hwloc_set_thread_cpubind failed.\n");
@@ -776,14 +787,15 @@ void piom_init_ltasks(void)
 #endif /* PIOMAN_TOPOLOGY_* */
 		}
 	    /* ** spare LWPs for blocking calls */
+	    __piom_ltask.lwps_avail = 0;
+	    __piom_ltask.lwps_num = piom_parameters.spare_lwp;
 	    if(piom_parameters.spare_lwp)
 		{
-		    __piom_ltask_lwps_num = piom_parameters.spare_lwp;
 		    fprintf(stderr, "# pioman: starting %d spare LWPs.\n", piom_parameters.spare_lwp);
-		    sem_init(&__piom_ltask_lwps_ready, 0, 0);
-		    piom_ltask_lfqueue_init(&__piom_ltask_lwps_queue);
+		    sem_init(&__piom_ltask.lwps_ready, 0, 0);
+		    piom_ltask_lfqueue_init(&__piom_ltask.lwps_queue);
 		    int i;
-		    for(i = 0; i < __piom_ltask_lwps_num; i++)
+		    for(i = 0; i < __piom_ltask.lwps_num; i++)
 			{
 			    pthread_t tid;
 			    int err = pthread_create(&tid, NULL, &__piom_ltask_lwp_worker, NULL);
@@ -792,22 +804,22 @@ void piom_init_ltasks(void)
 				    fprintf(stderr, "PIOMan: FATAL- cannot create spare LWP #%d\n", i);
 				    abort();
 				}
-			    __piom_ltask_lwps_avail++;
+			    __piom_ltask.lwps_avail++;
 			}
 		}
 #endif /* PIOMAN_PTHREAD */
 
 	}
-    piom_ltask_initialized++;
+    __piom_ltask.initialized++;
 }
 
 void piom_exit_ltasks(void)
 {
-    piom_ltask_initialized--;
-    if(piom_ltask_initialized == 0)
+    __piom_ltask.initialized--;
+    if(__piom_ltask.initialized == 0)
 	{
 #if defined(PIOMAN_TOPOLOGY_NONE)
-	    __piom_exit_queue((piom_ltask_queue_t*)&global_queue);
+	    __piom_exit_queue((piom_ltask_queue_t*)&__piom_ltask.global_queue);
 #elif defined(PIOMAN_TOPOLOGY_MARCEL)
 	    int i, j;
 	    for(i = marcel_topo_nblevels -1 ; i >= 0; i--)
@@ -820,13 +832,13 @@ void piom_exit_ltasks(void)
 			}
 		}
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
-	    const int depth = hwloc_topology_get_depth(__piom_ltask_topology);
+	    const int depth = hwloc_topology_get_depth(__piom_ltask.topology);
 	    int d, i;
 	    for(d = 0; d < depth; d++)
 		{
-		    for (i = 0; i < hwloc_get_nbobjs_by_depth(__piom_ltask_topology, d); i++)
+		    for (i = 0; i < hwloc_get_nbobjs_by_depth(__piom_ltask.topology, d); i++)
 			{
-			    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask_topology, d, i);
+			    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, i);
 			    piom_ltask_queue_t*queue = o->userdata;
 			    piom_trace_queue_state(queue, PIOM_TRACE_STATE_NONE);
 			    __piom_exit_queue(queue);
@@ -841,7 +853,7 @@ void piom_exit_ltasks(void)
 
 int piom_ltask_test_activity(void)
 {
-    return (piom_ltask_initialized != 0);
+    return (__piom_ltask.initialized != 0);
 }
 
 static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue)
@@ -866,16 +878,16 @@ static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_que
 static inline int __piom_ltask_submit_in_lwp(struct piom_ltask*task)
 {
 #ifdef PIOMAN_PTHREAD
-    if(__sync_fetch_and_sub(&__piom_ltask_lwps_avail, 1) > 0)
+    if(__sync_fetch_and_sub(&__piom_ltask.lwps_avail, 1) > 0)
 	{
-	    piom_ltask_lfqueue_enqueue(&__piom_ltask_lwps_queue, task);
-	    sem_post(&__piom_ltask_lwps_ready);
+	    piom_ltask_lfqueue_enqueue(&__piom_ltask.lwps_queue, task);
+	    sem_post(&__piom_ltask.lwps_ready);
 	    return 0;
 	}
     else
 	{
 	    /* rollback */
-	    __sync_fetch_and_add(&__piom_ltask_lwps_avail, 1);
+	    __sync_fetch_and_add(&__piom_ltask.lwps_avail, 1);
 	}
 #endif /* PIOMAN_PTHREAD */
     return -1;
@@ -896,7 +908,7 @@ void piom_ltask_submit(struct piom_ltask *task)
 
 void piom_ltask_schedule(void)
 {
-    if(piom_ltask_initialized)
+    if(__piom_ltask.initialized)
 	{
 	    piom_ltask_queue_t*queue = __piom_get_queue(piom_ltask_current_obj());
 	    while(queue != NULL)
@@ -992,14 +1004,19 @@ piom_topo_obj_t piom_get_parent_obj(piom_topo_obj_t obj, enum piom_topo_level_e 
     return l;
 }
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
+hwloc_topology_t piom_ltask_topology(void)
+{
+    assert(__piom_ltask.initialized);
+    return __piom_ltask.topology;
+}
 piom_topo_obj_t piom_ltask_current_obj(void)
 {
     int update = 0;
-    struct piom_ltask_local_s*local = pthread_getspecific(__piom_ltask_local_key);
+    struct piom_ltask_local_s*local = pthread_getspecific(__piom_ltask.local_key);
     if(local == NULL)
 	{
 	    local = TBX_MALLOC(sizeof(struct piom_ltask_local_s));
-	    pthread_setspecific(__piom_ltask_local_key, local);
+	    pthread_setspecific(__piom_ltask.local_key, local);
 	    local->tid = pthread_self();
 	    local->cpuset = hwloc_bitmap_alloc();
 	    local->count = 0;
@@ -1019,10 +1036,10 @@ piom_topo_obj_t piom_ltask_current_obj(void)
 	}
     if(update)
 	{
-	    int rc = hwloc_get_last_cpu_location(__piom_ltask_topology, local->cpuset, HWLOC_CPUBIND_THREAD);
+	    int rc = hwloc_get_last_cpu_location(__piom_ltask.topology, local->cpuset, HWLOC_CPUBIND_THREAD);
 	    if(rc != 0)
 		abort();
-	    local->obj = hwloc_get_obj_covering_cpuset(__piom_ltask_topology, local->cpuset);
+	    local->obj = hwloc_get_obj_covering_cpuset(__piom_ltask.topology, local->cpuset);
 	    if(local->obj == NULL)
 		abort();
 	    TBX_GET_TICK(local->timestamp);

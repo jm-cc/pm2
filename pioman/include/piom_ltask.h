@@ -39,7 +39,7 @@ enum piom_topo_level_e
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
 #include <hwloc.h>
 #define piom_topo_obj_t   hwloc_obj_t
-#define piom_topo_full    hwloc_get_root_obj(__piom_ltask_topology)
+#define piom_topo_full    hwloc_get_root_obj(piom_ltask_topology())
 enum piom_topo_level_e
     {
 	PIOM_TOPO_NONE    = -1,
@@ -49,7 +49,7 @@ enum piom_topo_level_e
 	PIOM_TOPO_CORE    = HWLOC_OBJ_CORE,
 	PIOM_TOPO_PU      = HWLOC_OBJ_PU
     };
-extern hwloc_topology_t __piom_ltask_topology;
+extern hwloc_topology_t piom_ltask_topology(void);
 extern piom_topo_obj_t piom_ltask_current_obj(void);
 #else /* PIOMAN_TOPOLOGY_* */
 #define piom_topo_obj_t          void* 

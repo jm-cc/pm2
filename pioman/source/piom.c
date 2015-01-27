@@ -25,6 +25,7 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 	.enable_progression = 1,
 	.idle_granularity   = 20,
 	.idle_level         = PIOM_TOPO_SOCKET,
+	.idle_distrib       = PIOM_BIND_DISTRIB_ALL,
 	.timer_period       = 4000,
 	.spare_lwp          = 0
     };
@@ -48,6 +49,7 @@ void pioman_init(int*argc, char**argv)
     const char*s_enable_progression    = getenv("PIOM_ENABLE_PROGRESSION");
     const char*s_idle_granularity      = getenv("PIOM_IDLE_GRANULARITY");
     const char*s_idle_level            = getenv("PIOM_IDLE_LEVEL");
+    const char*s_idle_distrib          = getenv("PIOM_IDLE_DISTRIB");
     const char*s_timer_period          = getenv("PIOM_TIMER_PERIOD");
     const char*s_spare_lwp             = getenv("PIOM_SPARE_LWP");
     if(s_busy_wait_usec)
@@ -83,6 +85,20 @@ void pioman_init(int*argc, char**argv)
 		{
 		    piom_parameters.idle_level = level;
 		    fprintf(stderr, "# pioman: custom PIOM_IDLE_LEVEL = %s (%d)\n", s_idle_level, piom_parameters.idle_level);
+		}
+	}
+    if(s_idle_distrib)
+	{
+	    enum piom_bind_distrib_e distrib =
+		(strcmp(s_idle_distrib, "all")   == 0) ? PIOM_BIND_DISTRIB_ALL :
+		(strcmp(s_idle_distrib, "odd")   == 0) ? PIOM_BIND_DISTRIB_ODD :
+		(strcmp(s_idle_distrib, "even")  == 0) ? PIOM_BIND_DISTRIB_EVEN :
+		(strcmp(s_idle_distrib, "first") == 0) ? PIOM_BIND_DISTRIB_FIRST :
+		PIOM_BIND_DISTRIB_NONE;
+	    if(distrib != PIOM_BIND_DISTRIB_NONE)
+		{
+		    piom_parameters.idle_distrib = distrib;
+		    fprintf(stderr, "# pioman: custom PIOM_IDLE_DISTRIB = %s\n", s_idle_distrib);
 		}
 	}
     if(s_timer_period)

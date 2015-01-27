@@ -47,13 +47,22 @@ TBX_INTERNAL void piom_exit_ltasks(void);
  * - compiler hints
  */
 
+/** pioman internal parameters, tuned through env variables */
 TBX_INTERNAL struct piom_parameters_s
 {
     int busy_wait_usec;     /**< time to do a busy wait before blocking, in usec; default: 5 */
     int busy_wait_granularity; /**< number of busy wait loops between timestamps to amortize clock_gettime() */
     int enable_progression; /**< whether to enable background progression (idle thread and sighandler); default 1 */
-    int idle_granularity;   /**< granularity for polling on idle, in usec. */
+    int idle_granularity;   /**< time granularity for polling on idle, in usec. */
     enum piom_topo_level_e idle_level; /**< hierarchy level where to bind idle threads; default: socket */
+    enum piom_bind_distrib_e
+	{
+	    PIOM_BIND_DISTRIB_NONE = 0, /**< no value given */
+	    PIOM_BIND_DISTRIB_ALL,      /**< bind on all entities in level (default) */
+	    PIOM_BIND_DISTRIB_ODD,      /**< bind on odd-numbered entities */
+	    PIOM_BIND_DISTRIB_EVEN,     /**< bind on even-numbered entities */
+	    PIOM_BIND_DISTRIB_FIRST     /**< bind on single (first) entity in level*/
+	} idle_distrib;     /**< binding distribution for idle threads */
     int timer_period;       /**< period for timer-based polling (in usec); default: 4000 */
     int spare_lwp;          /**< number of spare LWPs for blocking calls; default: 0 */
 } piom_parameters;

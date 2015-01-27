@@ -762,6 +762,12 @@ void piom_init_ltasks(void)
 			    o = hwloc_get_obj_by_type(__piom_ltask.topology, level, i);
 			    if(o == NULL)
 				break;
+			    if( ((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_FIRST) && (i == 1)) ||
+				((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ODD)   && (i % 2 == 1)) ||
+				((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_EVEN)  && (i % 2 == 0)) ||
+				( piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ALL)
+				)
+				{
 #ifdef DEBUG
 			    char string[128];
 			    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask.topology, o, "#", 0);
@@ -780,6 +786,7 @@ void piom_init_ltasks(void)
 			    if(rc != 0)
 				{
 				    fprintf(stderr, "# pioman: WARNING- hwloc_set_thread_cpubind failed.\n");
+				}
 				}
 			    i++;
 			}
@@ -1006,7 +1013,7 @@ piom_topo_obj_t piom_get_parent_obj(piom_topo_obj_t obj, enum piom_topo_level_e 
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
 hwloc_topology_t piom_ltask_topology(void)
 {
-    assert(__piom_ltask.initialized);
+    assert(__piom_ltask.topology != NULL);
     return __piom_ltask.topology;
 }
 piom_topo_obj_t piom_ltask_current_obj(void)

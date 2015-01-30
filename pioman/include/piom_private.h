@@ -67,4 +67,48 @@ TBX_INTERNAL struct piom_parameters_s
     int spare_lwp;          /**< number of spare LWPs for blocking calls; default: 0 */
 } piom_parameters;
 
+enum piom_trace_event_e
+    {
+	PIOM_TRACE_EVENT_TIMER_POLL, PIOM_TRACE_EVENT_IDLE_POLL,
+	PIOM_TRACE_EVENT_SUBMIT, PIOM_TRACE_EVENT_SUCCESS,
+	PIOM_TRACE_STATE_INIT, PIOM_TRACE_STATE_POLL, PIOM_TRACE_STATE_NONE,
+	PIOM_TRACE_VAR_LTASKS
+    } event;
+
+#ifdef PIOMAN_TRACE
+struct piom_trace_info_s
+{
+    enum piom_topo_level_e level;
+    int rank;
+    const char*cont_type;
+    const char*cont_name;
+};
+
+TBX_INTERNAL void piom_trace_flush(void);
+
+TBX_INTERNAL void piom_trace_queue_event(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, void*_value);
+
+static inline void piom_trace_queue_state(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event)
+{
+    piom_trace_queue_event(trace_info, _event, NULL);
+}
+static inline void piom_trace_queue_var(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, int _value)
+{
+    void*value = (void*)((uintptr_t)_value);
+    piom_trace_queue_event(trace_info, _event, value);
+}
+
+#else /* PIOMAN_TRACE */
+
+struct piom_trace_info_s
+{ /* empty */ };
+
+static inline void piom_trace_queue_event(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, void*_value)
+{ /* empty */ }
+static inline void piom_trace_queue_state(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event)
+{ /* empty */ }
+static inline void piom_trace_queue_var(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, int _value)
+{ /* empty */ }
+#endif /* PIOMAN_TRACE */
+
 #endif /* PIOM_PRIVATE_H */

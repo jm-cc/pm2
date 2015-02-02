@@ -58,10 +58,12 @@ typedef struct piom_ltask_queue
     piom_topo_obj_t                   binding;
     /** parent queue in the tree */
     struct piom_ltask_queue          *parent;
-    /* context for trace subsystem */
-    struct piom_trace_info_s          trace_info;
+    /** frequency for parent polling */
+    int                               parent_factor;
     /** number of times scheduling was skipped, to reduce contention */
     int skip;
+    /* context for trace subsystem */
+    struct piom_trace_info_s          trace_info;
 } piom_ltask_queue_t;
 
 static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue);
@@ -428,130 +430,138 @@ static void*__piom_ltask_lwp_worker(void*_dummy)
 
 void piom_init_ltasks(void)
 {
-    if (!__piom_ltask.initialized)
-	{
+    if(__piom_ltask.initialized)
+	return;
+    __piom_ltask.initialized++;
 
+    /* ** Create queues */
+    
 #if defined(PIOMAN_TOPOLOGY_NONE)
-	    __piom_init_queue(&__piom_ltask.global_queue);
-	    __piom_ltask.global_queue.binding = piom_topo_full;
+    __piom_init_queue(&__piom_ltask.global_queue);
+    __piom_ltask.global_queue.binding = piom_topo_full;
 #elif defined(PIOMAN_TOPOLOGY_MARCEL)
- 	    int i, j;
-	    for(i = 0; i < marcel_topo_nblevels; i++)
+    int i, j;
+    for(i = 0; i < marcel_topo_nblevels; i++)
+	{
+	    for(j = 0; j < marcel_topo_level_nbitems[i]; j++)
 		{
-		    for(j = 0; j < marcel_topo_level_nbitems[i]; j++)
-			{
-			    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
-			    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof (piom_ltask_queue_t));
-			    __piom_init_queue(queue);
-			    queue->binding = l;
-			    queue->parent = (l->father != NULL) ? l->father->ltask_data : NULL;
-			    l->ltask_data = queue;
-			}
+		    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
+		    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof (piom_ltask_queue_t));
+		    __piom_init_queue(queue);
+		    queue->binding = l;
+		    queue->parent = (l->father != NULL) ? l->father->ltask_data : NULL;
+		    queue->parent_factor = 1;
+		    l->ltask_data = queue;
 		}
+	}
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
-	    hwloc_topology_init(&__piom_ltask.topology);
-	    hwloc_topology_load(__piom_ltask.topology);
-	    const int depth = hwloc_topology_get_depth(__piom_ltask.topology);
-	    int d, i;
-	    for(d = 0; d < depth; d++)
+    hwloc_topology_init(&__piom_ltask.topology);
+    hwloc_topology_load(__piom_ltask.topology);
+    const int depth = hwloc_topology_get_depth(__piom_ltask.topology);
+    int d, i;
+    for(d = 0; d < depth; d++)
+	{
+	    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, 0);
+	    if(o->type == HWLOC_OBJ_MACHINE ||
+	       o->type == HWLOC_OBJ_NODE ||
+	       o->type == HWLOC_OBJ_SOCKET ||
+	       o->type == HWLOC_OBJ_CORE)
 		{
-		    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, 0);
-		    if(o->type == HWLOC_OBJ_MACHINE ||
-		       o->type == HWLOC_OBJ_NODE ||
-		       o->type == HWLOC_OBJ_SOCKET ||
-		       o->type == HWLOC_OBJ_CORE)
+		    const int nb = hwloc_get_nbobjs_by_depth(__piom_ltask.topology, d);
+		    for (i = 0; i < nb; i++)
 			{
-			    const int nb = hwloc_get_nbobjs_by_depth(__piom_ltask.topology, d);
-			    for (i = 0; i < nb; i++)
-				{
-				    o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, i);
-				    /* TODO- allocate memory on given obj */
-				    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof(piom_ltask_queue_t));
-				    __piom_init_queue(queue);
-				    queue->binding = o;
-				    queue->parent = (o->parent == NULL) ? NULL : __piom_get_queue(o->parent);
-				    o->userdata = queue;
+			    o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, i);
+			    /* TODO- allocate memory on given obj */
+			    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof(piom_ltask_queue_t));
+			    __piom_init_queue(queue);
+			    queue->binding = o;
+			    queue->parent = (o->parent == NULL) ? NULL : __piom_get_queue(o->parent);
+			    queue->parent_factor =
+				(o->type == HWLOC_OBJ_CORE)   ? 1 :
+				(o->type == HWLOC_OBJ_SOCKET) ? 2 :
+				(o->type == HWLOC_OBJ_NODE)   ? 8 :
+				4;
+			    o->userdata = queue;
 #ifdef PIOMAN_TRACE
-				    char cont_name[32];
-				    char cont_type[64];
-				    const char*level_label = NULL;
-				    switch(o->type)
-					{
-					case HWLOC_OBJ_MACHINE:
-					    level_label = "Machine";
-					    break;
-					case HWLOC_OBJ_NODE:
-					    level_label = "Node";
-					    break;
-					case HWLOC_OBJ_SOCKET:
-					    level_label = "Socket";
-					    break;
-					case HWLOC_OBJ_CORE:
-					    level_label = "Core";
-					    break;
-					default:
-					    break;
-					}
-				    sprintf(cont_name, "%s_%d", level_label, i);
-				    sprintf(cont_type, "Container_%s", level_label);
-				    queue->trace_info.cont_name = strdup(cont_name);
-				    queue->trace_info.cont_type = strdup(cont_type);
-				    queue->trace_info.level = o->type;
-				    queue->trace_info.rank = i;
-				    queue->trace_info.parent = queue->parent ? &queue->parent->trace_info : NULL;
-				    piom_trace_queue_new(&queue->trace_info);
-				    piom_trace_queue_state(&queue->trace_info, PIOM_TRACE_STATE_NONE);
-#endif /* PIOMAN_TRACE */
-
+			    char cont_name[32];
+			    char cont_type[64];
+			    const char*level_label = NULL;
+			    switch(o->type)
+				{
+				case HWLOC_OBJ_MACHINE:
+				    level_label = "Machine";
+				    break;
+				case HWLOC_OBJ_NODE:
+				    level_label = "Node";
+				    break;
+				case HWLOC_OBJ_SOCKET:
+				    level_label = "Socket";
+				    break;
+				case HWLOC_OBJ_CORE:
+				    level_label = "Core";
+				    break;
+				default:
+				    break;
 				}
+			    sprintf(cont_name, "%s_%d", level_label, i);
+			    sprintf(cont_type, "Container_%s", level_label);
+			    queue->trace_info.cont_name = strdup(cont_name);
+			    queue->trace_info.cont_type = strdup(cont_type);
+			    queue->trace_info.level = o->type;
+			    queue->trace_info.rank = i;
+			    queue->trace_info.parent = queue->parent ? &queue->parent->trace_info : NULL;
+			    piom_trace_queue_new(&queue->trace_info);
+			    piom_trace_queue_state(&queue->trace_info, PIOM_TRACE_STATE_NONE);
+#endif /* PIOMAN_TRACE */
+			    
 			}
 		}
-	    pthread_key_create(&__piom_ltask.local_key, NULL); /* TODO- detructor */
+	}
+    pthread_key_create(&__piom_ltask.local_key, NULL); /* TODO- detructor */
 #endif	/* PIOMAN_TOPOLOGY_* */
 
+    /* ** Start polling */
+    
 #ifdef PIOMAN_MARCEL
-	    /* register a callback to Marcel */
-	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_TIMER);
-	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_YIELD);
-	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_IDLE);
-	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
-	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
+    /* marcel: resgiter hooks */
+    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_TIMER);
+    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_YIELD);
+    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_IDLE);
+    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
+    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
 #endif /* PIOMAN_MARCEL */
 
 #ifdef PIOMAN_PTHREAD 
-	    /* ** timer-based polling */
-	    if(piom_parameters.timer_period > 0)
-		{
-		    if(piom_parameters.timer_period > 0)
-			{
-			    pthread_t timer_thread;
-			    pthread_create(&timer_thread, NULL, &__piom_ltask_timer_worker, NULL);
-			}
-		}
-	    /* ** idle polling */
-	    if(piom_parameters.idle_granularity >= 0)
-		{
+    /* ** timer-based polling */
+    if(piom_parameters.timer_period > 0)
+	{
+	    pthread_t timer_thread;
+	    pthread_create(&timer_thread, NULL, &__piom_ltask_timer_worker, NULL);
+	}
+    /* ** idle polling */
+    if(piom_parameters.idle_granularity >= 0)
+	{
 #if defined(PIOMAN_TOPOLOGY_NONE)
-		    pthread_t idle_thread;
-		    piom_ltask_queue_t*queue = __piom_get_queue(piom_topo_full);
-		    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);
-		    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
-		    fprintf(stderr, "# pioman: WARNING- no hwloc, using global queue. Running in degraded mode.\n");
+	    pthread_t idle_thread;
+	    piom_ltask_queue_t*queue = __piom_get_queue(piom_topo_full);
+	    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);
+	    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
+	    fprintf(stderr, "# pioman: WARNING- no hwloc, using global queue. Running in degraded mode.\n");
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
-		    const hwloc_obj_type_t level = piom_parameters.idle_level;
-		    hwloc_obj_t o = NULL;
-		    int i = 0;
-		    do
+	    const hwloc_obj_type_t level = piom_parameters.idle_level;
+	    hwloc_obj_t o = NULL;
+	    int i = 0;
+	    do
+		{
+		    o = hwloc_get_obj_by_type(__piom_ltask.topology, level, i);
+		    if(o == NULL)
+			break;
+		    if( ((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_FIRST) && (i == 1)) ||
+			((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ODD)   && (i % 2 == 1)) ||
+			((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_EVEN)  && (i % 2 == 0)) ||
+			( piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ALL)
+			)
 			{
-			    o = hwloc_get_obj_by_type(__piom_ltask.topology, level, i);
-			    if(o == NULL)
-				break;
-			    if( ((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_FIRST) && (i == 1)) ||
-				((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ODD)   && (i % 2 == 1)) ||
-				((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_EVEN)  && (i % 2 == 0)) ||
-				( piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ALL)
-				)
-				{
 #ifdef DEBUG
 			    char string[128];
 			    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask.topology, o, "#", 0);
@@ -571,37 +581,34 @@ void piom_init_ltasks(void)
 				{
 				    fprintf(stderr, "# pioman: WARNING- hwloc_set_thread_cpubind failed.\n");
 				}
-				}
-			    i++;
 			}
-		    while(o != NULL);
+		    i++;
+		}
+	    while(o != NULL);
 #endif /* PIOMAN_TOPOLOGY_* */
-		}
-	    /* ** spare LWPs for blocking calls */
-	    __piom_ltask.lwps_avail = 0;
-	    __piom_ltask.lwps_num = piom_parameters.spare_lwp;
-	    if(piom_parameters.spare_lwp)
-		{
-		    fprintf(stderr, "# pioman: starting %d spare LWPs.\n", piom_parameters.spare_lwp);
-		    sem_init(&__piom_ltask.lwps_ready, 0, 0);
-		    piom_ltask_lfqueue_init(&__piom_ltask.lwps_queue);
-		    int i;
-		    for(i = 0; i < __piom_ltask.lwps_num; i++)
-			{
-			    pthread_t tid;
-			    int err = pthread_create(&tid, NULL, &__piom_ltask_lwp_worker, NULL);
-			    if(err)
-				{
-				    fprintf(stderr, "PIOMan: FATAL- cannot create spare LWP #%d\n", i);
-				    abort();
-				}
-			    __piom_ltask.lwps_avail++;
-			}
-		}
-#endif /* PIOMAN_PTHREAD */
-
 	}
-    __piom_ltask.initialized++;
+    /* ** spare LWPs for blocking calls */
+    __piom_ltask.lwps_avail = 0;
+    __piom_ltask.lwps_num = piom_parameters.spare_lwp;
+    if(piom_parameters.spare_lwp)
+	{
+	    fprintf(stderr, "# pioman: starting %d spare LWPs.\n", piom_parameters.spare_lwp);
+	    sem_init(&__piom_ltask.lwps_ready, 0, 0);
+	    piom_ltask_lfqueue_init(&__piom_ltask.lwps_queue);
+	    int i;
+	    for(i = 0; i < __piom_ltask.lwps_num; i++)
+		{
+		    pthread_t tid;
+		    int err = pthread_create(&tid, NULL, &__piom_ltask_lwp_worker, NULL);
+		    if(err)
+			{
+			    fprintf(stderr, "PIOMan: FATAL- cannot create spare LWP #%d\n", i);
+			    abort();
+			}
+		    __piom_ltask.lwps_avail++;
+		}
+	}
+#endif /* PIOMAN_PTHREAD */
 }
 
 void piom_exit_ltasks(void)
@@ -711,15 +718,16 @@ void piom_ltask_schedule(void)
 		    int hint2 = (PIOM_MAX_LTASK + queue->submit_queue._head - queue->submit_queue._tail) % PIOM_MAX_LTASK;
 		    const int hint = (hint1 > 0)?hint1:1 + (hint2 > 0)?hint2:1;
 		    __piom_ltask_queue_schedule(queue, hint);
-#ifdef PIOMAN_TOPOLOGY_HWLOC
-		    if(queue->binding->type == HWLOC_OBJ_SOCKET)
+		    if(queue->parent != NULL)
 			{
-			    queue->skip ++;
-			    if(queue->skip % 32 != 0) queue = NULL; else queue = queue->parent;
+			    queue->skip++;
+			    if(queue->skip % queue->parent_factor == 0)
+				queue = queue->parent;
+			    else
+				queue = NULL;
 			}
 		    else
-#endif
-			queue = queue->parent;
+			queue = NULL;
 		}
 	}
 }

@@ -536,6 +536,7 @@ void piom_init_ltasks(void)
 		    piom_ltask_queue_t*queue = __piom_get_queue(piom_topo_full);
 		    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);
 		    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
+		    fprintf(stderr, "# pioman: WARNING- no hwloc, using global queue. Running in degraded mode.\n");
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
 		    const hwloc_obj_type_t level = piom_parameters.idle_level;
 		    hwloc_obj_t o = NULL;

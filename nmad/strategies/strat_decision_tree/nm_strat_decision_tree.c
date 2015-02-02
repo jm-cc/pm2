@@ -166,7 +166,7 @@ static int strat_decision_tree_try_and_commit(void*_status, struct nm_gate *p_ga
 
   if (!tbx_fast_list_empty(out_list))
     {
-      nmad_trace_event(TOPO_CONNECTION, NMAD_TRACE_EVENT_TRY_COMMIT, NULL, trace_co_id);
+      nm_trace_event(TOPO_CONNECTION, NM_TRACE_EVENT_TRY_COMMIT, NULL, trace_co_id);
       tbx_fast_list_for_each(pos,out_list)
 	{
 	  p_pw_trace = nm_l2so(pos);	  
@@ -179,10 +179,10 @@ static int strat_decision_tree_try_and_commit(void*_status, struct nm_gate *p_ga
 	  nb_pw++;
 	}
       p_pw_trace = nm_l2so(out_list->next);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw, nb_pw, trace_co_id);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Outlist_Pw_Size, size_outlist, trace_co_id);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Next_Pw_Size, p_pw_trace->length, trace_co_id);
-      nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area, nm_so_pw_remaining_data(p_pw_trace), trace_co_id);
+      nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw, nb_pw, trace_co_id);
+      nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Outlist_Pw_Size, size_outlist, trace_co_id);
+      nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Next_Pw_Size, p_pw_trace->length, trace_co_id);
+      nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area, nm_so_pw_remaining_data(p_pw_trace), trace_co_id);
     }
 #endif
 
@@ -213,11 +213,11 @@ static int strat_decision_tree_try_and_commit(void*_status, struct nm_gate *p_ga
       nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, p_drv);
 
 #ifdef NMAD_TRACE
-	  nmad_trace_event(TOPO_CONNECTION, NMAD_TRACE_EVENT_Pw_Submited, NULL, trace_co_id);
-	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Pw_Submitted_Size, p_so_pw->length, trace_co_id);
-	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Latency, p_gdrv->p_drv->profile.latency, trace_co_id);
-	  nmad_trace_var(TOPO_CONNECTION, NMAD_TRACE_EVENT_VAR_CO_Gdrv_Profile_Bandwidth, p_gdrv->p_drv->profile.bandwidth, trace_co_id);
-#endif
+	  nm_trace_event(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_Pw_Submited, NULL, trace_co_id);
+	  nm_trace_var(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Pw_Submitted_Size, p_so_pw->length, trace_co_id);
+	  nm_trace_var(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Gdrv_Profile_Latency, p_gdrv->p_drv->profile.latency, trace_co_id);
+	  nm_trace_var(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Gdrv_Profile_Bandwidth, p_gdrv->p_drv->profile.bandwidth, trace_co_id);
+#endif /* NMAD_TRACE */
 
     }
   else if((p_gdrv->active_send[NM_TRK_SMALL] != 0) && !(tbx_fast_list_empty(out_list)))

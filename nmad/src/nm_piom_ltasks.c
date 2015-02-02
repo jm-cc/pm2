@@ -1,7 +1,7 @@
 /* -*- Mode: C; c-basic-offset:2 ; -*- */
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

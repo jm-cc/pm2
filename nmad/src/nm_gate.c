@@ -56,7 +56,8 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   tbx_fast_list_add_tail(&p_gate->_link, &p_core->gate_list);
 
 #ifdef NMAD_TRACE
-  p_gate->trace_connections_id = nm_trace_connections_cpt++;
+  static int nm_trace_gate_count = 0;
+  p_gate->trace_connections_id = nm_trace_gate_count++;
 #endif /* NMAD_TRACE */
 
   *pp_gate = p_gate;
@@ -117,7 +118,7 @@ int nm_core_gate_connect(struct nm_core	*p_core,
   p_gate->status = NM_GATE_STATUS_CONNECTED;
 
 #ifdef NMAD_TRACE
-  nmad_trace_container(TOPO_CONNECTION, NMAD_TRACE_EVENT_NEW_CONNECTION, p_gate->trace_connections_id);
+  nm_trace_container(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_NEW_CONNECTION, p_gate->trace_connections_id);
 #endif /* NMAD_TRACE */
 
  out:

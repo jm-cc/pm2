@@ -82,9 +82,12 @@ struct piom_trace_info_s
     int rank;
     const char*cont_type;
     const char*cont_name;
+    struct piom_trace_info_s*parent;
 };
 
 TBX_INTERNAL void piom_trace_flush(void);
+
+TBX_INTERNAL void piom_trace_queue_new(struct piom_trace_info_s*trace_info);
 
 TBX_INTERNAL void piom_trace_queue_event(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, void*_value);
 

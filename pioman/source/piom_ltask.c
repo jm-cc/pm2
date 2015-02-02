@@ -33,7 +33,7 @@ PIOM_LFQUEUE_TYPE(piom_ltask, struct piom_ltask*, NULL, PIOM_MAX_LTASK);
 typedef enum
     {
 	/* not yet initialized */
-	PIOM_LTASK_QUEUE_STATE_NONE,
+	PIOM_LTASK_QUEUE_STATE_NONE = 0,
 	/* running */
 	PIOM_LTASK_QUEUE_STATE_RUNNING,
 	/* being stopped */
@@ -90,7 +90,7 @@ static struct
     sem_t lwps_ready;
     /** ltasks queue to feed LWPs */
     struct piom_ltask_lfqueue_s lwps_queue;
-#endif /* PIOMAN_PTHREAD */    
+#endif /* PIOMAN_PTHREAD */
 } __piom_ltask =
     {
 	.initialized = 0
@@ -498,8 +498,8 @@ void piom_init_ltasks(void)
 				    queue->trace_info.cont_type = strdup(cont_type);
 				    queue->trace_info.level = o->type;
 				    queue->trace_info.rank = i;
-				    addContainer(0.00000, queue->trace_info.cont_name, queue->trace_info.cont_type, 
-						 queue->parent ? queue->parent->trace_info.cont_name:"0", cont_name, "0");
+				    queue->trace_info.parent = queue->parent ? &queue->parent->trace_info : NULL;
+				    piom_trace_queue_new(&queue->trace_info);
 				    piom_trace_queue_state(&queue->trace_info, PIOM_TRACE_STATE_NONE);
 #endif /* PIOMAN_TRACE */
 

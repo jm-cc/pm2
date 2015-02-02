@@ -32,12 +32,52 @@ static struct piom_trace_s
     tbx_tick_t orig;  /**< time origin*/
     int last;         /**< index of last entry recorded */
     struct piom_trace_entry_s entries[PIOMAN_TRACE_MAX];
-} __piom_trace = { .last = 0 };
+    struct piom_trace_info_s**containers;
+    int ncontainers;
+} __piom_trace = { .last = 0, .containers = NULL, .ncontainers = 0};
 
 static void pioman_trace_init(void) __attribute__((constructor,used));
 static void pioman_trace_exit(void) __attribute__((destructor,used));
 static void pioman_trace_init(void)
 {
+    TBX_GET_TICK(__piom_trace.orig);
+}
+static inline struct piom_trace_entry_s*piom_trace_get_entry(void)
+{
+    const int i = __sync_fetch_and_add(&__piom_trace.last, 1);
+    if(i >= PIOMAN_TRACE_MAX)
+	return NULL;
+    return &__piom_trace.entries[i];
+}
+
+void piom_trace_queue_new(struct piom_trace_info_s*trace_info)
+{
+    const int i = __piom_trace.ncontainers;
+    __piom_trace.ncontainers++;
+    __piom_trace.containers = realloc(__piom_trace.containers, __piom_trace.ncontainers * sizeof(struct piom_trace_info_s*));
+    __piom_trace.containers[i] = trace_info;
+}
+
+void piom_trace_queue_event(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, void*_value)
+{
+    struct piom_trace_entry_s*entry = piom_trace_get_entry();
+    if(entry)
+	{
+	    TBX_GET_TICK(entry->tick);
+	    entry->event = _event;
+	    entry->trace_info = trace_info;
+	    entry->value = _value;
+	}
+}
+
+void piom_trace_flush(void)
+{
+    static int flushed = 0;
+    if(flushed)
+	return;
+    fprintf(stderr, "# pioman: flush traces (%d entries)\n", __piom_trace.last);
+    flushed = 1;
+
     char trace_name[256]; 
     char hostname[256];
     gethostname(hostname, 256);
@@ -45,8 +85,6 @@ static void pioman_trace_init(void)
     fprintf(stderr, "# pioman trace init: %s\n", trace_name);
     setTraceType(PAJE);
     initTrace(trace_name, 0, GTG_FLAG_NONE);
-
-    TBX_GET_TICK(__piom_trace.orig);
 
     /* container types */
     addContType("Container_Machine", "0",                "Machine");
@@ -95,36 +133,13 @@ static void pioman_trace_init(void)
     addContainer(0.00000, "Idle_Events", "Container_Global", "0", "Idle_Events", "0");
     addEventType ("Event_Timer_Poll", "Container_Global", "Event: timer poll");
     addEventType ("Event_Idle_Poll", "Container_Global", "Event: idle poll");
-
-}
-static inline struct piom_trace_entry_s*piom_trace_get_entry(void)
-{
-    const int i = __sync_fetch_and_add(&__piom_trace.last, 1);
-    if(i >= PIOMAN_TRACE_MAX)
-	return NULL;
-    return &__piom_trace.entries[i];
-}
-
-void piom_trace_queue_event(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, void*_value)
-{
-    struct piom_trace_entry_s*entry = piom_trace_get_entry();
-    if(entry)
-	{
-	    TBX_GET_TICK(entry->tick);
-	    entry->event = _event;
-	    entry->trace_info = trace_info;
-	    entry->value = _value;
-	}
-}
-
-void piom_trace_flush(void)
-{
-    static int flushed = 0;
-    if(flushed)
-	return;
-    fprintf(stderr, "# pioman: flush traces (%d entries)\n", __piom_trace.last);
-    flushed = 1;
     int i;
+    for(i = 0; i < __piom_trace.ncontainers; i++)
+	{
+	    const struct piom_trace_info_s*p_trace_info = __piom_trace.containers[i];
+	    addContainer(0.00000, p_trace_info->cont_name, p_trace_info->cont_type, 
+			 p_trace_info->parent ? p_trace_info->parent->cont_name:"0", p_trace_info->cont_name, "0");
+	}
     for(i = 0; i < ((__piom_trace.last > PIOMAN_TRACE_MAX) ? PIOMAN_TRACE_MAX : __piom_trace.last) ; i++)
 	{
 	    const struct piom_trace_entry_s*e = &__piom_trace.entries[i];

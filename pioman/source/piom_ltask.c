@@ -503,12 +503,12 @@ void piom_init_ltasks(void)
 				default:
 				    break;
 				}
-			    sprintf(cont_name, "%s_%d", level_label, i);
+			    sprintf(cont_name, "%s_%d", level_label, o->logical_index);
 			    sprintf(cont_type, "Container_%s", level_label);
 			    queue->trace_info.cont_name = strdup(cont_name);
 			    queue->trace_info.cont_type = strdup(cont_type);
 			    queue->trace_info.level = o->type;
-			    queue->trace_info.rank = i;
+			    queue->trace_info.rank = o->logical_index;
 			    queue->trace_info.parent = queue->parent ? &queue->parent->trace_info : NULL;
 			    piom_trace_queue_new(&queue->trace_info);
 			    piom_trace_queue_state(&queue->trace_info, PIOM_TRACE_STATE_NONE);
@@ -556,9 +556,9 @@ void piom_init_ltasks(void)
 		    o = hwloc_get_obj_by_type(__piom_ltask.topology, level, i);
 		    if(o == NULL)
 			break;
-		    if( ((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_FIRST) && (i == 1)) ||
-			((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ODD)   && (i % 2 == 1)) ||
-			((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_EVEN)  && (i % 2 == 0)) ||
+		    if( ((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_FIRST) && (o->logical_index == 1)) ||
+			((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ODD)   && (o->logical_index % 2 == 1)) ||
+			((piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_EVEN)  && (o->logical_index % 2 == 0)) ||
 			( piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ALL)
 			)
 			{

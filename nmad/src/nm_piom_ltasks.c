@@ -20,11 +20,11 @@ struct nm_ltask_policy_s
 {
   enum
     {
-      NM_POLICY_NONE,  /**< not initialized */
-      NM_POLICY_APP,   /**< near the application (current location) */
-      NM_POLICY_DEV,   /**< near the network device */
-      NM_POLICY_ANY,   /**< anywhere, no policy */
-      NM_POLICY_CUSTOM /**< custom location, given by user */
+      NM_POLICY_NONE = 0, /**< not initialized */
+      NM_POLICY_APP,      /**< near the application (current location) */
+      NM_POLICY_DEV,      /**< near the network device */
+      NM_POLICY_ANY,      /**< anywhere, no policy */
+      NM_POLICY_CUSTOM    /**< custom location, given by user */
     } location;
   enum piom_topo_level_e level;
   int custom;
@@ -44,8 +44,10 @@ void nm_ltask_set_policy(void)
   const char*level = getenv("PIOM_BINDING_LEVEL");
   if(!policy)
     {
-      NM_DISPF("# nmad: default pioman binding policy.\n");
-      ltask_policy.location = NM_POLICY_DEV;
+      const char*padico_host_count = getenv("PADICO_HOST_COUNT");
+      int mcount = padico_host_count ? atoi(padico_host_count) : 1;
+      ltask_policy.location = (mcount > 1) ? NM_POLICY_APP : NM_POLICY_DEV;
+      NM_DISPF("# nmad: default pioman binding policy (%d process/node).\n", mcount);
     }
   else
     {

@@ -184,19 +184,26 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 	  /* if this driver wants something */
 	  hwloc_cpuset_t current = hwloc_bitmap_alloc();
 	  int rc = hwloc_get_cpubind(topology, current, HWLOC_CPUBIND_THREAD);
+	  char*s_current = NULL;
+	  hwloc_bitmap_asprintf(&s_current, current);
+	  char*s_drv_cpuset = NULL;
+	  hwloc_bitmap_asprintf(&s_drv_cpuset, p_drv->profile.cpuset);
 	  if((rc == 0) && !hwloc_bitmap_isequal(current, hwloc_topology_get_complete_cpuset(topology)))
 	    {
-	      NM_DISPF("#nmad: nuioa- thread already bound. Not binding.\n");
+	      NM_DISPF("# nmad: nuioa- thread already bound to %s. Not binding to %s.\n", s_current, s_drv_cpuset);
 	    }
 	  else
 	    {
-	      NM_DISPF("# nmad: nuioa- driver '%s' has a preferred location. Binding.\n", p_drv->assembly->name);
+	      NM_DISPF("# nmad: nuioa- driver '%s' has a preferred location. Binding to %s.\n",
+		       p_drv->assembly->name, s_drv_cpuset);
 	      rc = hwloc_set_cpubind(topology, p_drv->profile.cpuset, HWLOC_CPUBIND_THREAD);
 	      if(rc)
 		{
 		  fprintf(stderr, "nmad: WARNING- hwloc_set_cpubind failed.\n");
 		}
 	    }
+	  free(s_drv_cpuset);
+	  free(s_current);
 	}
       else
 	{

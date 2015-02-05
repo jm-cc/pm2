@@ -18,6 +18,7 @@
 
 
 #include "piom_private.h"
+#include <tbx.h>
 
 #ifdef MARCEL
 #include "marcel.h"
@@ -29,15 +30,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <pthread.h>
-
-#ifndef max
-#define max(a, b) \
-  (__gnu_extention__ \
-   ({ __typeof__ (a) _a=a; \
-      __typeof__ (b) _b=b; \
-      ((_a) > (_b) ? (_a) : (_b)) \
-   }))
-#endif
 
 typedef enum {
 	PIOM_POLL_READ,

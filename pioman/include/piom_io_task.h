@@ -23,7 +23,4 @@ int piom_task_write(int fildes, const void *buf, size_t nbytes);
 int piom_task_select(int nfds, fd_set * __restrict rfds,
 		     fd_set * __restrict wfds);
 
-TBX_INTERNAL void piom_io_task_init(void);
-TBX_INTERNAL void piom_io_task_stop(void);
-
 #endif /* PIOM_IO_TASK_H */

@@ -40,6 +40,9 @@ TBX_INTERNAL void piom_init_ltasks(void);
 /** destroy internal structures, stop task execution, etc. */
 TBX_INTERNAL void piom_exit_ltasks(void);
 
+TBX_INTERNAL void piom_io_task_init(void);
+TBX_INTERNAL void piom_io_task_stop(void);
+
 /* todo: get a dynamic value here !
  * it could be based on:
  * - application hints

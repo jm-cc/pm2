@@ -111,22 +111,26 @@ void nm_ltask_set_policy(void)
 
 static piom_topo_obj_t nm_piom_driver_binding(struct nm_drv*p_drv)
 {
-  piom_topo_obj_t binding = piom_topo_full;
+  piom_topo_obj_t binding = NULL;
 #if defined(PM2_TOPOLOGY) && defined(PIOMAN_TOPOLOGY_HWLOC)
-      {
-	hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
-	if(cpuset == NULL)
-	  {
-	    cpuset = hwloc_topology_get_complete_cpuset(piom_ltask_topology());
-	  }
-	hwloc_obj_t o = hwloc_get_obj_covering_cpuset(piom_ltask_topology(), cpuset);
-	assert(o != NULL);
-	binding = piom_get_parent_obj(o, ltask_policy.level);
-	if(binding == NULL)
-	  binding = o;
-      }
+  hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
+  if(cpuset != NULL)
+    {
+      hwloc_obj_t o = hwloc_get_obj_covering_cpuset(piom_ltask_topology(), cpuset);
+      assert(o != NULL);
+      binding = piom_get_parent_obj(o, ltask_policy.level);
+    }
+  if(binding == NULL)
+    {
+      char s_binding[64];
+      binding = piom_get_parent_obj(piom_ltask_current_obj(), ltask_policy.level);
+      hwloc_obj_snprintf(s_binding, sizeof(s_binding), piom_ltask_topology(), binding, "#", 0);
+      NM_DISPF("# nmad: network %s has no preferred location; binding to current location %s.\n", p_drv->assembly->name, s_binding);
+    }
+#else
+  binding = piom_topo_full;
 #endif /* PM2_TOPOLOGY */
-      return binding;
+  return binding;
 }
 
 static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)

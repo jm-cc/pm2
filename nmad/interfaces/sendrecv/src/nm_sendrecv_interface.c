@@ -156,11 +156,7 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
       goto exit;
     }
 
-#ifdef NMAD_POLL
-  nm_schedule(p_core);
-#else
-  piom_check_polling(PIOM_POLL_WHEN_FORCED);
-#endif
+  nm_sr_progress(p_session);
 
   rc = (nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED)) ?
     NM_ESUCCESS : -NM_EAGAIN;
@@ -235,11 +231,7 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
     }
   if( !nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED))
     {
-#ifdef NMAD_POLL
-      nm_schedule(p_session->p_core);
-#else /* NMAD_POLL */
-      piom_check_polling(PIOM_POLL_WHEN_FORCED);
-#endif /* NMAD_POLL */
+      nm_sr_progress(p_session);
     }
 
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
@@ -320,11 +312,7 @@ int nm_sr_probe(nm_session_t p_session,
 
   if(err != NM_ESUCCESS)
     {
-#ifdef NMAD_POLL
-      nm_schedule(p_core);
-#else
-      piom_check_polling(PIOM_POLL_WHEN_FORCED);
-#endif
+      nm_sr_progress(p_session);
     }
   return err;
 }
@@ -394,7 +382,7 @@ int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
   if(nm_sr_request_lfqueue_empty(&nm_sr_data.completed_rreq))
     {
-      nm_schedule(p_session->p_core);
+      nm_sr_progress(p_session);
     }
   nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&nm_sr_data.completed_rreq);
   *out_req = p_request;
@@ -405,7 +393,7 @@ int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
   if(nm_sr_request_lfqueue_empty(&nm_sr_data.completed_sreq))
     {
-      nm_schedule(p_session->p_core);
+      nm_sr_progress(p_session);
     }
   nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&nm_sr_data.completed_sreq);
   *out_req = p_request;
@@ -516,13 +504,7 @@ static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const even
 
 int nm_sr_progress(nm_session_t p_session)
 {
-  NM_LOG_IN();
-  /* We assume that PIOMan makes the communications progress */
-#ifdef NMAD_POLL
+  /* either explicit schedule, or PIOMan makes communications progress */
   nm_schedule(p_session->p_core);
-#else
-  piom_check_polling(PIOM_POLL_WHEN_FORCED);
-#endif
-  NM_LOG_OUT();
   return NM_ESUCCESS;
 }

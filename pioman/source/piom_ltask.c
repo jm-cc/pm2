@@ -353,7 +353,7 @@ static void*__piom_ltask_timer_worker(void*_dummy)
 	    piom_trace_queue_event(NULL, PIOM_TRACE_EVENT_TIMER_POLL, NULL);
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), old_prio);
-	    piom_check_polling(PIOM_POLL_AT_TIMER_SIG);
+	    piom_ltask_schedule(PIOM_POLL_POINT_TIMER);
 	    sched_yield();
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), max_prio);
@@ -383,7 +383,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 	    piom_trace_queue_event(NULL, PIOM_TRACE_EVENT_IDLE_POLL, NULL);
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), old_prio);
-	    piom_check_polling(PIOM_POLL_AT_IDLE);
+	    piom_ltask_schedule(PIOM_POLL_POINT_IDLE);
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), min_prio);
 	    if(piom_parameters.idle_granularity > 0 && piom_parameters.idle_granularity < 10)
@@ -522,15 +522,6 @@ void piom_init_ltasks(void)
 
     /* ** Start polling */
     
-#ifdef PIOMAN_MARCEL
-    /* marcel: resgiter hooks */
-    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_TIMER);
-    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_YIELD);
-    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_IDLE);
-    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
-    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
-#endif /* PIOMAN_MARCEL */
-
 #ifdef PIOMAN_PTHREAD 
     /* ** timer-based polling */
     if(piom_parameters.timer_period > 0)
@@ -707,7 +698,7 @@ void piom_ltask_submit(struct piom_ltask *task)
     __piom_ltask_submit_in_queue(task, queue);
 }
 
-void piom_ltask_schedule(void)
+void piom_ltask_schedule(int point)
 {
     if(__piom_ltask.initialized)
 	{
@@ -745,7 +736,7 @@ void piom_ltask_wait(struct piom_ltask *task)
     piom_ltask_wait_success(task);
     while(!piom_ltask_state_test(task, PIOM_LTASK_STATE_TERMINATED))
 	{
-	    piom_ltask_schedule();
+	    piom_ltask_schedule(PIOM_POLL_POINT_BUSY);
 	}
 }
 
@@ -762,7 +753,7 @@ void piom_ltask_mask(struct piom_ltask *task)
     __sync_fetch_and_add(&task->masked, 1);
     while(piom_ltask_state_test(task, PIOM_LTASK_STATE_SCHEDULED))
 	{
-	    piom_ltask_schedule();
+	    piom_ltask_schedule(PIOM_POLL_POINT_BUSY);
 	}
 }
 

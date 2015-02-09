@@ -32,6 +32,26 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 
 static int piom_init_done = 0;
 
+#ifdef PIOMAN_MARCEL
+/** Polling point. May be called from the application to force polling,
+ * from marcel hooks, from timer handler.
+ * @return 0 if we didn't need to poll and 1 otherwise
+ */
+static int piom_polling_hook(unsigned _point)
+{
+    const int point =
+	(_point == MARCEL_SCHEDULING_POINT_TIMER) ? PIOM_POLL_POINT_TIMER :
+	(_point == MARCEL_SCHEDULING_POINT_IDLE)  ? PIOM_POLL_POINT_IDLE :
+	(PIOM_POLL_POINT_FORCED;
+    piom_ltask_schedule(point);
+    return 1;
+}
+#endif /* PIOMAN_MARCEL */
+
+void piom_polling_force(void)
+{
+    piom_ltask_schedule(PIOM_POLL_POINT_FORCED);
+}
 
 void pioman_init(int*argc, char**argv)
 {
@@ -123,6 +143,14 @@ void pioman_init(int*argc, char**argv)
 #endif /* PIOMAN_MARCEL */
     piom_init_ltasks();
     /*    piom_io_task_init(); */
+#ifdef PIOMAN_MARCEL
+    /* marcel: register hooks */
+    marcel_register_scheduling_hook(piom_polling_hook, MARCEL_SCHEDULING_POINT_TIMER);
+    marcel_register_scheduling_hook(piom_polling_hook, MARCEL_SCHEDULING_POINT_YIELD);
+    marcel_register_scheduling_hook(piom_polling_hook, MARCEL_SCHEDULING_POINT_IDLE);
+    marcel_register_scheduling_hook(piom_polling_hook, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
+    marcel_register_scheduling_hook(piom_polling_hook, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
+#endif /* PIOMAN_MARCEL */
 }
 
 void pioman_exit(void)
@@ -138,12 +166,3 @@ void pioman_exit(void)
 	}
 }
 
-/** Polling point. May be called from the application to force polling,
- * from marcel hooks, from timer handler.
- * @return 0 if we didn't need to poll and 1 otherwise
- */
-int piom_check_polling(unsigned polling_point)
-{
-    piom_ltask_schedule();
-    return 1;
-}

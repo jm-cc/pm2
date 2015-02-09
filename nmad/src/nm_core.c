@@ -128,11 +128,10 @@ int nm_schedule(struct nm_core *p_core)
   scheduling_in_progress = 0;
 #endif /* DEBUG */
 
-  return NM_ESUCCESS;
 #else  /* NMAD_POLL */
-  piom_check_polling(PIOM_POLL_AT_IDLE);
-  return 0;
+  piom_polling_force();
 #endif /* NMAD_POLL */
+  return NM_ESUCCESS;
 }
 
 

@@ -29,10 +29,9 @@
 #include "piom_log.h"
 #include "pioman.h"
 
-/** Try to schedule a task
- * Returns the task that have been scheduled (or NULL if no task)
+/** Schedule tasks from local or all queues (depending on 'point')
  */
-TBX_INTERNAL void piom_ltask_schedule(void);
+TBX_INTERNAL void piom_ltask_schedule(int point);
 
 /** initialize ltask system */
 TBX_INTERNAL void piom_init_ltasks(void);

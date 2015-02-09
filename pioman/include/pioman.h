@@ -61,24 +61,20 @@ extern void pioman_exit(void);
  * @{
  */
 /** poll on timer */
-#define PIOM_POLL_AT_TIMER_SIG  1
+#define PIOM_POLL_POINT_TIMER  0x01
 /** poll on explicit yield */
-#define PIOM_POLL_AT_YIELD      2
-/** poll on libc entry */
-#define PIOM_POLL_AT_LIB_ENTRY  4
-/** poll when LWP is idle */
-#define PIOM_POLL_AT_IDLE       8
-/** poll at context switch */
-#define PIOM_POLL_AT_CTX_SWITCH 16
-/** poll when explicitely asked for */
-#define PIOM_POLL_WHEN_FORCED   32
+#define PIOM_POLL_POINT_YIELD  0x02
+/** poll when cpu is idle */
+#define PIOM_POLL_POINT_IDLE   0x08
+/** poll when explicitely asked for by the application */
+#define PIOM_POLL_POINT_FORCED 0x10
+/** poll in a busy wait */
+#define PIOM_POLL_POINT_BUSY   0x20
 /** @} */
 
-/** Polling point. May be called from the application to force polling,
- * from marcel hooks, from timer handler.
- * @return 0 if we didn't need to poll and 1 otherwise
+/** Polling point forced from the application.
  */
-extern int piom_check_polling(unsigned polling_point);
+extern void piom_polling_force(void);
 
 #include "piom_lock.h"
 #include "piom_sem.h"

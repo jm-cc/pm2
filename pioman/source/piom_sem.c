@@ -38,7 +38,7 @@ __tbx_inline__ void piom_sem_P(piom_sem_t *sem)
   (*sem)--;
   while((*sem) < 0)
     {
-      piom_check_polling(PIOM_POLL_AT_IDLE);
+      piom_ltask_schedule(PIOM_POLL_POINT_BUSY);
     }
 #endif /* PIOMAN_LOCK_* */
 }
@@ -98,7 +98,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 	      piom_sem_P(&cond->sem);
 	      return;
 	    }
-	  piom_check_polling(PIOM_POLL_AT_IDLE);
+	  piom_ltask_schedule(PIOM_POLL_POINT_BUSY);
 	}
       /* amortize cost of TBX_GET_TICK() */
       if(busy_wait == 1)
@@ -187,7 +187,7 @@ __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 {
   while(! (*cond & mask))
-    piom_check_polling(PIOM_POLL_AT_IDLE);		
+    piom_ltask_schedule(PIOM_POLL_POINT_BUSY);		
 }
 __tbx_inline__ void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
 {

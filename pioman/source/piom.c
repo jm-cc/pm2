@@ -42,7 +42,7 @@ static int piom_polling_hook(unsigned _point)
     const int point =
 	(_point == MARCEL_SCHEDULING_POINT_TIMER) ? PIOM_POLL_POINT_TIMER :
 	(_point == MARCEL_SCHEDULING_POINT_IDLE)  ? PIOM_POLL_POINT_IDLE :
-	(PIOM_POLL_POINT_FORCED;
+	PIOM_POLL_POINT_FORCED;
     piom_ltask_schedule(point);
     return 1;
 }

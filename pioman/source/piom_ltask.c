@@ -179,9 +179,11 @@ static void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t bind
     __piom_ltask.all_queues = realloc(__piom_ltask.all_queues, sizeof(struct piom_ltask_queue*)*(__piom_ltask.n_queues + 1));
     __piom_ltask.all_queues[__piom_ltask.n_queues] = queue;
     __piom_ltask.n_queues++;
+#if defined(PIOMAN_TOPOLOGY_HWLOC)
     char s_binding[128];
     hwloc_obj_snprintf(s_binding, sizeof(s_binding), __piom_ltask.topology, queue->binding, "#", 0);
     PIOM_DISP("queue #%d on %s\n", __piom_ltask.n_queues, s_binding);
+#endif /* PIOMAN_TOPOLOGY_HWLOC */
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
 

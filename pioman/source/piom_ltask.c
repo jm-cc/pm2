@@ -59,7 +59,7 @@ typedef struct piom_ltask_queue
     /** parent queue in the tree */
     struct piom_ltask_queue          *parent;
     /** frequency for parent polling */
-    int                               parent_factor;
+    int                               skip_factor;
     /** number of times scheduling was skipped, to reduce contention */
     int skip;
     /* context for trace subsystem */
@@ -461,7 +461,7 @@ void piom_init_ltasks(void)
 		    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof (piom_ltask_queue_t));
 		    piom_ltask_queue_init(queue, l);
 		    queue->parent = (l->father != NULL) ? l->father->ltask_data : NULL;
-		    queue->parent_factor = 1;
+		    queue->skip_factor = 1;
 		    l->ltask_data = queue;
 		}
 	}
@@ -485,7 +485,7 @@ void piom_init_ltasks(void)
 			    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof(piom_ltask_queue_t));
 			    piom_ltask_queue_init(queue, o);
 			    queue->parent = (o->parent == NULL) ? NULL : __piom_get_queue(o->parent);
-			    queue->parent_factor =
+			    queue->skip_factor =
 				(o->type == HWLOC_OBJ_CORE)   ? 1 :
 				(o->type == HWLOC_OBJ_SOCKET) ? 2 :
 				(o->type == HWLOC_OBJ_NODE)   ? 8 :
@@ -724,7 +724,7 @@ void piom_ltask_schedule(int point)
 			    else
 				{
 				    queue->skip++;
-				    if(queue->skip % queue->parent_factor == 0)
+				    if(queue->skip % queue->skip_factor == 0)
 					piom_ltask_queue_schedule(queue, 1);
 				}
 			}
@@ -749,7 +749,7 @@ void piom_ltask_schedule(int point)
 			    if(queue->parent != NULL)
 				{
 				    queue->skip++;
-				    if(queue->skip % queue->parent_factor == 0)
+				    if(queue->skip % queue->skip_factor == 0)
 					queue = queue->parent;
 				    else
 					queue = NULL;

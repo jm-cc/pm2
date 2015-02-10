@@ -91,7 +91,6 @@ piom_io_task_check_select(piom_tcp_task_ev_t ev,
 			  fd_set * __restrict rfds,
 			  fd_set * __restrict wfds)
 {
-	PIOM_LOGF("Checking select for IO poll (at least one success)\n");
 	switch (ev->op) {
 	case PIOM_POLL_READ:
 		if (FD_ISSET(ev->FD, rfds)){
@@ -126,10 +125,6 @@ piom_io_task_poll(void *arg)
 	unsigned nb = 0;
 	struct timeval tv;
 	int r;
-#ifdef MARCEL
-	PIOM_LOGF("Fast Polling function called on LWP %d\n",
-		marcel_current_vp());
-#endif	/* MARCEL */
 	
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
@@ -193,10 +188,8 @@ piom_task_read(int fildes, void *buf, size_t nbytes)
 					  PIOM_LTASK_OPTION_REPEAT);
 			piom_ltask_set_binding(&ev.task, task_binding);
 			piom_ltask_submit(&ev.task);
-			PIOM_LOGF("Reading in fd %i\n", fildes);
 			piom_sem_P(&ev.sem);
 			piom_ltask_wait(&ev.task);
-			PIOM_LOGF("IO reading fd %i", fildes);
 			n = read(fildes, buf, nbytes);
 		} while (n == -1 && errno == EINTR);
 		
@@ -243,7 +236,6 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 	int n;
 	struct piom_tcp_task_ev ev;
 	piom_topo_obj_t task_binding = piom_topo_full;
-	PIOM_LOG_IN();
 
 	if(piom_ltask_test_activity())
 	{
@@ -258,7 +250,6 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 					  PIOM_LTASK_OPTION_REPEAT);
 			piom_ltask_set_binding(&ev.task, task_binding);
 			piom_ltask_submit(&ev.task);
-			PIOM_LOGF("IO writing fd %i", fildes);
 			piom_sem_P(&ev.sem);
 			piom_ltask_wait(&ev.task);
 			n = write(fildes, buf, nbytes);
@@ -291,7 +282,6 @@ piom_task_writev(int fildes, const struct iovec *iov, int iovcnt)
 				  PIOM_LTASK_OPTION_REPEAT);
 		piom_ltask_set_binding(&ev.task, task_binding);
 		piom_ltask_submit(&ev.task);
-		PIOM_LOGF("IO writing fd %i", fildes);
 		piom_sem_P(&ev.sem);
 		piom_ltask_wait(&ev.task);
 		return writev(fildes, iov, iovcnt);

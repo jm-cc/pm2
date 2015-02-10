@@ -181,9 +181,7 @@ static void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t bind
     __piom_ltask.n_queues++;
     char s_binding[128];
     hwloc_obj_snprintf(s_binding, sizeof(s_binding), __piom_ltask.topology, queue->binding, "#", 0);
-#ifdef DEBUG
-    fprintf(stderr, "# pioman: queue #%d on %s\n", __piom_ltask.n_queues, s_binding);
-#endif /* DEBUG */
+    PIOM_DISP("queue #%d on %s\n", __piom_ltask.n_queues, s_binding);
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
 
@@ -266,7 +264,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 					}
 				    else
 					{
-					    fprintf(stderr, "PIOMan: WARNING- task %p is left uncompleted\n", task);
+					    PIOM_WARN("task %p is left uncompleted\n", task);
 					}
 				}
 			    else
@@ -290,8 +288,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 			}
 		    else
 			{
-			    fprintf(stderr, "PIOMan: FATAL- wrong state %x for scheduled ltask.\n", task->state);
-			    abort();
+			    PIOM_FATAL("wrong state %x for scheduled ltask.\n", task->state);
 			}
 		    piom_trace_queue_state(&queue->trace_info, PIOM_TRACE_STATE_NONE);
 		    if(again)
@@ -358,7 +355,7 @@ static void*__piom_ltask_timer_worker(void*_dummy)
     const int prio_enable = ((rc == 0) && (max_prio != old_prio));
     if(rc != 0)
 	{
-	    fprintf(stderr, "# pioman: WARNING- timer thread could not get priority %d.\n", max_prio);
+	    PIOM_WARN("timer thread could not get priority %d.\n", max_prio);
 	}
     piom_ltask_queue_t*global_queue = __piom_get_queue(piom_topo_full);
     while(global_queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
@@ -389,7 +386,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
     const int prio_enable = ((rc == 0) && (min_prio != old_prio));
     if(rc != 0)
 	{
-	    fprintf(stderr, "# pioman: WARNING- idle thread could not get priority %d.\n", min_prio);
+	    PIOM_WARN("idle thread could not get priority %d.\n", min_prio);
 	}
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
@@ -487,10 +484,8 @@ void piom_init_ltasks(void)
 			       (o->parent != NULL) &&
 			       hwloc_bitmap_isequal(o->cpuset, o->parent->cpuset))
 				{
-#ifdef DEBUG
-				    fprintf(stderr, "# pioman: no queue on level %s- same cpuset as %s.\n",
+				    PIOM_DISP("no queue on level %s- same cpuset as %s.\n",
 					    hwloc_obj_type_string(o->type), hwloc_obj_type_string(o->parent->type));
-#endif /* DEBUG */
 				    continue;
 				}
 			    /* TODO- allocate memory on given obj */
@@ -557,7 +552,7 @@ void piom_init_ltasks(void)
 	    piom_ltask_queue_t*queue = __piom_get_queue(piom_topo_full);
 	    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);
 	    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
-	    fprintf(stderr, "# pioman: WARNING- no hwloc, using global queue. Running in degraded mode.\n");
+	    PIOM_WARN("no hwloc, using global queue. Running in degraded mode.\n");
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
 	    const hwloc_obj_type_t level = piom_parameters.idle_level;
 	    hwloc_obj_t o = NULL;
@@ -573,11 +568,9 @@ void piom_init_ltasks(void)
 			( piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ALL)
 			)
 			{
-#ifdef DEBUG
 			    char string[128];
 			    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask.topology, o, "#", 0);
-			    fprintf(stderr, "# pioman: idle #%d on %s\n", i, string);
-#endif /* DEBUG */
+			    PIOM_DISP("idle #%d on %s\n", i, string);
 			    piom_ltask_queue_t*queue = __piom_get_queue(o);
 			    pthread_t idle_thread;
 			    pthread_attr_t attr;
@@ -590,7 +583,7 @@ void piom_init_ltasks(void)
 			    int rc = hwloc_set_thread_cpubind(__piom_ltask.topology, idle_thread, o->cpuset, HWLOC_CPUBIND_THREAD);
 			    if(rc != 0)
 				{
-				    fprintf(stderr, "# pioman: WARNING- hwloc_set_thread_cpubind failed.\n");
+				    PIOM_WARN("hwloc_set_thread_cpubind failed.\n");
 				}
 			}
 		    i++;
@@ -603,7 +596,7 @@ void piom_init_ltasks(void)
     __piom_ltask.lwps_num = piom_parameters.spare_lwp;
     if(piom_parameters.spare_lwp)
 	{
-	    fprintf(stderr, "# pioman: starting %d spare LWPs.\n", piom_parameters.spare_lwp);
+	    PIOM_DISP("starting %d spare LWPs.\n", piom_parameters.spare_lwp);
 	    sem_init(&__piom_ltask.lwps_ready, 0, 0);
 	    piom_ltask_lfqueue_init(&__piom_ltask.lwps_queue);
 	    int i;
@@ -613,8 +606,7 @@ void piom_init_ltasks(void)
 		    int err = pthread_create(&tid, NULL, &__piom_ltask_lwp_worker, NULL);
 		    if(err)
 			{
-			    fprintf(stderr, "PIOMan: FATAL- cannot create spare LWP #%d\n", i);
-			    abort();
+			    PIOM_FATAL("cannot create spare LWP #%d\n", i);
 			}
 		    __piom_ltask.lwps_avail++;
 		}
@@ -672,8 +664,7 @@ static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_que
 {
     if(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING)
 	{
-	    fprintf(stderr, "PIOMan: WARNING- submitting a task (%p) to a queue (%p) that is being stopped\n", 
-		    task, queue);
+	    PIOM_WARN("submitting a task (%p) to a queue (%p) that is being stopped\n", task, queue);
 	}
     task->state = PIOM_LTASK_STATE_READY;
     task->queue = queue;

@@ -58,6 +58,8 @@ void pioman_init(int*argc, char**argv)
     piom_init_done++;
     if(piom_init_done > 1)
 	return;
+    if(getenv("PADICO_QUIET") == NULL)
+       setenv("PIOM_VERBOSE", "1", 0);
 
 #ifdef MCKERNEL
     piom_parameters.timer_period = -1;
@@ -75,22 +77,22 @@ void pioman_init(int*argc, char**argv)
     if(s_busy_wait_usec)
 	{
 	    piom_parameters.busy_wait_usec = atoi(s_busy_wait_usec);
-	    fprintf(stderr, "# pioman: custom PIOM_BUSY_WAIT_USEC = %d\n", piom_parameters.busy_wait_usec);
+	    PIOM_DISP("custom PIOM_BUSY_WAIT_USEC = %d\n", piom_parameters.busy_wait_usec);
 	}
     if(s_busy_wait_granularity)
 	{
 	    piom_parameters.busy_wait_granularity = atoi(s_busy_wait_granularity);
-	    fprintf(stderr, "# pioman: custom PIOM_BUSY_WAIT_GRANULARITY = %d\n", piom_parameters.busy_wait_granularity);
+	    PIOM_DISP("custom PIOM_BUSY_WAIT_GRANULARITY = %d\n", piom_parameters.busy_wait_granularity);
 	}
     if(s_enable_progression)
 	{
 	    piom_parameters.enable_progression = atoi(s_enable_progression);
-	    fprintf(stderr, "# pioman: custom PIOM_ENABLE_PROGRESSION = %d\n", piom_parameters.enable_progression);
+	    PIOM_DISP("custom PIOM_ENABLE_PROGRESSION = %d\n", piom_parameters.enable_progression);
 	}
     if(s_idle_granularity)
 	{
 	    piom_parameters.idle_granularity = atoi(s_idle_granularity);
-	    fprintf(stderr, "# pioman: custom PIOM_IDLE_GRANULARITY = %d\n", piom_parameters.idle_granularity);
+	    PIOM_DISP("custom PIOM_IDLE_GRANULARITY = %d\n", piom_parameters.idle_granularity);
 	}
     if(s_idle_level)
 	{
@@ -104,7 +106,7 @@ void pioman_init(int*argc, char**argv)
 	    if(level != PIOM_TOPO_NONE)
 		{
 		    piom_parameters.idle_level = level;
-		    fprintf(stderr, "# pioman: custom PIOM_IDLE_LEVEL = %s (%d)\n", s_idle_level, piom_parameters.idle_level);
+		    PIOM_DISP("custom PIOM_IDLE_LEVEL = %s (%d)\n", s_idle_level, piom_parameters.idle_level);
 		}
 	}
     if(s_idle_distrib)
@@ -118,13 +120,13 @@ void pioman_init(int*argc, char**argv)
 	    if(distrib != PIOM_BIND_DISTRIB_NONE)
 		{
 		    piom_parameters.idle_distrib = distrib;
-		    fprintf(stderr, "# pioman: custom PIOM_IDLE_DISTRIB = %s\n", s_idle_distrib);
+		    PIOM_DISP("custom PIOM_IDLE_DISTRIB = %s\n", s_idle_distrib);
 		}
 	}
     if(s_timer_period)
 	{
 	    piom_parameters.timer_period = atoi(s_timer_period);
-	    fprintf(stderr, "# pioman: custom PIOM_TIMER_PERIOD = %d\n", piom_parameters.timer_period);
+	    PIOM_DISP("custom PIOM_TIMER_PERIOD = %d\n", piom_parameters.timer_period);
 	}
     if(piom_parameters.enable_progression == 0)
 	{
@@ -135,7 +137,7 @@ void pioman_init(int*argc, char**argv)
     if(s_spare_lwp)
 	{
 	    piom_parameters.spare_lwp = atoi(s_spare_lwp);
-	    fprintf(stderr, "# pioman: custom PIOM_SPARE_LWP = %d\n", piom_parameters.spare_lwp);
+	    PIOM_DISP("custom PIOM_SPARE_LWP = %d\n", piom_parameters.spare_lwp);
 	}
 
 #ifdef PIOMAN_MARCEL

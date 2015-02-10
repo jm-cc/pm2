@@ -82,8 +82,6 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
 
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 {
-  PIOM_LOG_IN();
-
   /* First, let's poll for a while before blocking */
   tbx_tick_t t1;
   int busy_wait = 1;
@@ -124,8 +122,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
   marcel_sched_setparam(PIOM_SELF, &sched_param);
   if(ma_in_atomic())
     {
-      fprintf(stderr, "pioman: FATAL- trying to wait while in scheduling hook.\n");
-      abort();
+      PIOM_FATAL("trying to wait while in scheduling hook.\n");
     }
 #elif defined (PIOMAN_PTHREAD)
   struct sched_param old_param;
@@ -135,8 +132,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
   int rc = pthread_setschedprio(pthread_self(), prio);
   if(rc != 0)
     {
-      fprintf(stderr, "# pioman: FATAL- cannot set sched prio %d.\n", prio);
-      abort();
+      PIOM_FATAL("cannot set sched prio %d.\n", prio);
     }
 #endif /* PIOMAN_MARCEL */
 
@@ -150,16 +146,12 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 #elif defined (PIOMAN_PTHREAD)
   pthread_setschedprio(pthread_self(), old_param.sched_priority);
 #endif /* PIOMAN_MARCEL */
-  
-  PIOM_LOG_OUT();
 }
 
 __tbx_inline__ void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
 {
-  PIOM_LOG_IN();
   __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
   piom_sem_V(&cond->sem);
-  PIOM_LOG_OUT();
 }
 
 __tbx_inline__ int piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask)

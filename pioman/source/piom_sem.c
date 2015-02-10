@@ -94,7 +94,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 	{
 	  if(piom_cond_test(cond, mask))
 	    {
-	        /* consume the semaphore */
+	      /* consume the semaphore */
 	      piom_sem_P(&cond->sem);
 	      return;
 	    }

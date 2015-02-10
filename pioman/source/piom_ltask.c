@@ -481,6 +481,14 @@ void piom_init_ltasks(void)
 		    for (i = 0; i < nb; i++)
 			{
 			    o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, i);
+			    if((o != NULL) &&
+			       (o->parent != NULL) &&
+			       hwloc_bitmap_isequal(o->cpuset, o->parent->cpuset))
+				{
+				    fprintf(stderr, "# pioman: no queue on level %s- same cpuset as %s.\n",
+					    hwloc_obj_type_string(o->type), hwloc_obj_type_string(o->parent->type));
+				    continue;
+				}
 			    /* TODO- allocate memory on given obj */
 			    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof(piom_ltask_queue_t));
 			    piom_ltask_queue_init(queue, o);
@@ -522,7 +530,6 @@ void piom_init_ltasks(void)
 			    piom_trace_queue_new(&queue->trace_info);
 			    piom_trace_queue_state(&queue->trace_info, PIOM_TRACE_STATE_NONE);
 #endif /* PIOMAN_TRACE */
-			    
 			}
 		}
 	}

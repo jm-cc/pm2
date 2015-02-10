@@ -181,7 +181,9 @@ static void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t bind
     __piom_ltask.n_queues++;
     char s_binding[128];
     hwloc_obj_snprintf(s_binding, sizeof(s_binding), __piom_ltask.topology, queue->binding, "#", 0);
+#ifdef DEBUG
     fprintf(stderr, "# pioman: queue #%d on %s\n", __piom_ltask.n_queues, s_binding);
+#endif /* DEBUG */
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
 
@@ -485,8 +487,10 @@ void piom_init_ltasks(void)
 			       (o->parent != NULL) &&
 			       hwloc_bitmap_isequal(o->cpuset, o->parent->cpuset))
 				{
+#ifdef DEBUG
 				    fprintf(stderr, "# pioman: no queue on level %s- same cpuset as %s.\n",
 					    hwloc_obj_type_string(o->type), hwloc_obj_type_string(o->parent->type));
+#endif /* DEBUG */
 				    continue;
 				}
 			    /* TODO- allocate memory on given obj */

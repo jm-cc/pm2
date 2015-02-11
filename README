@@ -1,0 +1,13 @@
+#
+README for PM2
+==============
+
+PM2 is an umbrella software suite for high-performance runtime
+systems. Modules may be installed and used together or separately.
+
+For installation instructions, please see README in the directory for
+the module you are interested in.
+
+For more information, please see PM2 homepage:
+  http://pm2.gforge.inria.fr/
+

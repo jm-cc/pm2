@@ -27,7 +27,7 @@ located in pm2/scripts/pm2-build-packages using a given or a custom
 configuration file, e.g.:
 
      % cd pm2/scripts
-     % ./pm2-build-packages ./example-nmad+pioman+pthread.conf --prefix=$HOME/soft/x86_64
+     % ./pm2-build-packages ./bench-nmad+pioman+pthread.conf --prefix=$HOME/soft/x86_64
 
 
 Manual build (not recommended). For each module:

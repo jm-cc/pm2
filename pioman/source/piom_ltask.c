@@ -56,12 +56,6 @@ typedef struct piom_ltask_queue
     volatile piom_ltask_queue_state_t state;
     /** where this queue is located */
     piom_topo_obj_t                   binding;
-    /** parent queue in the tree */
-    struct piom_ltask_queue          *parent;
-    /** frequency for parent polling */
-    int                               skip_factor;
-    /** number of times scheduling was skipped, to reduce contention */
-    int skip;
     /* context for trace subsystem */
     struct piom_trace_info_s          trace_info;
 } piom_ltask_queue_t;
@@ -149,7 +143,7 @@ static inline piom_ltask_queue_t*__piom_get_queue(piom_topo_obj_t obj)
 {
     if(obj == NULL)
 	{
-	    obj = piom_topo_full;
+	    obj = piom_ltask_current_obj();
 	}
 #if defined(PIOMAN_TOPOLOGY_HWLOC)
     while(obj != NULL && obj->userdata == NULL)
@@ -174,7 +168,6 @@ static void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t bind
     piom_ltask_lfqueue_init(&queue->ltask_queue);
     piom_ltask_lfqueue_init(&queue->submit_queue);
     queue->masked = 0;
-    queue->parent = NULL;
     queue->binding = binding;
     __piom_ltask.all_queues = realloc(__piom_ltask.all_queues, sizeof(struct piom_ltask_queue*)*(__piom_ltask.n_queues + 1));
     __piom_ltask.all_queues[__piom_ltask.n_queues] = queue;
@@ -359,7 +352,7 @@ static void*__piom_ltask_timer_worker(void*_dummy)
 	{
 	    PIOM_WARN("timer thread could not get priority %d.\n", max_prio);
 	}
-    piom_ltask_queue_t*global_queue = __piom_get_queue(piom_topo_full);
+    piom_ltask_queue_t*global_queue = __piom_get_queue(piom_ltask_current_obj());
     while(global_queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    struct timespec t = { .tv_sec = 0, .tv_nsec = timeslice_nsec };
@@ -470,35 +463,21 @@ void piom_init_ltasks(void)
     hwloc_topology_init(&__piom_ltask.topology);
     hwloc_topology_load(__piom_ltask.topology);
     const int depth = hwloc_topology_get_depth(__piom_ltask.topology);
-    int d, i;
+    const hwloc_obj_type_t binding_level = piom_parameters.idle_level;
+    int d;
     for(d = 0; d < depth; d++)
 	{
 	    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, 0);
-	    if(o->type == HWLOC_OBJ_MACHINE ||
-	       o->type == HWLOC_OBJ_NODE ||
-	       o->type == HWLOC_OBJ_SOCKET )
+	    if(o->type == binding_level)
 		{
 		    const int nb = hwloc_get_nbobjs_by_depth(__piom_ltask.topology, d);
+		    int i;
 		    for (i = 0; i < nb; i++)
 			{
 			    o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, i);
-			    if((o != NULL) &&
-			       (o->parent != NULL) &&
-			       hwloc_bitmap_isequal(o->cpuset, o->parent->cpuset))
-				{
-				    PIOM_DISP("no queue on level %s- same cpuset as %s.\n",
-					    hwloc_obj_type_string(o->type), hwloc_obj_type_string(o->parent->type));
-				    continue;
-				}
 			    /* TODO- allocate memory on given obj */
 			    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof(piom_ltask_queue_t));
 			    piom_ltask_queue_init(queue, o);
-			    queue->parent = (o->parent == NULL) ? NULL : __piom_get_queue(o->parent);
-			    queue->skip_factor =
-				(o->type == HWLOC_OBJ_CORE)   ? 1 :
-				(o->type == HWLOC_OBJ_SOCKET) ? 2 :
-				(o->type == HWLOC_OBJ_NODE)   ? 8 :
-				4;
 			    o->userdata = queue;
 #ifdef PIOMAN_TRACE
 			    char cont_name[32];
@@ -724,12 +703,16 @@ void piom_ltask_schedule(int point)
 			{
 			    piom_ltask_queue_t*queue = __piom_ltask.all_queues[i];
 			    if(queue == local_queue)
-				piom_ltask_queue_schedule(queue, 1);
+				{
+				    piom_ltask_queue_schedule(queue, 1);
+				}
 			    else
 				{
+				    /*
 				    queue->skip++;
 				    if(queue->skip % queue->skip_factor == 0)
-					piom_ltask_queue_schedule(queue, 1);
+				    */
+				    piom_ltask_queue_schedule(queue, 1);
 				}
 			}
 		}
@@ -747,20 +730,7 @@ void piom_ltask_schedule(int point)
 		{
 		    /* other points (idle, forced)- poll local queue and ancestors */
 		    piom_ltask_queue_t*queue = __piom_get_queue(piom_ltask_current_obj());
-		    while(queue != NULL)
-			{
-			    piom_ltask_queue_schedule(queue, 1);
-			    if(queue->parent != NULL)
-				{
-				    queue->skip++;
-				    if(queue->skip % queue->skip_factor == 0)
-					queue = queue->parent;
-				    else
-					queue = NULL;
-				}
-			    else
-				queue = NULL;
-			}
+		    piom_ltask_queue_schedule(queue, 1);
 		}
 	}
 }

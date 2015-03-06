@@ -23,8 +23,8 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 	.busy_wait_usec     = 10,
 	.busy_wait_granularity = 100,
 	.enable_progression = 1,
+	.binding_level      = PIOM_TOPO_SOCKET,
 	.idle_granularity   = 20,
-	.idle_level         = PIOM_TOPO_SOCKET,
 	.idle_distrib       = PIOM_BIND_DISTRIB_ALL,
 	.timer_period       = 4000,
 	.spare_lwp          = 0
@@ -69,8 +69,8 @@ void pioman_init(int*argc, char**argv)
     const char*s_busy_wait_usec        = getenv("PIOM_BUSY_WAIT_USEC");
     const char*s_busy_wait_granularity = getenv("PIOM_BUSY_WAIT_GRANULARITY");
     const char*s_enable_progression    = getenv("PIOM_ENABLE_PROGRESSION");
+    const char*s_binding_level         = getenv("PIOM_BINDING_LEVEL");
     const char*s_idle_granularity      = getenv("PIOM_IDLE_GRANULARITY");
-    const char*s_idle_level            = getenv("PIOM_IDLE_LEVEL");
     const char*s_idle_distrib          = getenv("PIOM_IDLE_DISTRIB");
     const char*s_timer_period          = getenv("PIOM_TIMER_PERIOD");
     const char*s_spare_lwp             = getenv("PIOM_SPARE_LWP");
@@ -94,19 +94,19 @@ void pioman_init(int*argc, char**argv)
 	    piom_parameters.idle_granularity = atoi(s_idle_granularity);
 	    PIOM_DISP("custom PIOM_IDLE_GRANULARITY = %d\n", piom_parameters.idle_granularity);
 	}
-    if(s_idle_level)
+    if(s_binding_level)
 	{
 	    enum piom_topo_level_e level = 
-		(strcmp(s_idle_level, "machine") == 0) ? PIOM_TOPO_MACHINE :
-		(strcmp(s_idle_level, "node")    == 0) ? PIOM_TOPO_NODE :
-		(strcmp(s_idle_level, "socket")  == 0) ? PIOM_TOPO_SOCKET :
-		(strcmp(s_idle_level, "core")    == 0) ? PIOM_TOPO_CORE :
-		(strcmp(s_idle_level, "pu")      == 0) ? PIOM_TOPO_PU :
+		(strcmp(s_binding_level, "machine") == 0) ? PIOM_TOPO_MACHINE :
+		(strcmp(s_binding_level, "node")    == 0) ? PIOM_TOPO_NODE :
+		(strcmp(s_binding_level, "socket")  == 0) ? PIOM_TOPO_SOCKET :
+		(strcmp(s_binding_level, "core")    == 0) ? PIOM_TOPO_CORE :
+		(strcmp(s_binding_level, "pu")      == 0) ? PIOM_TOPO_PU :
 		PIOM_TOPO_NONE;
 	    if(level != PIOM_TOPO_NONE)
 		{
-		    piom_parameters.idle_level = level;
-		    PIOM_DISP("custom PIOM_IDLE_LEVEL = %s (%d)\n", s_idle_level, piom_parameters.idle_level);
+		    piom_parameters.binding_level = level;
+		    PIOM_DISP("custom PIOM_BINDING_LEVEL = %s (%d)\n", s_binding_level, piom_parameters.binding_level);
 		}
 	}
     if(s_idle_distrib)

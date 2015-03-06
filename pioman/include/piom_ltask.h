@@ -223,8 +223,6 @@ extern void piom_ltask_mask(struct piom_ltask *ltask);
 /** re-enable a previously masked ltask */
 extern void piom_ltask_unmask(struct piom_ltask *ltask);
 
-extern piom_topo_obj_t piom_get_parent_obj(piom_topo_obj_t obj, enum piom_topo_level_e level);
-
 /** @} */
 
 #endif /* PIOM_LTASK_H */

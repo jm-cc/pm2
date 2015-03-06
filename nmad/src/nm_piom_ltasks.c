@@ -26,14 +26,12 @@ struct nm_ltask_policy_s
       NM_POLICY_ANY,      /**< anywhere, no policy */
       NM_POLICY_CUSTOM    /**< custom location, given by user */
     } location;
-  enum piom_topo_level_e level;
   int custom;
 };
 
 static struct nm_ltask_policy_s ltask_policy =
   {
     .location = NM_POLICY_NONE,
-    .level    = PIOM_TOPO_NONE,
     .custom   = -1
   };
 
@@ -41,7 +39,6 @@ static struct nm_ltask_policy_s ltask_policy =
 void nm_ltask_set_policy(void)
 {
   const char*policy = getenv("PIOM_BINDING_POLICY");
-  const char*level = getenv("PIOM_BINDING_LEVEL");
   if(!policy)
     {
       const char*padico_host_count = getenv("PADICO_HOST_COUNT");
@@ -74,39 +71,6 @@ void nm_ltask_set_policy(void)
 	  padico_fatal("nmad: unknown pioman binding policy %s.\n", policy);
 	}
     }
-  if(!level)
-    {
-      ltask_policy.level = PIOM_TOPO_SOCKET;
-    }
-  else
-    {
-      NM_DISPF("# nmad: set pioman custom binding level = %s\n", level);
-      if(strcmp(level, "machine") == 0)
-	{
-	  ltask_policy.level = PIOM_TOPO_MACHINE;
-	}
-      else if(strcmp(level, "node") == 0)
-	{
-	  ltask_policy.level = PIOM_TOPO_NODE;
-	}
-      else if(strcmp(level, "socket") == 0)
-	{
-	  ltask_policy.level = PIOM_TOPO_SOCKET;
-	}
-      else if(strcmp(level, "core") == 0)
-	{
-	  ltask_policy.level = PIOM_TOPO_CORE;
-	}
-      else if(strcmp(level, "pu") == 0)
-	{
-	  ltask_policy.level = PIOM_TOPO_PU;
-	}
-      else
-	{
-	  padico_fatal("nmad: unknown pioman binding level %s.\n", level);
-	}
-    }
-  return ;
 }
 
 static piom_topo_obj_t nm_piom_driver_binding(struct nm_drv*p_drv)
@@ -116,16 +80,16 @@ static piom_topo_obj_t nm_piom_driver_binding(struct nm_drv*p_drv)
   hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
   if(cpuset != NULL)
     {
+      char s_binding[64];
       hwloc_obj_t o = hwloc_get_obj_covering_cpuset(piom_ltask_topology(), cpuset);
       assert(o != NULL);
-      binding = piom_get_parent_obj(o, ltask_policy.level);
+      binding = o;
+      hwloc_obj_snprintf(s_binding, sizeof(s_binding), piom_ltask_topology(), binding, "#", 0);
+      NM_DISPF("# nmad: network %s binding: %s.\n", p_drv->assembly->name, s_binding);
     }
   if(binding == NULL)
     {
-      char s_binding[64];
-      binding = piom_get_parent_obj(piom_ltask_current_obj(), ltask_policy.level);
-      hwloc_obj_snprintf(s_binding, sizeof(s_binding), piom_ltask_topology(), binding, "#", 0);
-      NM_DISPF("# nmad: network %s has no preferred location; binding to current location %s.\n", p_drv->assembly->name, s_binding);
+      binding = NULL;
     }
 #else
   binding = piom_topo_full;
@@ -141,7 +105,7 @@ static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
       switch(ltask_policy.location)
 	{
 	case NM_POLICY_APP:
-	  p_drv->ltask_binding = piom_get_parent_obj(piom_ltask_current_obj(), ltask_policy.level);
+	  p_drv->ltask_binding = piom_ltask_current_obj();
 	  break;
 	  
 	case NM_POLICY_DEV:
@@ -149,7 +113,7 @@ static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
 	  break;
 	  
 	case NM_POLICY_ANY:
-	  p_drv->ltask_binding = piom_topo_full;
+	  p_drv->ltask_binding = NULL;
 	  break;
 	  
 	case NM_POLICY_CUSTOM:

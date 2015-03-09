@@ -92,8 +92,7 @@ typedef int (*piom_ltask_func_t)(void*arg);
 
 struct piom_ltask
 {
-    volatile piom_ltask_state_t state; /**< current state of ltask (bitmask) */
-    volatile int masked;               /**< temporarily disable polling */
+    piom_ltask_state_t state;          /**< current state of ltask (bitmask) */
     piom_ltask_func_t func_ptr;        /**< function used for polling */
     void *data_ptr;                    /**< user-supplied pointer given to polling function */
     piom_ltask_option_t options;       /**< special options */
@@ -133,28 +132,36 @@ extern void piom_ltask_wait(struct piom_ltask *task);
  */
 extern void piom_ltask_cancel(struct piom_ltask*task);
 
-
-static inline void piom_ltask_state_set(struct piom_ltask*ltask, piom_ltask_state_t state)
+/** sets a given bit in a task state.
+ * @return the new state
+ */
+static inline piom_ltask_state_t piom_ltask_state_set(struct piom_ltask*ltask, piom_ltask_state_t state)
 {
 #ifdef PIOMAN_MULTITHREAD
-    __sync_fetch_and_or(&ltask->state, state);
+    return __sync_or_and_fetch(&ltask->state, state);
 #else /* PIOMAN_MULTITHREAD */
     ltask->state |= state;
+    return ltask->state;
 #endif /* PIOMAN_MULTITHREAD */
 }
-static inline void piom_ltask_state_unset(struct piom_ltask*ltask, piom_ltask_state_t state)
+/** unsets a given bit in a task state.
+ * @return the new state
+ */
+static inline piom_ltask_state_t piom_ltask_state_unset(struct piom_ltask*ltask, piom_ltask_state_t state)
 {
 #ifdef PIOMAN_MULTITHREAD
-    __sync_fetch_and_and(&ltask->state, ~state);
+    return __sync_and_and_fetch(&ltask->state, ~state);
 #else /* PIOMAN_MULTITHREAD */
     ltask->state &= ~state;
+    return ltask->state;
 #endif /* PIOMAN_MULTITHREAD */
 }
+/** test a given bit in a task state.
+ */
 static inline int piom_ltask_state_test(struct piom_ltask*ltask, piom_ltask_state_t state)
 {
     return ((ltask->state & state) != 0);
 }
-
 
 /** Notify task completion. */
 static inline void piom_ltask_completed(struct piom_ltask *task)
@@ -166,7 +173,7 @@ static inline void piom_ltask_completed(struct piom_ltask *task)
 	}
 }
 
-/**< Notify task destruction, if option DESTROY was set. */
+/** Notify task destruction, if option DESTROY was set. */
 static inline void piom_ltask_destroy(struct piom_ltask*ltask)
 {
     assert((ltask->state & PIOM_LTASK_STATE_SCHEDULED) || (ltask->state & PIOM_LTASK_STATE_BLOCKED));
@@ -184,7 +191,6 @@ static inline void piom_ltask_create(struct piom_ltask*task,
 				     piom_ltask_func_t func_ptr, void*data_ptr,
 				     piom_ltask_option_t options)
 {
-    task->masked = 0;
     task->func_ptr = func_ptr;
     task->data_ptr = data_ptr;
     task->blocking_func = NULL;

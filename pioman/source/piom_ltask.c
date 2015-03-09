@@ -212,22 +212,14 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 	    if(task)
 		{
 		    piom_trace_queue_state(&queue->trace_info, PIOM_TRACE_STATE_INIT);
-		    if(task->masked)
-			{
-			    /* re-submit to poll later when task will be unmasked  */
-			    again = 1;
-			    assert(task->state != PIOM_LTASK_STATE_NONE);
-			    assert(task->state != PIOM_LTASK_STATE_DESTROYED);
-			}
-		    else if(task->state == PIOM_LTASK_STATE_READY)
+		    const int prestate = piom_ltask_state_set(task, PIOM_LTASK_STATE_SCHEDULED);
+		    if(prestate & PIOM_LTASK_STATE_READY)
 			{
 			    /* wait is pending: poll */
-			    piom_ltask_state_set(task, PIOM_LTASK_STATE_SCHEDULED);
 			    piom_trace_queue_state(&queue->trace_info, PIOM_TRACE_STATE_POLL);
 			    piom_tasklet_mask();
 			    const int options = task->options;
 			    (*task->func_ptr)(task->data_ptr);
-			    const int state = task->state;
 			    if(options & PIOM_LTASK_OPTION_DESTROY)
 				{
 				    /* ltask was destroyed by handler */
@@ -235,16 +227,16 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 				    piom_tasklet_unmask();
 				    success = 1;
 				}
-			    else if((options & PIOM_LTASK_OPTION_REPEAT) && !(state & PIOM_LTASK_STATE_SUCCESS))
+			    else if((options & PIOM_LTASK_OPTION_REPEAT) && !(task->state & PIOM_LTASK_STATE_SUCCESS))
 				{
-				    piom_ltask_state_unset(task, PIOM_LTASK_STATE_SCHEDULED);
 				    piom_tasklet_unmask();
 				    /* If another thread is currently stopping the queue don't repost the task */
+				    piom_ltask_state_unset(task, PIOM_LTASK_STATE_SCHEDULED);
 				    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
 					{
 					    again = 1;
 					    assert(task->state != PIOM_LTASK_STATE_NONE);
-					    assert(task->state != PIOM_LTASK_STATE_DESTROYED);
+					    assert(!(task->state & PIOM_LTASK_STATE_DESTROYED));
 					    if(options & PIOM_LTASK_OPTION_BLOCKING)
 						{
 						    struct timespec t;
@@ -275,15 +267,16 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 				    success = 1;
 				}
 			} 
-		    else if(piom_ltask_state_test(task, PIOM_LTASK_STATE_SUCCESS) ||
-			    piom_ltask_state_test(task, PIOM_LTASK_STATE_CANCELLED))
+		    else if((prestate & PIOM_LTASK_STATE_SUCCESS) ||
+			    (prestate & PIOM_LTASK_STATE_CANCELLED))
 			{
 			    success = 1;
+			    piom_ltask_state_unset(task, PIOM_LTASK_STATE_SCHEDULED);
 			    piom_ltask_state_set(task, PIOM_LTASK_STATE_TERMINATED);
 			}
 		    else
 			{
-			    PIOM_FATAL("wrong state %x for scheduled ltask.\n", task->state);
+			    PIOM_FATAL("wrong state 0x%x for scheduled ltask.\n", prestate);
 			}
 		    piom_trace_queue_state(&queue->trace_info, PIOM_TRACE_STATE_NONE);
 		    if(again)
@@ -292,7 +285,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 			    while(rc != 0)
 				{
 				    assert(task->state != PIOM_LTASK_STATE_NONE);
-				    assert(task->state != PIOM_LTASK_STATE_DESTROYED);
+				    assert(!(task->state & PIOM_LTASK_STATE_DESTROYED));
 				    rc = piom_ltask_lfqueue_enqueue_single_writer(&queue->ltask_queue, task);
 				}
 			}
@@ -651,11 +644,11 @@ static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_que
     task->queue = queue;
     /* wait until a task is removed from the list */
     int rc = -1;
-    while(rc != 0)
+    do
 	{
-	    assert(task->state != PIOM_LTASK_STATE_NONE); /* XXX */
 	    rc = piom_ltask_lfqueue_enqueue(&queue->submit_queue, task);
 	}
+    while(rc != 0);
     piom_trace_queue_var(&queue->trace_info, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
 }
 
@@ -680,11 +673,10 @@ static inline int __piom_ltask_submit_in_lwp(struct piom_ltask*task)
 
 void piom_ltask_submit(struct piom_ltask *task)
 {
-    piom_ltask_queue_t *queue;
+    assert(task != NULL);
     assert(task->state == PIOM_LTASK_STATE_NONE || (task->state & PIOM_LTASK_STATE_TERMINATED) );
     task->state = PIOM_LTASK_STATE_NONE;
-    queue = __piom_get_queue(task->binding);
-    assert(task != NULL);
+    piom_ltask_queue_t*queue = __piom_get_queue(task->binding);
     assert(queue != NULL);
     piom_trace_queue_event(&queue->trace_info, PIOM_TRACE_EVENT_SUBMIT, task);
     __piom_ltask_submit_in_queue(task, queue);
@@ -712,7 +704,7 @@ void piom_ltask_schedule(int point)
 				    queue->skip++;
 				    if(queue->skip % queue->skip_factor == 0)
 				    */
-				    piom_ltask_queue_schedule(queue, 1);
+				    piom_ltask_queue_schedule(queue, 0);
 				}
 			}
 		}
@@ -728,7 +720,7 @@ void piom_ltask_schedule(int point)
 		}
 	    else
 		{
-		    /* other points (idle, forced)- poll local queue and ancestors */
+		    /* other points (idle, forced)- poll local queue */
 		    piom_ltask_queue_t*queue = __piom_get_queue(piom_ltask_current_obj());
 		    piom_ltask_queue_schedule(queue, 1);
 		}
@@ -762,31 +754,28 @@ void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int
 
 void piom_ltask_mask(struct piom_ltask *task)
 {
-    __sync_fetch_and_add(&task->masked, 1);
+    piom_ltask_state_unset(task, PIOM_LTASK_STATE_READY);
     while(piom_ltask_state_test(task, PIOM_LTASK_STATE_SCHEDULED))
 	{
-	    piom_ltask_schedule(PIOM_POLL_POINT_BUSY);
+	    sched_yield();
 	}
 }
 
 void piom_ltask_unmask(struct piom_ltask *task)
 {
-    assert(task->masked > 0);
-    __sync_fetch_and_sub(&task->masked, 1);
-    assert(task->masked >= 0);
+    assert(piom_ltask_state_test(task, PIOM_LTASK_STATE_READY) == 0);
+    piom_ltask_state_set(task, PIOM_LTASK_STATE_READY);
 }
 
 void piom_ltask_cancel(struct piom_ltask*ltask)
 {
     if(ltask->state == PIOM_LTASK_STATE_NONE)
 	return;
-    __sync_fetch_and_add(&ltask->masked, 1);
-    piom_ltask_state_set(ltask, PIOM_LTASK_STATE_CANCELLED);
     piom_ltask_state_unset(ltask, PIOM_LTASK_STATE_READY);
+    piom_ltask_state_set(ltask, PIOM_LTASK_STATE_CANCELLED);
     struct piom_ltask_queue*queue = ltask->queue;
     if(queue)
 	{
-	    __sync_fetch_and_sub(&ltask->masked, 1);
 	    while(!piom_ltask_state_test(ltask, PIOM_LTASK_STATE_TERMINATED))
 		{
 		    piom_ltask_queue_schedule(queue, 0);

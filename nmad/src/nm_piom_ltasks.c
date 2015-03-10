@@ -23,16 +23,13 @@ struct nm_ltask_policy_s
       NM_POLICY_NONE = 0, /**< not initialized */
       NM_POLICY_APP,      /**< near the application (current location) */
       NM_POLICY_DEV,      /**< near the network device */
-      NM_POLICY_ANY,      /**< anywhere, no policy */
-      NM_POLICY_CUSTOM    /**< custom location, given by user */
+      NM_POLICY_ANY       /**< anywhere, no policy */
     } location;
-  int custom;
 };
 
 static struct nm_ltask_policy_s ltask_policy =
   {
-    .location = NM_POLICY_NONE,
-    .custom   = -1
+    .location = NM_POLICY_NONE
   };
 
 /** retrieve the binding policy */
@@ -43,33 +40,26 @@ void nm_ltask_set_policy(void)
     {
       const char*padico_host_count = getenv("PADICO_HOST_COUNT");
       int mcount = padico_host_count ? atoi(padico_host_count) : 1;
-      ltask_policy.location = (mcount > 1) ? NM_POLICY_APP : NM_POLICY_DEV;
-      NM_DISPF("# nmad: default pioman binding policy (%d process/node).\n", mcount);
+      policy = (mcount > 1) ? "app" : "dev";
+      NM_DISPF("# nmad: use default pioman binding policy for %d process/node.\n", mcount);
+    }
+
+  NM_DISPF("# nmad: set pioman binding policy = %s\n", policy);
+  if(strcmp(policy, "app") == 0)
+    {
+      ltask_policy.location = NM_POLICY_APP;
+    }
+  else if(strcmp(policy, "dev") == 0)
+    {
+      ltask_policy.location = NM_POLICY_DEV;
+    }
+  else if(strcmp(policy, "any") == 0)
+    {
+      ltask_policy.location = NM_POLICY_ANY;
     }
   else
     {
-      NM_DISPF("# nmad: set pioman binding policy = %s\n", policy);
-      if(strcmp(policy, "app") == 0)
-	{
-	  ltask_policy.location = NM_POLICY_APP;
-	}
-      else if(strcmp(policy, "dev") == 0)
-	{
-	  ltask_policy.location = NM_POLICY_DEV;
-	}
-      else if(strcmp(policy, "any") == 0)
-	{
-	  ltask_policy.location = NM_POLICY_ANY;
-	}
-      else if(strcmp(policy, "custom") == 0)
-	{
-	  ltask_policy.location = NM_POLICY_CUSTOM;
-	  padico_fatal("nmad: pioman custom policy not supported yet.\n");
-	}
-      else
-	{
-	  padico_fatal("nmad: unknown pioman binding policy %s.\n", policy);
-	}
+      padico_fatal("nmad: unknown pioman binding policy %s.\n", policy);
     }
 }
 
@@ -101,7 +91,7 @@ static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
 {
   if(p_drv->ltask_binding == NULL)
     {
-      p_drv->ltask_binding = piom_topo_full;
+      p_drv->ltask_binding = NULL;
       switch(ltask_policy.location)
 	{
 	case NM_POLICY_APP:
@@ -116,9 +106,6 @@ static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
 	  p_drv->ltask_binding = NULL;
 	  break;
 	  
-	case NM_POLICY_CUSTOM:
-	  /* TODO */
-	  break;
 	default:
 	  padico_fatal("nmad: pioman binding policy not defined.\n");
 	  break;

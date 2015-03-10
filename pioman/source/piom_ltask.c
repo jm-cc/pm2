@@ -150,7 +150,19 @@ static inline piom_ltask_queue_t*__piom_get_queue(piom_topo_obj_t obj)
 	{
 	    obj = obj->parent;
 	}
-    return (obj != NULL) ? obj->userdata : NULL;
+    if(obj != NULL)
+	{
+	    return obj->userdata;
+	}
+    else
+	{
+	    obj = piom_ltask_current_obj();
+	    while(obj != NULL && obj->userdata == NULL)
+		{
+		    obj = obj->parent;
+		}
+	    return obj->userdata;
+	}
 #elif defined(PIOMAN_TOPOLOGY_MARCEL)
     return obj->ltask_data;
 #elif defined(PIOMAN_TOPOLOGY_NONE)

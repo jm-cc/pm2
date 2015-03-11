@@ -17,18 +17,12 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-
 #include <nm_trace.h>
 #include <nm_private.h>
 #include <Padico/Module.h>
 
-static int nm_strat_decision_tree_load(void);
 
-PADICO_MODULE_BUILTIN(NewMad_Strategy_decision_tree, &nm_strat_decision_tree_load, NULL, NULL);
-
-
-/* Components structures:
- */
+/* ********************************************************* */
 
 static int  strat_decision_tree_todo(void*, struct nm_gate*);/* todo: s/nm_gate/nm_pack/ ? */
 static void strat_decision_tree_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
@@ -55,6 +49,18 @@ static const struct puk_adapter_driver_s nm_strat_decision_tree_adapter_driver =
     .destroy     = &strat_decision_tree_destroy
   };
 
+/* ********************************************************* */
+
+PADICO_MODULE_COMPONENT(NewMad_Strategy_decision_tree,
+			puk_component_declare("NewMad_Strategy_decision_tree",
+					      puk_component_provides("PadicoAdapter", "adapter", &nm_strat_decision_tree_adapter_driver),
+					      puk_component_provides("NewMad_Strategy", "strat", &nm_strat_decision_tree_driver),
+					      puk_component_attr("nm_max_small", "16342"),
+					      puk_component_attr("nm_copy_on_send_threshold", "4096"))
+			);
+
+/* ********************************************************* */
+
 
 /** Per-gate status for strat instances
  */
@@ -66,16 +72,6 @@ struct nm_strat_decision_tree
   int nm_copy_on_send_threshold;
 };
 
-/** Component declaration */
-static int nm_strat_decision_tree_load(void)
-{
-  puk_component_declare("NewMad_Strategy_decision_tree",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_strat_decision_tree_adapter_driver),
-			puk_component_provides("NewMad_Strategy", "strat", &nm_strat_decision_tree_driver),
-			puk_component_attr("nm_max_small", "16342"),
-			puk_component_attr("nm_copy_on_send_threshold", "4096"));
-  return NM_ESUCCESS;
-}
 
 
 /** Initialize the gate storage for strategy.

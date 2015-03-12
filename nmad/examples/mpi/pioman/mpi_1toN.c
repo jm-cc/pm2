@@ -20,7 +20,7 @@
 #include <pthread.h>
 
 #define COUNT 100
-#define MAX_THREADS 256
+#define MAX_THREADS 32
 
 int peer = -1;
 

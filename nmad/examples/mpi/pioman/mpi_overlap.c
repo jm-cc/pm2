@@ -18,12 +18,13 @@
 #include <mpi.h>
 #include <tbx.h>
 
+#define MIN_LEN 1024
 #define MAX_LEN (8 * 1024 * 1024)
 #define MIN_COMPUTE 0
-#define MAX_COMPUTE 10000
+#define MAX_COMPUTE 5000
 //#define MIN_COMPUTE 500
 //#define MAX_COMPUTE 501
-#define COUNT 1000
+#define COUNT 10
 
 volatile double r = 1.0;
 
@@ -86,7 +87,7 @@ int main(int argc, char**argv)
   tbx_init(&argc, &argv);
 
   int len;
-  for(len = 1; len <= MAX_LEN; len *= 2)
+  for(len = MIN_LEN; len <= MAX_LEN; len = (len <= 0 ? 1 :(len * 2)))
     {
       int c;
       if(self == 0)

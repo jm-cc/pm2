@@ -99,6 +99,7 @@
 /* @} */
 
 /** @name For supported thread levels */
+/* @{ */
 #define MPI_THREAD_SINGLE	0
 #define MPI_THREAD_FUNNELED	1
 #define MPI_THREAD_SERIALIZED	2
@@ -110,6 +111,7 @@ typedef uintptr_t MPI_Aint;
 /** An info opaque object */
 typedef int MPI_Info;
 #define MPI_INFO_NULL       ((MPI_Info)0)
+/** offset for dynamically allocated info */
 #define _NM_MPI_INFO_OFFSET ((MPI_Info)1)
 #define MPI_MAX_INFO_KEY 255
 #define MPI_MAX_INFO_VAL 1024
@@ -146,7 +148,7 @@ typedef int MPI_Request;
  *  request handle.
  */
 #define MPI_REQUEST_NULL   ((MPI_Request)0)
-
+/** offset for dynamically allocated requests */
 #define _NM_MPI_REQUEST_OFFSET           1
 
 
@@ -159,7 +161,7 @@ typedef int MPI_Group;
 #define MPI_GROUP_NULL  ((MPI_Group)0)
 /** Predefined empty group */
 #define MPI_GROUP_EMPTY ((MPI_Group)1)
-
+/** offset for dynamically allocated groups */
 #define _NM_MPI_GROUP_OFFSET        2
 
 /* group and communicators comparison return value */

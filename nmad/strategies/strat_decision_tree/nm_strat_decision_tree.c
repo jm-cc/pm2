@@ -110,10 +110,10 @@ static void*strat_decision_tree_instanciate(puk_instance_t ai, puk_context_t con
 static void strat_decision_tree_destroy(void*_status)
 {
   struct nm_strat_decision_tree*status = _status;
-  char template[64] = "/tmp/nmad-decision-tree-XXXXXXXX";
+  char template[64] = "/tmp/nmad-decision-tree-XXXXXX";
   int fd = mkstemp(template);
   FILE*f = fdopen(fd, "w");
-  fprintf(stderr, "# strat_decision_tree- flushing %d samples to %s (%p)...\n", status->n_samples, template, f);
+  fprintf(stderr, "# strat_decision_tree- flushing %d samples to %s...\n", status->n_samples, template);
   fprintf(f, "# timestamp  nb_pw   size_outlist\n");
   int i;
   for(i = 0; i < status->n_samples; i++)
@@ -122,7 +122,6 @@ static void strat_decision_tree_destroy(void*_status)
       double t = TBX_TIMING_DELAY(status->time_orig, sample->timestamp);
       fprintf(f, "%f\t%d\t%ld\t  \n", t, sample->nb_pw, sample->size_outlist);
     }
-  fflush(f);
   fclose(f);
   close(fd);
   TBX_FREE(_status);

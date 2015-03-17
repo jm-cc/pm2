@@ -140,9 +140,10 @@ int mpi_finalize(void)
   nm_mpi_op_exit();
   nm_mpi_comm_exit();
   nm_mpi_request_exit();
-  nm_mpi_handle_errhandler_finalize(&nm_mpi_errhandlers);
-  nm_mpi_handle_info_finalize(&nm_mpi_infos);
+  nm_mpi_handle_errhandler_finalize(&nm_mpi_errhandlers, NULL);
+  nm_mpi_handle_info_finalize(&nm_mpi_infos, NULL);
   init_done = 0;
+  nm_launcher_exit();
   return err;
 }
 

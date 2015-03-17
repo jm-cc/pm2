@@ -326,8 +326,17 @@ NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_trave
 	nm_mpi_entry_##ENAME##_vect_push_back(&p_allocator->table, NULL); \
       }									\
   }									\
-  static void nm_mpi_handle_##ENAME##_finalize(struct nm_mpi_handle_##ENAME##_s*p_allocator) \
+  static void nm_mpi_handle_##ENAME##_finalize(struct nm_mpi_handle_##ENAME##_s*p_allocator, void(*destructor)(TYPE*)) \
   {									\
+    if(destructor != NULL)						\
+      {									\
+	nm_mpi_entry_##ENAME##_vect_itor_t i;				\
+	puk_vect_foreach(i, nm_mpi_entry_##ENAME, &p_allocator->table)	\
+	  {								\
+	    if(*i != NULL)						\
+	      (*destructor)(*i);					\
+	  }								\
+      }									\
     nm_mpi_entry_##ENAME##_vect_destroy(&p_allocator->table);		\
     puk_int_vect_delete(p_allocator->pool);				\
     ENAME##_allocator_delete(p_allocator->allocator);			\

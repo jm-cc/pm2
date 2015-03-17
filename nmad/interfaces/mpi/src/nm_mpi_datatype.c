@@ -133,7 +133,7 @@ void nm_mpi_datatype_init(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_exit(void)
 {
-  nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes);
+  nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes, NULL);
 }
 
 /* ********************************************************* */

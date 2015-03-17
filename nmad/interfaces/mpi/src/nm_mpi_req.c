@@ -52,7 +52,7 @@ void nm_mpi_request_init(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_request_exit(void)
 {
-  nm_mpi_handle_request_finalize(&nm_mpi_requests);
+  nm_mpi_handle_request_finalize(&nm_mpi_requests, &nm_mpi_request_free);
 }
 
 /* ********************************************************* */

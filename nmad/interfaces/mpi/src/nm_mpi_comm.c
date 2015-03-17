@@ -43,6 +43,10 @@ static struct nm_mpi_handle_communicator_s nm_mpi_communicators;
 static struct nm_mpi_handle_group_s nm_mpi_groups;
 static struct nm_mpi_handle_keyval_s nm_mpi_keyvals;
 
+static void nm_mpi_communicator_destroy(nm_mpi_communicator_t*p_comm);
+static void nm_mpi_group_destroy(nm_mpi_group_t*p_group);
+static void nm_mpi_keyval_destroy(struct nm_mpi_keyval_s*p_keyval);
+
 /* ********************************************************* */
 
 NM_MPI_ALIAS(MPI_Comm_size,             mpi_comm_size);
@@ -110,17 +114,9 @@ void nm_mpi_comm_init(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_comm_exit(void)
 {
-  nm_mpi_communicator_t*p_comm_world = nm_mpi_handle_communicator_get(&nm_mpi_communicators, MPI_COMM_WORLD);
-  nm_mpi_handle_communicator_free(&nm_mpi_communicators, p_comm_world);
-  nm_mpi_communicator_t*p_comm_self = nm_mpi_handle_communicator_get(&nm_mpi_communicators, MPI_COMM_SELF);
-  nm_mpi_handle_communicator_free(&nm_mpi_communicators, p_comm_self);
-  nm_mpi_handle_communicator_finalize(&nm_mpi_communicators);
-
-  nm_mpi_group_t*p_group_empty = nm_mpi_handle_group_get(&nm_mpi_groups, MPI_GROUP_EMPTY);
-  nm_mpi_handle_group_free(&nm_mpi_groups, p_group_empty);
-  nm_mpi_handle_group_finalize(&nm_mpi_groups);
-
-  nm_mpi_handle_keyval_finalize(&nm_mpi_keyvals);
+  nm_mpi_handle_communicator_finalize(&nm_mpi_communicators, &nm_mpi_communicator_destroy);
+  nm_mpi_handle_group_finalize(&nm_mpi_groups, &nm_mpi_group_destroy);
+  nm_mpi_handle_keyval_finalize(&nm_mpi_keyvals, &nm_mpi_keyval_destroy);
 }
 
 __PUK_SYM_INTERNAL
@@ -150,6 +146,36 @@ static inline nm_mpi_communicator_t*nm_mpi_communicator_alloc(nm_comm_t p_nm_com
   p_new_comm->p_errhandler = p_errhandler;
   p_new_comm->name = NULL;
   return p_new_comm;
+}
+
+static void nm_mpi_communicator_destroy(nm_mpi_communicator_t*p_comm)
+{
+  if(p_comm != NULL)
+    {
+      if(p_comm->name)
+	free(p_comm->name);
+      if(p_comm->attrs)
+	puk_hashtable_delete(p_comm->attrs);
+      nm_comm_destroy(p_comm->p_comm);
+      nm_mpi_handle_communicator_free(&nm_mpi_communicators, p_comm);
+    }
+}
+
+static void nm_mpi_group_destroy(nm_mpi_group_t*p_group)
+{
+  if(p_group != NULL)
+    {
+      nm_group_free(p_group->p_nm_group);
+      nm_mpi_handle_group_free(&nm_mpi_groups, p_group);
+    }
+}
+
+static void nm_mpi_keyval_destroy(struct nm_mpi_keyval_s*p_keyval)
+{
+  if(p_keyval != NULL)
+    {
+      nm_mpi_handle_keyval_free(&nm_mpi_keyvals, p_keyval);
+    }
 }
 
 /* ********************************************************* */
@@ -571,7 +597,7 @@ int mpi_comm_free(MPI_Comm *comm)
       ERROR("Communicator %d unknown\n", *comm);
       return MPI_ERR_OTHER;
     }
-  nm_mpi_handle_communicator_free(&nm_mpi_communicators, p_comm);
+  nm_mpi_communicator_destroy(p_comm);
   *comm = MPI_COMM_NULL;
   return MPI_SUCCESS;
 }
@@ -911,8 +937,7 @@ int mpi_group_free(MPI_Group*group)
   if(id != MPI_GROUP_NULL && id != MPI_GROUP_EMPTY)
     {
       nm_mpi_group_t*p_group = nm_mpi_handle_group_get(&nm_mpi_groups, id);
-      nm_group_free(p_group->p_nm_group);
-      nm_mpi_handle_group_free(&nm_mpi_groups, p_group);
+      nm_mpi_group_destroy(p_group);
     }
   *group = MPI_GROUP_NULL;
   return MPI_SUCCESS;

@@ -74,7 +74,7 @@ void nm_mpi_op_init(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_op_exit(void)
 {
-  nm_mpi_handle_operator_finalize(&nm_mpi_operators);
+  nm_mpi_handle_operator_finalize(&nm_mpi_operators, NULL);
 }
 
 __PUK_SYM_INTERNAL

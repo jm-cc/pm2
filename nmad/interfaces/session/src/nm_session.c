@@ -177,6 +177,7 @@ int nm_session_open(nm_session_t*pp_session, const char*label)
   struct nm_session_s*p_session = puk_hashtable_lookup(nm_session.sessions, &hash_code);
   if(p_session != NULL)
     {
+      *pp_session = NULL;
       return -NM_ENOTFOUND;
     }
   p_session = TBX_MALLOC(sizeof(struct nm_session_s));

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014 (see AUTHORS file)
+ * Copyright (C) 2014-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,26 +17,28 @@
 #include <nm_sendrecv_interface.h>
 #include <Padico/Puk.h>
 
+/** NewMadeleine communicator opaque type */
 typedef struct nm_comm_s*nm_comm_t;
 
 extern nm_comm_t nm_comm_world(void);
 
 extern nm_comm_t nm_comm_self(void);
 
-extern int nm_comm_size(nm_comm_t comm);
-
-extern int nm_comm_rank(nm_comm_t comm);
-
-extern nm_gate_t nm_comm_get_gate(nm_comm_t p_comm, int rank);
-
-extern int nm_comm_get_dest(nm_comm_t p_comm, nm_gate_t p_gate);
-
-extern nm_session_t nm_comm_get_session(nm_comm_t p_comm);
-
 extern nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group);
 
-extern void nm_comm_destroy(nm_comm_t p_comm);
-
-extern nm_group_t nm_comm_group(nm_comm_t comm);
+extern void      nm_comm_destroy(nm_comm_t p_comm);
 
 extern nm_comm_t nm_comm_dup(nm_comm_t comm);
+
+static inline int          nm_comm_size(nm_comm_t comm);
+
+static inline int          nm_comm_rank(nm_comm_t comm);
+
+static inline nm_gate_t    nm_comm_get_gate(nm_comm_t p_comm, int rank);
+
+static inline int          nm_comm_get_dest(nm_comm_t p_comm, nm_gate_t p_gate);
+
+static inline nm_session_t nm_comm_get_session(nm_comm_t p_comm);
+
+static inline nm_group_t   nm_comm_group(nm_comm_t comm);
+

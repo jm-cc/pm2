@@ -23,6 +23,7 @@
 #include "nm_group.h"
 #include "nm_comm.h"
 #include "nm_coll_ops.h"
+#include "nm_coll_inline.h"
 
 #endif /* NM_COLL_H */
 

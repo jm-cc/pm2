@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014 (see AUTHORS file)
+ * Copyright (C) 2014-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #include <Padico/Puk.h>
 #include "nm_coll_private.h"
 #include <nm_launcher.h>
+
 
 /* ********************************************************* */
 
@@ -51,16 +52,15 @@ nm_comm_t nm_comm_world(void)
 	}
       nm_session_t p_session = NULL;
       nm_launcher_get_session(&p_session);
-      nm_comm_t comm = malloc(sizeof(struct nm_comm_s));
-      comm->group = group;
-      comm->rank = nm_group_rank(group);
-      nm_session_open(&comm->p_session, "nm_comm_world");
-      nm_comm_commit(comm);
-      void*old = __sync_val_compare_and_swap(&world, NULL, comm);
+      nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
+      p_comm->group = group;
+      p_comm->rank = nm_group_rank(group);
+      nm_session_open(&p_comm->p_session, "nm_comm_world");
+      nm_comm_commit(p_comm);
+      void*old = __sync_val_compare_and_swap(&world, NULL, p_comm);
       if(old != NULL)
 	{
-	  nm_group_free(group);
-	  free(comm);
+	  nm_comm_destroy(p_comm);
 	}
     }
   return world;
@@ -77,60 +77,29 @@ nm_comm_t nm_comm_self(void)
       nm_launcher_get_gate(launcher_rank, &p_gate);
       nm_group_t group = nm_gate_vect_new();
       nm_gate_vect_push_back(group, p_gate);
-      nm_comm_t comm = malloc(sizeof(struct nm_comm_s));
-      comm->group = group;
-      comm->rank = nm_group_rank(group);
-      nm_session_open(&comm->p_session, "nm_comm_self");
-      nm_comm_commit(comm);
-      void*old = __sync_val_compare_and_swap(&self, NULL, comm);
+      nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
+      p_comm->group = group;
+      p_comm->rank = nm_group_rank(group);
+      nm_session_open(&p_comm->p_session, "nm_comm_self");
+      nm_comm_commit(p_comm);
+      void*old = __sync_val_compare_and_swap(&self, NULL, p_comm);
       if(old != NULL)
 	{
-	  nm_group_free(group);
-	  free(comm);
+	  nm_comm_destroy(p_comm);
 	}
     }
   return self;
 }
 
-int nm_comm_size(nm_comm_t comm)
+
+nm_comm_t nm_comm_dup(nm_comm_t p_comm)
 {
-  return nm_group_size(comm->group);
+  nm_group_t group = nm_comm_group(p_comm);
+  nm_comm_t p_newcomm = nm_comm_create(p_comm, group);
+  return p_newcomm;
 }
 
-int nm_comm_rank(nm_comm_t comm)
-{
-  return comm->rank;
-}
-
-nm_gate_t nm_comm_get_gate(nm_comm_t p_comm, int rank)
-{
-  return nm_group_get_gate(p_comm->group, rank);
-}
-
-int nm_comm_get_dest(nm_comm_t p_comm, nm_gate_t p_gate)
-{
-  intptr_t rank_as_ptr = (intptr_t)puk_hashtable_lookup(p_comm->reverse, p_gate);
-  return (rank_as_ptr - 1);
-}
-
-nm_session_t nm_comm_get_session(nm_comm_t p_comm)
-{
-  return p_comm->p_session;
-}
-
-nm_group_t nm_comm_group(nm_comm_t comm)
-{
-  return comm->group;
-}
-
-nm_comm_t nm_comm_dup(nm_comm_t comm)
-{
-  nm_group_t group = nm_comm_group(comm);
-  nm_comm_t newcomm = nm_comm_create(comm, group);
-  return newcomm;
-}
-
-nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
+nm_comm_t nm_comm_create(nm_comm_t p_comm, nm_group_t group)
 {
   const int newrank = nm_group_rank(group);
   const int newroot = 0;
@@ -139,18 +108,18 @@ nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
     int commit;
     char session_name[32];
   } header = { .session_name = { '\0'} };
-  const int root = nm_comm_get_dest(comm, nm_gate_vect_at(group, newroot));
+  const int root = nm_comm_get_dest(p_comm, nm_gate_vect_at(group, newroot));
   const nm_tag_t tag = NM_COLL_TAG_COMM_CREATE;
   if(newrank == -1)
     {
       /* not in group, wait for others */
       do
 	{
-	  nm_coll_bcast(comm, root, &header, sizeof(header), tag);
+	  nm_coll_bcast(p_comm, root, &header, sizeof(header), tag);
 	  if(header.commit == 0)
 	    {
 	      int ack = 1;
-	      nm_coll_gather(comm, root, &ack, sizeof(ack), NULL, 0, tag);
+	      nm_coll_gather(p_comm, root, &ack, sizeof(ack), NULL, 0, tag);
 	    }
 	}
       while(header.commit != 1);
@@ -173,10 +142,10 @@ nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
 		{
 		  int i;
 		  header.commit = 0;
-		  nm_coll_bcast(comm, root, &header, sizeof(header), tag);
-		  int*acks = malloc(sizeof(int) * nm_comm_size(comm));
+		  nm_coll_bcast(p_comm, root, &header, sizeof(header), tag);
+		  int*acks = malloc(sizeof(int) * nm_comm_size(p_comm));
 		  int ack = 1;
-		  nm_coll_gather(comm, root, &ack, sizeof(ack), acks, sizeof(ack), tag);
+		  nm_coll_gather(p_comm, root, &ack, sizeof(ack), acks, sizeof(ack), tag);
 		  int total_acks = 0;
 		  for(i = 0; i < nm_group_size(group); i++)
 		    {
@@ -186,14 +155,14 @@ nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
 		  if(total_acks == nm_group_size(group))
 		    {
 		      header.commit = 1;
-		      nm_coll_bcast(comm, root, &header, sizeof(header), tag);
+		      nm_coll_bcast(p_comm, root, &header, sizeof(header), tag);
 		      newcomm->p_session = p_session;
 		    }
 		}
 	    }
 	  else
 	    {
-	      nm_coll_bcast(comm, root, &header, sizeof(header), tag);
+	      nm_coll_bcast(p_comm, root, &header, sizeof(header), tag);
 	      if(header.commit == 0)
 		{
 		  if(p_session != NULL)
@@ -203,7 +172,7 @@ nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
 		    }
 		  int rc = nm_session_open(&p_session, header.session_name);
 		  int ack = (rc == NM_ESUCCESS);
-		  nm_coll_gather(comm, root, &ack, sizeof(ack), NULL, 0, tag);
+		  nm_coll_gather(p_comm, root, &ack, sizeof(ack), NULL, 0, tag);
 		}
 	      else if(header.commit == 1)
 		{
@@ -216,10 +185,11 @@ nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group)
     }
 }
 
-extern void nm_comm_destroy(nm_comm_t p_comm)
+void nm_comm_destroy(nm_comm_t p_comm)
 {
   if(p_comm != NULL)
     {
+      nm_session_destroy(p_comm->p_session);
       nm_group_free(p_comm->group);
       free(p_comm);
     }

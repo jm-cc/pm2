@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014 (see AUTHORS file)
+ * Copyright (C) 2014-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +15,8 @@
 
 #include "nm_coll.h"
 
-/* ********************************************************* */
 
-struct nm_comm_s
-{
-  nm_session_t p_session;  /**< session for the communicator */
-  nm_group_t group;        /**< group of nodes involved in the communicator */
-  int rank;                /**< rank of local process in the group */
-  puk_hashtable_t reverse; /**< reverse table: p_gate -> rank */
-};
+/* ********************************************************* */
 
 /** maximum tag usable by enduser for p2p */
 #define NM_COLL_TAG_MASK_P2P      0x7FFFFFFF

@@ -19,15 +19,12 @@
 #include <stdint.h>
 #include <nm_session_interface.h>
 
-/** Private state of a session object.
- */
+/** @internal Private state of a session object. */
 struct nm_session_s
 {
-  struct nm_core*p_core;
-  uint32_t hash_code;
-  const char*label;
+  struct nm_core*p_core; /**< the current nmad object */
+  uint32_t hash_code;    /**< hash of session label, used as ID on the wire */
+  const char*label;      /**< plain text session name */
 };
-
-
 
 #endif /* NM_SESSION_PRIVATE_H */

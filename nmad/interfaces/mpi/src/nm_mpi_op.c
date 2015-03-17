@@ -145,7 +145,13 @@ int mpi_op_free(MPI_Op*op)
   TYPE_FUNC(MPI_FLOAT,            float);			\
   TYPE_FUNC(MPI_DOUBLE_PRECISION, double);			\
   TYPE_FUNC(MPI_DOUBLE,           double);			\
-  TYPE_FUNC(MPI_LONG_DOUBLE,      long double);			\
+  TYPE_FUNC(MPI_LONG_DOUBLE,      long double);
+
+/** apply a macro to COMPLEX <MPI type, C type> pairs */
+#define NM_MPI_TYPES_APPLY_COMPLEX(TYPE_FUNC)			\
+  TYPE_FUNC(MPI_COMPLEX,          complex float);		\
+  TYPE_FUNC(MPI_DOUBLE_COMPLEX,   complex double);
+
 
 /** generate a switch case stanza for a given type and operation */
 #define CASE_OP(__mpi_type__, __type__, BODY)	\
@@ -211,6 +217,7 @@ static void nm_mpi_op_sum(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
     {
       NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_SUM);
       NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_SUM);
+      NM_MPI_TYPES_APPLY_COMPLEX(CASE_OP_SUM);
       
     default:
       {
@@ -230,6 +237,7 @@ static void nm_mpi_op_prod(void*invec, void*inoutvec, int*len, MPI_Datatype*type
     {
       NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_PROD);
       NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_PROD);
+      NM_MPI_TYPES_APPLY_COMPLEX(CASE_OP_SUM);
 
     default:
       {

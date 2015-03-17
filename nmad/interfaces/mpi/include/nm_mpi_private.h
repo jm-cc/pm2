@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include <unistd.h>
+#include <complex.h>
 
 #include <Padico/Puk.h>
 #include <nm_public.h>

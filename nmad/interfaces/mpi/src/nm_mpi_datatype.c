@@ -109,6 +109,10 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_INTEGER8,           8, 1, "MPI_INTEGER8");
   nm_mpi_datatype_store(MPI_PACKED,             sizeof(char), 1, "MPI_PACKED");
 
+  /* COMPLEX types */
+  nm_mpi_datatype_store(MPI_COMPLEX,            sizeof(complex float), 1, "MPI_COMPLEX");
+  nm_mpi_datatype_store(MPI_DOUBLE_COMPLEX,     sizeof(complex double), 1, "MPI_DOUBLE_COMPLEX");
+
   /* C struct types */
   nm_mpi_datatype_store(MPI_2INT,               sizeof(int) + sizeof(int), 2, "MPI_2INT");
   nm_mpi_datatype_store(MPI_SHORT_INT,          sizeof(short) + sizeof(int), 2, "MPI_SHORT_INT");
@@ -121,11 +125,7 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_2REAL,              sizeof(float) + sizeof(float), 2, "MPI_2REAL");
   nm_mpi_datatype_store(MPI_2DOUBLE_PRECISION,  sizeof(double) + sizeof(double), 2, "MPI_2DOUBLE_PRECISION");
   
-  /* TODO- Fortran types: 2COMPLEX, 2DOUBLE_COMPLEX; check mapping for: COMPLEX, DOUBLE_COMPLEX. */
-
-  nm_mpi_datatype_store(MPI_COMPLEX,            2 * sizeof(float), 2, "MPI_COMPLEX");
-  nm_mpi_datatype_store(MPI_DOUBLE_COMPLEX,     2 * sizeof(double), 2, "MPI_DOUBLE_COMPLEX");
-
+  /* TODO- Fortran types: 2COMPLEX, 2DOUBLE_COMPLEX */
   nm_mpi_datatype_store(MPI_UB,                 0, 0, "MPI_UB");
   nm_mpi_datatype_store(MPI_LB,                 0, 0, "MPI_LB");
 }

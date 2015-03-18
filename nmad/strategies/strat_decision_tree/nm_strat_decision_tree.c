@@ -13,6 +13,10 @@
  * General Public License for more details.
  */
 
+/* import program_invocation_name */
+#define _GNU_SOURCE
+#include <errno.h>
+
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
@@ -65,12 +69,12 @@ PADICO_MODULE_COMPONENT(NewMad_Strategy_decision_tree,
 struct nm_strat_decision_tree_sample_s
 {
   tbx_tick_t timestamp;
+  nm_len_t submitted_size;    /**< size of submitted data */
   int nb_pw;                  /**< number of pw in the outlist */
   nm_len_t size_outlist;      /**< total size of data in outlist, in bytes */
   nm_len_t pw_length;         /**< length of the first pw in outlist */
   nm_len_t pw_remaining_data; /**< remaining data space in first pw */
 
-  nm_len_t submitted_size;    /**< size of submitted data */
   int profile_latency;        /**< driver latency */
   int profile_bandwidth;      /**< driver bw */
 };
@@ -113,14 +117,15 @@ static void strat_decision_tree_destroy(void*_status)
   char template[64] = "/tmp/nmad-decision-tree-XXXXXX";
   int fd = mkstemp(template);
   FILE*f = fdopen(fd, "w");
-  fprintf(stderr, "# strat_decision_tree- flushing %d samples to %s...\n", status->n_samples, template);
-  fprintf(f, "# timestamp  nb_pw   size_outlist\n");
+  fprintf(stderr, "# strat_decision_tree- flushing %d samples to %s\n", status->n_samples, template);
+  fprintf(f, "# ## %s\n", program_invocation_name);
+  fprintf(f, "# timestamp         size  nb_pw   size_outlist\n");
   int i;
   for(i = 0; i < status->n_samples; i++)
     {
       const struct nm_strat_decision_tree_sample_s*sample = &status->samples[i];
       double t = TBX_TIMING_DELAY(status->time_orig, sample->timestamp);
-      fprintf(f, "%f\t%d\t%ld\t  \n", t, sample->nb_pw, sample->size_outlist);
+      fprintf(f, "%16.2f %10ld %4d %10ld\n", t, sample->submitted_size, sample->nb_pw, sample->size_outlist);
     }
   fclose(f);
   close(fd);
@@ -179,11 +184,11 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_pack_s*p_pack
       }
     struct nm_strat_decision_tree_sample_s sample =
       {
+	.submitted_size    = len,
 	.nb_pw             = nb_pw,
 	.size_outlist      = size_outlist,
 	.pw_length         = p_pw_trace ? p_pw_trace->length : 0,
 	.pw_remaining_data = p_pw_trace ? nm_so_pw_remaining_data(p_pw_trace) : 0,
-	.submitted_size    = len,
 	/*	    .profile_latency   = p_drv->profile.latency,
 		    .profile_bandwidth = p_drv->profile.bandwidth*/
       };

@@ -29,7 +29,7 @@ struct nm_drv
   struct tbx_fast_list_head _link;
 
   /** Assembly associated to the driver */
-  puk_adapter_t assembly;
+  puk_component_t assembly;
 
   /** Driver interface, for use when no instance is needed */
   const struct nm_drv_iface_s*driver;

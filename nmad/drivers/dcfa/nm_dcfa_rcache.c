@@ -98,7 +98,7 @@ static const struct nm_minidriver_iface_s nm_dcfa_rcache_minidriver =
 static void*nm_dcfa_rcache_instanciate(puk_instance_t instance, puk_context_t context);
 static void nm_dcfa_rcache_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_dcfa_rcache_adapter =
+static const struct puk_component_driver_s nm_dcfa_rcache_component =
   {
     .instanciate = &nm_dcfa_rcache_instanciate,
     .destroy = &nm_dcfa_rcache_destroy
@@ -131,7 +131,7 @@ static void nm_dcfa_mem_unreg(void*context, const void*ptr, void*key)
 
 PADICO_MODULE_COMPONENT(NewMad_dcfa_rcache,
   puk_component_declare("NewMad_dcfa_rcache",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_dcfa_rcache_adapter),
+			puk_component_provides("PadicoComponent", "component", &nm_dcfa_rcache_component),
 			puk_component_provides("NewMad_minidriver", "minidriver", &nm_dcfa_rcache_minidriver)));
 
 

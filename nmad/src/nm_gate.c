@@ -49,7 +49,7 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   TBX_INIT_FAST_LIST_HEAD(&p_gate->pending_large_send);
 
 
-  p_gate->strategy_instance = puk_adapter_instanciate(p_core->strategy_adapter);
+  p_gate->strategy_instance = puk_component_instantiate(p_core->strategy_component);
   puk_instance_indirect_NewMad_Strategy(p_gate->strategy_instance, NULL,
 					&p_gate->strategy_receptacle);
 
@@ -96,7 +96,7 @@ int nm_core_gate_connect(struct nm_core	*p_core,
     }
 
   /* instanciate driver */
-  p_gdrv->instance = puk_adapter_instanciate(p_drv->assembly);
+  p_gdrv->instance = puk_component_instantiate(p_drv->assembly);
   puk_instance_indirect_NewMad_Driver(p_gdrv->instance, NULL, &p_gdrv->receptacle);
 
   /* init gate/driver fields */

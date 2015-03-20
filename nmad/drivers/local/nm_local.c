@@ -116,11 +116,11 @@ static const struct nm_drv_iface_s nm_local_driver =
     .capabilities.min_period    = 0
   };
 
-/** 'PadicoAdapter' facet for local driver */
+/** 'PadicoComponent' facet for local driver */
 static void*nm_local_instanciate(puk_instance_t, puk_context_t);
 static void nm_local_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_local_adapter_driver =
+static const struct puk_component_driver_s nm_local_component_driver =
   {
     .instanciate = &nm_local_instanciate,
     .destroy     = &nm_local_destroy
@@ -130,7 +130,7 @@ static const struct puk_adapter_driver_s nm_local_adapter_driver =
 /** Component declaration */
 PADICO_MODULE_COMPONENT(NewMad_Driver_local,
   puk_component_declare("NewMad_Driver_local",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_local_adapter_driver),
+			puk_component_provides("PadicoComponent", "component", &nm_local_component_driver),
 			puk_component_provides("NewMad_Driver", "driver", &nm_local_driver)));
 
 

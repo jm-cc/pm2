@@ -46,7 +46,7 @@ PADICO_MODULE_BUILTIN(NewMad_Launcher_cmdline, &nm_cmdline_launcher_declare, NUL
 static void*     nm_cmdline_launcher_instanciate(puk_instance_t i, puk_context_t c);
 static void      nm_cmdline_launcher_destroy(void*_status);
 
-const static struct puk_adapter_driver_s nm_cmdline_launcher_adapter_driver =
+const static struct puk_component_driver_s nm_cmdline_launcher_component_driver =
   {
     .instanciate = &nm_cmdline_launcher_instanciate,
     .destroy     = &nm_cmdline_launcher_destroy
@@ -70,7 +70,7 @@ const static struct newmad_launcher_driver_s nm_cmdline_launcher_driver =
 static int nm_cmdline_launcher_declare(void)
 {
   puk_component_declare("NewMad_Launcher_cmdline",
-                      puk_component_provides("PadicoAdapter", "adapter", &nm_cmdline_launcher_adapter_driver),
+                      puk_component_provides("PadicoComponent", "component", &nm_cmdline_launcher_component_driver),
                       puk_component_provides("NewMad_Launcher", "launcher", &nm_cmdline_launcher_driver ));
   return 0;
 }

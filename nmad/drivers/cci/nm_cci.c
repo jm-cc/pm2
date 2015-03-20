@@ -154,11 +154,11 @@ static const struct nm_drv_iface_s nm_cci_driver =
     .capabilities.max_unexpected = 1024
   };
 
-/** 'PadicoAdapter' facet for cci driver */
+/** 'PadicoComponent' facet for cci driver */
 static void*nm_cci_instanciate(puk_instance_t, puk_context_t);
 static void nm_cci_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_cci_adapter_driver =
+static const struct puk_component_driver_s nm_cci_component_driver =
   {
     .instanciate = &nm_cci_instanciate,
     .destroy     = &nm_cci_destroy
@@ -168,7 +168,7 @@ static const struct puk_adapter_driver_s nm_cci_adapter_driver =
 /** Component declaration */
 PADICO_MODULE_COMPONENT(NewMad_Driver_cci,
   puk_component_declare("NewMad_Driver_cci",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_cci_adapter_driver),
+			puk_component_provides("PadicoComponent", "component", &nm_cci_component_driver),
 			puk_component_provides("NewMad_Driver", "driver", &nm_cci_driver)));
 
 

@@ -47,7 +47,7 @@ static const struct nm_strategy_iface_s nm_strat_decision_tree_driver =
 static void*strat_decision_tree_instanciate(puk_instance_t, puk_context_t);
 static void strat_decision_tree_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_strat_decision_tree_adapter_driver =
+static const struct puk_component_driver_s nm_strat_decision_tree_component_driver =
   {
     .instanciate = &strat_decision_tree_instanciate,
     .destroy     = &strat_decision_tree_destroy
@@ -57,7 +57,7 @@ static const struct puk_adapter_driver_s nm_strat_decision_tree_adapter_driver =
 
 PADICO_MODULE_COMPONENT(NewMad_Strategy_decision_tree,
 			puk_component_declare("NewMad_Strategy_decision_tree",
-					      puk_component_provides("PadicoAdapter", "adapter", &nm_strat_decision_tree_adapter_driver),
+					      puk_component_provides("PadicoComponent", "component", &nm_strat_decision_tree_component_driver),
 					      puk_component_provides("NewMad_Strategy", "strat", &nm_strat_decision_tree_driver),
 					      puk_component_attr("nm_max_small", "16342"),
 					      puk_component_attr("nm_copy_on_send_threshold", "4096"))

@@ -101,11 +101,11 @@ static const struct nm_drv_iface_s nm_dummy_driver =
     .capabilities.min_period = 0
   };
 
-/** 'PadicoAdapter' facet for Dummy driver */
+/** 'PadicoComponent' facet for Dummy driver */
 static void*nm_dummy_instanciate(puk_instance_t, puk_context_t);
 static void nm_dummy_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_dummy_adapter_driver =
+static const struct puk_component_driver_s nm_dummy_component_driver =
   {
     .instanciate = &nm_dummy_instanciate,
     .destroy     = &nm_dummy_destroy
@@ -115,7 +115,7 @@ static const struct puk_adapter_driver_s nm_dummy_adapter_driver =
 static int nm_dummy_load(void)
 {
   puk_component_declare("NewMad_Driver_dummy",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_dummy_adapter_driver),
+			puk_component_provides("PadicoComponent", "component", &nm_dummy_component_driver),
 			puk_component_provides("NewMad_Driver", "driver", &nm_dummy_driver));
 
   return 0;

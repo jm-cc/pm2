@@ -304,7 +304,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 #endif /* NMAD_POLL*/
   p_core->enable_schedopt = 1;
 
-  p_core->strategy_adapter = NULL;
+  p_core->strategy_component = NULL;
 
 #ifdef PIOMAN
   pioman_init(argc, argv);
@@ -330,7 +330,7 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
       fprintf(stderr, "# nmad: component %s given as strategy has no interface 'NewMad_Strategy'\n", strategy->name);
       abort();
     }
-  p_core->strategy_adapter = strategy;
+  p_core->strategy_component = strategy;
   NM_DISPF("# nmad: strategy = %s\n", strategy->name);
   return NM_ESUCCESS;
 }

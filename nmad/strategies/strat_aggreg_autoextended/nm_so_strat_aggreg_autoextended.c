@@ -49,7 +49,7 @@ static const struct nm_strategy_iface_s nm_so_strat_aggreg_autoextended_driver =
 static void*strat_aggreg_autoextended_instanciate(puk_instance_t, puk_context_t);
 static void strat_aggreg_autoextended_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_so_strat_aggreg_autoextended_adapter_driver =
+static const struct puk_component_driver_s nm_so_strat_aggreg_autoextended_component_driver =
   {
     .instanciate = &strat_aggreg_autoextended_instanciate,
     .destroy     = &strat_aggreg_autoextended_destroy
@@ -73,7 +73,7 @@ static int nb_ctrl_aggregation = 0;
 static int nm_strat_aggreg_autoextended_load(void)
 {
   puk_component_declare("NewMad_Strategy_aggreg_autoextended",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_so_strat_aggreg_autoextended_adapter_driver),
+			puk_component_provides("PadicoComponent", "component", &nm_so_strat_aggreg_autoextended_component_driver),
 			puk_component_provides("NewMad_Strategy", "strat", &nm_so_strat_aggreg_autoextended_driver),
 			puk_component_attr("nm_so_max_small", "16342"),
 			puk_component_attr("nm_so_copy_on_send_threshold", "4096"));

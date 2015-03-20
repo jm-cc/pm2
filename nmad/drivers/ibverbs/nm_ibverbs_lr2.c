@@ -114,7 +114,7 @@ static const struct nm_minidriver_iface_s nm_ibverbs_lr2_minidriver =
 static void*nm_ibverbs_lr2_instanciate(puk_instance_t instance, puk_context_t context);
 static void nm_ibverbs_lr2_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_ibverbs_lr2_adapter =
+static const struct puk_component_driver_s nm_ibverbs_lr2_component =
   {
     .instanciate = &nm_ibverbs_lr2_instanciate,
     .destroy = &nm_ibverbs_lr2_destroy
@@ -124,7 +124,7 @@ static const struct puk_adapter_driver_s nm_ibverbs_lr2_adapter =
 
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_lr2,
   puk_component_declare("NewMad_ibverbs_lr2",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_lr2_adapter),
+			puk_component_provides("PadicoComponent", "component", &nm_ibverbs_lr2_component),
 			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_lr2_minidriver)));
 
 

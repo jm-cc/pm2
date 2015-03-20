@@ -59,7 +59,7 @@ struct nm_core
   struct nm_core_monitor_vect_s monitors;
   
   /** Selected strategy */
-  puk_component_t strategy_adapter;
+  puk_component_t strategy_component;
   
 };
 

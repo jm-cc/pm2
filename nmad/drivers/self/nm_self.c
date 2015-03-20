@@ -90,11 +90,11 @@ static const struct nm_drv_iface_s nm_self_driver =
     .capabilities.is_exportable = 0
   };
 
-/** 'PadicoAdapter' facet for self driver */
+/** 'PadicoComponent' facet for self driver */
 static void*nm_self_instanciate(puk_instance_t, puk_context_t);
 static void nm_self_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_self_adapter_driver =
+static const struct puk_component_driver_s nm_self_component_driver =
   {
     .instanciate = &nm_self_instanciate,
     .destroy     = &nm_self_destroy
@@ -104,7 +104,7 @@ static const struct puk_adapter_driver_s nm_self_adapter_driver =
 /** Component declaration */
 PADICO_MODULE_COMPONENT(NewMad_Driver_self,
 			puk_component_declare("NewMad_Driver_self",
-					      puk_component_provides("PadicoAdapter", "adapter", &nm_self_adapter_driver),
+					      puk_component_provides("PadicoComponent", "component", &nm_self_component_driver),
 					      puk_component_provides("NewMad_Driver", "driver", &nm_self_driver)));
 
 

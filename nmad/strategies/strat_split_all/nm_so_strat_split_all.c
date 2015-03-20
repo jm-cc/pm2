@@ -82,7 +82,7 @@ static const struct nm_strategy_iface_s nm_so_strat_split_all_driver =
 static void*strat_split_all_instanciate(puk_instance_t, puk_context_t);
 static void strat_split_all_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_so_strat_split_all_adapter_driver =
+static const struct puk_component_driver_s nm_so_strat_split_all_component_driver =
   {
     .instanciate = &strat_split_all_instanciate,
     .destroy     = &strat_split_all_destroy
@@ -98,7 +98,7 @@ struct nm_so_strat_split_all {
 static int nm_strat_split_all_init(void)
 {
   puk_component_declare("NewMad_Strategy_split_all",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_so_strat_split_all_adapter_driver),
+			puk_component_provides("PadicoComponent", "component", &nm_so_strat_split_all_component_driver),
 			puk_component_provides("NewMad_Strategy", "strat", &nm_so_strat_split_all_driver),
 			puk_component_attr("nm_so_max_small", NULL),
 			puk_component_attr("nm_so_copy_on_send_threshold", NULL));

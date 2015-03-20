@@ -188,12 +188,12 @@ static const struct nm_drv_iface_s nm_mx_driver =
     .capabilities.has_recv_any  = 1
   };
 
-/* 'PadicoAdapter' facet for MX driver */
+/* 'PadicoComponent' facet for MX driver */
 
 static void*nm_mx_instanciate(puk_instance_t, puk_context_t);
 static void nm_mx_destroy(void*);
 
-static const struct puk_adapter_driver_s nm_mx_adapter_driver =
+static const struct puk_component_driver_s nm_mx_component_driver =
   {
     .instanciate = &nm_mx_instanciate,
     .destroy     = &nm_mx_destroy
@@ -203,7 +203,7 @@ static const struct puk_adapter_driver_s nm_mx_adapter_driver =
 /** Component declaration */
 PADICO_MODULE_COMPONENT(NewMad_Driver_mx,
   puk_component_declare("NewMad_Driver_mx",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_mx_adapter_driver),
+			puk_component_provides("PadicoComponent", "component", &nm_mx_component_driver),
 			puk_component_provides("NewMad_Driver", "driver", &nm_mx_driver)));
 
 

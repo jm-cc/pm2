@@ -101,7 +101,7 @@ int nm_launcher_init(int *argc, char**argv)
   /*
    * NewMad initialization is performed by component 'NewMad_Launcher_*'
    */
-  puk_component_t launcher_component = puk_adapter_resolve(launcher_name);
+  puk_component_t launcher_component = puk_component_resolve(launcher_name);
   launcher.instance = puk_adapter_instanciate(launcher_component);
   puk_instance_indirect_NewMad_Launcher(launcher.instance, NULL, &launcher.r);
   (*launcher.r.driver->init)(launcher.r._status, argc, argv, "NewMadeleine");

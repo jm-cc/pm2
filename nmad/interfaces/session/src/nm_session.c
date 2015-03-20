@@ -153,7 +153,7 @@ static void nm_session_init_drivers(void)
   free(driver_string);
 
   /* load default driver */
-  puk_component_t driver_self = puk_adapter_resolve("NewMad_Driver_self");
+  puk_component_t driver_self = puk_component_resolve("NewMad_Driver_self");
   nm_session_add_driver(driver_self, -1);
 }
 

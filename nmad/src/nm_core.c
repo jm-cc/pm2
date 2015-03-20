@@ -168,7 +168,7 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
 	"  </puk:component>"
 	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
 	"</puk:composite>";
-      component = puk_adapter_parse(dcfa);
+      component = puk_component_parse(dcfa);
       if(component == NULL)
 	{
 	  padico_fatal("nmad: failed to load component '%s'\n", dcfa);
@@ -224,7 +224,7 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
 	      ib_drv = ib_lr2;
 	    }
 	}
-      component = puk_adapter_parse(ib_drv);
+      component = puk_component_parse(ib_drv);
       if(component == NULL)
 	{
 	  padico_fatal("nmad: failed to load component '%s'\n", ib_drv);
@@ -234,7 +234,7 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
     {
       char component_name[1024];
       snprintf(component_name, 1024, "NewMad_%s_%s", entity, name);
-      component = puk_adapter_resolve(component_name);
+      component = puk_component_resolve(component_name);
       if(component == NULL)
 	{
 	  padico_fatal("nmad: failed to load component '%s'\n", component_name);

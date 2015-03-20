@@ -91,12 +91,12 @@ static const struct nm_drv_iface_s nm_self_driver =
   };
 
 /** 'PadicoComponent' facet for self driver */
-static void*nm_self_instanciate(puk_instance_t, puk_context_t);
+static void*nm_self_instantiate(puk_instance_t, puk_context_t);
 static void nm_self_destroy(void*);
 
 static const struct puk_component_driver_s nm_self_component_driver =
   {
-    .instanciate = &nm_self_instanciate,
+    .instantiate = &nm_self_instantiate,
     .destroy     = &nm_self_destroy
   };
 
@@ -109,7 +109,7 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_self,
 
 
 /** Instanciate functions */
-static void*nm_self_instanciate(puk_instance_t instance, puk_context_t context)
+static void*nm_self_instantiate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_self*status = TBX_MALLOC(sizeof(struct nm_self));
   static int init_done = 0;

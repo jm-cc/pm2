@@ -95,7 +95,7 @@ int nm_core_gate_connect(struct nm_core	*p_core,
       goto out;
     }
 
-  /* instanciate driver */
+  /* instantiate driver */
   p_gdrv->instance = puk_component_instantiate(p_drv->assembly);
   puk_instance_indirect_NewMad_Driver(p_gdrv->instance, NULL, &p_gdrv->receptacle);
 

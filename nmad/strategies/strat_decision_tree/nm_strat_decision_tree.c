@@ -44,12 +44,12 @@ static const struct nm_strategy_iface_s nm_strat_decision_tree_driver =
     .flush              = NULL
 };
 
-static void*strat_decision_tree_instanciate(puk_instance_t, puk_context_t);
+static void*strat_decision_tree_instantiate(puk_instance_t, puk_context_t);
 static void strat_decision_tree_destroy(void*);
 
 static const struct puk_component_driver_s nm_strat_decision_tree_component_driver =
   {
-    .instanciate = &strat_decision_tree_instanciate,
+    .instantiate = &strat_decision_tree_instantiate,
     .destroy     = &strat_decision_tree_destroy
   };
 
@@ -96,7 +96,7 @@ struct nm_strat_decision_tree
 
 /** Initialize the gate storage for strategy.
  */
-static void*strat_decision_tree_instanciate(puk_instance_t ai, puk_context_t context)
+static void*strat_decision_tree_instantiate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_strat_decision_tree *status = TBX_MALLOC(sizeof(struct nm_strat_decision_tree));
   TBX_INIT_FAST_LIST_HEAD(&status->out_list);

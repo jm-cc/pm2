@@ -117,12 +117,12 @@ static const struct nm_drv_iface_s nm_local_driver =
   };
 
 /** 'PadicoComponent' facet for local driver */
-static void*nm_local_instanciate(puk_instance_t, puk_context_t);
+static void*nm_local_instantiate(puk_instance_t, puk_context_t);
 static void nm_local_destroy(void*);
 
 static const struct puk_component_driver_s nm_local_component_driver =
   {
-    .instanciate = &nm_local_instanciate,
+    .instantiate = &nm_local_instantiate,
     .destroy     = &nm_local_destroy
   };
 
@@ -135,7 +135,7 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_local,
 
 
 /** Instanciate functions */
-static void*nm_local_instanciate(puk_instance_t instance, puk_context_t context)
+static void*nm_local_instantiate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_local*status = TBX_MALLOC(sizeof(struct nm_local));
   memset(status, 0, sizeof(struct nm_local));

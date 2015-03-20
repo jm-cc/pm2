@@ -79,12 +79,12 @@ static const struct nm_strategy_iface_s nm_so_strat_split_all_driver =
 #endif
 };
 
-static void*strat_split_all_instanciate(puk_instance_t, puk_context_t);
+static void*strat_split_all_instantiate(puk_instance_t, puk_context_t);
 static void strat_split_all_destroy(void*);
 
 static const struct puk_component_driver_s nm_so_strat_split_all_component_driver =
   {
-    .instanciate = &strat_split_all_instanciate,
+    .instantiate = &strat_split_all_instantiate,
     .destroy     = &strat_split_all_destroy
   };
 
@@ -109,7 +109,7 @@ static int nm_strat_split_all_init(void)
 
 /** Initialize the gate storage for split_all strategy.
  */
-static void*strat_split_all_instanciate(puk_instance_t ai, puk_context_t context)
+static void*strat_split_all_instantiate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_so_strat_split_all *status = TBX_MALLOC(sizeof(struct nm_so_strat_split_all));
 

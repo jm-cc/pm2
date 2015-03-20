@@ -93,12 +93,12 @@ static const struct nm_minidriver_iface_s nm_ibverbs_adaptrdma_minidriver =
     .cancel_recv = NULL
   };
 
-static void*nm_ibverbs_adaptrdma_instanciate(puk_instance_t instance, puk_context_t context);
+static void*nm_ibverbs_adaptrdma_instantiate(puk_instance_t instance, puk_context_t context);
 static void nm_ibverbs_adaptrdma_destroy(void*);
 
 static const struct puk_component_driver_s nm_ibverbs_adaptrdma_component =
   {
-    .instanciate = &nm_ibverbs_adaptrdma_instanciate,
+    .instantiate = &nm_ibverbs_adaptrdma_instantiate,
     .destroy = &nm_ibverbs_adaptrdma_destroy
   };
 
@@ -113,7 +113,7 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_adaptrdma,
 
 /* ********************************************************* */
 
-static void* nm_ibverbs_adaptrdma_instanciate(puk_instance_t instance, puk_context_t context)
+static void* nm_ibverbs_adaptrdma_instantiate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_ibverbs_adaptrdma*adaptrdma = TBX_MALLOC(sizeof(struct nm_ibverbs_adaptrdma));
   memset(&adaptrdma->buffer, 0, sizeof(adaptrdma->buffer));

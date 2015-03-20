@@ -120,12 +120,12 @@ static const struct nm_minidriver_iface_s nm_ibverbs_rcache_minidriver =
     .cancel_recv = NULL
   };
 
-static void*nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_t context);
+static void*nm_ibverbs_rcache_instantiate(puk_instance_t instance, puk_context_t context);
 static void nm_ibverbs_rcache_destroy(void*);
 
 static const struct puk_component_driver_s nm_ibverbs_rcache_component =
   {
-    .instanciate = &nm_ibverbs_rcache_instanciate,
+    .instantiate = &nm_ibverbs_rcache_instantiate,
     .destroy = &nm_ibverbs_rcache_destroy
   };
 
@@ -160,7 +160,7 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_rcache,
 			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_rcache_minidriver)));
 
 
-static void* nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_t context)
+static void* nm_ibverbs_rcache_instantiate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_ibverbs_rcache*rcache = TBX_MALLOC(sizeof(struct nm_ibverbs_rcache));
  /* init state */

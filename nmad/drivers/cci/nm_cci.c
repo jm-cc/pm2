@@ -155,12 +155,12 @@ static const struct nm_drv_iface_s nm_cci_driver =
   };
 
 /** 'PadicoComponent' facet for cci driver */
-static void*nm_cci_instanciate(puk_instance_t, puk_context_t);
+static void*nm_cci_instantiate(puk_instance_t, puk_context_t);
 static void nm_cci_destroy(void*);
 
 static const struct puk_component_driver_s nm_cci_component_driver =
   {
-    .instanciate = &nm_cci_instanciate,
+    .instantiate = &nm_cci_instantiate,
     .destroy     = &nm_cci_destroy
   };
 
@@ -198,7 +198,7 @@ static void nm_cci_unregister(void*context, const void*ptr, void*key)
 }
 
 /** Instanciate functions */
-static void*nm_cci_instanciate(puk_instance_t instance, puk_context_t context)
+static void*nm_cci_instantiate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_cci*status = TBX_MALLOC(sizeof(struct nm_cci));
   memset(status, 0, sizeof(struct nm_cci));

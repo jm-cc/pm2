@@ -43,12 +43,12 @@ static const struct nm_strategy_iface_s nm_strat_aggreg_driver =
     .todo               = &strat_aggreg_todo
 };
 
-static void*strat_aggreg_instanciate(puk_instance_t, puk_context_t);
+static void*strat_aggreg_instantiate(puk_instance_t, puk_context_t);
 static void strat_aggreg_destroy(void*);
 
 static const struct puk_component_driver_s nm_strat_aggreg_component_driver =
   {
-    .instanciate = &strat_aggreg_instanciate,
+    .instantiate = &strat_aggreg_instantiate,
     .destroy     = &strat_aggreg_destroy
   };
 
@@ -105,7 +105,7 @@ static int nm_strat_aggreg_load(void)
 
 /** Initialize the gate storage for aggreg strategy.
  */
-static void*strat_aggreg_instanciate(puk_instance_t ai, puk_context_t context)
+static void*strat_aggreg_instantiate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_strat_aggreg_gate*status = TBX_MALLOC(sizeof(struct nm_strat_aggreg_gate));
   num_instances++;

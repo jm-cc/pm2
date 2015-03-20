@@ -111,12 +111,12 @@ static const struct nm_minidriver_iface_s nm_ibverbs_lr2_minidriver =
     .cancel_recv = NULL
   };
 
-static void*nm_ibverbs_lr2_instanciate(puk_instance_t instance, puk_context_t context);
+static void*nm_ibverbs_lr2_instantiate(puk_instance_t instance, puk_context_t context);
 static void nm_ibverbs_lr2_destroy(void*);
 
 static const struct puk_component_driver_s nm_ibverbs_lr2_component =
   {
-    .instanciate = &nm_ibverbs_lr2_instanciate,
+    .instantiate = &nm_ibverbs_lr2_instantiate,
     .destroy = &nm_ibverbs_lr2_destroy
   };
 
@@ -130,7 +130,7 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_lr2,
 
 /* ********************************************************* */
 
-static void* nm_ibverbs_lr2_instanciate(puk_instance_t instance, puk_context_t context)
+static void* nm_ibverbs_lr2_instantiate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_ibverbs_lr2*lr2 = NULL;
   if(nm_ibverbs_memalign > 0)

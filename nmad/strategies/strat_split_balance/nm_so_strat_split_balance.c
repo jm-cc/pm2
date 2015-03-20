@@ -44,12 +44,12 @@ static const struct nm_strategy_iface_s nm_strat_split_balance_driver =
     .todo               = &strat_split_balance_todo
 };
 
-static void*strat_split_balance_instanciate(puk_instance_t, puk_context_t);
+static void*strat_split_balance_instantiate(puk_instance_t, puk_context_t);
 static void strat_split_balance_destroy(void*);
 
 static const struct puk_component_driver_s nm_strat_split_balance_component_driver =
   {
-    .instanciate = &strat_split_balance_instanciate,
+    .instantiate = &strat_split_balance_instantiate,
     .destroy     = &strat_split_balance_destroy
   };
 
@@ -76,7 +76,7 @@ static int nm_strat_split_balance_load(void)
 
 /** Initialize the gate storage for split_balance strategy.
  */
-static void*strat_split_balance_instanciate(puk_instance_t ai, puk_context_t context)
+static void*strat_split_balance_instantiate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_strat_split_balance *status = TBX_MALLOC(sizeof(struct nm_strat_split_balance));
 

@@ -141,12 +141,12 @@ static const struct nm_drv_iface_s nm_qsnet_driver =
   };
 
 /** 'PadicoComponent' facet for Qsnet driver */
-static void*nm_qsnet_instanciate(puk_instance_t, puk_context_t);
+static void*nm_qsnet_instantiate(puk_instance_t, puk_context_t);
 static void nm_qsnet_destroy(void*);
 
 static const struct puk_component_driver_s nm_qsnet_component_driver =
   {
-    .instanciate = &nm_qsnet_instanciate,
+    .instantiate = &nm_qsnet_instantiate,
     .destroy     = &nm_qsnet_destroy
   };
 
@@ -167,7 +167,7 @@ static const char*nm_qsnet_get_driver_url(struct nm_drv *p_drv)
   return p_qsnet_drv->url;
 }
 /** Component instanciation */
-static void*nm_qsnet_instanciate(puk_instance_t instance, puk_context_t context)
+static void*nm_qsnet_instantiate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_qsnet*status = TBX_MALLOC(sizeof (struct nm_qsnet));
   memset(status, 0, sizeof(struct nm_qsnet));

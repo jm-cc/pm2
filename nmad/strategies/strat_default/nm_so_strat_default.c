@@ -45,12 +45,12 @@ static const struct nm_strategy_iface_s nm_strat_default_driver =
     .flush              = NULL
 };
 
-static void*strat_default_instanciate(puk_instance_t, puk_context_t);
+static void*strat_default_instantiate(puk_instance_t, puk_context_t);
 static void strat_default_destroy(void*);
 
 static const struct puk_component_driver_s nm_strat_default_component_driver =
   {
-    .instanciate = &strat_default_instanciate,
+    .instantiate = &strat_default_instantiate,
     .destroy     = &strat_default_destroy
   };
 
@@ -79,7 +79,7 @@ static int nm_strat_default_load(void)
 
 /** Initialize the gate storage for default strategy.
  */
-static void*strat_default_instanciate(puk_instance_t ai, puk_context_t context)
+static void*strat_default_instantiate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_strat_default *status = TBX_MALLOC(sizeof(struct nm_strat_default));
   TBX_INIT_FAST_LIST_HEAD(&status->out_list);

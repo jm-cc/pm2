@@ -102,12 +102,12 @@ static const struct nm_drv_iface_s nm_dummy_driver =
   };
 
 /** 'PadicoComponent' facet for Dummy driver */
-static void*nm_dummy_instanciate(puk_instance_t, puk_context_t);
+static void*nm_dummy_instantiate(puk_instance_t, puk_context_t);
 static void nm_dummy_destroy(void*);
 
 static const struct puk_component_driver_s nm_dummy_component_driver =
   {
-    .instanciate = &nm_dummy_instanciate,
+    .instantiate = &nm_dummy_instantiate,
     .destroy     = &nm_dummy_destroy
   };
 
@@ -125,7 +125,7 @@ PADICO_MODULE_BUILTIN(NewMad_Driver_dummy, &nm_dummy_load, NULL, NULL);
 
 
 /** Instanciate functions */
-static void*nm_dummy_instanciate(puk_instance_t instance, puk_context_t context){
+static void*nm_dummy_instantiate(puk_instance_t instance, puk_context_t context){
   struct nm_dummy*status = TBX_MALLOC(sizeof (struct nm_dummy));
   memset(status, 0, sizeof(struct nm_dummy));
   return status;

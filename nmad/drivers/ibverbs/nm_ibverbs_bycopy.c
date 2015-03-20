@@ -114,12 +114,12 @@ static const struct nm_minidriver_iface_s nm_ibverbs_bycopy_minidriver =
     .cancel_recv = &nm_ibverbs_bycopy_cancel_recv
   };
 
-static void*nm_ibverbs_bycopy_instanciate(puk_instance_t instance, puk_context_t context);
+static void*nm_ibverbs_bycopy_instantiate(puk_instance_t instance, puk_context_t context);
 static void nm_ibverbs_bycopy_destroy(void*);
 
 static const struct puk_component_driver_s nm_ibverbs_bycopy_component =
   {
-    .instanciate = &nm_ibverbs_bycopy_instanciate,
+    .instantiate = &nm_ibverbs_bycopy_instantiate,
     .destroy = &nm_ibverbs_bycopy_destroy
   };
 
@@ -129,7 +129,7 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_bycopy,
 			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_bycopy_minidriver)));
 
 
-static void* nm_ibverbs_bycopy_instanciate(puk_instance_t instance, puk_context_t context)
+static void* nm_ibverbs_bycopy_instantiate(puk_instance_t instance, puk_context_t context)
 {
   /* check parameters consistency */
   assert(sizeof(struct nm_ibverbs_bycopy_packet) % 1024 == 0);

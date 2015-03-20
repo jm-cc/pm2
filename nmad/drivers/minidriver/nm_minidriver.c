@@ -89,12 +89,12 @@ static const struct nm_drv_iface_s nm_minidriver_driver =
   };
 
 /** 'PadicoComponent' facet for Minidriver driver */
-static void*nm_minidriver_instanciate(puk_instance_t, puk_context_t);
+static void*nm_minidriver_instantiate(puk_instance_t, puk_context_t);
 static void nm_minidriver_destroy(void*);
 
 static const struct puk_component_driver_s nm_minidriver_component_driver =
   {
-    .instanciate = &nm_minidriver_instanciate,
+    .instantiate = &nm_minidriver_instantiate,
     .destroy     = &nm_minidriver_destroy
   };
 
@@ -109,7 +109,7 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_minidriver,
 
 
 /** Instanciate functions */
-static void* nm_minidriver_instanciate(puk_instance_t instance, puk_context_t context)
+static void* nm_minidriver_instantiate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_minidriver*status = TBX_MALLOC(sizeof(struct nm_minidriver));
   puk_context_indirect_NewMad_minidriver(instance, "trk0", &status->trks[0].minidriver);

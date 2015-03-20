@@ -190,12 +190,12 @@ static const struct nm_drv_iface_s nm_mx_driver =
 
 /* 'PadicoComponent' facet for MX driver */
 
-static void*nm_mx_instanciate(puk_instance_t, puk_context_t);
+static void*nm_mx_instantiate(puk_instance_t, puk_context_t);
 static void nm_mx_destroy(void*);
 
 static const struct puk_component_driver_s nm_mx_component_driver =
   {
-    .instanciate = &nm_mx_instanciate,
+    .instantiate = &nm_mx_instantiate,
     .destroy     = &nm_mx_destroy
   };
 
@@ -208,7 +208,7 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_mx,
 
 
 /** Instanciate functions */
-static void*nm_mx_instanciate(puk_instance_t instance, puk_context_t context){
+static void*nm_mx_instantiate(puk_instance_t instance, puk_context_t context){
   struct nm_mx*status = TBX_MALLOC(sizeof (struct nm_mx));
   memset(status, 0, sizeof(struct nm_mx));
   return status;

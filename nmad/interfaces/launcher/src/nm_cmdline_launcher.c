@@ -43,12 +43,12 @@ PADICO_MODULE_BUILTIN(NewMad_Launcher_cmdline, &nm_cmdline_launcher_declare, NUL
 
 /* ** Cmd line launcher ************************************ */
 
-static void*     nm_cmdline_launcher_instanciate(puk_instance_t i, puk_context_t c);
+static void*     nm_cmdline_launcher_instantiate(puk_instance_t i, puk_context_t c);
 static void      nm_cmdline_launcher_destroy(void*_status);
 
 const static struct puk_component_driver_s nm_cmdline_launcher_component_driver =
   {
-    .instanciate = &nm_cmdline_launcher_instanciate,
+    .instantiate = &nm_cmdline_launcher_instantiate,
     .destroy     = &nm_cmdline_launcher_destroy
   };
 
@@ -83,7 +83,7 @@ struct nm_cmdline_launcher_status_s
   int is_server;
 };
 
-static void*nm_cmdline_launcher_instanciate(puk_instance_t i, puk_context_t c)
+static void*nm_cmdline_launcher_instantiate(puk_instance_t i, puk_context_t c)
 {
   struct nm_cmdline_launcher_status_s*status = TBX_MALLOC(sizeof(struct nm_cmdline_launcher_status_s));
   status->p_session = NULL;

@@ -139,12 +139,12 @@ static const struct nm_drv_iface_s nm_gm_driver =
     .capabilities.min_period = 0
   };
 
-static void*nm_gm_instanciate(puk_instance_t, puk_context_t);
+static void*nm_gm_instantiate(puk_instance_t, puk_context_t);
 static void nm_gm_destroy(void*);
 
 static const struct puk_component_driver_s nm_gm_component_driver =
   {
-    .instanciate = &nm_gm_instanciate,
+    .instantiate = &nm_gm_instantiate,
     .destroy     = &nm_gm_destroy
   };
 
@@ -159,7 +159,7 @@ static int nm_gm_load(void)
 PADICO_MODULE_BUILTIN(NewMad_Driver_gm, &nm_gm_load, NULL, NULL);
 
 
-static void*nm_gm_instanciate(puk_instance_t instance, puk_context_t context){
+static void*nm_gm_instantiate(puk_instance_t instance, puk_context_t context){
   struct nm_gm*status = TBX_MALLOC(sizeof (struct nm_gm));
   memset(status, 0, sizeof(struct nm_gm));
   return status;

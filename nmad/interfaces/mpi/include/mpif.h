@@ -1,4 +1,5 @@
-!
+! -*-Fortran-*-
+!     
 ! NewMadeleine
 ! Copyright (C) 2006-2014 (see AUTHORS file)
 !
@@ -131,9 +132,11 @@
 
 !
 ! Communicators
+      INTEGER MPI_COMM_NULL
       INTEGER MPI_COMM_WORLD
       INTEGER MPI_COMM_SELF
-
+      
+      PARAMETER (MPI_COMM_NULL=0)
       PARAMETER (MPI_COMM_WORLD=1)
       PARAMETER (MPI_COMM_SELF=2)
 

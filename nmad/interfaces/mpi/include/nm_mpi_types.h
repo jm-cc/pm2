@@ -338,20 +338,57 @@ typedef int (MPI_Comm_delete_attr_function)(MPI_Comm comm, int comm_keyval, void
 
 /* @}*/
 
-/* Programs that need to convert types used in MPICH should use these */
+/** integer type interoperable between C and FORTRAN */
 typedef int MPI_Fint;
-#define MPI_Comm_c2f(comm) (MPI_Fint)(comm)
-#define MPI_Comm_f2c(comm) (MPI_Comm)(comm)
-#define MPI_Type_c2f(datatype) (MPI_Fint)(datatype)
-#define MPI_Type_f2c(datatype) (MPI_Datatype)(datatype)
-#define MPI_Group_c2f(group) (MPI_Fint)(group)
-#define MPI_Group_f2c(group) (MPI_Group)(group)
-#define MPI_Info_c2f(info) (MPI_Fint)(info)
-#define MPI_Info_f2c(info) (MPI_Info)(info)
-#define MPI_Request_c2f(req) (MPI_Fint)(req)
-#define MPI_Request_f2c(req) (MPI_Request)(req)
-#define MPI_Op_c2f(op) (MPI_Fint)(op)
-#define MPI_Op_f2c(op) (MPI_Op)(op)
+
+static inline MPI_Comm MPI_Comm_f2c(MPI_Fint comm)
+{
+  return comm;
+}
+static inline MPI_Fint MPI_Comm_c2f(MPI_Comm comm)
+{
+  return comm;
+}
+static inline MPI_Datatype MPI_Type_f2c(MPI_Fint datatype)
+{
+  return datatype;
+}
+static inline MPI_Fint MPI_Type_c2f(MPI_Datatype datatype)
+{
+  return datatype;
+}
+static inline MPI_Group MPI_Group_f2c(MPI_Fint group)
+{
+  return group;
+}
+static inline MPI_Fint MPI_Group_c2f(MPI_Group group)
+{
+  return group;
+}
+static inline MPI_Info MPI_Info_f2c(MPI_Fint info)
+{
+  return info;
+}
+static inline MPI_Fint MPI_Info_c2f(MPI_Info info)
+{
+  return info;
+}
+static inline MPI_Request MPI_Request_f2c(MPI_Fint request)
+{
+  return request;
+}
+static inline MPI_Fint MPI_Request_c2f(MPI_Request request)
+{
+  return request;
+}
+static inline MPI_Op MPI_Op_f2c(MPI_Fint op)
+{
+  return op;
+}
+static inline MPI_Fint MPI_Op_c2f(MPI_Op op)
+{
+  return op;
+}
 
 /* Translates a Fortran status into a C status.
  * @param f_status Fortan status

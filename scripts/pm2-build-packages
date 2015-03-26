@@ -83,6 +83,7 @@ esac
 
 self_dir_rel=$( dirname ${self} )
 self_path=$( cd ${self_dir_rel}  ; pwd )
+root_dir=${self_path}/..
 self_fullcmd="$0 $*"
 
 while [ "x$1" != "x" ]; do
@@ -214,12 +215,14 @@ extract_package_tarxz() {
 # frontend to extract packages
 extract_package() {
     package="$1"
-    if [ -d "${package}" ]; then
-	# package is a directory
-	echo "${package}"
-    elif [ -d "${self_path}/../${package}" ]; then
+    if [ -d "${root_dir}/${package}" ]; then
 	# package is a pm2 module name
-	echo "${self_path}/../${package}"
+	echo "# package ${package} recognized as ${root_dir}/${package}/" 1>&2
+	echo "${root_dir}/${package}"
+    elif [ -d "${package}" ]; then
+	# package is a directory
+	echo "# package ${package} recognized as directory" 1>&2
+	echo "${package}"
     else
 	# other cases, need to extract archives to get srcdir
 	case "${package}" in
@@ -237,12 +240,13 @@ extract_package() {
 		exit 1
 		;;
 	esac
+	echo "# package ${package} recognized as archive" 1>&2
     fi
 }
 
 build_package() {
     package="$1"
-    orig_dir="${PWD}"
+    cd ${root_dir}
     # find package srcdir, unpack if needed
     package_srcdir="`extract_package ${package}`"
     echo "# package srcdir: ${package_srcdir}" 1>&2
@@ -312,7 +316,7 @@ build_package() {
     echo "# ## done: ${package_name}" 1>&2
     echo
     echo
-    cd "${orig_dir}"
+    cd ${root_dir}
 }
 
 echo
@@ -324,6 +328,8 @@ if [ "x${flavor}" = "x-" ]; then
 else
     exec 3< ${flavor}
 fi
+
+cd ${root_dir}
 
 v=
 while true; do

@@ -360,6 +360,14 @@ AC_ARG_ENABLE(mpi,
 	      ])
 AC_SUBST([nmad_enable_mpi])
 
+AC_ARG_ENABLE(romio,
+	      [  --enable-romio   Enable ROMIO MPI I/O implementation ],
+              [ if test $enableval = yes; then
+	      	    AC_DEFINE([NM_MPI_ENABLE_ROMIO], 1, [enable ROMIO MPI I/O])
+                fi
+              ],
+	      [])
+
 
 
 dnl -- nmad content

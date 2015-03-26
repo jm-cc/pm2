@@ -299,3 +299,9 @@
       INTEGER MPI_UNDEFINED
       PARAMETER (MPI_UNDEFINED=-32766)
       
+#if defined(NM_MPI_ENABLE_ROMIO) && !defined(NMAD_BUILD)
+#include "mpiof.h"
+#endif /* NM_MPI_ENABLE_ROMIO && !NMAD_BUILD */
+
+
+      

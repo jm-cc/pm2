@@ -35,7 +35,11 @@ F90="@FC@"
 F90LINKER="${F90}"
 LDFLAGSBASE=""
 CFLAGS="@NMAD_CFLAGS@"
-LIBS="@NMAD_LIBS@ -lmadmpi"
+LIBS="@NMAD_LIBS@ -lmadmpi @nmad_mpi_romio_libs@"
+
+if [ "x${NMAD_BUILD}" != "x" ]; then
+    CFLAGS="${CFLAGS} -DNMAD_BUILD"
+fi
 
 #
 for arg in "$@" ; do

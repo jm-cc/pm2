@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ extern "C"
 
 #include <stdint.h>
 #include <sys/types.h>
+#include "nm_config.h"
 #include "nm_mpi_types.h"
 #include "nm_mpi_config.h"
 #include "nm_mpi_p2p.h"
@@ -53,9 +54,10 @@ extern "C"
 #include "nm_mpi_communicator.h"
 #include "nm_mpi_not_implemented.h"
 
-#if defined(NM_MPI_ENABLE_ROMIO) && !defined(NMAD_BUILD)
+#if defined(NMAD_MPI_ENABLE_ROMIO) && !defined(NMAD_BUILD)
+#warning "include ROMIO"
 #include "mpio.h"
-#endif /* NM_MPI_ENABLE_ROMIO && !NMAD_BUILD */
+#endif /* NMAD_MPI_ENABLE_ROMIO && !NMAD_BUILD */
 
 #ifdef __cplusplus
 }

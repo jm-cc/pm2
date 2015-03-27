@@ -28,3 +28,7 @@
 
 /* nmad install path */
 #undef NMAD_ROOT
+
+/* include ROMIO in mpi.h */
+#undef NMAD_MPI_ENABLE_ROMIO
+

@@ -54,6 +54,10 @@ extern "C"
 #include "nm_mpi_communicator.h"
 #include "nm_mpi_not_implemented.h"
 
+#ifndef NMAD_MPI_ENABLE_ROMIO
+#include "nm_mpi_io.h"
+#endif
+
 #if defined(NMAD_MPI_ENABLE_ROMIO) && !defined(NMAD_BUILD)
 #warning "include ROMIO"
 #include "mpio.h"

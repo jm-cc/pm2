@@ -432,6 +432,12 @@ void nm_mpi_op_init(void);
 
 void nm_mpi_op_exit(void);
 
+/** init MPI I/O subsystem */
+void nm_mpi_io_init(void);
+
+void nm_mpi_io_exit(void);
+
+
 /* Accessor functions */
 
 /**

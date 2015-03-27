@@ -88,7 +88,7 @@
 #define MPI_ERR_NOT_SAME              73
 #define MPI_ERR_BAD_FILE              74
 
-#define MPI_ERR_LASTCODE     1073741823
+#define MPI_ERR_LASTCODE              128
 
 /* @} */
 

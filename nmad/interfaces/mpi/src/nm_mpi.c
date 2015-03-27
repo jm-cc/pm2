@@ -107,6 +107,7 @@ int mpi_init(int*argc, char***argv)
   nm_mpi_op_init();
   nm_mpi_internal_init();
   nm_mpi_request_init();
+  nm_mpi_io_init();
   init_done = 1;
   return MPI_SUCCESS;
 }
@@ -136,6 +137,7 @@ int mpi_finalize(void)
   int err;
   mpi_barrier(MPI_COMM_WORLD);
   err = nm_mpi_internal_exit();
+  nm_mpi_io_exit();
   nm_mpi_datatype_exit();
   nm_mpi_op_exit();
   nm_mpi_comm_exit();

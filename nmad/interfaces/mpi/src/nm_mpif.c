@@ -991,6 +991,15 @@ void mpi_type_struct_(int *count,
   free(_array_of_displacements);
 }
 
+/** Fortran version for MPI_Comm_create */
+void mpi_comm_create_(int*comm, int*group, int*newcomm, int*ierr)
+{
+  MPI_Comm _newcomm;
+  int err = MPI_Comm_create(*comm, *group, &_newcomm);
+  *newcomm = _newcomm;
+  *ierr = err;
+}
+
 /**
  * Fortran version for MPI_COMM_GROUP
  */
@@ -1073,6 +1082,15 @@ void mpi_group_translate_ranks_(int *group1,
 				int *ierr) {
   *ierr = MPI_Group_translate_ranks(*group1, *n, ranks1, *group2,
 				    ranks2);
+}
+
+/** Fortran version for MPI_Group_incl */
+void mpi_group_incl_(int*group, int*n, int*ranks, int*newgroup, int*ierr)
+{
+  MPI_Group _newgroup;
+  int err = MPI_Group_incl(*group, *n, ranks, &_newgroup);
+  *newgroup = _newgroup;
+  *ierr = err;
 }
 
 #endif /* NMAD_FORTRAN_TARGET_NONE */

@@ -30,6 +30,7 @@ NM_MPI_ALIAS(MPI_Gatherv,        mpi_gatherv);
 NM_MPI_ALIAS(MPI_Allgather,      mpi_allgather);
 NM_MPI_ALIAS(MPI_Allgatherv,     mpi_allgatherv);
 NM_MPI_ALIAS(MPI_Scatter,        mpi_scatter);
+NM_MPI_ALIAS(MPI_Scatterv,       mpi_scatterv);
 NM_MPI_ALIAS(MPI_Alltoall,       mpi_alltoall);
 NM_MPI_ALIAS(MPI_Alltoallv,      mpi_alltoallv);
 NM_MPI_ALIAS(MPI_Reduce,         mpi_reduce);
@@ -40,13 +41,13 @@ NM_MPI_ALIAS(MPI_Reduce_scatter, mpi_reduce_scatter);
 
 /* ** building blocks */
 
-static nm_mpi_request_t*nm_mpi_coll_isend(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm)
+static nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm)
 {
   nm_mpi_request_t*p_req = nm_mpi_request_alloc();
   p_req->request_type            = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype              = p_datatype;
-  p_req->buffer                  = buffer;
+  p_req->buffer                  = (void*)buffer;
   p_req->count                   = count;
   p_req->user_tag                = tag;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
@@ -300,6 +301,46 @@ int mpi_scatter(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbu
       if(sendbuf != MPI_IN_PLACE)
 	{
 	  nm_mpi_datatype_copy(sendbuf + (nm_comm_rank(p_comm->p_comm) * sendcount * p_recv_datatype->extent), p_send_datatype, sendcount,
+			       recvbuf, p_recv_datatype, recvcount);
+	}
+      FREE_AND_SET_NULL(requests);
+    }
+  else
+    {
+      nm_mpi_request_t*p_req = nm_mpi_coll_irecv(recvbuf, recvcount, p_recv_datatype, root, tag, p_comm);
+      nm_mpi_coll_wait(p_req);
+    }
+  return MPI_SUCCESS;
+}
+
+int mpi_scatterv(const void*sendbuf, const int sendcounts[], const int displs[], MPI_Datatype sendtype,
+		 void*recvbuf, int recvcount, MPI_Datatype recvtype,
+		 int root, MPI_Comm comm)
+{
+  const int tag = NM_MPI_TAG_PRIVATE_SCATTER;
+  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
+  nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
+  nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
+  if (nm_comm_rank(p_comm->p_comm) == root)
+    {
+      int i;
+      nm_mpi_request_t**requests = malloc(nm_comm_size(p_comm->p_comm) * sizeof(nm_mpi_request_t*));
+      // send data to other processes
+      for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
+	{
+	  if(i == root) continue;
+	  requests[i] = nm_mpi_coll_isend(sendbuf + (displs[i] * p_send_datatype->extent),
+					  sendcounts[i], p_send_datatype, i, tag, p_comm);
+	}
+      for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
+	{
+	  if(i == root) continue;
+	  nm_mpi_coll_wait(requests[i]);
+	}
+      // copy local data for self
+      if(sendbuf != MPI_IN_PLACE)
+	{
+	  nm_mpi_datatype_copy(sendbuf + (displs[root] * p_recv_datatype->extent), p_send_datatype, sendcounts[i],
 			       recvbuf, p_recv_datatype, recvcount);
 	}
       FREE_AND_SET_NULL(requests);

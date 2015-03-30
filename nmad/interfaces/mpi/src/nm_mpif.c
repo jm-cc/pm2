@@ -665,6 +665,16 @@ void mpi_scatter_(void *sendbuf,
 		      *recvtype, *root, *comm);
 }
 
+/** Fortran version of MPI_Scatterv*/
+void mpi_scatterv_(void*sendbuf, int*sendcounts, int*displs, int*sendtype,
+		   void*recvbuf, int*recvcount, int*recvtype,
+		   int*root, int*comm, int*ierr)
+{
+  *ierr = MPI_Scatterv(sendbuf, sendcounts, displs, *sendtype,
+		       recvbuf, *recvcount, *recvtype,
+		       *root, *comm);
+}
+  
 /**
  * Fortran version for MPI_ALLTOALL
  */

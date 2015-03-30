@@ -156,15 +156,14 @@ int MPI_Allgatherv(void *sendbuf,
  * @param comm communicator
  * @return MPI status
  */
-int MPI_Scatter(void *sendbuf,
-                int sendcount,
-                MPI_Datatype sendtype,
-                void *recvbuf,
-                int recvcount,
-                MPI_Datatype recvtype,
-                int root,
-                MPI_Comm comm);
+int MPI_Scatter(void*sendbuf, int sendcount, MPI_Datatype sendtype,
+                void*recvbuf, int recvcount, MPI_Datatype recvtype,
+                int root, MPI_Comm comm);
 
+int MPI_Scatterv(const void*sendbuf, const int sendcounts[], const int displs[], MPI_Datatype sendtype,
+		 void*recvbuf, int recvcount, MPI_Datatype recvtype,
+		 int root, MPI_Comm comm);
+  
 /**
  * Extension of MPI_Allgather() to the case where each process sends
  * distinct data to each of the receivers. The jth block sent from

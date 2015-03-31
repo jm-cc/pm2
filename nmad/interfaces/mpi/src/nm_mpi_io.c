@@ -42,10 +42,14 @@ static struct nm_mpi_handle_file_s nm_mpi_files;
 
 /* ********************************************************* */
 
-NM_MPI_ALIAS(MPI_File_open,     mpi_file_open);
-NM_MPI_ALIAS(MPI_File_close,    mpi_file_close);
-NM_MPI_ALIAS(MPI_File_read_at,  mpi_file_read_at);
-NM_MPI_ALIAS(MPI_File_write_at, mpi_file_write_at);
+NM_MPI_ALIAS(MPI_File_open,      mpi_file_open);
+NM_MPI_ALIAS(MPI_File_get_size,  mpi_file_get_size);
+NM_MPI_ALIAS(MPI_File_get_amode, mpi_file_get_amode);
+NM_MPI_ALIAS(MPI_File_get_group, mpi_file_get_group);
+NM_MPI_ALIAS(MPI_File_get_type_extent, mpi_file_get_type_extent);
+NM_MPI_ALIAS(MPI_File_close,     mpi_file_close);
+NM_MPI_ALIAS(MPI_File_read_at,   mpi_file_read_at);
+NM_MPI_ALIAS(MPI_File_write_at,  mpi_file_write_at);
 
 /* ********************************************************* */
 
@@ -67,6 +71,10 @@ int mpi_file_open(MPI_Comm comm, char*filename, int amode, MPI_Info info, MPI_Fi
 {
   nm_mpi_file_t*p_file = nm_mpi_handle_file_alloc(&nm_mpi_files);
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL)
+    return MPI_ERR_COMM;
+  if(nm_comm_rank(p_comm->p_comm) < 0)
+    return MPI_SUCCESS;
   p_file->amode = amode;
   p_file->p_comm = p_comm;
   p_file->kind = NM_MPI_FILE_POSIX;
@@ -77,7 +85,7 @@ int mpi_file_open(MPI_Comm comm, char*filename, int amode, MPI_Info info, MPI_Fi
     ((amode & MPI_MODE_CREATE) ? O_CREAT  : 0) |
     ((amode & MPI_MODE_EXCL)   ? O_EXCL   : 0) |
     ((amode & MPI_MODE_APPEND) ? O_APPEND : 0) ;
-  int rc = open(filename, mode);
+  int rc = open(filename, mode, 0666);
   if(rc >= 0)
     p_file->fd = rc;
   else
@@ -96,6 +104,49 @@ int mpi_file_close(MPI_File*fh)
   close(p_file->fd);
   nm_mpi_handle_file_free(&nm_mpi_files, p_file);
   *fh = MPI_FILE_NULL;
+  return MPI_SUCCESS;
+}
+
+int mpi_file_get_size(MPI_File fh, MPI_Offset*size)
+{
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, fh);
+  if(p_file == NULL)
+    return MPI_ERR_BAD_FILE;
+  struct stat stat;
+  int rc = fstat(p_file->fd, &stat);
+  if(rc != 0)
+    return MPI_ERR_IO;
+  *size = stat.st_size;
+  return MPI_SUCCESS;
+}
+
+int mpi_file_get_amode(MPI_File fh, int*amode)
+{
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, fh);
+  if(p_file == NULL)
+    return MPI_ERR_BAD_FILE;
+  *amode = p_file->amode;
+  return MPI_SUCCESS;
+}
+
+int mpi_file_get_group(MPI_File fh, MPI_Group*group)
+{
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, fh);
+  if(p_file == NULL)
+    return MPI_ERR_BAD_FILE;
+  return mpi_comm_group(p_file->p_comm->id, group);
+}
+
+int mpi_file_get_type_extent(MPI_File fh, MPI_Datatype datatype, MPI_Aint*extent)
+{
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, fh);
+  if(p_file == NULL)
+    return MPI_ERR_BAD_FILE;
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  if(extent != NULL)
+    *extent = p_datatype->extent;
   return MPI_SUCCESS;
 }
 

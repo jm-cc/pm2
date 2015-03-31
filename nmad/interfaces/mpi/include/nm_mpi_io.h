@@ -42,6 +42,7 @@ int MPI_File_preallocate(MPI_File fh, MPI_Offset size);
 int MPI_File_get_size(MPI_File fh, MPI_Offset*size);
 int MPI_File_get_group(MPI_File fh, MPI_Group*group);
 int MPI_File_get_amode(MPI_File fh, int*amode);
+int MPI_File_get_type_extent(MPI_File fh, MPI_Datatype datatype, MPI_Aint*extent);
 int MPI_File_set_info(MPI_File fh, MPI_Info info);
 int MPI_File_get_info(MPI_File fh, MPI_Info*info);
 

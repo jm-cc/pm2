@@ -317,7 +317,7 @@ int mpi_scatterv(const void*sendbuf, const int sendcounts[], const int displs[],
 		 void*recvbuf, int recvcount, MPI_Datatype recvtype,
 		 int root, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_SCATTER;
+  const int tag = NM_MPI_TAG_PRIVATE_SCATTERV;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);

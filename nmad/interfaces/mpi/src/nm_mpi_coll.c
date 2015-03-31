@@ -340,7 +340,7 @@ int mpi_scatterv(const void*sendbuf, const int sendcounts[], const int displs[],
       // copy local data for self
       if(sendbuf != MPI_IN_PLACE)
 	{
-	  nm_mpi_datatype_copy(sendbuf + (displs[root] * p_recv_datatype->extent), p_send_datatype, sendcounts[i],
+	  nm_mpi_datatype_copy(sendbuf + (displs[root] * p_recv_datatype->extent), p_send_datatype, sendcounts[root],
 			       recvbuf, p_recv_datatype, recvcount);
 	}
       FREE_AND_SET_NULL(requests);

@@ -18,7 +18,7 @@
 #include "nm_log.h"
 
 #include <Padico/Module.h>
-PADICO_MODULE_HOOK(NewMad_Core);
+PADICO_MODULE_HOOK(MadMPI);
 
 __PUK_SYM_INTERNAL
 int nm_mpi_internal_init(void)

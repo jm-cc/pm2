@@ -20,7 +20,7 @@
 
 #include <Padico/Puk.h>
 #include <Padico/Module.h>
-PADICO_MODULE_HOOK(NewMad_Core);
+PADICO_MODULE_BUILTIN(MadMPI, NULL, NULL, NULL);
 
 static int init_done = 0;
 

@@ -18,7 +18,7 @@
 #include <errno.h>
 
 #include <Padico/Module.h>
-PADICO_MODULE_HOOK(NewMad_Core);
+PADICO_MODULE_HOOK(MadMPI);
 
 
 NM_MPI_HANDLE_TYPE(request, nm_mpi_request_t, _NM_MPI_REQUEST_OFFSET, 256);

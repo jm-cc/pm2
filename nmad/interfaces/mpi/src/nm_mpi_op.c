@@ -15,6 +15,9 @@
 
 #include "nm_mpi_private.h"
 
+#include <Padico/Module.h>
+PADICO_MODULE_HOOK(MadMPI);
+
 
 /* ********************************************************* */
 

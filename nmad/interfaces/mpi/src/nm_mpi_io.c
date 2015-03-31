@@ -16,7 +16,7 @@
 #include "nm_mpi_private.h"
 
 #include <Padico/Module.h>
-PADICO_MODULE_HOOK(NewMad_Core);
+PADICO_MODULE_HOOK(MadMPI);
 
 /** Internal MPI file */
 typedef struct nm_mpi_file_s

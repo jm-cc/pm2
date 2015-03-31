@@ -23,7 +23,7 @@
 #include <errno.h>
 
 #include <Padico/Module.h>
-PADICO_MODULE_HOOK(NewMad_Core);
+PADICO_MODULE_HOOK(MadMPI);
 
 
 #if defined NMAD_FORTRAN_TARGET_GFORTRAN

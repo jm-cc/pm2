@@ -124,8 +124,9 @@ static void strat_decision_tree_destroy(void*_status)
   for(i = 0; i < status->n_samples; i++)
     {
       const struct nm_strat_decision_tree_sample_s*sample = &status->samples[i];
-      double t = TBX_TIMING_DELAY(status->time_orig, sample->timestamp);
-      fprintf(f, "%16.2f %10ld %4d %10ld\n", t, sample->submitted_size, sample->nb_pw, sample->size_outlist);
+      const double t = TBX_TIMING_DELAY(status->time_orig, sample->timestamp);
+      const double t_end = (sample->profile_bandwidth > 0) ? t + sample->profile_latency + (sample->submitted_size / sample->profile_bandwidth) : t;
+      fprintf(f, "%16.2f %16.2f %10ld %4d %10ld\n", t, t_end, sample->submitted_size, sample->nb_pw, sample->size_outlist);
     }
   fclose(f);
   close(fd);
@@ -159,6 +160,8 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_pack_s*p_pack
 
   /* ******************************************************* */
   {
+    struct nm_gate*p_gate = p_pack->p_gate;
+    nm_drv_t p_drv = nm_drv_default(p_gate);
     struct tbx_fast_list_head *out_list = &status->out_list;
     nm_len_t size_outlist = 0;
     int nb_pw = 0;
@@ -189,8 +192,8 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_pack_s*p_pack
 	.size_outlist      = size_outlist,
 	.pw_length         = p_pw_trace ? p_pw_trace->length : 0,
 	.pw_remaining_data = p_pw_trace ? nm_so_pw_remaining_data(p_pw_trace) : 0,
-	/*	    .profile_latency   = p_drv->profile.latency,
-		    .profile_bandwidth = p_drv->profile.bandwidth*/
+	.profile_latency   = p_drv->profile.latency,
+	.profile_bandwidth = p_drv->profile.bandwidth
       };
     TBX_GET_TICK(sample.timestamp);
     status->samples[status->n_samples] = sample;

@@ -151,7 +151,7 @@ int mpi_finalize(void)
 
 int mpi_abort(MPI_Comm comm TBX_UNUSED, int errorcode)
 {
-  fprintf(stderr, "MadMPI: FATAL- abort.\n");
+  fprintf(stderr, "# madmpi: FATAL- MPI_Abort err = %d\n", errorcode);
   nm_launcher_abort();
   abort();
   return errorcode;

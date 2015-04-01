@@ -208,8 +208,8 @@ typedef struct nm_mpi_datatype_s
   int elements;
   /** whether entirely contiguous */
   int is_contig;
-  /** extent of type */
-  size_t extent;
+  /** extent of type; upper bound is lb + extent */
+  MPI_Aint extent;
   /** lower bound of type */
   MPI_Aint lb;
   /** size of type */
@@ -525,6 +525,12 @@ void nm_mpi_datatype_unpack(const void*src_ptr, void*dest_ptr, nm_mpi_datatype_t
 
 void nm_mpi_datatype_copy(const void*src_buf, nm_mpi_datatype_t*p_src_type, int src_count,
 			  void*dest_buf, nm_mpi_datatype_t*p_dest_type, int dest_count);
+
+/** get a pointer on the count'th data buffer */
+static inline void*nm_mpi_datatype_get_ptr(void*buf, int count, const nm_mpi_datatype_t*p_datatype)
+{
+  return buf + count * p_datatype->extent;
+}
 
 /* Reduce operation functionalities */
 

@@ -214,7 +214,7 @@ int mpi_type_ub(MPI_Datatype datatype, MPI_Aint*displacement)
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
     return MPI_ERR_TYPE;
-  *displacement = p_datatype->extent; /* UB is extent since we support only LB=0 */
+  *displacement = p_datatype->lb + p_datatype->extent;
   return MPI_SUCCESS;
 }
 

@@ -27,6 +27,13 @@ typedef struct nm_mpi_file_s
   int amode;
   /** communicator attached to file */
   struct nm_mpi_communicator_s*p_comm;
+  /** file view */
+  struct
+  {
+    MPI_Offset disp;
+    struct nm_mpi_datatype_s*p_etype;
+    struct nm_mpi_datatype_s*p_filetype;
+  } view;
   /** file kind */
   enum
     {
@@ -47,7 +54,11 @@ NM_MPI_ALIAS(MPI_File_get_size,  mpi_file_get_size);
 NM_MPI_ALIAS(MPI_File_get_amode, mpi_file_get_amode);
 NM_MPI_ALIAS(MPI_File_get_group, mpi_file_get_group);
 NM_MPI_ALIAS(MPI_File_get_type_extent, mpi_file_get_type_extent);
+NM_MPI_ALIAS(MPI_File_set_view,  mpi_file_set_view);
 NM_MPI_ALIAS(MPI_File_close,     mpi_file_close);
+NM_MPI_ALIAS(MPI_File_delete,    mpi_file_delete);
+NM_MPI_ALIAS(MPI_File_read,      mpi_file_read);
+NM_MPI_ALIAS(MPI_File_write,     mpi_file_write);
 NM_MPI_ALIAS(MPI_File_read_at,   mpi_file_read_at);
 NM_MPI_ALIAS(MPI_File_write_at,  mpi_file_write_at);
 
@@ -78,6 +89,9 @@ int mpi_file_open(MPI_Comm comm, char*filename, int amode, MPI_Info info, MPI_Fi
   p_file->amode = amode;
   p_file->p_comm = p_comm;
   p_file->kind = NM_MPI_FILE_POSIX;
+  p_file->view.disp = 0;
+  p_file->view.p_etype = NULL;
+  p_file->view.p_filetype = NULL;
   const int mode =
     ((amode & MPI_MODE_RDONLY) ? O_RDONLY : 0) |
     ((amode & MPI_MODE_WRONLY) ? O_WRONLY : 0) |
@@ -106,6 +120,15 @@ int mpi_file_close(MPI_File*fh)
   *fh = MPI_FILE_NULL;
   return MPI_SUCCESS;
 }
+
+int mpi_file_delete(char*filename, MPI_Info info)
+{
+  int rc = unlink(filename);
+  if(rc != 0)
+    return MPI_ERR_NO_SUCH_FILE;
+  return MPI_SUCCESS;
+}
+
 
 int mpi_file_get_size(MPI_File fh, MPI_Offset*size)
 {
@@ -150,6 +173,73 @@ int mpi_file_get_type_extent(MPI_File fh, MPI_Datatype datatype, MPI_Aint*extent
   return MPI_SUCCESS;
 }
 
+int mpi_file_set_view(MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype, const char*datarep, MPI_Info info)
+{
+  if(strcmp(datarep, "native") != 0)
+    return MPI_ERR_UNSUPPORTED_DATAREP;
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, fh);
+  if(p_file == NULL)
+    return MPI_ERR_BAD_FILE;
+  nm_mpi_datatype_t*p_etype = nm_mpi_datatype_get(etype);
+  if(p_etype == NULL)
+    return MPI_ERR_TYPE;
+  nm_mpi_datatype_t*p_filetype = nm_mpi_datatype_get(filetype);
+  if(p_filetype == NULL)
+    return MPI_ERR_TYPE;
+  p_file->view.disp = disp;
+  p_file->view.p_etype = p_etype;
+  p_file->view.p_filetype = p_filetype;
+  lseek(p_file->fd, disp, SEEK_SET);
+  return MPI_SUCCESS;
+}
+
+
+int mpi_file_read(MPI_File fh, void*buf, int count, MPI_Datatype datatype, MPI_Status*status)
+{
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, fh);
+  if(p_file == NULL)
+    return MPI_ERR_BAD_FILE;
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  const size_t size = count * nm_mpi_datatype_size(p_datatype);
+  void*ptr = malloc(size);
+  ssize_t rc = read(p_file->fd, ptr, size);
+  if(rc != size)
+    {
+      padico_fatal("MadMPI: read error rc = %lld; size = %lld\n", (long long)rc, (long long)size);
+    }
+  nm_mpi_datatype_unpack(ptr, buf, p_datatype, count);
+  free(ptr);
+  if(status)
+  {
+    status->MPI_ERROR = MPI_SUCCESS;
+    status->size = size;
+  }
+  return MPI_SUCCESS;
+}
+
+int mpi_file_write(MPI_File fh, void*buf, int count, MPI_Datatype datatype, MPI_Status*status)
+{
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, fh);
+  if(p_file == NULL)
+    return MPI_ERR_BAD_FILE;
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  const size_t size = count * nm_mpi_datatype_size(p_datatype);
+  void*ptr = malloc(size);
+  nm_mpi_datatype_pack(ptr, buf, p_datatype, count);
+  ssize_t rc = write(p_file->fd, ptr, size);
+  if(rc != size)
+    {
+      padico_fatal("MadMPI: write error rc = %lld; size = %lld\n", (long long)rc, (long long)size);
+    }
+  free(ptr);
+  if(status)
+  {
+    status->MPI_ERROR = MPI_SUCCESS;
+    status->size = size;
+  }
+  return MPI_SUCCESS;
+}
+
 int mpi_file_read_at(MPI_File fh, MPI_Offset offset, void*buf, int count, MPI_Datatype datatype, MPI_Status*status)
 {
   nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, fh);
@@ -165,6 +255,11 @@ int mpi_file_read_at(MPI_File fh, MPI_Offset offset, void*buf, int count, MPI_Da
     }
   nm_mpi_datatype_unpack(ptr, buf, p_datatype, count);
   free(ptr);
+  if(status)
+  {
+    status->MPI_ERROR = MPI_SUCCESS;
+    status->size = size;
+  }
   return MPI_SUCCESS;
 }
 
@@ -183,6 +278,11 @@ int mpi_file_write_at(MPI_File fh, MPI_Offset offset, void*buf, int count, MPI_D
       padico_fatal("MadMPI: write error rc = %lld; size = %lld\n", (long long)rc, (long long)size);
     }
   free(ptr);
+  if(status)
+  {
+    status->MPI_ERROR = MPI_SUCCESS;
+    status->size = size;
+  }
   return MPI_SUCCESS;
 }
 

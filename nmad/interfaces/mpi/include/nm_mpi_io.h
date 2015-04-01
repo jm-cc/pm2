@@ -46,6 +46,11 @@ int MPI_File_get_type_extent(MPI_File fh, MPI_Datatype datatype, MPI_Aint*extent
 int MPI_File_set_info(MPI_File fh, MPI_Info info);
 int MPI_File_get_info(MPI_File fh, MPI_Info*info);
 
+int MPI_File_set_view(MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype, const char*datarep, MPI_Info info);
+  
+int MPI_File_read(MPI_File fh, void*buf, int count, MPI_Datatype datatype, MPI_Status*status);
+int MPI_File_write(MPI_File fh, void*buf, int count, MPI_Datatype datatype, MPI_Status*status);
+
 int MPI_File_read_at(MPI_File fh, MPI_Offset offset, void*buf, int count, MPI_Datatype datatype, MPI_Status*status);
 int MPI_File_write_at(MPI_File fh, MPI_Offset offset, void*buf, int count, MPI_Datatype datatype, MPI_Status*status);
 

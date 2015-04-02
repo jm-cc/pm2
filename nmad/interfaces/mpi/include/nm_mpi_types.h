@@ -94,7 +94,7 @@
 
 /** @name Pre-defined constants */
 /* @{ */
-#define MPI_UNDEFINED      (-32766)
+#define MPI_UNDEFINED      (-2147483647)
 #define MPI_UNDEFINED_RANK MPI_UNDEFINED
 /* @} */
 
@@ -107,7 +107,7 @@
 /* @} */
 
 /** type that holds an address */
-typedef uintptr_t MPI_Aint;
+typedef intptr_t MPI_Aint;
 
 /** type for counts */
 typedef long long int MPI_Count;

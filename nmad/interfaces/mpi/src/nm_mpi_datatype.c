@@ -175,7 +175,10 @@ int mpi_type_size(MPI_Datatype datatype, int *size)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
-    return MPI_ERR_TYPE;
+    {
+      *size = MPI_UNDEFINED;
+      return MPI_ERR_TYPE;
+    }
   *size = p_datatype->size;
   return MPI_SUCCESS;
 }
@@ -184,7 +187,10 @@ int mpi_type_get_extent(MPI_Datatype datatype, MPI_Aint*lb, MPI_Aint*extent)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
-    return MPI_ERR_TYPE;
+    {
+      *extent = MPI_UNDEFINED;
+      return MPI_ERR_TYPE;
+    }
   if(lb != NULL)
     *lb = p_datatype->lb;
   if(extent != NULL)
@@ -196,7 +202,10 @@ int mpi_type_extent(MPI_Datatype datatype, MPI_Aint*extent)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
-    return MPI_ERR_TYPE;
+    {
+      *extent = MPI_UNDEFINED;
+      return MPI_ERR_TYPE;
+    }
   *extent = p_datatype->extent;
   return MPI_SUCCESS;
 }
@@ -221,6 +230,11 @@ int mpi_type_ub(MPI_Datatype datatype, MPI_Aint*displacement)
 int mpi_type_dup(MPI_Datatype oldtype, MPI_Datatype*newtype)
 {
   nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
+  if(p_oldtype == NULL)
+    {
+      *newtype = MPI_DATATYPE_NULL;
+      return MPI_ERR_TYPE;
+    }
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_DUP, p_oldtype->size, 1);
   *newtype = p_newtype->id;
   p_newtype->is_contig = p_oldtype->is_contig;
@@ -238,6 +252,11 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
       padico_warning("# madmpi: lb != 0 **experimental**\n");
     }
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
+  if(p_oldtype == NULL)
+    {
+      *newtype = MPI_DATATYPE_NULL;
+      return MPI_ERR_TYPE;
+    }
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_RESIZED, p_oldtype->size, 1);
   *newtype = p_newtype->id;
   p_newtype->is_contig = (p_oldtype->is_contig && (lb == 0) && (extent == p_oldtype->size));
@@ -251,6 +270,8 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
 int mpi_type_commit(MPI_Datatype*datatype)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
   nm_mpi_datatype_iscontig(p_datatype);
   p_datatype->committed = 1;
   return MPI_SUCCESS;
@@ -259,6 +280,8 @@ int mpi_type_commit(MPI_Datatype*datatype)
 int mpi_type_free(MPI_Datatype*datatype)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
   p_datatype->refcount--;
   *datatype = MPI_DATATYPE_NULL;
   if(p_datatype->refcount > 0)
@@ -275,6 +298,11 @@ int mpi_type_free(MPI_Datatype*datatype)
 int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
+  if(p_oldtype == NULL)
+    {
+      *newtype = MPI_DATATYPE_NULL;
+      return MPI_ERR_TYPE;
+    }
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_CONTIGUOUS, p_oldtype->size * count, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = p_oldtype->is_contig;
@@ -288,6 +316,11 @@ int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
 int mpi_type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
+  if(p_oldtype == NULL)
+    {
+      *newtype = MPI_DATATYPE_NULL;
+      return MPI_ERR_TYPE;
+    }
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_VECTOR, p_oldtype->size * count * blocklength, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
@@ -303,6 +336,11 @@ int mpi_type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype
 int mpi_type_hvector(int count, int blocklength, MPI_Aint hstride, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
+  if(p_oldtype == NULL)
+    {
+      *newtype = MPI_DATATYPE_NULL;
+      return MPI_ERR_TYPE;
+    }
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_HVECTOR, p_oldtype->size * count * blocklength, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
@@ -319,6 +357,11 @@ int mpi_type_indexed(int count, int *array_of_blocklengths, int *array_of_displa
 {
   int i;
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
+  if(p_oldtype == NULL)
+    {
+      *newtype = MPI_DATATYPE_NULL;
+      return MPI_ERR_TYPE;
+    }
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_INDEXED, 0, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
@@ -341,6 +384,11 @@ int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_
 {
   int i;
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
+  if(p_oldtype == NULL)
+    {
+      *newtype = MPI_DATATYPE_NULL;
+      return MPI_ERR_TYPE;
+    }
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_HINDEXED, 0, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;

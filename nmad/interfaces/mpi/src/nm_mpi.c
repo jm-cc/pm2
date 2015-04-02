@@ -337,18 +337,18 @@ int mpi_get_elements(const MPI_Status*status, MPI_Datatype datatype, int*count)
   if(p_datatype == NULL)
     return MPI_ERR_TYPE;
   const size_t datatype_size = nm_mpi_datatype_size(p_datatype);
+  const size_t basic_size = datatype_size / p_datatype->elements;
   if(datatype_size == 0)
     {
       *count = 0;
     }
-  else if(status->size % datatype_size != 0)
+  else if(status->size % basic_size != 0)
     {
       *count = MPI_UNDEFINED;
     }
   else
     {
-      const int type_count = status->size / datatype_size;
-      *count = type_count * p_datatype->elements;
+      *count = status->size / basic_size;
     }
   return MPI_SUCCESS;
 }

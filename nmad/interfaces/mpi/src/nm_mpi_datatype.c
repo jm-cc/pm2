@@ -235,10 +235,9 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
 {
   if(lb != 0)
     {
-      ERROR("madmpi: lb != 0 not supported.");
-      return MPI_ERR_INTERN;
+      padico_warning("# madmpi: lb != 0 **experimental**\n");
     }
-  nm_mpi_datatype_t *p_oldtype = nm_mpi_datatype_get(oldtype);
+  nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_RESIZED, p_oldtype->size, 1);
   *newtype = p_newtype->id;
   p_newtype->is_contig = (p_oldtype->is_contig && (lb == 0) && (extent == p_oldtype->size));
@@ -249,7 +248,7 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
   return MPI_SUCCESS;
 }
 
-int mpi_type_commit(MPI_Datatype *datatype)
+int mpi_type_commit(MPI_Datatype*datatype)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
   nm_mpi_datatype_iscontig(p_datatype);
@@ -257,7 +256,7 @@ int mpi_type_commit(MPI_Datatype *datatype)
   return MPI_SUCCESS;
 }
 
-int mpi_type_free(MPI_Datatype *datatype)
+int mpi_type_free(MPI_Datatype*datatype)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
   p_datatype->refcount--;
@@ -279,6 +278,7 @@ int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_CONTIGUOUS, p_oldtype->size * count, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = p_oldtype->is_contig;
+  p_newtype->lb = p_oldtype->lb;
   p_newtype->extent = p_oldtype->extent * count;
   p_newtype->CONTIGUOUS.p_old_type = p_oldtype;
   p_oldtype->refcount++;
@@ -291,7 +291,8 @@ int mpi_type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_VECTOR, p_oldtype->size * count * blocklength, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
-  p_newtype->extent = p_oldtype->extent * blocklength + (count - 1) * stride * p_oldtype->size;
+  p_newtype->lb = p_oldtype->lb;
+  p_newtype->extent = p_oldtype->extent * blocklength + (count - 1) * stride * p_oldtype->extent;
   p_newtype->VECTOR.p_old_type = p_oldtype;
   p_newtype->VECTOR.stride = stride;
   p_newtype->VECTOR.blocklength = blocklength;
@@ -305,6 +306,7 @@ int mpi_type_hvector(int count, int blocklength, MPI_Aint hstride, MPI_Datatype 
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_HVECTOR, p_oldtype->size * count * blocklength, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
+  p_newtype->lb = p_oldtype->lb;
   p_newtype->extent = p_oldtype->extent * blocklength + (count - 1) * hstride;
   p_newtype->HVECTOR.p_old_type = p_oldtype;
   p_newtype->HVECTOR.hstride = hstride;
@@ -328,8 +330,9 @@ int mpi_type_indexed(int count, int *array_of_blocklengths, int *array_of_displa
       p_newtype->INDEXED.p_map[i].displacement = array_of_displacements[i];
       p_newtype->size += p_oldtype->size * array_of_blocklengths[i];
     }
-  p_newtype->extent = (p_newtype->INDEXED.p_map[count - 1].displacement * p_oldtype->size + 
-		       p_oldtype->extent * p_newtype->INDEXED.p_map[count - 1].blocklength);
+  p_newtype->lb = p_oldtype->lb + p_newtype->INDEXED.p_map[0].displacement * p_oldtype->extent;
+  p_newtype->extent = (p_newtype->INDEXED.p_map[count - 1].displacement * p_oldtype->extent + 
+		       p_newtype->INDEXED.p_map[count - 1].blocklength  * p_oldtype->extent);
   p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
@@ -349,8 +352,9 @@ int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_
       p_newtype->HINDEXED.p_map[i].displacement = array_of_displacements[i];
       p_newtype->size += p_oldtype->size * array_of_blocklengths[i];
     }
+  p_newtype->lb = p_oldtype->lb + p_newtype->HINDEXED.p_map[0].displacement;
   p_newtype->extent = (p_newtype->HINDEXED.p_map[count - 1].displacement + 
-		       p_oldtype->extent * p_newtype->HINDEXED.p_map[count - 1].blocklength);
+		       p_newtype->HINDEXED.p_map[count - 1].blocklength * p_oldtype->extent );
   p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
@@ -366,7 +370,8 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_STRUCT, 0, count);
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
-  p_newtype->extent = -1;
+  p_newtype->lb = 0;
+  p_newtype->extent = 0;
   p_newtype->STRUCT.p_map = malloc(count * sizeof(struct nm_mpi_type_struct_map_s));
   for(i = 0; i < count; i++)
     {
@@ -382,6 +387,20 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
       p_newtype->STRUCT.p_map[i].displacement = array_of_displacements[i];
       p_newtype->size += p_newtype->STRUCT.p_map[i].blocklength * p_datatype->size;
       p_datatype->refcount++;
+      if(i == 0)
+	{
+	  p_newtype->lb = p_datatype->lb + p_newtype->STRUCT.p_map[i].displacement;
+	}
+      if(i == count - 1)
+	{
+	  /* We suppose here that the last field of the struct does not need
+	   * an alignment. In case, one sends an array of struct, the 1st
+	   * field of the 2nd struct immediatly follows the last field of the
+	   * previous struct.
+	   */
+	  p_newtype->extent = p_newtype->STRUCT.p_map[i].displacement + 
+	    p_newtype->STRUCT.p_map[i].blocklength * p_newtype->STRUCT.p_map[i].p_old_type->extent;
+	}
       if(array_of_types[i] == MPI_UB)
 	{
 	  p_newtype->extent = array_of_displacements[i];
@@ -389,18 +408,10 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
 	}
       if(array_of_types[i] == MPI_LB && array_of_displacements[i] != 0)
 	{
-	  ERROR("madmpi: non-zero MPI_LB not supported.\n");
+	  ERROR("# madmpi: non-zero MPI_LB not supported in struct.\n");
 	  break;
 	}
     }
-  /** We suppose here that the last field of the struct does not need
-   * an alignment. In case, one sends an array of struct, the 1st
-   * field of the 2nd struct immediatly follows the last field of the
-   * previous struct.
-   */
-  if(p_newtype->extent == -1)
-    p_newtype->extent = p_newtype->STRUCT.p_map[count - 1].displacement + 
-      p_newtype->STRUCT.p_map[count - 1].blocklength * p_newtype->STRUCT.p_map[count - 1].p_old_type->extent;
   return MPI_SUCCESS;
 }
 

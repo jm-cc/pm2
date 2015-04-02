@@ -106,7 +106,11 @@
 #define MPI_THREAD_MULTIPLE	3
 /* @} */
 
+/** type that holds an address */
 typedef uintptr_t MPI_Aint;
+
+/** type for counts */
+typedef int MPI_Count;
 
 /** An info opaque object */
 typedef int MPI_Info;

@@ -125,6 +125,8 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_2REAL,              sizeof(float) + sizeof(float), 2, "MPI_2REAL");
   nm_mpi_datatype_store(MPI_2DOUBLE_PRECISION,  sizeof(double) + sizeof(double), 2, "MPI_2DOUBLE_PRECISION");
   
+  nm_mpi_datatype_store(MPI_COUNT,              sizeof(MPI_Count), 1, "MPI_COUNT");
+
   /* TODO- Fortran types: 2COMPLEX, 2DOUBLE_COMPLEX */
   nm_mpi_datatype_store(MPI_UB,                 0, 0, "MPI_UB");
   nm_mpi_datatype_store(MPI_LB,                 0, 0, "MPI_LB");

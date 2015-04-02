@@ -110,7 +110,7 @@
 typedef uintptr_t MPI_Aint;
 
 /** type for counts */
-typedef int MPI_Count;
+typedef long long int MPI_Count;
 
 /** An info opaque object */
 typedef int MPI_Info;
@@ -253,8 +253,10 @@ typedef int MPI_Datatype;
 #define MPI_UINT16_T          ((MPI_Datatype)47)
 #define MPI_UINT32_T          ((MPI_Datatype)48)
 #define MPI_UINT64_T          ((MPI_Datatype)49)
+/* MPI-3 MPI_Count */
+#define MPI_COUNT             ((MPI_Datatype)50)
 /* offset for dynamically allocated datatypes */
-#define _NM_MPI_DATATYPE_OFFSET              50
+#define _NM_MPI_DATATYPE_OFFSET              51
 
 /** Types of datatypes */
 typedef enum 

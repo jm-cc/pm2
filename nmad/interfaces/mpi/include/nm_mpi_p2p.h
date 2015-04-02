@@ -340,6 +340,10 @@ int MPI_Get_count(MPI_Status *status,
                   MPI_Datatype datatype,
                   int *count);
 
+int MPI_Get_elements(const MPI_Status*status,
+		     MPI_Datatype datatype,
+		     int *count);
+
 /**
  * This function does not belong to the MPI standard: compares two
  * request handles

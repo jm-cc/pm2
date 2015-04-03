@@ -142,7 +142,7 @@ void nm_mpi_datatype_exit(void)
 /* ********************************************************* */
 
 /** store a basic datatype */
-static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*name)
+static void nm_mpi_datatype_store(int id, size_t size, int count, const char*name)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_handle_datatype_store(&nm_mpi_datatypes, id);
   p_datatype->committed = 1;
@@ -151,19 +151,21 @@ static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*
   p_datatype->refcount = 2;
   p_datatype->lb = 0;
   p_datatype->size = size;
-  p_datatype->elements = elements;
+  p_datatype->count = count;
+  p_datatype->elements = count;
   p_datatype->extent = size;
   p_datatype->name = strdup(name);
 }
 
 /** allocate a new datatype and init with default values */
-static nm_mpi_datatype_t*nm_mpi_datatype_alloc(nm_mpi_type_combiner_t combiner, size_t size, int elements)
+static nm_mpi_datatype_t*nm_mpi_datatype_alloc(nm_mpi_type_combiner_t combiner, size_t size, int count)
 {
   nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   p_newtype->combiner = combiner;
   p_newtype->committed = 0;
   p_newtype->size = size;
-  p_newtype->elements = elements;
+  p_newtype->count = count;
+  p_newtype->elements = count;
   p_newtype->lb = MPI_UNDEFINED;
   p_newtype->extent = MPI_UNDEFINED;
   p_newtype->refcount = 1;
@@ -250,10 +252,6 @@ int mpi_type_dup(MPI_Datatype oldtype, MPI_Datatype*newtype)
 
 int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype)
 {
-  if(lb != 0)
-    {
-      padico_warning("# madmpi: lb != 0 **experimental**\n");
-    }
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
   if(p_oldtype == NULL)
     {
@@ -381,11 +379,10 @@ int mpi_type_indexed(int count, int *array_of_blocklengths, int *array_of_displa
 				    p_newtype->INDEXED.p_map[i].displacement * p_oldtype->extent,
 				    p_oldtype, p_newtype);
     }
-  if(count == 0)
-    {
-      p_newtype->lb = 0;
-      p_newtype->extent = 0;
-    }
+  if(p_newtype->lb == MPI_UNDEFINED)
+    p_newtype->lb = 0;
+  if(p_newtype->extent == MPI_UNDEFINED)
+    p_newtype->extent = 0;
   p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
@@ -404,11 +401,6 @@ int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_
   p_newtype->is_contig = 0;
   p_newtype->HINDEXED.p_old_type = p_oldtype;
   p_newtype->HINDEXED.p_map = malloc(count * sizeof(struct nm_mpi_type_hindexed_map_s));
-  if(count == 0)
-    {
-      p_newtype->lb = 0;
-      p_newtype->extent = 0;
-    }
   for(i = 0; i < count ; i++)
     {
       p_newtype->HINDEXED.p_map[i].blocklength = array_of_blocklengths[i];
@@ -418,6 +410,10 @@ int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_
 				    p_newtype->HINDEXED.p_map[i].displacement,
 				    p_oldtype, p_newtype);
     }
+  if(p_newtype->lb == MPI_UNDEFINED)
+    p_newtype->lb = 0;
+  if(p_newtype->extent == MPI_UNDEFINED)
+    p_newtype->extent = 0;
   p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
@@ -434,11 +430,6 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
   p_newtype->STRUCT.p_map = malloc(count * sizeof(struct nm_mpi_type_struct_map_s));
-  if(count == 0)
-    {
-      p_newtype->lb = 0;
-      p_newtype->extent = 0;
-    }
   for(i = 0; i < count; i++)
     {
       nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(array_of_types[i]);
@@ -458,6 +449,10 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
 				    p_newtype->STRUCT.p_map[i].p_old_type,
 				    p_newtype);
     }
+  if(p_newtype->lb == MPI_UNDEFINED)
+    p_newtype->lb = 0;
+  if(p_newtype->extent == MPI_UNDEFINED)
+    p_newtype->extent = 0;
   return MPI_SUCCESS;
 }
 
@@ -506,19 +501,19 @@ int mpi_type_get_envelope(MPI_Datatype datatype, int*num_integers, int*num_addre
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_INDEXED:
-      *num_integers  = p_datatype->elements;
-      *num_addresses = p_datatype->elements;
+      *num_integers  = p_datatype->count;
+      *num_addresses = p_datatype->count;
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_HINDEXED:
-      *num_integers  = p_datatype->elements;
-      *num_addresses = p_datatype->elements;
+      *num_integers  = p_datatype->count;
+      *num_addresses = p_datatype->count;
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_STRUCT:
-      *num_integers  = p_datatype->elements;
-      *num_addresses = p_datatype->elements;
-      *num_datatypes = p_datatype->elements;
+      *num_integers  = p_datatype->count;
+      *num_addresses = p_datatype->count;
+      *num_datatypes = p_datatype->count;
       break;
     }
   return MPI_SUCCESS;
@@ -539,27 +534,27 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
       array_of_datatypes[0] = p_datatype->CONTIGUOUS.p_old_type->id;
       break;
     case MPI_COMBINER_DUP:
-      array_of_integers[0]  = p_datatype->elements;
+      array_of_integers[0]  = p_datatype->count;
       array_of_datatypes[0] = p_datatype->DUP.p_old_type->id;
       break;
     case MPI_COMBINER_RESIZED:
-      array_of_integers[0]  = p_datatype->elements;
+      array_of_integers[0]  = p_datatype->count;
       array_of_datatypes[0] = p_datatype->RESIZED.p_old_type->id;
       break;
     case MPI_COMBINER_VECTOR:
-      array_of_integers[0]  = p_datatype->elements;
+      array_of_integers[0]  = p_datatype->count;
       array_of_integers[1]  = p_datatype->VECTOR.stride;
       array_of_integers[2]  = p_datatype->VECTOR.blocklength;
       array_of_datatypes[0] = p_datatype->VECTOR.p_old_type->id;
       break;
     case MPI_COMBINER_HVECTOR:
-      array_of_integers[0]  = p_datatype->elements;
+      array_of_integers[0]  = p_datatype->count;
       array_of_integers[1]  = p_datatype->HVECTOR.hstride;
       array_of_integers[2]  = p_datatype->HVECTOR.blocklength;
       array_of_datatypes[0] = p_datatype->HVECTOR.p_old_type->id;
       break;
     case MPI_COMBINER_INDEXED:
-      array_of_integers[0]  = p_datatype->elements;
+      array_of_integers[0]  = p_datatype->count;
       break;
     case MPI_COMBINER_HINDEXED:
       break;
@@ -650,7 +645,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	    case MPI_COMBINER_CONTIGUOUS:
 	      {
 		const struct nm_data_mpi_datatype_s sub = 
-		  { .ptr = ptr, .p_datatype = p_datatype->CONTIGUOUS.p_old_type, .count = p_datatype->elements };
+		  { .ptr = ptr, .p_datatype = p_datatype->CONTIGUOUS.p_old_type, .count = p_datatype->count };
 		nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 	      }
 	      break;
@@ -672,7 +667,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	      break;
 	      
 	    case MPI_COMBINER_VECTOR:
-	      for(j = 0; j < p_datatype->elements; j++)
+	      for(j = 0; j < p_datatype->count; j++)
 		{
 		  const struct nm_data_mpi_datatype_s sub = 
 		    { .ptr        = ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->size,
@@ -683,7 +678,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	      break;
 
 	    case MPI_COMBINER_HVECTOR:
-	      for(j = 0; j < p_datatype->elements; j++)
+	      for(j = 0; j < p_datatype->count; j++)
 		{
 		  const struct nm_data_mpi_datatype_s sub = 
 		    { .ptr        = ptr + j * p_datatype->HVECTOR.hstride, 
@@ -694,7 +689,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	      break;
 	      
 	    case MPI_COMBINER_INDEXED:
-	      for(j = 0; j < p_datatype->elements; j++)
+	      for(j = 0; j < p_datatype->count; j++)
 		{
 		  const struct nm_data_mpi_datatype_s sub = 
 		    { .ptr        = ptr + p_datatype->INDEXED.p_map[j].displacement * p_datatype->INDEXED.p_old_type->extent,
@@ -705,7 +700,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	      break;
 
 	    case MPI_COMBINER_HINDEXED:
-	      for(j = 0; j < p_datatype->elements; j++)
+	      for(j = 0; j < p_datatype->count; j++)
 		{
 		  const struct nm_data_mpi_datatype_s sub = 
 		    { .ptr        = ptr + p_datatype->HINDEXED.p_map[j].displacement,
@@ -716,7 +711,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 	      break;
 	      
 	    case MPI_COMBINER_STRUCT:
-	      for(j = 0; j < p_datatype->elements; j++)
+	      for(j = 0; j < p_datatype->count; j++)
 		{
 		  const struct nm_data_mpi_datatype_s sub = 
 		    { .ptr        = ptr + p_datatype->STRUCT.p_map[j].displacement,
@@ -737,6 +732,7 @@ void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply,
 /** update bounds (lb, ub, extent) in newtype to take into account the given block of data */
 static void nm_mpi_datatype_update_bounds(int blocklength, MPI_Aint displacement, nm_mpi_datatype_t*p_oldtype, nm_mpi_datatype_t*p_newtype)
 {
+  p_newtype->elements += blocklength - 1; /* 'elements' was initialized with 'count'; don't count it twice */
   if(blocklength > 0)
     {
       const intptr_t cur_lb = p_newtype->lb;

@@ -315,18 +315,25 @@ int mpi_get_version(int *version, int *subversion)
 int mpi_get_count(MPI_Status*status, MPI_Datatype datatype, int*count)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
-  const size_t size = nm_mpi_datatype_size(p_datatype);
-  if(size == 0)
-    {
-      *count = 0;
-    }
-  else if(status->size % size != 0)
+  if(p_datatype == NULL)
     {
       *count = MPI_UNDEFINED;
     }
   else
     {
-      *count = status->size / size;
+      const size_t size = nm_mpi_datatype_size(p_datatype);
+      if(size == 0)
+	{
+	  *count = 0;
+	}
+      else if(status->size % size != 0)
+	{
+	  *count = MPI_UNDEFINED;
+	}
+      else
+	{
+	  *count = status->size / size;
+	}
     }
   return MPI_SUCCESS;
 }
@@ -336,19 +343,24 @@ int mpi_get_elements(const MPI_Status*status, MPI_Datatype datatype, int*count)
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
     return MPI_ERR_TYPE;
+  if(p_datatype->elements == 0)
+    {
+      *count = 0;
+      return MPI_SUCCESS;
+    }
   const size_t datatype_size = nm_mpi_datatype_size(p_datatype);
-  const size_t basic_size = datatype_size / p_datatype->elements;
+  const size_t element_size = datatype_size / p_datatype->elements;
   if(datatype_size == 0)
     {
       *count = 0;
     }
-  else if(status->size % basic_size != 0)
+  else if(status->size % element_size != 0)
     {
       *count = MPI_UNDEFINED;
     }
   else
     {
-      *count = status->size / basic_size;
+      *count = status->size / element_size;
     }
   return MPI_SUCCESS;
 }

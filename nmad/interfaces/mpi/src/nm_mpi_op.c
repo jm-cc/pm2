@@ -369,11 +369,11 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
   int i, _len = *len;
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*type);
 
-  if(p_datatype->combiner == MPI_COMBINER_CONTIGUOUS && p_datatype->elements == 2)
+  if(p_datatype->combiner == MPI_COMBINER_CONTIGUOUS && p_datatype->count == 2)
     {
       MPI_Datatype oldtype = p_datatype->CONTIGUOUS.p_old_type->id;
       /** Set the actual length */
-      _len = *len * p_datatype->elements;
+      _len = *len * p_datatype->count;
       /** Perform the operation */
       switch (oldtype) 
 	{
@@ -409,9 +409,9 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 	  break;
 	}
     }
-  else if(p_datatype->combiner == MPI_COMBINER_NAMED && p_datatype->elements == 2)
+  else if(p_datatype->combiner == MPI_COMBINER_NAMED && p_datatype->count == 2)
     {
-      _len = *len * p_datatype->elements;
+      _len = *len * p_datatype->count;
       switch(*type)
 	{
 	case MPI_2DOUBLE_PRECISION: { DO_MAXLOC(double); break; }
@@ -423,7 +423,7 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
     }
   else
     {
-      fprintf(stderr, "type %d, elements %d\n", p_datatype->combiner, p_datatype->elements);
+      fprintf(stderr, "type %d, elements %d\n", p_datatype->combiner, p_datatype->count);
       ERROR("Datatype %d for MAXLOC Reduce operation", *type);
     }
 }
@@ -433,11 +433,11 @@ static void nm_mpi_op_minloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
   int i, _len = *len;
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*type);
 
-  if(p_datatype->combiner == MPI_COMBINER_CONTIGUOUS && p_datatype->elements == 2)
+  if(p_datatype->combiner == MPI_COMBINER_CONTIGUOUS && p_datatype->count == 2)
     {
       MPI_Datatype oldtype = p_datatype->CONTIGUOUS.p_old_type->id;
       /** Set the actual length */
-      _len = *len * p_datatype->elements;
+      _len = *len * p_datatype->count;
       /** Perform the operation */
       switch (oldtype) 
 	{

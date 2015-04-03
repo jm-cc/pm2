@@ -204,7 +204,9 @@ typedef struct nm_mpi_datatype_s
   int id;
   /** combiner of datatype elements */
   nm_mpi_type_combiner_t combiner;
-  /** number of basic elements */
+  /** number of blocks in type map */
+  int count;
+  /** total number of basic elements contained in type*/
   int elements;
   /** whether entirely contiguous */
   int is_contig;

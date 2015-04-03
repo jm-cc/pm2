@@ -381,6 +381,11 @@ int mpi_type_indexed(int count, int *array_of_blocklengths, int *array_of_displa
 				    p_newtype->INDEXED.p_map[i].displacement * p_oldtype->extent,
 				    p_oldtype, p_newtype);
     }
+  if(count == 0)
+    {
+      p_newtype->lb = 0;
+      p_newtype->extent = 0;
+    }
   p_oldtype->refcount++;
   return MPI_SUCCESS;
 }
@@ -399,6 +404,11 @@ int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_
   p_newtype->is_contig = 0;
   p_newtype->HINDEXED.p_old_type = p_oldtype;
   p_newtype->HINDEXED.p_map = malloc(count * sizeof(struct nm_mpi_type_hindexed_map_s));
+  if(count == 0)
+    {
+      p_newtype->lb = 0;
+      p_newtype->extent = 0;
+    }
   for(i = 0; i < count ; i++)
     {
       p_newtype->HINDEXED.p_map[i].blocklength = array_of_blocklengths[i];
@@ -424,6 +434,11 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
   p_newtype->STRUCT.p_map = malloc(count * sizeof(struct nm_mpi_type_struct_map_s));
+  if(count == 0)
+    {
+      p_newtype->lb = 0;
+      p_newtype->extent = 0;
+    }
   for(i = 0; i < count; i++)
     {
       nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(array_of_types[i]);
@@ -751,9 +766,12 @@ static void nm_mpi_datatype_update_bounds(int blocklength, MPI_Aint displacement
 	}
       if(new_lb != MPI_UNDEFINED)
 	p_newtype->lb = new_lb;
-      if((new_lb != MPI_UNDEFINED) && (new_ub != MPI_UNDEFINED))
+      if(new_lb != MPI_UNDEFINED)
 	{
-	  p_newtype->extent = new_ub - new_lb;
+	  if(new_ub != MPI_UNDEFINED)
+	    p_newtype->extent = new_ub - new_lb;
+	  else
+	    p_newtype->extent = 0 - new_lb; /* negative extent in case only lb is given */
 	}
     }
 }

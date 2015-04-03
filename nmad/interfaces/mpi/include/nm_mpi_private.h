@@ -208,10 +208,10 @@ typedef struct nm_mpi_datatype_s
   int elements;
   /** whether entirely contiguous */
   int is_contig;
-  /** extent of type; upper bound is lb + extent */
-  MPI_Aint extent;
   /** lower bound of type */
   MPI_Aint lb;
+  /** extent of type; upper bound is lb + extent */
+  MPI_Aint extent;
   /** size of type */
   size_t size;
   /** number of references pointing to this type (active communications, handle) */

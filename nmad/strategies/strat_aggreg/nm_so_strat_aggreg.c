@@ -83,9 +83,9 @@ static inline nm_len_t strat_aggreg_max_small(struct nm_core*p_core)
 	      nm_max_small = p_drv->driver->capabilities.max_unexpected;
 	    }
 	}
-      if(nm_max_small <= 0 || nm_max_small > (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE))
+      if(nm_max_small <= 0 || nm_max_small > (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE - NM_SO_ALIGN_FRONTIER))
 	{
-	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE);
+	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE - NM_SO_ALIGN_FRONTIER);
 	}
       NM_DISPF("# nmad: aggreg- max_small = %lu\n", nm_max_small);
     }
@@ -163,7 +163,7 @@ static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
 static void strat_aggreg_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
   struct nm_strat_aggreg_gate*status = _status;
-  if(len <= strat_aggreg_max_small(p_pack->p_gate->p_core))
+  if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_DATA_HEADER_SIZE, len);
       if(p_pw)

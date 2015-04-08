@@ -71,7 +71,7 @@ static int nm_strat_default_load(void)
   puk_component_declare("NewMad_Strategy_default",
 			puk_component_provides("PadicoComponent", "component", &nm_strat_default_component_driver),
 			puk_component_provides("NewMad_Strategy", "strat", &nm_strat_default_driver),
-			puk_component_attr("nm_max_small", "16342"),
+			puk_component_attr("nm_max_small", "16336"),
 			puk_component_attr("nm_copy_on_send_threshold", "4096"));
   return NM_ESUCCESS;
 }

@@ -22,11 +22,13 @@
 #define NM_COLL_TAG_MASK_P2P      0x7FFFFFFF
 /** base tag used for collectives */
 #define NM_COLL_TAG_BASE          0xFF000000
-/** comm_create */
-#define NM_COLL_TAG_COMM_CREATE ( NM_COLL_TAG_BASE | 0x01 )
 /** barrier */
-#define NM_COLL_TAG_BARRIER     ( NM_COLL_TAG_BASE | 0x02 )
+#define NM_COLL_TAG_BARRIER       ( NM_COLL_TAG_BASE | 0x01 )
 /** bcast */
-#define NM_COLL_TAG_BCAST       ( NM_COLL_TAG_BASE | 0x03 )
+#define NM_COLL_TAG_BCAST         ( NM_COLL_TAG_BASE | 0x02 )
 /** gather */
-#define NM_COLL_TAG_GATHER      ( NM_COLL_TAG_BASE | 0x04 )
+#define NM_COLL_TAG_GATHER        ( NM_COLL_TAG_BASE | 0x03 )
+/** comm_create phase 1 */
+#define NM_COLL_TAG_COMM_CREATE_1 ( NM_COLL_TAG_BASE | 0x04 )
+/** comm_create phase 2 */
+#define NM_COLL_TAG_COMM_CREATE_2 ( NM_COLL_TAG_BASE | 0x05 )

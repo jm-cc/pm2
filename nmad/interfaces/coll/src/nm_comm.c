@@ -109,17 +109,18 @@ nm_comm_t nm_comm_create(nm_comm_t p_comm, nm_group_t group)
     char session_name[32];
   } header = { .session_name = { '\0'} };
   const int root = nm_comm_get_dest(p_comm, nm_gate_vect_at(group, newroot));
-  const nm_tag_t tag = NM_COLL_TAG_COMM_CREATE;
+  const nm_tag_t tag1 = NM_COLL_TAG_COMM_CREATE_1;
+  const nm_tag_t tag2 = NM_COLL_TAG_COMM_CREATE_2;
   if(newrank == -1)
     {
       /* not in group, wait for others */
       do
 	{
-	  nm_coll_bcast(p_comm, root, &header, sizeof(header), tag);
+	  nm_coll_bcast(p_comm, root, &header, sizeof(header), tag1);
 	  if(header.commit == 0)
 	    {
 	      int ack = 1;
-	      nm_coll_gather(p_comm, root, &ack, sizeof(ack), NULL, 0, tag);
+	      nm_coll_gather(p_comm, root, &ack, sizeof(ack), NULL, 0, tag2);
 	    }
 	}
       while(header.commit != 1);
@@ -142,10 +143,10 @@ nm_comm_t nm_comm_create(nm_comm_t p_comm, nm_group_t group)
 		{
 		  int i;
 		  header.commit = 0;
-		  nm_coll_bcast(p_comm, root, &header, sizeof(header), tag);
+		  nm_coll_bcast(p_comm, root, &header, sizeof(header), tag1);
 		  int*acks = malloc(sizeof(int) * nm_comm_size(p_comm));
 		  int ack = 1;
-		  nm_coll_gather(p_comm, root, &ack, sizeof(ack), acks, sizeof(ack), tag);
+		  nm_coll_gather(p_comm, root, &ack, sizeof(ack), acks, sizeof(ack), tag2);
 		  int total_acks = 0;
 		  for(i = 0; i < nm_group_size(group); i++)
 		    {
@@ -155,14 +156,14 @@ nm_comm_t nm_comm_create(nm_comm_t p_comm, nm_group_t group)
 		  if(total_acks == nm_group_size(group))
 		    {
 		      header.commit = 1;
-		      nm_coll_bcast(p_comm, root, &header, sizeof(header), tag);
+		      nm_coll_bcast(p_comm, root, &header, sizeof(header), tag1);
 		      newcomm->p_session = p_session;
 		    }
 		}
 	    }
 	  else
 	    {
-	      nm_coll_bcast(p_comm, root, &header, sizeof(header), tag);
+	      nm_coll_bcast(p_comm, root, &header, sizeof(header), tag1);
 	      if(header.commit == 0)
 		{
 		  if(p_session != NULL)
@@ -172,7 +173,7 @@ nm_comm_t nm_comm_create(nm_comm_t p_comm, nm_group_t group)
 		    }
 		  int rc = nm_session_open(&p_session, header.session_name);
 		  int ack = (rc == NM_ESUCCESS);
-		  nm_coll_gather(p_comm, root, &ack, sizeof(ack), NULL, 0, tag);
+		  nm_coll_gather(p_comm, root, &ack, sizeof(ack), NULL, 0, tag2);
 		}
 	      else if(header.commit == 1)
 		{

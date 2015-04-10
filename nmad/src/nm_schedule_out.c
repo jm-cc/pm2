@@ -105,25 +105,12 @@ int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   nmad_lock_assert();
-
   NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
-  
-  FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv, p_pw->trk_id);
-  
   p_pw->p_gdrv->active_send[p_pw->trk_id]--;
-
-  int i;
-  for(i = 0; i < p_pw->n_completions; i++)
-    {
-      struct nm_pw_completion_s*p_completion = &p_pw->completions[i];
-      (*p_completion->notifier)(p_pw, p_completion);
-    }
-
-  nm_strat_try_and_commit(p_gate);
-
+  nm_pw_notify_completions(p_pw);
   nm_pw_ref_dec(p_pw);
-
+  nm_strat_try_and_commit(p_gate);
   return NM_ESUCCESS;
 }
 

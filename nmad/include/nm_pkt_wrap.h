@@ -185,6 +185,12 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 
+void nm_pw_add_completion(struct nm_pkt_wrap*p_pw, const struct nm_pw_completion_s*p_completion);
+
+void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, nm_len_t len);
+
+void nm_pw_notify_completions(struct nm_pkt_wrap*p_pw);
+
 
 #endif /* NM_PKT_WRAP_H */
 

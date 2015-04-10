@@ -602,7 +602,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_so_ctrl
  * @returns the number of processed bytes in global header, 
  *          -1 if done (last chunk)
  */
-static int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate)
+int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate)
 {
   int rc = 0;
   const nm_proto_t proto_id = (*(nm_proto_t *)ptr) & NM_PROTO_ID_MASK;

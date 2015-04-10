@@ -267,11 +267,6 @@ static inline void nm_pw_ref_dec(struct nm_pkt_wrap *p_pw)
       nm_so_pw_free(p_pw);
     }
 }
-static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_pw)
-{
-  nm_pw_ref_dec(p_pw);
-  return NM_ESUCCESS;
-}
 
 /* ** Receive functions ************************************ */
 /* ********************************************************* */

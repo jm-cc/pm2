@@ -93,16 +93,16 @@ struct nm_pkt_wrap
    */
   
   /** Assignated driver.  */
-  struct nm_drv	*p_drv;
+  struct nm_drv*p_drv;
   
   /** Assignated track ID.  */
   nm_trk_id_t trk_id;
 
   /** Assignated gate, if relevant. */
-  struct nm_gate *p_gate;
+  struct nm_gate*p_gate;
   
   /** Assignated gate driver, if relevant. */
-  struct nm_gate_drv *p_gdrv;
+  struct nm_gate_drv*p_gdrv;
 
   /** Driver implementation data.  */
   void*drv_priv;
@@ -111,26 +111,31 @@ struct nm_pkt_wrap
   /* Packet related fields.					*/
   
   /** Packet flags. */
-  nm_pw_flag_t		 flags;
+  nm_pw_flag_t flags;
   
   /** Cumulated amount of data (everything included) referenced by this wrap. */
-  nm_len_t		 length;
+  nm_len_t length;
 
   /** actual number of allocated entries in the iovec. */
-  int		 v_size;
+  int v_size;
   
   /** Number of *used* entries in io vector.
       - first unused entry after iov  contents is v[v_nb]
   */
-  int		 v_nb;
+  int v_nb;
   
   /** IO vector. */
-  struct iovec		*v;
+  struct iovec*v;
   
   /** number of references pointing to the header */
   int ref_count;
 
-  /** link to insert the pw into a tbx_fast_list. A pw may be store either in:
+  /** destructor called uppon packet destroy */
+  void (*destructor)(struct nm_pkt_wrap*p_pw);
+  /** key for destructor to store private data */
+  void*destructor_key;
+
+  /** link to insert the pw into a tbx_fast_list. A pw may be stored either in:
    * out_list in strategy, pending_large_send in sender, pending_large_recv in receiver,
    * pending_send_list, pending_recv_list in driver,
    * post_sched_out_list, post_recv_list in driver
@@ -138,7 +143,7 @@ struct nm_pkt_wrap
   struct tbx_fast_list_head link;
 
   /** pre-allcoated iovec */
-  struct iovec       prealloc_v[NM_SO_PREALLOC_IOV_LEN];
+  struct iovec prealloc_v[NM_SO_PREALLOC_IOV_LEN];
 
   /* ** fields used when sending */
 

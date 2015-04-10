@@ -81,6 +81,9 @@ static inline void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->v_size  = NM_SO_PREALLOC_IOV_LEN;
   p_pw->v_nb    = 0;
 
+  p_pw->destructor = NULL;
+  p_pw->destructor_key = NULL;
+  
   p_pw->completions = p_pw->prealloc_completions;
   p_pw->completions_size = NM_SO_PREALLOC_IOV_LEN;
   p_pw->n_completions = 0;
@@ -193,6 +196,10 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   int err;
   int flags = p_pw->flags;
 
+  if(p_pw->destructor)
+    {
+      (*p_pw->destructor)(p_pw);
+    }
   if(p_pw->flags & NM_PW_DYNAMIC_V0)
     {
       TBX_FREE(p_pw->v[0].iov_base);

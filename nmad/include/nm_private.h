@@ -106,8 +106,6 @@ typedef uint16_t nm_drv_id_t;
 #include "nm_gate.h"
 #include "nm_core.h"
 
-TBX_INTERNAL void nm_pw_contrib_complete(struct nm_pkt_wrap*p_pw, struct nm_pw_completion_s*p_completion);
-
 #include "nm_lock.h"
 #include "nm_core_inline.h"
 #include "nm_lock_inline.h"

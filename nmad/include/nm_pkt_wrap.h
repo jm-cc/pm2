@@ -57,23 +57,11 @@ typedef uint32_t nm_pw_flag_t;
 /** forward declaration for circular dependancy */
 struct nm_pkt_wrap;
 
-/** contribution of a pw to a pack */
-struct nm_pw_contrib_s
-{
-  struct nm_pack_s*p_pack;
-  nm_len_t len; /**< length of the pack enclosed in the pw (a pw may contain a partial chunk of a pack) */
-};
-/** notification of pw send/recv completion */
+/** notification of pw send completion */
 struct nm_pw_completion_s
 {
-  /** function called to notify pw completion */
-  void (*notifier)(struct nm_pkt_wrap*p_pw, struct nm_pw_completion_s*p_completion);
-  /** data for notification function */
-  union
-  {
-    struct nm_pw_contrib_s contrib;
-    void*key;
-  } data;
+  struct nm_pack_s*p_pack; /**< pack the pw contributes to */
+  nm_len_t len; /**< length of the pack enclosed in the pw (a pw may contain a partial chunk of a pack) */
 };
 
 /** Internal packet wrapper.
@@ -190,11 +178,9 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 
-void nm_pw_add_completion(struct nm_pkt_wrap*p_pw, const struct nm_pw_completion_s*p_completion);
+void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, nm_len_t len);
 
-void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, nm_len_t len);
-
-void nm_pw_notify_completions(struct nm_pkt_wrap*p_pw);
+void nm_pw_completions_notify(struct nm_pkt_wrap*p_pw);
 
 
 #endif /* NM_PKT_WRAP_H */

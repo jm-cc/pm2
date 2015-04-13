@@ -513,8 +513,8 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_so_ctrl
   tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
       assert(p_large_pw->n_completions == 1);
-      const struct nm_pw_contrib_s*p_contrib = &p_large_pw->completions[0].data.contrib;
-      struct nm_pack_s*p_pack = p_contrib->p_pack;
+      const struct nm_pw_completion_s*p_completion = &p_large_pw->completions[0];
+      struct nm_pack_s*p_pack = p_completion->p_pack;
       NM_TRACEF("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
 		p_pack->seq, p_large_pw->chunk_offset);
       if((p_pack->seq == seq) && nm_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
@@ -536,10 +536,10 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_so_ctrl
 	      p_pw2->p_gate   = p_gate;
 	      p_pw2->p_gdrv   = p_large_pw->p_gdrv;
 	      p_pw2->p_unpack = NULL;
-	      /* this is a large pw with rdv- it must contain a single contrib */
+	      /* this is a large pw with rdv- it must contain a single completion */
 	      assert(p_large_pw->n_completions == 1);
-	      nm_pw_add_contrib(p_pw2, p_large_pw->completions[0].data.contrib.p_pack, p_large_pw->completions[0].data.contrib.len - chunk_len);
-	      p_large_pw->completions[0].data.contrib.len = chunk_len; /* truncate the contrib */
+	      nm_pw_completion_add(p_pw2, p_large_pw->completions[0].p_pack, p_large_pw->completions[0].len - chunk_len);
+	      p_large_pw->completions[0].len = chunk_len; /* truncate the contrib */
 	      /* populate p_pw2 iovec */
 	      nm_so_pw_split_data(p_large_pw, p_pw2, chunk_len);
 #warning Paulette: lock
@@ -568,7 +568,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_so_ctrl
   fprintf(stderr, "nmad: FATAL- cannot find matching packet for received RTR: seq = %d; offset = %lu- dumping pending large packets\n", seq, chunk_offset);
   tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
-      const struct nm_pack_s*p_pack = p_large_pw->completions[0].data.contrib.p_pack;
+      const struct nm_pack_s*p_pack = p_large_pw->completions[0].p_pack;
       fprintf(stderr, "  packet- seq = %d; chunk_offset = %lu\n", p_pack->seq, p_large_pw->chunk_offset);
     }
   abort();

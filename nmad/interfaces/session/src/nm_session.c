@@ -96,7 +96,7 @@ void nm_session_add_driver(puk_component_t component, int index)
   int err = nm_core_driver_load_init(nm_session.p_core, component, &param, &p_drv, &driver_url);
   if(err != NM_ESUCCESS)
     {
-      fprintf(stderr, "# session: error %d while loading driver %s\n", err, p_drv->driver->name);
+      fprintf(stderr, "# session: error %d while loading driver %s\n", err, component->name);
       abort();
     }
   if(nm_session.url_string == NULL)
@@ -107,7 +107,7 @@ void nm_session_add_driver(puk_component_t component, int index)
     {
       padico_string_catf(nm_session.url_string, "+");
     }
-  padico_string_catf(nm_session.url_string, "%s:%d#%s", p_drv->driver->name, p_drv->index, driver_url);
+  padico_string_catf(nm_session.url_string, "%s#%d=%s", component->name, p_drv->index, driver_url);
 }
 
 /** Initialize default drivers */
@@ -253,7 +253,6 @@ int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_
     nm_session.local_url = padico_strdup(padico_string_get(nm_session.url_string));
   nm_sr_init(p_session);
   *p_local_url = nm_session.local_url;
-
   return NM_ESUCCESS;
 }
 
@@ -333,7 +332,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
     {
       char*driver_string = strdup(token);
       char*driver_name = driver_string;
-      char*driver_url = strchr(driver_name, '#');
+      char*driver_url = strchr(driver_name, '=');
       *driver_url = '\0';
       driver_url++;
       if(puk_hashtable_lookup(url_table, driver_name))
@@ -351,8 +350,9 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
     {
       struct nm_drv*p_drv = *i;
       char driver_name[256];
-      snprintf(driver_name, 256, "%s:%d", p_drv->driver->name, p_drv->index);
+      snprintf(driver_name, 256, "%s#%d", p_drv->assembly->name, p_drv->index);
       const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
+      assert(driver_url != NULL);
       err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
       if(err != NM_ESUCCESS)
 	{

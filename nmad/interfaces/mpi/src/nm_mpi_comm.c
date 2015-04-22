@@ -479,7 +479,11 @@ int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
     }
   nm_comm_t p_nm_comm = nm_comm_create(p_old_comm->p_comm, p_new_group->p_nm_group);
   if(p_nm_comm == NULL)
-    return MPI_ERR_COMM;
+    {
+      /* node not in group*/
+      *newcomm = MPI_COMM_NULL;
+      return MPI_SUCCESS;
+    }
   nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, p_old_comm->p_errhandler);
   *newcomm = p_new_comm->id;
   return MPI_SUCCESS;

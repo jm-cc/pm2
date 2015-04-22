@@ -312,29 +312,31 @@ int mpi_testall(int count, MPI_Request*array_of_requests, int*flag, MPI_Status*s
   for(i = 0; i < count; i++)
     {
       nm_mpi_request_t*p_req = nm_mpi_request_get(array_of_requests[i]);
-      if(p_req == NULL)
+      if((array_of_requests[i] != MPI_REQUEST_NULL) && (p_req == NULL))
 	{
 	  *flag = 0;
 	  return MPI_ERR_REQUEST;
 	}
-      if(p_req->request_type == NM_MPI_REQUEST_ZERO)
+      else if(p_req == NULL || p_req->request_type == NM_MPI_REQUEST_ZERO)
 	{
 	  count_inactive++;
-	  continue;
 	}
-      int rc = nm_mpi_request_test(p_req);
-      if(rc != NM_ESUCCESS)
+      else
 	{
-	  /* at least one request is not completed */
-	  *flag = 0;
-	  return MPI_SUCCESS;
+	  int rc = nm_mpi_request_test(p_req);
+	  if(rc != NM_ESUCCESS)
+	    {
+	      /* at least one request is not completed */
+	      *flag = 0;
+	      return MPI_SUCCESS;
+	    }
 	}
     }
   /* all the requests are completed */
   for(i = 0; i < count; i++)
     {
       nm_mpi_request_t*p_req = nm_mpi_request_get(array_of_requests[i]);
-      if(p_req->request_type == NM_MPI_REQUEST_ZERO)
+      if((p_req == NULL) || (p_req->request_type == NM_MPI_REQUEST_ZERO))
 	{
 	  count_inactive++;
 	  continue;

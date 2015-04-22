@@ -107,20 +107,23 @@ int main(int argc, char **argv) {
     MPI_Op operator;
     int i, reduce0=1, reduce1=2, reduce2=3;
 
-    MPI_Op_create(my_operation, 1, &operator);
+    MPI_Op_create(my_operation, 0, &operator);
     MPI_Allreduce(reduce, global_reduce, 3, MPI_INT, operator, MPI_COMM_WORLD);
     MPI_Op_free(&operator);
 
-    for(i=1 ; i<numtasks ; i++) {
-      reduce0 += i+1; reduce0 *= 2;
-      reduce1 += i+2; reduce1 *= 2;
-      reduce2 += i+3; reduce2 *= 2;
-    }
+    for(i = 1; i < numtasks ;i++)
+      {
+	reduce0 += i+1; 
+	reduce1 += i+2; 
+	reduce2 += i+3; 
+      }
     if (reduce0 == global_reduce[0] && reduce1 == global_reduce[1] && reduce2 == global_reduce[2]) {
       fprintf(stdout, "[%d] Success for global reduction\n", rank);
     }
     else {
-      fprintf(stdout, "[%d] Error! Global reduction [%d,%d,%d]\n", rank, global_reduce[0], global_reduce[1], global_reduce[2]);
+      fprintf(stdout, "[%d] Error! Global reduction [%d,%d,%d][%d,%d,%d]\n", rank,
+	      global_reduce[0], global_reduce[1], global_reduce[2],
+	      reduce0, reduce1, reduce2);
     }
   }
 
@@ -140,7 +143,7 @@ void my_operation(void *a, void *b, int *r, MPI_Datatype *type) {
   for(i=0 ; i<*r ; i++) {
     //printf("Inout[%d] = %d\n", i, inout[i]);
     inout[i] += in[i];
-    inout[i] *= 2;
+    /*    inout[i] *= 2; */
     //printf("Inout[%d] = %d\n", i, inout[i]);
   }
 }

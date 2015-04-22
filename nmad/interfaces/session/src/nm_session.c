@@ -286,7 +286,7 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
       NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
 	{
 	  char driver_name[256];
-	  snprintf(driver_name, 256, "%s:%d", p_drv->driver->name, p_drv->index);
+	  snprintf(driver_name, 256, "%s#%d", p_drv->assembly->name, p_drv->index);
 	  if(strcmp(p_drv->driver->name, "self") == 0)
 	    {
 	      continue;

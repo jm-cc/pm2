@@ -115,11 +115,11 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_DOUBLE_COMPLEX,     sizeof(complex double), 1, "MPI_DOUBLE_COMPLEX");
 
   /* C struct types */
-  nm_mpi_datatype_store(MPI_2INT,               sizeof(int) + sizeof(int), 2, "MPI_2INT");
-  nm_mpi_datatype_store(MPI_SHORT_INT,          sizeof(short) + sizeof(int), 2, "MPI_SHORT_INT");
-  nm_mpi_datatype_store(MPI_LONG_INT,           sizeof(long) + sizeof(int), 2, "MPI_LONG_INT");
-  nm_mpi_datatype_store(MPI_FLOAT_INT,          sizeof(float) + sizeof(int), 2, "MPI_FLOAT_INT");
-  nm_mpi_datatype_store(MPI_DOUBLE_INT,         sizeof(double) + sizeof(int), 2, "MPI_DOUBLE_INT");
+  nm_mpi_datatype_store(MPI_2INT,               sizeof(struct { int    val; int loc; }), 2, "MPI_2INT");
+  nm_mpi_datatype_store(MPI_SHORT_INT,          sizeof(struct { short  val; int loc; }), 2, "MPI_SHORT_INT");
+  nm_mpi_datatype_store(MPI_LONG_INT,           sizeof(struct { long   val; int loc; }), 2, "MPI_LONG_INT");
+  nm_mpi_datatype_store(MPI_FLOAT_INT,          sizeof(struct { float  val; int loc; }), 2, "MPI_FLOAT_INT");
+  nm_mpi_datatype_store(MPI_DOUBLE_INT,         sizeof(struct { double val; int loc; }), 2, "MPI_DOUBLE_INT");
 
   /* FORTRAN struct types */
   nm_mpi_datatype_store(MPI_2INTEGER,           sizeof(float) + sizeof(float), 2, "MPI_2INTEGER");

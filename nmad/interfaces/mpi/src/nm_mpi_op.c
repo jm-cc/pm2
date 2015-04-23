@@ -367,42 +367,44 @@ static void nm_mpi_op_bxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 {
   int i, _len = *len;
-  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*type);
+  const nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*type);
 
   if(p_datatype->combiner == MPI_COMBINER_CONTIGUOUS && p_datatype->count == 2)
     {
       MPI_Datatype oldtype = p_datatype->CONTIGUOUS.p_old_type->id;
       /** Set the actual length */
-      _len = *len * p_datatype->count;
+      _len = *len;
       /** Perform the operation */
       switch (oldtype) 
 	{
-#define DO_MAXLOC(__type__)						\
-	    __type__ *a = (__type__ *)inoutvec; const __type__ *b = (__type__ *)invec; \
-	    for(i = 0; i < _len; i+=2 ) {				\
-	      if(a[i] == b[i])						\
-		a[i+1] = tbx_min(a[i+1],b[i+1]);			\
-	      else if(a[i] < b[i]) {					\
-		a[i] = b[i];						\
-		a[i+1] = b[i+1];					\
-	      }								\
-	    }
-
-	case MPI_CHAR             : { DO_MAXLOC(char); break; }
-	case MPI_UNSIGNED_CHAR    : { DO_MAXLOC(unsigned char); break; }
-	case MPI_BYTE             : { DO_MAXLOC(uint8_t); break; }
-	case MPI_SHORT            : { DO_MAXLOC(short); break; }
-	case MPI_UNSIGNED_SHORT   : { DO_MAXLOC(unsigned short); break; }
-	case MPI_INTEGER: case MPI_INT: { DO_MAXLOC(int); break; }
-	case MPI_UNSIGNED         : { DO_MAXLOC(unsigned); break; }
-	case MPI_LONG             : { DO_MAXLOC(long); break; }
-	case MPI_UNSIGNED_LONG    : { DO_MAXLOC(unsigned long); break; }
-	case MPI_FLOAT            : { DO_MAXLOC(float); break; }
-	case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MAXLOC(double); break; }
-	case MPI_LONG_DOUBLE      : { DO_MAXLOC(long double); break; }
-	case MPI_LONG_LONG_INT    : { DO_MAXLOC(long long); break; }
-	case MPI_INTEGER4         : { DO_MAXLOC(uint32_t); break; }
-	case MPI_INTEGER8         : { DO_MAXLOC(uint64_t); break; }
+#define DO_MAXLOC(__type1__, __type2__)					\
+	  struct _maxloc_s { __type1__ val; __type2__ loc; };		\
+	  struct _maxloc_s*a = inoutvec;				\
+	  const struct _maxloc_s*b = invec;				\
+	  for(i = 0; i < _len; i += 1 ) {				\
+	    if(a[i].val == b[i].val)					\
+	      a[i].loc = tbx_min(a[i].loc, b[i].loc);			\
+	    else if(a[i].val < b[i].val) {				\
+	      a[i].val = b[i].val;					\
+	      a[i].loc = b[i].loc;					\
+	    }								\
+	  }
+	  
+	case MPI_CHAR             : { DO_MAXLOC(char, char); break; }
+	case MPI_UNSIGNED_CHAR    : { DO_MAXLOC(unsigned char, unsigned char); break; }
+	case MPI_BYTE             : { DO_MAXLOC(uint8_t, uint8_t); break; }
+	case MPI_SHORT            : { DO_MAXLOC(short, short); break; }
+	case MPI_UNSIGNED_SHORT   : { DO_MAXLOC(unsigned short, unsigned short); break; }
+	case MPI_INTEGER: case MPI_INT: { DO_MAXLOC(int, int); break; }
+	case MPI_UNSIGNED         : { DO_MAXLOC(unsigned, unsigned); break; }
+	case MPI_LONG             : { DO_MAXLOC(long, long); break; }
+	case MPI_UNSIGNED_LONG    : { DO_MAXLOC(unsigned long, unsigned long); break; }
+	case MPI_FLOAT            : { DO_MAXLOC(float, float); break; }
+	case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MAXLOC(double, double); break; }
+	case MPI_LONG_DOUBLE      : { DO_MAXLOC(long double, long double); break; }
+	case MPI_LONG_LONG_INT    : { DO_MAXLOC(long long, long long); break; }
+	case MPI_INTEGER4         : { DO_MAXLOC(uint32_t, uint32_t); break; }
+	case MPI_INTEGER8         : { DO_MAXLOC(uint64_t, uint64_t); break; }
 	  
 	default:
 	  ERROR("Datatype Contiguous(%d) for MAXLOC Reduce operation", *type);
@@ -411,11 +413,15 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
     }
   else if(p_datatype->combiner == MPI_COMBINER_NAMED && p_datatype->count == 2)
     {
-      _len = *len * p_datatype->count;
+      _len = *len;
       switch(*type)
 	{
-	case MPI_2DOUBLE_PRECISION: { DO_MAXLOC(double); break; }
-	case MPI_2INT: { DO_MAXLOC(int); break; }
+	case MPI_2DOUBLE_PRECISION: { DO_MAXLOC(double, double); break; }
+	case MPI_2INT:              { DO_MAXLOC(int, int); break; }
+	case MPI_FLOAT_INT:         { DO_MAXLOC(float, int); break; }
+	case MPI_DOUBLE_INT:        { DO_MAXLOC(double, int); break; }
+	case MPI_LONG_INT:          { DO_MAXLOC(long, int); break; }
+	case MPI_SHORT_INT:         { DO_MAXLOC(short, int); break; }
 	default:
 	  ERROR("Datatype Basic(%d) for MAXLOC Reduce operation", *type);
 	  break;

@@ -17,18 +17,14 @@
 #ifndef MPI_H
 #define MPI_H
 
-/** \defgroup mpi_interface MPI Interface
+/** \defgroup mpi_interface MadMPI: MPI Interface
  *
- * This is the MPI interface. The implementation called Mad-MPI is a
- * new light implementation of the MPI standard. This simple,
- * straightforward proof-of-concept implementation is a subset of the
- * MPI API, that allows MPI applications to benefit from the
- * NewMadeleine communication engine. Mad-MPI is based on the
- * point-to-point nonblocking posting (isend, irecv) and completion
- * (wait, test) operations of MPI, these four operations being
- * directly mapped to the equivalent operations of NewMadeleine.
+ * MadMPI is the MPI interface for NewMadeleine. It is a lightweight
+ * implementation of the MPI standard. It allows MPI applications to
+ * benefit from the NewMadeleine communication engine. MadMPI
+ * operations are directly mapped to native nmad operations.
  *
- * Mad-MPI also implements some optimizations mechanisms for derived
+ * MadMPI also implements some optimizations mechanisms for derived
  * datatypes. MPI derived datatypes deal with noncontiguous
  * memory locations. The advanced optimizations of NewMadeleine
  * allowing to reorder packets lead to a significant gain when sending

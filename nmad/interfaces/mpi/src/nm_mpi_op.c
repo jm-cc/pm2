@@ -420,6 +420,7 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 	case MPI_2INT:              { DO_MAXLOC(int, int); break; }
 	case MPI_FLOAT_INT:         { DO_MAXLOC(float, int); break; }
 	case MPI_DOUBLE_INT:        { DO_MAXLOC(double, int); break; }
+	case MPI_LONG_DOUBLE_INT:   { DO_MAXLOC(long double, int); break; }
 	case MPI_LONG_INT:          { DO_MAXLOC(long, int); break; }
 	case MPI_SHORT_INT:         { DO_MAXLOC(short, int); break; }
 	default:
@@ -443,43 +444,61 @@ static void nm_mpi_op_minloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
     {
       MPI_Datatype oldtype = p_datatype->CONTIGUOUS.p_old_type->id;
       /** Set the actual length */
-      _len = *len * p_datatype->count;
+      _len = *len;
       /** Perform the operation */
       switch (oldtype) 
 	{
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
-#define DO_MINLOC(__type__)						\
-	  __type__ *a = (__type__ *)inoutvec; __type__ *b = (__type__ *)invec; \
-	  for ( i=0; i<_len; i+=2 ) {					\
-	    if (a[i] == b[i])						\
-	      a[i+1] = tbx_min(a[i+1],b[i+1]);				\
-	    else if (a[i] > b[i]) {					\
-	      a[i]   = b[i];						\
-	      a[i+1] = b[i+1];						\
+#define DO_MINLOC(__type1__, __type2__)					\
+	  struct _maxloc_s { __type1__ val; __type2__ loc; };		\
+	  struct _maxloc_s*a = inoutvec;				\
+	  const struct _maxloc_s*b = invec;				\
+	  for(i = 0; i < _len; i += 1 ) {				\
+	    if(a[i].val == b[i].val)					\
+	      a[i].loc = tbx_min(a[i].loc, b[i].loc);			\
+	    else if(a[i].val > b[i].val) {				\
+	      a[i].val = b[i].val;					\
+	      a[i].loc = b[i].loc;					\
 	    }								\
 	  }
-	case MPI_CHAR             : { DO_MINLOC(char); break; }
-	case MPI_UNSIGNED_CHAR    : { DO_MINLOC(unsigned char); break; }
-	case MPI_BYTE             : { DO_MINLOC(uint8_t); break; }
-	case MPI_SHORT            : { DO_MINLOC(short); break; }
-	case MPI_UNSIGNED_SHORT   : { DO_MINLOC(unsigned short); break; }
-	case MPI_INTEGER: case MPI_INT: { DO_MINLOC(int); break; }
-	case MPI_UNSIGNED         : { DO_MINLOC(unsigned); break; }
-	case MPI_LONG             : { DO_MINLOC(long); break; }
-	case MPI_UNSIGNED_LONG    : { DO_MINLOC(unsigned long); break; }
-	case MPI_FLOAT            : { DO_MINLOC(float); break; }
-	case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MINLOC(double); break; }
-	case MPI_LONG_DOUBLE      : { DO_MINLOC(long double); break; }
-	case MPI_LONG_LONG_INT    : { DO_MINLOC(long long); break; }
-	case MPI_INTEGER4         : { DO_MINLOC(uint32_t); break; }
-	case MPI_INTEGER8         : { DO_MINLOC(uint64_t); break; }
+
+	case MPI_CHAR             : { DO_MINLOC(char, char); break; }
+	case MPI_UNSIGNED_CHAR    : { DO_MINLOC(unsigned char, unsigned char); break; }
+	case MPI_BYTE             : { DO_MINLOC(uint8_t, uint8_t); break; }
+	case MPI_SHORT            : { DO_MINLOC(short, short); break; }
+	case MPI_UNSIGNED_SHORT   : { DO_MINLOC(unsigned short, unsigned short); break; }
+	case MPI_INTEGER: case MPI_INT: { DO_MINLOC(int, int); break; }
+	case MPI_UNSIGNED         : { DO_MINLOC(unsigned, unsigned); break; }
+	case MPI_LONG             : { DO_MINLOC(long, long); break; }
+	case MPI_UNSIGNED_LONG    : { DO_MINLOC(unsigned long, unsigned long); break; }
+	case MPI_FLOAT            : { DO_MINLOC(float, float); break; }
+	case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MINLOC(double, double); break; }
+	case MPI_LONG_DOUBLE      : { DO_MINLOC(long double, long double); break; }
+	case MPI_LONG_LONG_INT    : { DO_MINLOC(long long, long long); break; }
+	case MPI_INTEGER4         : { DO_MINLOC(uint32_t, uint32_t); break; }
+	case MPI_INTEGER8         : { DO_MINLOC(uint64_t, uint64_t); break; }
 	default:
 	  ERROR("Datatype Contiguous(%d) for MINLOC Reduce operation", *type);
 	  break;
 	}
     }
+  else if(p_datatype->combiner == MPI_COMBINER_NAMED && p_datatype->count == 2)
+    {
+      _len = *len;
+      switch(*type)
+	{
+	case MPI_2DOUBLE_PRECISION: { DO_MINLOC(double, double); break; }
+	case MPI_2INT:              { DO_MINLOC(int, int); break; }
+	case MPI_FLOAT_INT:         { DO_MINLOC(float, int); break; }
+	case MPI_DOUBLE_INT:        { DO_MINLOC(double, int); break; }
+	case MPI_LONG_DOUBLE_INT:   { DO_MINLOC(long double, int); break; }
+	case MPI_LONG_INT:          { DO_MINLOC(long, int); break; }
+	case MPI_SHORT_INT:         { DO_MINLOC(short, int); break; }
+	default:
+	  ERROR("Datatype Basic(%d) for MAXLOC Reduce operation", *type);
+	  break;
+	}
+    }
+
   else
     {
       ERROR("Datatype %d for MINLOC Reduce operation", *type);

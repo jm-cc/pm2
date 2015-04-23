@@ -240,7 +240,7 @@ static void nm_mpi_op_prod(void*invec, void*inoutvec, int*len, MPI_Datatype*type
     {
       NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_PROD);
       NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_PROD);
-      NM_MPI_TYPES_APPLY_COMPLEX(CASE_OP_SUM);
+      NM_MPI_TYPES_APPLY_COMPLEX(CASE_OP_PROD);
 
     default:
       {

@@ -120,6 +120,7 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_LONG_INT,           sizeof(struct { long   val; int loc; }), 2, "MPI_LONG_INT");
   nm_mpi_datatype_store(MPI_FLOAT_INT,          sizeof(struct { float  val; int loc; }), 2, "MPI_FLOAT_INT");
   nm_mpi_datatype_store(MPI_DOUBLE_INT,         sizeof(struct { double val; int loc; }), 2, "MPI_DOUBLE_INT");
+  nm_mpi_datatype_store(MPI_LONG_DOUBLE_INT,    sizeof(struct { long double val; int loc; }), 2, "MPI_LONG_DOUBLE_INT");
 
   /* FORTRAN struct types */
   nm_mpi_datatype_store(MPI_2INTEGER,           sizeof(float) + sizeof(float), 2, "MPI_2INTEGER");

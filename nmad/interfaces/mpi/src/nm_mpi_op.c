@@ -148,7 +148,8 @@ int mpi_op_free(MPI_Op*op)
   TYPE_FUNC(MPI_FLOAT,            float);			\
   TYPE_FUNC(MPI_DOUBLE_PRECISION, double);			\
   TYPE_FUNC(MPI_DOUBLE,           double);			\
-  TYPE_FUNC(MPI_LONG_DOUBLE,      long double);
+  TYPE_FUNC(MPI_LONG_DOUBLE,      long double);			\
+  TYPE_FUNC(MPI_REAL,             float);
 
 /** apply a macro to COMPLEX <MPI type, C type> pairs */
 #define NM_MPI_TYPES_APPLY_COMPLEX(TYPE_FUNC)			\

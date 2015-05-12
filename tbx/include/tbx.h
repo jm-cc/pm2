@@ -37,6 +37,10 @@
 #error The GNU C Compiler is required to build the library
 #endif				/* __GNUC__ */
 
+#ifndef TBX
+#  error TBX is undefined. Please build with flags given by pkg-config --cflags tbx
+#endif /* TBX */
+
 /*
  * Headers
  * -------

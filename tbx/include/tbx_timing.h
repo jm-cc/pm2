@@ -30,6 +30,10 @@
 #ifndef TBX_TIMING_H
 #define TBX_TIMING_H
 
+#ifndef TBX
+#  error TBX is undefined. Please build with flags given by pkg-config --cflags tbx
+#endif /* TBX */
+
 #ifdef __MIC__
 #define TBX_USE_RDTSC
 #undef TBX_USE_CLOCK_GETTIME

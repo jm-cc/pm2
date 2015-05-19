@@ -42,19 +42,6 @@ void tbx_exit(void);
 
 void tbx_purge_cmd_line(void);
 
-/** \addtogroup timing_interface
- *  @{
- */
-/*
- * Timing
- * ------
- */
-
-extern double tbx_ticks2delay(const tbx_tick_t *t1, const tbx_tick_t *t2);
-
-extern double tbx_tick2usec(tbx_tick_t t);
-
-/* @} */
 
 /** \addtogroup malloc_interface
  *  @{

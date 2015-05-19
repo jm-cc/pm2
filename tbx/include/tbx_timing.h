@@ -34,6 +34,7 @@
 #  error TBX is undefined. Please build with flags given by pkg-config --cflags tbx
 #endif /* TBX */
 
+
 #ifdef __MIC__
 #define TBX_USE_RDTSC
 #undef TBX_USE_CLOCK_GETTIME
@@ -144,7 +145,12 @@ static inline tbx_tick_t tbx_tick_raw_diff(const tbx_tick_t*const t1, const tbx_
 #endif /** TBX_USE_MACH_ABSOLUTE_TIME **/
 #endif /** TBX_USE_CLOCK_GETTIME **/
 
+extern double tbx_ticks2delay(const tbx_tick_t *t1, const tbx_tick_t *t2);
 
+extern double tbx_tick2usec(tbx_tick_t t);
+
+/** compute delay between to ticks, result given in microsecond as a double
+ */
 #define TBX_TIMING_DELAY(start, end) tbx_ticks2delay(&(start), &(end))
 
 /* @} */

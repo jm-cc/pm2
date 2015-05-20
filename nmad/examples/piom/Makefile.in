@@ -16,7 +16,7 @@ INSTALL_PREFIX := @nmad_root@
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 CFLAGS  = $(shell env PKG_CONFIG_PATH=@nmad_root@/lib/pkgconfig pkg-config --cflags nmad)
-LIBS    = $(shell env PKG_CONFIG_PATH=@nmad_root@/lib/pkgconfig pkg-config --libs nmad) -lm
+LIBS    = $(shell env PKG_CONFIG_PATH=@nmad_root@/lib/pkgconfig pkg-config --libs nmad) -lm -lpthread
 LDFLAGS =
 ifeq (@NMAD_ENABLE_OPTIMIZE@,yes)
 CFLAGS  += $(OPT_LDFLAGS)

@@ -1,7 +1,6 @@
 #! /bin/bash
 
-# hardwired- oops
-seq=5
+seq=${seq:-3}
 
 NAS_ROOT=${PWD}/NAS
 if [ ! -r ${NAS_ROOT}/MPI_dummy/mpi_dummy.f ]; then
@@ -107,11 +106,22 @@ if [ ${rc} != 0 ]; then
     exit 1
 fi
 
+if [ -x ${NAS_ROOT}/bin/${bench}  ]; then
+    bin=${NAS_ROOT}/bin/${bench}
+else
+    if [ -x ${NAS_ROOT}/bin/${name}.${class}.x ]; then
+	bin=${NAS_ROOT}/bin/${name}.${class}.x
+    else
+	echo "# cannot find bench binary ${bench}"
+	exit 1
+    fi
+fi
+
 #uniq $OAR_NODEFILE > ./machinefile
 
 for n in `seq ${seq}`; do
     echo "# starting #$n"
-    ${MPIRUN} -machinefile ./machinefile -n ${nodes} ${NAS_ROOT}/bin/${bench} | tee out/out-${$}-${bench}/${$}-${bench}-${n}
+    ${MPIRUN} -machinefile ./machinefile -n ${nodes} ${bin} | tee out/out-${$}-${bench}/${$}-${bench}-${n}
 done
 
 touch out/out-${$}-${bench}/${$}-${bench}-time

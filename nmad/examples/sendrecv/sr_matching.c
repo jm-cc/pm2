@@ -18,7 +18,7 @@
 #include <tbx.h>
 #include <pthread.h>
 
-#include "helper.h"
+#include "sr_examples_helper.h"
 
 #define COUNT 100
 #define MAX_REQS 32768

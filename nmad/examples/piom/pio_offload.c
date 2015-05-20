@@ -18,7 +18,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../sendrecv/helper.h"
+#include "piom_helper.h"
+
 #include <tbx.h>
 #ifdef PIOMAN_MARCEL
 #include <marcel.h>

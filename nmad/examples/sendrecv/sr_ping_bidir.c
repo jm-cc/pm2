@@ -18,7 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "helper.h"
+#include "sr_examples_helper.h"
 
 #define MIN_DEFAULT	0
 #define MAX_DEFAULT	(8 * 1024 * 1024)

@@ -20,7 +20,7 @@
 #include <unistd.h>
 #include <values.h>
 
-#include "helper.h"
+#include "sr_examples_helper.h"
 
 #define POLL_LOOPS 100000
 

@@ -22,7 +22,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include "helper.h"
+#include "sr_examples_helper.h"
 
 #define PRINT_CONTENT 0
 

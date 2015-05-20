@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "helper.h"
+#include "sr_examples_helper.h"
 
 #define MAX     (8 * 1024 * 1024)
 #define LOOPS   2000

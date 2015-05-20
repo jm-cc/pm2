@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "helper.h"
+#include "sr_examples_helper.h"
 
 #define SMALL   (8)
 #define BIG     (8 * 1024 * 1024)

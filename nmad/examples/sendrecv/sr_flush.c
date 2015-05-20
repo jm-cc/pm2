@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "helper.h"
+#include "sr_examples_helper.h"
 
 /* test up to 8192 pending isend/irecv at the same time */
 

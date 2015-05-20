@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "helper.h"
+#include "sr_examples_helper.h"
 
 /*
  * This example tests the case where where the actual received 

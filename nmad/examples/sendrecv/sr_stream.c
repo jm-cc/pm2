@@ -27,15 +27,6 @@
 #define WARMUPS_DEFAULT	100
 #define LOOPS_DEFAULT	2000
 
-static __inline__
-uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
-{
-  if (!len)
-    return 1+increment;
-  else
-    return len*multiplier+increment;
-}
-
 static void usage_ping(void) {
   fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
   fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);

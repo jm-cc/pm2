@@ -38,14 +38,6 @@ static piom_sem_t ready_sem;
 static int go;
 static int done;
 
-static __inline__
-uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
-{
-  if (!len)
-    return 1+increment;
-  else
-    return len*multiplier+increment;
-}
 
 void usage_ping() {
   fprintf(stderr, "-L len - packet length [%d]\n", LEN_DEFAULT);

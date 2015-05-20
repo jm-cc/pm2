@@ -40,15 +40,6 @@
 
 #define THREAD_REALTIME
 
-static __inline__
-uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
-{
-  if (!len)
-    return 1+increment;
-  else
-    return len*multiplier+increment;
-}
-
 static inline double fround(double n)
 {
   const int digits = 1;
@@ -101,47 +92,6 @@ static void compute(unsigned usec)
       while(TBX_TIMING_DELAY(t1,t2) < usec);
     }
 }
-
-
-static void fill_buffer(char *buffer, int len) {
-  unsigned int i = 0;
-
-  for (i = 0; i < len; i++) {
-    buffer[i] = 'a'+(i%26);
-  }
-}
-
-static void clear_buffer(char *buffer, int len) {
-  memset(buffer, 0, len);
-}
-
-#if DATA_CONTROL_ACTIVATED
-static void control_buffer(char *msg, char *buffer, int len) {
-  tbx_bool_t   ok = tbx_true;
-  unsigned char expected_char;
-  unsigned int          i  = 0;
-
-  for(i = 0; i < len; i++){
-    expected_char = 'a'+(i%26);
-
-    if(buffer[i] != expected_char){
-      printf("Bad data at byte %d: expected %c, received %c\n",
-             i, expected_char, buffer[i]);
-      ok = tbx_false;
-    }
-  }
-
-  printf("Controle de %s - ", msg);
-
-  if (!ok) {
-    printf("%d bytes reception failed\n", len);
-
-    TBX_FAILURE("data corruption");
-  } else {
-    printf("ok\n");
-  }
-}
-#endif
 
 static int comp_double(const void*_a, const void*_b)
 {

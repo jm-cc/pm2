@@ -30,15 +30,6 @@
 
 #define DATA_CONTROL_ACTIVATED 0
 
-static __inline__
-uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
-{
-  if (!len)
-    return 1+increment;
-  else
-    return len*multiplier+increment;
-}
-
 static __inline uint32_t _iterations(int iterations, uint32_t len)
 {
   uint64_t data_size = ((uint64_t)iterations * (uint64_t)len);
@@ -51,7 +42,8 @@ static __inline uint32_t _iterations(int iterations, uint32_t len)
   return iterations;
 }
 
-static void usage_ping(void) {
+static void usage_ping(void)
+{
   fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
   fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
   fprintf(stderr, "-I incr - length increment [%d]\n", INCR_DEFAULT);
@@ -61,46 +53,6 @@ static void usage_ping(void) {
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
   fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
-
-static void fill_buffer(char *buffer, int len) {
-  int i = 0;
-
-  for (i = 0; i < len; i++) {
-    buffer[i] = 'a'+(i%26);
-  }
-}
-
-static void clear_buffer(char *buffer, int len) {
-  memset(buffer, 0, len);
-}
-
-#if DATA_CONTROL_ACTIVATED
-static void control_buffer(char *msg, char *buffer, int len) {
-  tbx_bool_t   ok = tbx_true;
-  unsigned char expected_char;
-  unsigned int          i  = 0;
-
-  for(i = 0; i < len; i++){
-    expected_char = 'a'+(i%26);
-
-    if(buffer[i] != expected_char){
-      printf("Bad data at byte %d: expected %c, received %c\n",
-             i, expected_char, buffer[i]);
-      ok = tbx_false;
-    }
-  }
-
-  printf("Controle de %s - ", msg);
-
-  if (!ok) {
-    printf("%d bytes reception failed\n", len);
-
-    TBX_FAILURE("data corruption");
-  } else {
-    printf("ok\n");
-  }
-}
-#endif
 
 int
 main(int	  argc,

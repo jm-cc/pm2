@@ -73,3 +73,61 @@ static void nm_examples_barrier(nm_tag_t tag)
     }
   nm_coll_barrier(p_comm, tag);
 }
+
+/* ********************************************************* */
+
+/* ** helpers for size iterators */
+
+static inline nm_len_t _next(nm_len_t len, double multiplier, nm_len_t increment)
+{
+  if((len == 0) && (increment == 0))
+    {
+      return 1;
+    }
+  return len * multiplier + increment;
+}
+
+static void fill_buffer(char*buffer, nm_len_t len) __attribute__((unused));
+static void clear_buffer(char*buffer, nm_len_t len) __attribute__((unused));
+static void control_buffer(const char*msg, const char*buffer, nm_len_t len) __attribute__((unused));
+
+static void fill_buffer(char*buffer, nm_len_t len)
+{
+  nm_len_t i = 0;
+  for(i = 0; i < len; i++)
+    {
+      buffer[i] = 'a' + (i % 26);
+    }
+}
+
+static void clear_buffer(char*buffer, nm_len_t len)
+{
+  memset(buffer, 0, len);
+}
+
+static void control_buffer(const char*msg, const char*buffer, nm_len_t len)
+{
+  tbx_bool_t   ok = tbx_true;
+  unsigned char expected_char;
+  unsigned int          i  = 0;
+
+  for(i = 0; i < len; i++){
+    expected_char = 'a'+(i%26);
+
+    if(buffer[i] != expected_char){
+      printf("Bad data at byte %d: expected %c, received %c\n",
+             i, expected_char, buffer[i]);
+      ok = tbx_false;
+    }
+  }
+
+  printf("Controle de %s - ", msg);
+
+  if (!ok) {
+    printf("%d bytes reception failed\n", len);
+
+    TBX_FAILURE("data corruption");
+  } else {
+    printf("ok\n");
+  }
+}

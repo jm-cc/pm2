@@ -28,14 +28,6 @@
 #define MAX_DATA        (512ULL * 1024ULL * 1024ULL) /* 100 MB */
 
 
-static __inline__ uint32_t _next(uint32_t len, double multiplier, uint32_t increment)
-{
-  if (!len)
-    return 1+increment;
-  else
-    return len*multiplier+increment;
-}
-
 static __inline uint32_t _iterations(int iterations, uint32_t len)
 {
   uint64_t data_size = ((uint64_t)iterations * (uint64_t)len);
@@ -57,20 +49,6 @@ static void usage_ping(void)
   fprintf(stderr, "\tNext(0)      = 1+increment\n");
   fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
-}
-
-static void fill_buffer(char *buffer, int len)
-{
-  int i = 0;
-
-  for (i = 0; i < len; i++) {
-    buffer[i] = 'a'+(i%26);
-  }
-}
-
-static void clear_buffer(char *buffer, int len)
-{
-  memset(buffer, 0, len);
 }
 
 

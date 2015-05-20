@@ -25,18 +25,6 @@
 #define MAX     (8 * 1024 * 1024)
 #define LOOPS   2000
 
-static __inline__
-uint32_t _next(uint32_t len)
-{
-        if(!len)
-                return 4;
-        else if(len < 32)
-                return len + 4;
-        else if(len < 1024)
-                return len + 32;
-        else
-                return len << 1;
-}
 
 int
 main(int	  argc,
@@ -52,7 +40,7 @@ main(int	  argc,
 	  int k;
                 /* server
                  */
-		for(len = 0; len <= MAX; len = _next(len)) {
+	  for(len = 0; len <= MAX; len = _next(len, 2, 0)) {
 		  for(k = 0; k < LOOPS; k++) {
 		    nm_sr_request_t request;
 
@@ -69,7 +57,7 @@ main(int	  argc,
 	  int k;
                 /* client
                  */
-		for(len = 0; len <= MAX; len = _next(len)) {
+	  for(len = 0; len <= MAX; len = _next(len, 2, 0)) {
 
 		  TBX_GET_TICK(t1);
 

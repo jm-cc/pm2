@@ -23,7 +23,6 @@
 #if defined(PIOMAN_MARCEL)
 #include <marcel.h>
 #define piom_thread_yield          marcel_yield
-#define piom_thread_t              marcel_t
 #define piom_thread_create         marcel_create
 #define piom_thread_join           marcel_join
 #define piom_thread_mutex_t        marcel_mutex_t
@@ -38,7 +37,6 @@
 #elif defined(PIOMAN_PTHREAD)
 #include <pthread.h> 
 #define piom_thread_yield          pthread_yield
-#define piom_thread_t              pthread_t
 #define piom_thread_create         pthread_create
 #define piom_thread_join           pthread_join
 #define piom_thread_mutex_t        pthread_mutex_t
@@ -56,7 +54,6 @@
 #else /* PIOMAN_MULTITHREAD */
 #include <pthread.h> 
 #define piom_thread_yield          pthread_yield
-#define piom_thread_t              pthread_t
 #define piom_thread_create         pthread_create
 #define piom_thread_join           pthread_join
 #define piom_thread_mutex_t        pthread_mutex_t

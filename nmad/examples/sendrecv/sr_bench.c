@@ -32,12 +32,6 @@
 const nm_tag_t data_tag = 0x01;
 const nm_tag_t sync_tag = 0x02;
 
-static inline nm_len_t _next(nm_len_t len, double multiplier, nm_len_t increment)
-{
-  if(len == 0)
-    len = 1;
-  return len * multiplier + increment;
-}
 
 static inline nm_len_t _iterations(int iterations, nm_len_t len)
 {
@@ -55,7 +49,8 @@ static inline nm_len_t _iterations(int iterations, nm_len_t len)
 }
 
 
-static void usage_ping(void) {
+static void usage_ping(void)
+{
   fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
   fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
   fprintf(stderr, "-I incr - length increment [%d]\n", INCR_DEFAULT);
@@ -63,20 +58,6 @@ static void usage_ping(void) {
   fprintf(stderr, "\tNext(0)      = 1+increment\n");
   fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
-}
-
-static void fill_buffer(char *buffer, nm_len_t len)
-{
-  nm_len_t i = 0;
-
-  for (i = 0; i < len; i++) {
-    buffer[i] = 'a'+(i%26);
-  }
-}
-
-static void clear_buffer(char *buffer, nm_len_t len)
-{
-  memset(buffer, 0, len);
 }
 
 static int comp_double(const void*_a, const void*_b)

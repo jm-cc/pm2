@@ -3,7 +3,11 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/*.c))
+TARGET_BIN_UNIT = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/sr_*.c))
+
+TARGET_BIN_BENCH = nm_bench_sendrecv nm_bench_bidir nm_bench_anygate nm_bench_jumbo
+
+TARGET_BIN = $(TARGET_BIN_UNIT) $(TARGET_BIN_BENCH)
 TARGET_LIB =
 SUBDIRS =
 
@@ -29,7 +33,9 @@ endif
 
 include @puk_root@/etc/common_rules.mk
 
-$(TARGET_BIN): %: %.pic.o
+$(TARGET_BIN_UNIT): sr_%: sr_%.pic.o
+
+$(TARGET_BIN_BENCH): nm_bench_%: nm_bench_%.pic.o nm_bench_generic.pic.o
 
 sr_thread: LIBS += -lpthread
 

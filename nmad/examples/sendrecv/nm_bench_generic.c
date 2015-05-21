@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,7 +13,6 @@
  * General Public License for more details.
  */
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -21,6 +20,7 @@
 #include <unistd.h>
 #include <values.h>
 
+#include "nm_bench_generic.h"
 #include "sr_examples_helper.h"
 
 #define MIN_DEFAULT     0
@@ -29,9 +29,12 @@
 #define INCR_DEFAULT    0
 #define LOOPS_DEFAULT   100000
 
-const nm_tag_t data_tag = 0x01;
-const nm_tag_t sync_tag = 0x02;
-
+struct nm_bench_common_s nm_bench_common =
+  {
+    .p_session = NULL,
+    .p_gate = NULL,
+    .p_comm = NULL
+  };
 
 static inline nm_len_t _iterations(int iterations, nm_len_t len)
 {
@@ -72,67 +75,75 @@ static int comp_double(const void*_a, const void*_b)
     return 0;
 }
 
+extern const struct nm_bench_s nm_bench;
+
 int main(int argc, char	**argv)
 {
-  nm_len_t	 start_len      = MIN_DEFAULT;
-  nm_len_t	 end_len        = MAX_DEFAULT;
-  double         multiplier     = MULT_DEFAULT;
-  nm_len_t         increment      = INCR_DEFAULT;
-  int              iterations     = LOOPS_DEFAULT;
-  int              i;
+  nm_len_t start_len      = MIN_DEFAULT;
+  nm_len_t end_len        = MAX_DEFAULT;
+  double   multiplier     = MULT_DEFAULT;
+  nm_len_t increment      = INCR_DEFAULT;
+  int      iterations     = LOOPS_DEFAULT;
+  int      i;
   
   nm_examples_init_topo(&argc, argv, NM_EXAMPLES_TOPO_PAIRS);
-  
-  if (argc > 1 && !strcmp(argv[1], "--help")) {
-    usage_ping();
-    nm_examples_exit();
-    exit(0);
-  }
-  
-  for(i=1 ; i<argc ; i+=2) {
-    if (!strcmp(argv[i], "-S")) {
-      start_len = atoll(argv[i+1]);
-    }
-    else if (!strcmp(argv[i], "-E")) {
-      end_len = atoll(argv[i+1]);
-    }
-    else if (!strcmp(argv[i], "-I")) {
-      increment = atoll(argv[i+1]);
-    }
-    else if (!strcmp(argv[i], "-M")) {
-      multiplier = atof(argv[i+1]);
-    }
-    else if (!strcmp(argv[i], "-N")) {
-      iterations = atoi(argv[i+1]);
-    }
-    else {
-      fprintf(stderr, "Illegal argument %s\n", argv[i]);
+  nm_bench_common.p_session = p_session;
+  nm_bench_common.p_gate = p_gate;
+  nm_bench_common.p_comm = p_comm;
+
+  if (argc > 1 && strcmp(argv[1], "--help") == 0)
+    {
       usage_ping();
       nm_examples_exit();
       exit(0);
     }
-  }
+  
+  for(i = 1; i < argc; i += 2)
+    {
+      if(strcmp(argv[i], "-S") == 0)
+	{
+	  start_len = atoll(argv[i+1]);
+	}
+      else if(strcmp(argv[i], "-E") == 0)
+	{
+	  end_len = atoll(argv[i+1]);
+	}
+      else if(strcmp(argv[i], "-I") == 0)
+	{
+	  increment = atoll(argv[i+1]);
+	}
+      else if(strcmp(argv[i], "-M") == 0)
+	{
+	  multiplier = atof(argv[i+1]);
+	}
+      else if(strcmp(argv[i], "-N") == 0)
+	{
+	  iterations = atoi(argv[i+1]);
+	}
+      else
+	{
+	  fprintf(stderr, "%s: illegal argument %s\n", argv[0], argv[i]);
+	  usage_ping();
+	  nm_examples_exit();
+	  exit(0);
+	}
+    }
   
   if(is_server)
     {
       /* server
        */
-      nm_len_t	 len;
+      nm_len_t len;
       for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
 	{
 	  int k;
 	  char* buf = malloc(len);
 	  clear_buffer(buf, len);
 	  iterations = _iterations(iterations, len);
+	  nm_examples_barrier(sync_tag);
 	  for(k = 0; k < iterations; k++)
 	    {
-	      nm_sr_request_t request;
-	      
-	      nm_sr_irecv(p_session, p_gate, data_tag, buf, len, &request);
-	      nm_sr_rwait(p_session, &request);
-	      
-	      nm_sr_isend(p_session, p_gate, data_tag, buf, len, &request);
-	      nm_sr_swait(p_session, &request);
+	      (*nm_bench.server)(buf, len);
 	      nm_examples_barrier(sync_tag);
 	    }
 	  free(buf);
@@ -145,7 +156,7 @@ int main(int argc, char	**argv)
        */
       tbx_tick_t t1, t2;
       double*lats = malloc(sizeof(double) * iterations);
-      printf("# sr_bench begin\n");
+      printf("# bench: %s begin\n", nm_bench.name);
       printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max\n");
       nm_len_t	 len;
       for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
@@ -154,14 +165,11 @@ int main(int argc, char	**argv)
 	  fill_buffer(buf, len);
 	  iterations = _iterations(iterations, len);
 	  int k;
+	  nm_examples_barrier(sync_tag);
 	  for(k = 0; k < iterations; k++)
 	    {
-	      nm_sr_request_t request;
 	      TBX_GET_TICK(t1);
-	      nm_sr_isend(p_session, p_gate, data_tag, buf, len, &request);
-	      nm_sr_swait(p_session, &request);
-	      nm_sr_irecv(p_session, p_gate, data_tag, buf, len, &request);
-	      nm_sr_rwait(p_session, &request);
+	      (*nm_bench.client)(buf, len);
 	      TBX_GET_TICK(t2);
 	      const double delay = TBX_TIMING_DELAY(t1, t2);
 	      const double t = delay / 2;
@@ -178,21 +186,20 @@ int main(int argc, char	**argv)
 	      avg_lat += lats[k];
 	    }
 	  avg_lat /= iterations;
-	  double bw_million_byte = len / min_lat;
-	  double bw_mbyte        = bw_million_byte / 1.048576;
-	  
+	  const double bw_million_byte = len / min_lat;
+	  const double bw_mbyte        = bw_million_byte / 1.048576;
+
+	  char*tag = "";
 #ifdef MARCEL
-	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\tmarcel\n",
-		 (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
-#else
-	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\n",
-		 (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
+	  tag = "marcel";
 #endif
+	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\t%s\n",
+		 (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat, tag);
 	  fflush(stdout);
 	  free(buf);
 	  nm_examples_barrier(sync_tag);
 	}
-      printf("# sr_bench end\n");
+      printf("# bench: %s end\n", nm_bench.name);
     }
   
   nm_examples_exit();

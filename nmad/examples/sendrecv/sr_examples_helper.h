@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +19,16 @@
 #include <tbx.h>
 #include <nm_coll.h>
 
+
+/* ********************************************************* */
+
 static int is_server = -1;
 static nm_session_t p_session = NULL;
 static nm_gate_t p_gate = NULL;
 static nm_comm_t p_comm = NULL;
+
+static const nm_tag_t data_tag = 0x01;
+static const nm_tag_t sync_tag = 0x02;
 
 enum nm_example_topo_e
   {

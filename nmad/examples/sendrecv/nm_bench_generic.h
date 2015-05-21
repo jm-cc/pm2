@@ -25,6 +25,7 @@ struct nm_bench_s
   const char*name;
   void (*server)(void*buf, nm_len_t len);
   void (*client)(void*buf, nm_len_t len);
+  void (*init)(void*buf, nm_len_t len);
 };
 
 /* ********************************************************* */

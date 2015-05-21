@@ -140,6 +140,8 @@ int main(int argc, char	**argv)
 	  char* buf = malloc(len);
 	  clear_buffer(buf, len);
 	  iterations = _iterations(iterations, len);
+	  if(nm_bench.init != NULL)
+	    (*nm_bench.init)(buf, len);
 	  nm_examples_barrier(sync_tag);
 	  for(k = 0; k < iterations; k++)
 	    {
@@ -165,6 +167,8 @@ int main(int argc, char	**argv)
 	  fill_buffer(buf, len);
 	  iterations = _iterations(iterations, len);
 	  int k;
+	  if(nm_bench.init != NULL)
+	    (*nm_bench.init)(buf, len);
 	  nm_examples_barrier(sync_tag);
 	  for(k = 0; k < iterations; k++)
 	    {

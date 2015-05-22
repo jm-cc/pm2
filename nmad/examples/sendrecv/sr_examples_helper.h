@@ -86,11 +86,10 @@ static void nm_examples_barrier(nm_tag_t tag)
 
 static inline nm_len_t _next(nm_len_t len, double multiplier, nm_len_t increment)
 {
-  if((len == 0) && (increment == 0))
-    {
-      return 1;
-    }
-  return len * multiplier + increment;
+  nm_len_t next = len * multiplier + increment;
+  if(next <= len)
+    next++;
+  return next;
 }
 
 static void fill_buffer(char*buffer, nm_len_t len) __attribute__((unused));

@@ -27,7 +27,7 @@
 
 static int  strat_immediate_todo(void*, struct nm_gate*);
 static void strat_immediate_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_immediate_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
+static int  strat_immediate_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
 static int  strat_immediate_try_and_commit(void*, struct nm_gate*);
 static void strat_immediate_rdv_accept(void*, struct nm_gate*);
 
@@ -78,7 +78,7 @@ static void*strat_immediate_instantiate(puk_instance_t ai, puk_context_t context
 {
   struct nm_strat_immediate *status = TBX_MALLOC(sizeof(struct nm_strat_immediate));
   const char*max_small = puk_instance_getattr(ai, "max_small");
-  status->max_small = max_small ? atoi(max_small) : (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE - NM_SO_ALIGN_FRONTIER - 4);
+  status->max_small = max_small ? atoi(max_small) : (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_SO_ALIGN_FRONTIER - 4);
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "copy_on_send_threshold");
   status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
   return (void*)status;
@@ -98,7 +98,7 @@ static void strat_immediate_destroy(void*status)
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int strat_immediate_pack_ctrl(void*_status, struct nm_gate*p_gate, const union nm_so_generic_ctrl_header *p_ctrl)
+static int strat_immediate_pack_ctrl(void*_status, struct nm_gate*p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_strat_immediate*status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);

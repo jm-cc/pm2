@@ -115,15 +115,15 @@ static inline void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_core_tag_
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
   struct iovec*hvec = &p_pw->v[0];
-  struct nm_so_short_data_header *h = hvec->iov_base + hvec->iov_len;
-  hvec->iov_len += NM_SO_SHORT_DATA_HEADER_SIZE;
-  nm_so_init_short_data(h, tag, seq, len);
+  struct nm_header_short_data_s *h = hvec->iov_base + hvec->iov_len;
+  hvec->iov_len += NM_HEADER_SHORT_DATA_SIZE;
+  nm_header_init_short_data(h, tag, seq, len);
   if(len)
     {
       memcpy(hvec->iov_base + hvec->iov_len, data, len);
       hvec->iov_len += len;
     }
-  p_pw->length += NM_SO_SHORT_DATA_HEADER_SIZE + len;
+  p_pw->length += NM_HEADER_SHORT_DATA_SIZE + len;
 }
 
 /** Add small data to pw, in header */
@@ -132,10 +132,10 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
   struct iovec*hvec = &p_pw->v[0];
-  struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
-  nm_so_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0, len, chunk_offset);
-  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
-  p_pw->length  += NM_SO_DATA_HEADER_SIZE;
+  struct nm_header_data_s *h = hvec->iov_base + hvec->iov_len;
+  nm_header_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0, len, chunk_offset);
+  hvec->iov_len += NM_HEADER_DATA_SIZE;
+  p_pw->length  += NM_HEADER_DATA_SIZE;
   if(len)
     {
       const nm_len_t size = nm_so_aligned(len);
@@ -151,15 +151,15 @@ static inline void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_core_t
 					      const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t proto_flags)
 {
   struct iovec*hvec = &p_pw->v[0];
-  struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
-  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
+  struct nm_header_data_s *h = hvec->iov_base + hvec->iov_len;
+  hvec->iov_len += NM_HEADER_DATA_SIZE;
   struct iovec *dvec = nm_pw_grow_iovec(p_pw);
   dvec->iov_base = (void*)data;
   dvec->iov_len = len;
   /* We don't know yet the gap between header and data, so we
      temporary store the iovec index as the 'skip' value */
-  nm_so_init_data(h, tag, seq, proto_flags, p_pw->v_nb, len, chunk_offset);
-  p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
+  nm_header_init_data(h, tag, seq, proto_flags, p_pw->v_nb, len, chunk_offset);
+  p_pw->length += NM_HEADER_DATA_SIZE + len;
 }
 
 /** Add raw data to pw, without header */
@@ -173,12 +173,12 @@ static inline void nm_so_pw_add_raw(struct nm_pkt_wrap*p_pw, const void*data, nm
   p_pw->chunk_offset = chunk_offset;
 }
 
-static inline int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_so_generic_ctrl_header*p_ctrl)
+static inline int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_header_ctrl_generic_s*p_ctrl)
 {
   struct iovec*hvec = &p_pw->v[0];
-  memcpy(hvec->iov_base + hvec->iov_len, p_ctrl, NM_SO_CTRL_HEADER_SIZE);
-  hvec->iov_len += NM_SO_CTRL_HEADER_SIZE;
-  p_pw->length += NM_SO_CTRL_HEADER_SIZE;
+  memcpy(hvec->iov_base + hvec->iov_len, p_ctrl, NM_HEADER_CTRL_SIZE);
+  hvec->iov_len += NM_HEADER_CTRL_SIZE;
+  p_pw->length += NM_HEADER_CTRL_SIZE;
   return NM_ESUCCESS;
 }
 
@@ -194,7 +194,7 @@ static inline void nm_so_pw_alloc_and_fill_with_data(struct nm_pack_s*p_pack, co
   *pp_pw = p_pw;
 }
 
-static inline int nm_so_pw_alloc_and_fill_with_control(const union nm_so_generic_ctrl_header *ctrl,
+static inline int nm_so_pw_alloc_and_fill_with_control(const union nm_header_ctrl_generic_s *ctrl,
 						       struct nm_pkt_wrap **pp_pw)
 {
   int err;
@@ -308,7 +308,7 @@ static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
 static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_core_tag_t tag, nm_seq_t seq,
 				  nm_drv_t p_drv, nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
-  nm_so_generic_ctrl_header_t h;
+  nm_header_ctrl_generic_t h;
   int gdrv_index = -1, k = 0;
   nm_gdrv_vect_itor_t i;
   puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
@@ -321,7 +321,7 @@ static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_core_tag_t tag, nm_
       k++;
     }
   assert(gdrv_index >= 0);
-  nm_so_init_rtr(&h, tag, seq, gdrv_index, trk_id, chunk_offset, chunk_len);
+  nm_header_init_rtr(&h, tag, seq, gdrv_index, trk_id, chunk_offset, chunk_len);
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }
@@ -330,8 +330,8 @@ static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_core_tag_t tag, nm_
  */
 static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_core_tag_t tag, nm_seq_t seq)
 {
-  nm_so_generic_ctrl_header_t h;
-  nm_so_init_ack(&h, tag, seq);
+  nm_header_ctrl_generic_t h;
+  nm_header_init_ack(&h, tag, seq);
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }

@@ -31,7 +31,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg_autoextended, &nm_strat_aggreg_auto
 
 static int  strat_aggreg_autoextended_todo(void*, struct nm_gate*);
 static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_aggreg_autoextended_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
+static int  strat_aggreg_autoextended_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
 static int  strat_aggreg_autoextended_try_and_commit(void*, struct nm_gate*);
 static void strat_aggreg_autoextended_rdv_accept(void*, struct nm_gate*);
 static int  strat_aggreg_autoextended_flush(void*, struct nm_gate*);
@@ -125,7 +125,7 @@ static void strat_aggreg_autoextended_destroy(void*status)
  */
 static int strat_aggreg_autoextended_pack_ctrl(void*_status,
                                                struct nm_gate *p_gate,
-                                               const union nm_so_generic_ctrl_header *p_ctrl)
+                                               const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
@@ -134,7 +134,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
   /* We first try to find an existing packet to form an aggregate */
   tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link)
     {
-      if(nm_so_pw_remaining_header_area(p_so_pw) < NM_SO_CTRL_HEADER_SIZE) 
+      if(nm_so_pw_remaining_header_area(p_so_pw) < NM_HEADER_CTRL_SIZE) 
 	{
 	  /* There's not enough room to add our ctrl header to this paquet */
 	  nm_so_pw_finalize(p_so_pw);
@@ -197,8 +197,8 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*
 	{
 	  const nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
 	  const nm_len_t d_rlen = nm_so_pw_remaining_data(p_pw);
-	  const nm_len_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
-	  if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
+	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_so_aligned(len);
+	  if(size > d_rlen || NM_HEADER_DATA_SIZE > h_rlen)
 	    {
 	      nm_so_pw_finalize(p_pw);
 	    }
@@ -226,8 +226,8 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*
       nm_so_pw_alloc_and_fill_with_data(p_pack, ptr, len, chunk_offset, 1, NM_PW_NOHEADER, &p_pw);
       nm_so_pw_finalize(p_pw);
       tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
-      union nm_so_generic_ctrl_header ctrl;
-      nm_so_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
+      union nm_header_ctrl_generic_s ctrl;
+      nm_header_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
       strat_aggreg_autoextended_pack_ctrl(status, p_pack->p_gate, &ctrl);
     }
 }

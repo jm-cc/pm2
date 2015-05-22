@@ -374,30 +374,30 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 	  if(proto_id == NM_PROTO_DATA)
 	    {
 	      /* Data header */
-	      struct nm_so_data_header *h = ptr;
+	      struct nm_header_data_s *h = ptr;
 	      if(h->skip == 0)
 		{
 		  /* Data immediately follows */
-		  proto_hsize = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+		  proto_hsize = NM_HEADER_DATA_SIZE + nm_so_aligned(h->len);
 		}
 	      else
 		{
 		  /* Data occupy a separate iovec entry */
-		  proto_hsize = NM_SO_DATA_HEADER_SIZE;
-		  h->skip = remaining_bytes - NM_SO_DATA_HEADER_SIZE + to_skip;
+		  proto_hsize = NM_HEADER_DATA_SIZE;
+		  h->skip = remaining_bytes - NM_HEADER_DATA_SIZE + to_skip;
 		  last_treated_vec++;
 		  to_skip += last_treated_vec->iov_len;
 		}
 	    }
 	  else if(proto_id == NM_PROTO_SHORT_DATA)
 	    {
-	      struct nm_so_short_data_header*h = ptr;
-	      proto_hsize = NM_SO_SHORT_DATA_HEADER_SIZE + h->len;
+	      struct nm_header_short_data_s*h = ptr;
+	      proto_hsize = NM_HEADER_SHORT_DATA_SIZE + h->len;
 	    }
 	  else
 	    {
 	      /* Ctrl header */
-	      proto_hsize = NM_SO_CTRL_HEADER_SIZE;
+	      proto_hsize = NM_HEADER_CTRL_SIZE;
 	    }
 	  assert(remaining_bytes >= proto_hsize);
 	  remaining_bytes -= proto_hsize;

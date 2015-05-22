@@ -29,7 +29,7 @@
 #include <tbx.h>
 
 /* Maximum size of a small message for a faked strategy */
-#define NM_MAX_SMALL  (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE)
+#define NM_MAX_SMALL  (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE)
 
 static const int param_min_size = 1;
 static const int param_max_size = (32*1024*1024);
@@ -241,13 +241,13 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
       const nm_proto_t proto_id = (*p_proto) & NM_PROTO_ID_MASK;
       if(proto_id == NM_PROTO_SHORT_DATA)
 	{
-	  const struct nm_so_short_data_header*dh = (const struct nm_so_short_data_header*)p_proto;
+	  const struct nm_header_short_data_s*dh = (const struct nm_header_short_data_s*)p_proto;
 	  const size_t data_len = dh->len;
 	  memcpy(ptr, dh + 1, data_len);
 	}
       else if(proto_id == NM_PROTO_DATA)
 	{
-	  const struct nm_so_data_header*dh = (const struct nm_so_data_header*)p_proto;
+	  const struct nm_header_data_s*dh = (const struct nm_header_data_s*)p_proto;
 	  const size_t data_len = dh->len;
 	  memcpy(ptr, dh + 1, data_len);
 	}
@@ -320,19 +320,19 @@ static void nm_ns_eager_recv_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*
 	  const nm_proto_t proto_id = (*p_proto) & NM_PROTO_ID_MASK;
 	  if(proto_id == NM_PROTO_SHORT_DATA)
 	    {
-	      const struct nm_so_short_data_header*dh = (const struct nm_so_short_data_header*)p_proto;
+	      const struct nm_header_short_data_s*dh = (const struct nm_header_short_data_s*)p_proto;
 	      const size_t data_len = dh->len;
 	      memcpy(ptr, dh + 1, dh->len);
-	      p_proto += NM_SO_SHORT_DATA_HEADER_SIZE + data_len;
+	      p_proto += NM_HEADER_SHORT_DATA_SIZE + data_len;
 	      ptr += dh->len;
 	    }
 	  else if(proto_id == NM_PROTO_DATA)
 	    {
-	      const struct nm_so_data_header*dh = (const struct nm_so_data_header*)p_proto;
+	      const struct nm_header_data_s*dh = (const struct nm_header_data_s*)p_proto;
 	      const size_t data_len = dh->len;
 	      memcpy(ptr, dh + dh->skip, data_len);
 	      const size_t size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(data_len) : data_len;
-	      p_proto += NM_SO_DATA_HEADER_SIZE;
+	      p_proto += NM_HEADER_DATA_SIZE;
 	      if(dh->skip == 0)
 		p_proto += size;
 	      ptr += data_len;

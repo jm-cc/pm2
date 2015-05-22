@@ -29,7 +29,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_split_all, &nm_strat_split_all_init, NULL,
 #define DATATYPE_DENSITY 2*1024
 
 
-#define HEADER_SIZE (NM_SO_DATA_HEADER_SIZE > NM_SO_CTRL_HEADER_SIZE ?  NM_SO_DATA_HEADER_SIZE : NM_SO_CTRL_HEADER_SIZE)
+#define HEADER_SIZE (NM_HEADER_DATA_SIZE > NM_HEADER_CTRL_SIZE ?  NM_HEADER_DATA_SIZE : NM_HEADER_CTRL_SIZE)
 
 struct nm_ssa_data_req {
   void *header;
@@ -53,9 +53,9 @@ static p_tbx_memory_t nm_ssa_pw_mem = NULL;
 
 static int strat_split_all_todo(void*, struct nm_gate*);
 static int strat_split_all_pack(void*_status, struct nm_pack_s*p_pack);
-static int strat_split_all_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
-static int strat_split_all_pack_ctrl_chunk(void*, struct nm_pkt_wrap *, const union nm_so_generic_ctrl_header *);
-static int strat_split_all_pack_extended_ctrl(void*, struct nm_gate *, nm_len_t, const union nm_so_generic_ctrl_header *, struct nm_pkt_wrap **);
+static int strat_split_all_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
+static int strat_split_all_pack_ctrl_chunk(void*, struct nm_pkt_wrap *, const union nm_header_ctrl_generic_s *);
+static int strat_split_all_pack_extended_ctrl(void*, struct nm_gate *, nm_len_t, const union nm_header_ctrl_generic_s *, struct nm_pkt_wrap **);
 static int strat_split_all_pack_extended_ctrl_end(void*,
                                                 struct nm_gate *p_gate,
                                                 struct nm_pkt_wrap *p_so_pw);
@@ -143,7 +143,7 @@ static int
 strat_split_all_pack_extended_ctrl(void *_status,
 				       struct nm_gate *p_gate,
 				       nm_len_t cumulated_header_len,
-				       const union nm_so_generic_ctrl_header *p_ctrl,
+				       const union nm_header_ctrl_generic_s *p_ctrl,
 				       struct nm_pkt_wrap **pp_so_pw){
   return NM_ESUCCESS;
 }
@@ -151,7 +151,7 @@ strat_split_all_pack_extended_ctrl(void *_status,
 static int
 strat_split_all_pack_ctrl_chunk(void *_status,
 				struct nm_pkt_wrap *p_so_pw,
-				const union nm_so_generic_ctrl_header *p_ctrl){
+				const union nm_header_ctrl_generic_s *p_ctrl){
   return NM_ESUCCESS;
 }
 
@@ -166,11 +166,11 @@ strat_split_all_pack_extended_ctrl_end(void *_status,
 static int
 strat_split_all_pack_ctrl(void *_status,
 			      struct nm_gate *p_gate,
-			      const union nm_so_generic_ctrl_header *p_ctrl){
+			      const union nm_header_ctrl_generic_s *p_ctrl){
   struct nm_so_strat_split_all *status = _status;
   struct nm_ssa_pw *p_ssa_pw = NULL;
   struct nm_ssa_data_req *p_req = tbx_malloc(nm_ssa_data_req_mem);
-  union nm_so_generic_ctrl_header *header = tbx_malloc(nm_ssa_header_mem);
+  union nm_header_ctrl_generic_s *header = tbx_malloc(nm_ssa_header_mem);
   nm_len_t remaining_len = 0;
   int err;
 
@@ -183,9 +183,9 @@ strat_split_all_pack_ctrl(void *_status,
     // free space in the header line : all data will be copied in contiguous here
     remaining_len = NM_SO_PREALLOC_IOV_LEN - p_ssa_pw->cumulated_len;
 
-    if(NM_SO_CTRL_HEADER_SIZE <= remaining_len){
+    if(NM_HEADER_CTRL_SIZE <= remaining_len){
       tbx_fast_list_add_tail(&p_req->link, &p_ssa_pw->reqs);
-      p_ssa_pw->cumulated_len += NM_SO_CTRL_HEADER_SIZE;
+      p_ssa_pw->cumulated_len += NM_HEADER_CTRL_SIZE;
       goto out;
     }
   }
@@ -196,7 +196,7 @@ strat_split_all_pack_ctrl(void *_status,
   TBX_INIT_FAST_LIST_HEAD(&p_ssa_pw->reqs);
 
   tbx_fast_list_add(&p_req->link, &p_ssa_pw->reqs);
-  p_ssa_pw->cumulated_len += NM_SO_CTRL_HEADER_SIZE;
+  p_ssa_pw->cumulated_len += NM_HEADER_CTRL_SIZE;
   tbx_fast_list_add_tail(&p_ssa_pw->link, &status->out_list);
    
   err = NM_ESUCCESS;
@@ -238,9 +238,9 @@ strat_split_all_pack_ctrl(void *_status,
 //
 //  /* Finally, generate a RdV request */
 //  {
-//    union nm_so_generic_ctrl_header ctrl;
+//    union nm_header_ctrl_generic_s ctrl;
 //
-//    nm_so_init_rdv(&ctrl, tag + 128, seq, len, chunk_offset, is_last_chunk);
+//    nm_header_init_rdv(&ctrl, tag + 128, seq, len, chunk_offset, is_last_chunk);
 //
 //    NM_SO_TRACE("RDV pack_ctrl\n");
 //    err = strat_split_all_pack_ctrl(_status, p_gate, &ctrl);
@@ -278,7 +278,7 @@ strat_split_all_pack(void *_status, struct nm_pack_s*p_pack)
   struct nm_ssa_pw *p_ssa_pw = NULL;
  
   struct nm_ssa_data_req *p_req = NULL;
-  struct nm_so_data_header *header = NULL;
+  struct nm_header_data_s *header = NULL;
   
   nm_len_t remaining_len = 0;
   nm_len_t size = 0;
@@ -290,7 +290,7 @@ strat_split_all_pack(void *_status, struct nm_pack_s*p_pack)
   p_req = tbx_malloc(nm_ssa_data_req_mem);
   header = tbx_malloc(nm_ssa_header_mem);
 
-  nm_so_init_data_header(header, tag+128, seq, len, 0, 1);
+  nm_header_init_data_header(header, tag+128, seq, len, 0, 1);
   p_req->header = header;
   p_req->data = data;
   
@@ -300,11 +300,11 @@ strat_split_all_pack(void *_status, struct nm_pack_s*p_pack)
     // free space in the header line : all data will be copied in contiguous here
     remaining_len = NM_SO_PREALLOC_IOV_LEN - p_ssa_pw->cumulated_len;
     // space required to add the current data
-    size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+    size = NM_HEADER_DATA_SIZE + nm_so_aligned(len);
     
     if(size <= remaining_len){
       tbx_fast_list_add_tail(&p_req->link, &p_ssa_pw->reqs);
-      p_ssa_pw->cumulated_len += NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+      p_ssa_pw->cumulated_len += NM_HEADER_DATA_SIZE + nm_so_aligned(len);
       goto out;
     }
   }
@@ -314,7 +314,7 @@ strat_split_all_pack(void *_status, struct nm_pack_s*p_pack)
   p_ssa_pw = tbx_malloc(nm_ssa_pw_mem);
   TBX_INIT_FAST_LIST_HEAD(&p_ssa_pw->reqs);
   tbx_fast_list_add(&p_req->link, &p_ssa_pw->reqs);
-  p_ssa_pw->cumulated_len = NM_SO_GLOBAL_HEADER_SIZE + NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+  p_ssa_pw->cumulated_len = NM_SO_GLOBAL_HEADER_SIZE + NM_HEADER_DATA_SIZE + nm_so_aligned(len);
   
   tbx_fast_list_add_tail(&p_ssa_pw->link, &status->out_list);
   
@@ -338,7 +338,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
   struct nm_pkt_wrap *p_so_pw = NULL;
   struct tbx_fast_list_head* reqs_list = &p_ssa_pw->reqs;
   nm_len_t proto_id = 0;
-  struct nm_so_data_header *h = NULL;
+  struct nm_header_data_s *h = NULL;
   int flags = 0;
   int err;
 
@@ -373,8 +373,8 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 		    &(nm_so_tag_get(&p_gate->tags, proto_id-128)->pending_large_send));
 
       /* Build the rdv pw */
-      union nm_so_generic_ctrl_header ctrl;
-      nm_so_init_rdv(&ctrl, 
+      union nm_header_ctrl_generic_s ctrl;
+      nm_header_init_rdv(&ctrl, 
 		     h->proto_id , 
 		     h->seq, 
 		     len_to_send, 
@@ -396,14 +396,14 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 	  if(h->len <= NM_SO_COPY_ON_SEND_THRESHOLD)
   	    flags = NM_SO_DATA_USE_COPY;
 	  
-	  if(p_so_pw->length + NM_SO_DATA_HEADER_SIZE + 16 >= threshold){
+	  if(p_so_pw->length + NM_HEADER_DATA_SIZE + 16 >= threshold){
 	    // il faut que le header + un minimum de données (16o pour le moment) soient contigus
 	    goto out;
 	  }
 	  
-	  if(p_so_pw->length + NM_SO_DATA_HEADER_SIZE + h->len > threshold){
+	  if(p_so_pw->length + NM_HEADER_DATA_SIZE + h->len > threshold){
 #warning verifier que le seuil de rdv nest pas atteint
-	    int padding = nm_so_aligned(threshold - p_so_pw->length - NM_SO_DATA_HEADER_SIZE);
+	    int padding = nm_so_aligned(threshold - p_so_pw->length - NM_HEADER_DATA_SIZE);
 	    p_ssa_pw->cumulated_len -= padding;
 
 	    /* split the message! */
@@ -420,7 +420,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 	  }
 	  
 	} else {
-	  if(p_so_pw->length + NM_SO_CTRL_HEADER_SIZE >= threshold){
+	  if(p_so_pw->length + NM_HEADER_CTRL_SIZE >= threshold){
 	    goto out;
 	  }
 	}
@@ -446,23 +446,23 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
       ptr = vec->iov_base;
       remaining_len = ((struct nm_so_global_header *)ptr)->len - NM_SO_GLOBAL_HEADER_SIZE;
       
-      p_ssa_pw->cumulated_len -= NM_SO_DATA_HEADER_SIZE + h->len;
+      p_ssa_pw->cumulated_len -= NM_HEADER_DATA_SIZE + h->len;
     } else { 
       /* ctrl header */
       uint8_t proto_id = *(uint8_t *)p_req->header;
       if(proto_id  == NM_SO_PROTO_MULTI_ACK) {
-        union nm_so_generic_ctrl_header *header = (union nm_so_generic_ctrl_header *)p_req->header;
+        union nm_header_ctrl_generic_s *header = (union nm_header_ctrl_generic_s *)p_req->header;
 	int nb_chunks = header->ma.nb_chunks;
 	int i;
 	
 	for(i = 0; i < nb_chunks+1 /* do not forget the multiack header */; i++){
-		nm_so_pw_add_control(p_so_pw, p_req->header + (i * NM_SO_CTRL_HEADER_SIZE));
-		p_ssa_pw->cumulated_len -= NM_SO_CTRL_HEADER_SIZE;
+		nm_so_pw_add_control(p_so_pw, p_req->header + (i * NM_HEADER_CTRL_SIZE));
+		p_ssa_pw->cumulated_len -= NM_HEADER_CTRL_SIZE;
 	}
 	
       } else {
         nm_so_pw_add_control(p_so_pw, p_req->header);
-	p_ssa_pw->cumulated_len -= NM_SO_CTRL_HEADER_SIZE;
+	p_ssa_pw->cumulated_len -= NM_HEADER_CTRL_SIZE;
       }
       
     }

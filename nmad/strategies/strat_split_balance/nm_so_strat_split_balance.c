@@ -30,7 +30,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_split_balance, &nm_strat_split_balance_loa
 
 static int  strat_split_balance_todo(void*, struct nm_gate*);
 static void strat_split_balance_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
+static int  strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
 static int  strat_split_balance_try_and_commit(void*, struct nm_gate*);
 static void strat_split_balance_rdv_accept(void*, struct nm_gate*);
 
@@ -108,7 +108,7 @@ static void strat_split_balance_destroy(void*status)
 static int
 strat_split_balance_pack_ctrl(void *_status,
 			      struct nm_gate *p_gate,
-			      const union nm_so_generic_ctrl_header *p_ctrl)
+			      const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_strat_split_balance*status = _status;
@@ -119,7 +119,7 @@ strat_split_balance_pack_ctrl(void *_status,
     p_so_pw = nm_l2so(status->out_list.next);
 
     /* If the paquet is reasonably small, we can form an aggregate */
-    if(NM_SO_CTRL_HEADER_SIZE <= nm_so_pw_remaining_header_area(p_so_pw)){
+    if(NM_HEADER_CTRL_SIZE <= nm_so_pw_remaining_header_area(p_so_pw)){
 
       struct nm_pkt_wrap TBX_UNUSED dummy_p_so_pw;
       FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_CTRL_PACKET, &dummy_p_so_pw, 0, 0, 0);
@@ -157,8 +157,8 @@ strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, NM_PW_NOHEADER, &p_pw);
   tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
-  union nm_so_generic_ctrl_header ctrl;
-  nm_so_init_rdv(&ctrl, p_pack, len, chunk_offset, is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
+  union nm_header_ctrl_generic_s ctrl;
+  nm_header_init_rdv(&ctrl, p_pack, len, chunk_offset, is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
   strat_split_balance_pack_ctrl(_status, p_pack->p_gate, &ctrl);
 }
 
@@ -179,7 +179,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
       tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
 	{
 	  const nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
-	  const nm_len_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_so_aligned(len);
 	  if(size <= h_rlen)
 	    {
 	      /* We can copy data into the header zone */

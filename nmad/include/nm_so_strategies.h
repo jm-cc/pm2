@@ -17,7 +17,7 @@
 #define NM_SO_STRATEGIES_H
 
 
-typedef const union nm_so_generic_ctrl_header*nm_generic_header_t;
+typedef const union nm_header_ctrl_generic_s*nm_generic_header_t;
 
 /* Driver for 'NewMad_Strategy' component interface
  */

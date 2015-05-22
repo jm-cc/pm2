@@ -262,12 +262,13 @@ static inline int nm_sr_isend_iov_with_ref(nm_session_t p_session,
   return err;
 }
 
-static inline int nm_sr_isend_filter(nm_session_t p_session,
-				     nm_gate_t p_gate, nm_tag_t tag,
-				     struct nm_data_s*filter,
-				     nm_sr_request_t *p_request)
+static inline int nm_sr_isend_data(nm_session_t p_session,
+				   nm_gate_t p_gate, nm_tag_t tag,
+				   struct nm_data_s*filter,
+				   nm_sr_request_t *p_request, void*ref)
 {
   nm_sr_send_init(p_session, p_request);
+  nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_send_pack_data(p_session, p_request, filter);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
@@ -375,29 +376,14 @@ static inline int nm_sr_irecv_iov_with_ref(nm_session_t p_session,
   return err;
 }
 
-static inline int nm_sr_irecv_filter(nm_session_t p_session,
-				     nm_gate_t p_gate, nm_tag_t tag,
-				     struct nm_data_s*filter,
-				     nm_sr_request_t *p_request)
-{
-  nm_sr_recv_init(p_session, p_request);
-  nm_sr_recv_unpack_data(p_session, p_request, filter);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
-  return err;
-}
-
-
-static inline int nm_sr_irecv_filter_with_ref(nm_session_t p_session,
-					      nm_gate_t p_gate, nm_tag_t tag,
-					      struct nm_data_s*filter,
-					      nm_sr_request_t *p_request,
-					      void *ref)
+static inline int nm_sr_irecv_data(nm_session_t p_session,
+				   nm_gate_t p_gate, nm_tag_t tag,
+				   struct nm_data_s*filter,
+				   nm_sr_request_t *p_request, void*ref)
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_recv_unpack_data(p_session, p_request, filter);
-  if(ref != NULL)
-    nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }

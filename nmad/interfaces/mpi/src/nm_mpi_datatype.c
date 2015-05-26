@@ -778,14 +778,14 @@ struct nm_mpi_datatype_iscontig_s
   int is_contig; /**< is contiguous up to current position */
   void*blockend; /**< end of previous block */
 };
-static void nm_mpi_datatype_iscontig_apply(void*ptr, nm_len_t size, void*_context)
+static void nm_mpi_datatype_iscontig_apply(void*ptr, nm_len_t len, void*_context)
 {
-  struct nm_mpi_datatype_iscontig_s*context = _context;
-  if(context->is_contig)
+  struct nm_mpi_datatype_iscontig_s*p_context = _context;
+  if(p_context->is_contig)
     {
-      if(ptr != context->blockend)
-	context->is_contig = 0;
-      context->blockend = ptr + size;
+      if((p_context->blockend != NULL) && (ptr != p_context->blockend))
+	p_context->is_contig = 0;
+      p_context->blockend = ptr + len;
     }
 }
 static void nm_mpi_datatype_iscontig(nm_mpi_datatype_t*p_datatype)

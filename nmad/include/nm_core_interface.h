@@ -172,6 +172,10 @@ static inline void nm_data_traversal_apply(const struct nm_data_s*p_data, nm_dat
 void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
 				       nm_data_apply_t apply, void*_context);
 
+void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context);
+
+void nm_data_properties_compute(const struct nm_data_s*p_data, nm_len_t*p_len, int*p_blocks, int*p_is_contig);
+
 nm_len_t nm_data_size(const struct nm_data_s*p_data);
 
 void nm_data_copy(const struct nm_data_s*p_data, nm_len_t chunk_offset, const void *ptr, nm_len_t len);

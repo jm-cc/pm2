@@ -32,42 +32,13 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct n
   p_pack->scheduled = 0;
 }
 
-/** context for chunk packing */
-struct nm_core_pack_context_s
-{
-  struct nm_pack_s*p_pack;  /**< pack request for the data */
-  void*chunk_ptr;           /**< pointer on current chunk begin */
-  nm_len_t chunk_len;       /**< length of current chunk beeing processed */
-};
 /** data iterator to call strategy pack on every chunk of data */
 static void nm_core_pack_chunk(void*ptr, nm_len_t len, void*_context)
 {
-  struct nm_core_pack_context_s*p_context = _context;
-  struct nm_pack_s*p_pack = p_context->p_pack;
+  struct nm_pack_s*p_pack = _context;
   struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
   assert(r->driver->pack_chunk != NULL);
-  if(ptr == p_context->chunk_ptr + p_context->chunk_len)
-    {
-      /* block contiguous with chunk chunk */
-      p_context->chunk_len += len;
-    }
-  else
-    {
-      /* not contiguous; flush prev chunk, set current block as current chunk */
-      if(p_context->chunk_ptr != NULL)
-	{
-	  (*r->driver->pack_chunk)(r->_status, p_pack, p_context->chunk_ptr, p_context->chunk_len, p_pack->scheduled);
-	}
-      p_context->chunk_ptr = ptr;
-      p_context->chunk_len = len;
-    }
-  if(p_pack->scheduled + p_context->chunk_len == p_pack->len)
-    {
-      /* last chunk; flush */
-      (*r->driver->pack_chunk)(r->_status, p_pack, p_context->chunk_ptr, p_context->chunk_len, p_pack->scheduled);
-      p_context->chunk_ptr = NULL;
-      p_context->chunk_len = 0;
-    }
+  (*r->driver->pack_chunk)(r->_status, p_pack, ptr, len, p_pack->scheduled);
 }
 
 int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
@@ -89,8 +60,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
 #warning Paulette: lock
       tbx_fast_list_add_tail(&p_pack->_link, &p_core->pending_packs);
     }
-  struct nm_core_pack_context_s context = { .p_pack = p_pack, .chunk_ptr = NULL, .chunk_len = 0 };
-  nm_data_traversal_apply(p_pack->p_data, &nm_core_pack_chunk, &context);
+  nm_data_aggregator_traversal(p_pack->p_data, &nm_core_pack_chunk, p_pack);
   p_pack->p_data = NULL;
   nm_unlock_interface(p_core);
   nmad_unlock();

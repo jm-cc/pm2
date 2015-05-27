@@ -47,6 +47,47 @@ void nm_data_traversal_iov(const void*_content, nm_data_apply_t apply, void*_con
 
 /* ********************************************************* */
 
+/** filter function application on aggregated contiguous chunks
+ */
+struct nm_data_aggregator_s
+{
+  void*chunk_ptr;         /**< pointer on current chunk begin */
+  nm_len_t chunk_len;     /**< length of current chunk beeing processed */
+  nm_data_apply_t apply;  /**< composed function to apply to chunk */
+  void*_context;          /**< context for composed apply function */
+};
+static void nm_data_aggregator_apply(void*ptr, nm_len_t len, void*_context)
+{
+  struct nm_data_aggregator_s*p_context = _context;
+  if((ptr != NULL) && (ptr == p_context->chunk_ptr + p_context->chunk_len))
+    {
+      /* contiguous with current chunk */
+      p_context->chunk_len += len;
+    }
+  else
+    {
+      /* not contiguous; flush prev chunk, set current block as current chunk */
+      if((p_context->chunk_ptr != NULL) || (ptr == NULL))
+	{
+	  (*p_context->apply)(p_context->chunk_ptr, p_context->chunk_len, p_context->_context);
+	}
+      p_context->chunk_ptr = ptr;
+      p_context->chunk_len = len;
+    }
+}
+void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context)
+{
+  struct nm_data_aggregator_s context = { .chunk_ptr = NULL, .chunk_len = 0, .apply = apply, ._context = _context };
+  nm_data_traversal_apply(p_data, &nm_data_aggregator_apply, &context);
+  if(context.chunk_ptr != NULL)
+    {
+      /* flush last pending chunk */
+      (*context.apply)(context.chunk_ptr, context.chunk_len, context._context);
+    }
+ }
+
+/* ********************************************************* */
+
 /** filter function application to a delimited sub-set of data
  */
 struct nm_data_chunk_extractor_s
@@ -81,7 +122,7 @@ void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t c
   struct nm_data_chunk_extractor_s chunk_extractor = 
     { .chunk_offset = chunk_offset, .chunk_len = chunk_len, .done = 0,
       .apply = apply, ._context = _context };
-  nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+  nm_data_aggregator_traversal(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
 }
 
 /* ********************************************************* */
@@ -102,6 +143,41 @@ nm_len_t nm_data_size(const struct nm_data_s*p_data)
   struct nm_data_size_s size = { .size = 0 };
   nm_data_traversal_apply(p_data, &nm_data_size_apply, &size);
   return size.size;
+}
+
+/* ********************************************************* */
+
+/** compute various data properties
+ */
+struct nm_data_properties_context_s
+{
+  nm_len_t size; /**< total size in bytes (accumulator) */
+  int blocks;    /**< number of blocks */
+  int is_contig; /**< is contiguous, up to the current position */
+  void*blockend; /**< end of previous block*/
+};
+static void nm_data_properties_apply(void*ptr, nm_len_t len, void*_context)
+{
+  struct nm_data_properties_context_s*p_context = _context;
+  p_context->size += len;
+  p_context->blocks += 1;
+  if(p_context->is_contig)
+    {
+      if((p_context->blockend != NULL) && (ptr != p_context->blockend))
+	p_context->is_contig = 0;
+      p_context->blockend = ptr + len;
+    }
+}
+void nm_data_properties_compute(const struct nm_data_s*p_data, nm_len_t*p_len, int*p_blocks, int*p_is_contig)
+{
+  struct nm_data_properties_context_s properties = { .size = 0, .blocks = 0, .is_contig = 1, .blockend = NULL };
+  nm_data_traversal_apply(p_data, &nm_data_properties_apply, &properties);
+  if(p_len)
+    *p_len = properties.size;
+  if(p_blocks)
+    *p_blocks = properties.blocks;
+  if(p_is_contig)
+    *p_is_contig = properties.is_contig;
 }
 
 /* ********************************************************* */

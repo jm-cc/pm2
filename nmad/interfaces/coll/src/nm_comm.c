@@ -48,6 +48,7 @@ nm_comm_t nm_comm_world(void)
 	{
 	  nm_gate_t p_gate = NULL;
 	  nm_launcher_get_gate(i, &p_gate);
+	  assert(p_gate != NULL);
 	  nm_gate_vect_push_back(group, p_gate);
 	}
       nm_session_t p_session = NULL;
@@ -109,6 +110,7 @@ nm_comm_t nm_comm_create(nm_comm_t p_comm, nm_group_t group)
     char session_name[32];
   } header = { .session_name = { '\0'} };
   const int root = nm_comm_get_dest(p_comm, nm_gate_vect_at(group, newroot));
+  assert(root >= 0);
   const nm_tag_t tag1 = NM_COLL_TAG_COMM_CREATE_1;
   const nm_tag_t tag2 = NM_COLL_TAG_COMM_CREATE_2;
   if(newrank == -1)

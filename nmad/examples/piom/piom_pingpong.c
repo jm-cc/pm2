@@ -39,53 +39,13 @@ static int go;
 static int done;
 
 
-void usage_ping() {
+void usage_ping(void)
+{
   fprintf(stderr, "-L len - packet length [%d]\n", LEN_DEFAULT);
   fprintf(stderr, "-N iterations - iterations [%d]\n", LOOPS_DEFAULT);
   fprintf(stderr, "-T thread - number of communicating threads [%d]\n", THREADS_DEFAULT);
   fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
-
-static void fill_buffer(char *buffer, int len) {
-  unsigned int i = 0;
-
-  for (i = 0; i < len; i++) {
-    buffer[i] = 'a'+(i%26);
-  }
-}
-
-static void clear_buffer(char *buffer, int len) {
-  memset(buffer, 0, len);
-}
-
-#if DATA_CONTROL_ACTIVATED
-static void control_buffer(char *msg, char *buffer, int len) {
-  tbx_bool_t   ok = tbx_true;
-  unsigned char expected_char;
-  unsigned int          i  = 0;
-
-  for(i = 0; i < len; i++){
-    expected_char = 'a'+(i%26);
-
-    if(buffer[i] != expected_char){
-      printf("Bad data at byte %d: expected %c, received %c\n",
-             i, expected_char, buffer[i]);
-      ok = tbx_false;
-    }
-  }
-
-  printf("Controle de %s - ", msg);
-
-  if (!ok) {
-    printf("%d bytes reception failed\n", len);
-
-    TBX_FAILURE("data corruption");
-  } else {
-    printf("ok\n");
-  }
-}
-#endif
-
 
 void server(void* arg) 
 {

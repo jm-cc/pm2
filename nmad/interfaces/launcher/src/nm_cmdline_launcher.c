@@ -79,7 +79,8 @@ static int nm_cmdline_launcher_declare(void)
 struct nm_cmdline_launcher_status_s
 {
   nm_session_t p_session;
-  nm_gate_t gate;
+  nm_gate_t p_gate;
+  nm_gate_t p_self_gate;
   int is_server;
 };
 
@@ -87,7 +88,7 @@ static void*nm_cmdline_launcher_instantiate(puk_instance_t i, puk_context_t c)
 {
   struct nm_cmdline_launcher_status_s*status = TBX_MALLOC(sizeof(struct nm_cmdline_launcher_status_s));
   status->p_session = NULL;
-  status->gate = NM_GATE_NONE;
+  status->p_gate = NM_GATE_NONE;
   status->is_server = 0;
   return status;
 }
@@ -95,12 +96,10 @@ static void*nm_cmdline_launcher_instantiate(puk_instance_t i, puk_context_t c)
 static void nm_cmdline_launcher_destroy(void*_status)
 {
   struct nm_cmdline_launcher_status_s*status = _status;
-  int ret = NM_ESUCCESS;
   int err = nm_session_destroy(status->p_session);
   if(err != NM_ESUCCESS) 
     {
       fprintf(stderr, "# launcher: nm_session_destroy return err = %d\n", err);
-      ret = EXIT_FAILURE;
     }
   TBX_FREE(status);
 }
@@ -127,8 +126,8 @@ static void nm_cmdline_launcher_get_gates(void*_status, nm_gate_t *_gates)
   struct nm_cmdline_launcher_status_s*status = _status;
   int self = nm_cmdline_launcher_get_rank(status);
   int peer = 1 - self;
-  _gates[self] = NULL;
-  _gates[peer] = status->gate;
+  _gates[self] = status->p_self_gate;
+  _gates[peer] = status->p_gate;
 }
 
 static void nm_launcher_addr_send(int sock, const char*url)
@@ -247,6 +246,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
       abort();
     }
 
+
   /* address exchange */
 	
   if(!remote_launcher_url)
@@ -333,12 +333,21 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
       close(sock);
     }
 
-  err = nm_session_connect(status->p_session, &status->gate, remote_session_url);
+  err = nm_session_connect(status->p_session, &status->p_gate, remote_session_url);
   if (err != NM_ESUCCESS)
     {
       fprintf(stderr, "launcher: nm_session_connect returned err = %d\n", err);
       abort();
     }
+
+  /* connect to self */
+  err = nm_session_connect(status->p_session, &status->p_self_gate, local_session_url);
+  if (err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "launcher: self nm_session_connect returned err = %d\n", err);
+      abort();
+    }
+
   if(remote_session_url != NULL)
     TBX_FREE(remote_session_url);
 }

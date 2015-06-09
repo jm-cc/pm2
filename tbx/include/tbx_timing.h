@@ -35,10 +35,9 @@
 #endif /* TBX */
 
 
-#ifdef __MIC__
+#if defined(__MIC__) && defined(MCKERNEL)
 #define TBX_USE_RDTSC
 #undef TBX_USE_CLOCK_GETTIME
-/* TODO- move this to tbx.m4 */
 #endif
 
 #include <time.h>

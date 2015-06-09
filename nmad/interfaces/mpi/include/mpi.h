@@ -48,6 +48,7 @@ extern "C"
 #include "nm_mpi_collective.h"
 #include "nm_mpi_datatype.h"
 #include "nm_mpi_communicator.h"
+#include "nm_mpi_onesided.h"
 #include "nm_mpi_not_implemented.h"
 
 #ifndef NMAD_MPI_ENABLE_ROMIO

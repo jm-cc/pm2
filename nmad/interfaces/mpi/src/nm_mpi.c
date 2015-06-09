@@ -598,7 +598,7 @@ int MPI_Get(void *origin_addr,
 }
 
 
-int MPI_Put(void *origin_addr,
+int MPI_Put(const void *origin_addr,
 	    int origin_count,
 	    MPI_Datatype origin_datatype,
 	    int target_rank,

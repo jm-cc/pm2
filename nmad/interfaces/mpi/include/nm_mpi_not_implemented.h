@@ -25,8 +25,6 @@
 /* @{ */
 
 
-typedef int MPI_Win;
-
 #define MPI_ARGV_NULL (NULL)
 
 int MPI_Intercomm_create(MPI_Comm local_comm,
@@ -38,27 +36,6 @@ int MPI_Intercomm_create(MPI_Comm local_comm,
 
 int MPI_Comm_remote_size(MPI_Comm comm, int *size);
 
-int MPI_Get(void *origin_addr,
-	    int origin_count,
-	    MPI_Datatype origin_datatype,
-	    int target_rank,
-	    MPI_Aint target_disp,
-            int target_count,
-	    MPI_Datatype target_datatype,
-	    MPI_Win win);
-
-int MPI_Put(void *origin_addr,
-	    int origin_count,
-	    MPI_Datatype origin_datatype,
-	    int target_rank,
-	    MPI_Aint target_disp,
-            int target_count,
-	    MPI_Datatype target_datatype,
-	    MPI_Win win);
-
-MPI_Win MPI_Win_f2c(MPI_Fint win);
-
-MPI_Fint MPI_Win_c2f(MPI_Win win);
 
 /* @}*/
 /* @}*/

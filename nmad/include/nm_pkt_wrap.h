@@ -139,6 +139,22 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
 void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 		       const void *data, nm_len_t len, nm_len_t offset, int flags);
 
+void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+			     const void*data, nm_len_t len);
+
+void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+				 const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t flags);
+
+void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+				const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t proto_flags);
+
+void nm_so_pw_add_raw(struct nm_pkt_wrap*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset);
+
+/* forward declaration to resolve dependancy */
+union nm_header_ctrl_generic_s;
+
+int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_header_ctrl_generic_s*p_ctrl);
+
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 
 void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, nm_len_t len);

@@ -148,7 +148,8 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
     }
 
   /* Simply form a new packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
+  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_so_pw);
+  err = nm_so_pw_add_control(p_so_pw, p_ctrl);
   if(err != NM_ESUCCESS)
     goto out;
 
@@ -217,13 +218,15 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*
       flags = NM_PW_GLOBAL_HEADER;
       if(len <= status->nm_so_copy_on_send_threshold)
 	flags |= NM_SO_DATA_USE_COPY;
-      nm_so_pw_alloc_and_fill_with_data(p_pack, ptr, len, chunk_offset, 1, flags, &p_pw);
+      nm_so_pw_alloc(flags, &p_pw);
+      nm_so_pw_add_data(p_pw, p_pack, ptr, len, chunk_offset, flags);
       tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
     }
   else
     {
       /* large packet */
-      nm_so_pw_alloc_and_fill_with_data(p_pack, ptr, len, chunk_offset, 1, NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_add_data(p_pw, p_pack, ptr, len, chunk_offset, flags);
       nm_so_pw_finalize(p_pw);
       tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
       union nm_header_ctrl_generic_s ctrl;

@@ -16,6 +16,18 @@
 #ifndef NM_TACTICS_H
 #define NM_TACTICS_H
 
+/** remaining space in pw header */
+static nm_len_t nm_so_pw_remaining_header_area(struct nm_pkt_wrap *p_pw)
+{
+  const struct iovec *vec = &p_pw->v[0];
+  return NM_SO_MAX_UNEXPECTED - ((vec->iov_base + vec->iov_len) - (void *)p_pw->buf);
+}
+
+/** remaining space for data in pw */
+static nm_len_t nm_so_pw_remaining_data(struct nm_pkt_wrap *p_pw)
+{
+  return NM_SO_MAX_UNEXPECTED - p_pw->length;
+}
 
 /** Pack a generic control header as a new packet wrapper on track #0.
  */

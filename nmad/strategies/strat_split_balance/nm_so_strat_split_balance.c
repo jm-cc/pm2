@@ -132,7 +132,8 @@ strat_split_balance_pack_ctrl(void *_status,
   }
 
   /* Otherwise, simply form a new packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
+  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_so_pw);
+  err = nm_so_pw_add_control(p_so_pw, p_ctrl);
   if(err != NM_ESUCCESS)
     goto out;
 
@@ -154,8 +155,11 @@ static void
 strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
 				       const void *data, nm_len_t len, nm_len_t chunk_offset, uint8_t is_last_chunk)
 {
+  int flags = NM_PW_NOHEADER;
   struct nm_pkt_wrap *p_pw = NULL;
-  nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, NM_PW_NOHEADER, &p_pw);
+  nm_so_pw_alloc(flags, &p_pw);
+  nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, flags);
+  p_pw->chunk_offset = chunk_offset;
   tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_header_ctrl_generic_s ctrl;
   nm_header_init_rdv(&ctrl, p_pack, len, chunk_offset, is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
@@ -198,7 +202,9 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 
   /* We didn't have a chance to form an aggregate, so simply form a
      new packet wrapper and add it to the out_list */
-  nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, flags, &p_pw);
+  nm_so_pw_alloc(flags, &p_pw);
+  nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, flags);
+  p_pw->chunk_offset = chunk_offset;
   FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, p_pw, p_pack->tag, p_pack->seq, len);
   FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_pack->p_gate, 0, p_pw);
   FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_pack->p_gate, 0, 0, p_pw);

@@ -54,9 +54,6 @@ typedef uint32_t nm_pw_flag_t;
 /* Data flags */
 #define NM_SO_DATA_USE_COPY            0x0200
 
-/** forward declaration for circular dependancy */
-struct nm_pkt_wrap;
-
 /** notification of pw send completion */
 struct nm_pw_completion_s
 {
@@ -68,90 +65,56 @@ struct nm_pw_completion_s
  */
 struct nm_pkt_wrap
 {
-#ifdef PIOMAN_POLL
-  struct piom_ltask ltask;
-#endif /* PIOMAN_POLL */
-
-#ifdef PIO_OFFLOAD
-  tbx_bool_t data_to_offload;
-  struct piom_ltask offload_ltask;
-#endif /* PIO_OFFLOAD */
-  
-  /* Scheduler fields.
-   */
-  
-  /** Assignated driver.  */
-  struct nm_drv*p_drv;
-  
-  /** Assignated track ID.  */
-  nm_trk_id_t trk_id;
-
-  /** Assignated gate, if relevant. */
-  struct nm_gate*p_gate;
-  
-  /** Assignated gate driver, if relevant. */
-  struct nm_gate_drv*p_gdrv;
-
-  /** Driver implementation data.  */
-  void*drv_priv;
-  
-  
-  /* Packet related fields.					*/
-  
-  /** Packet flags. */
-  nm_pw_flag_t flags;
-  
-  /** Cumulated amount of data (everything included) referenced by this wrap. */
-  nm_len_t length;
-
-  /** actual number of allocated entries in the iovec. */
-  int v_size;
-  
-  /** Number of *used* entries in io vector.
-      - first unused entry after iov  contents is v[v_nb]
-  */
-  int v_nb;
-  
-  /** IO vector. */
-  struct iovec*v;
-  
-  /** number of references pointing to the header */
-  int ref_count;
-
-  /** destructor called uppon packet destroy */
-  void (*destructor)(struct nm_pkt_wrap*p_pw);
-  /** key for destructor to store private data */
-  void*destructor_key;
-
   /** link to insert the pw into a tbx_fast_list. A pw may be stored either in:
    * out_list in strategy, pending_large_send in sender, pending_large_recv in receiver,
    * pending_send_list, pending_recv_list in driver,
    * post_sched_out_list, post_recv_list in driver
    */
   struct tbx_fast_list_head link;
+  
+  /* ** scheduler fields */
+  
+#ifdef PIOMAN_POLL
+  struct piom_ltask ltask;   /**< ltask descriptor used by pioman for progression  */
+#endif /* PIOMAN_POLL */
+  struct nm_drv*p_drv;       /**< assignated driver.  */
+  nm_trk_id_t trk_id;        /**< assignated track ID.  */
+  struct nm_gate*p_gate;     /**< assignated gate, if relevant. */
+  struct nm_gate_drv*p_gdrv; /**< assignated gate driver, if relevant. */
+  void*drv_priv;             /**< driver implementation data.  */
+    
+  /* ** packet / data description fields. */
 
-  /** pre-allcoated iovec */
-  struct iovec prealloc_v[NM_SO_PREALLOC_IOV_LEN];
+  nm_pw_flag_t flags;        /**< packet flags. */
+  nm_len_t length;           /**< cumulated amount of data (everything included) referenced by this wrap. */
+  struct iovec*v;            /**< IO vector. */
+  int v_size;                /**< number of allocated entries in the iovec. */
+  int v_nb;                  /**< number of used entries in the iovec */
+  struct iovec prealloc_v[NM_SO_PREALLOC_IOV_LEN];  /**< pre-allcoated iovec */
+
+  /* ** lifecycle */
+  int ref_count;                                /**< number of references pointing to the header */
+  void (*destructor)(struct nm_pkt_wrap*p_pw);  /**< destructor called uppon packet destroy */
+  void*destructor_key;                          /**< key for destructor to store private data */
 
   /* ** fields used when sending */
 
-  /** list of completion notifier for this pw (sending) */
-  struct nm_pw_completion_s*completions;
-  /** number of completion notifiers actually registered in this pw */
-  int n_completions;
-  /** size of the allocated completions array */
-  int completions_size;
-  /** pre-allocated completions */
-  struct nm_pw_completion_s prealloc_completions[NM_SO_PREALLOC_IOV_LEN];
+  struct nm_pw_completion_s*completions;  /**< list of completion notifier for this pw (sending) */
+  int n_completions;                      /**< number of completion notifiers actually registered in this pw */
+  int completions_size;                   /**< size of the allocated completions array */
+  struct nm_pw_completion_s prealloc_completions[NM_SO_PREALLOC_IOV_LEN]; /**< pre-allocated completions */
 
   /* ** fields used when receiving */
 
-  /** offset of this chunk in the message */
-  nm_len_t chunk_offset;
+  struct nm_unpack_s*p_unpack;            /**< user-level unpack request (large message only) */
+  nm_len_t chunk_offset;                  /**< offset of this chunk in the message (for large message) */
 
-  struct nm_unpack_s*p_unpack;
-
-  tbx_tick_t start_transfer_time;
+  /* ** obsolete */
+  tbx_tick_t start_transfer_time;         /**< start time, when sampling is enabled */
+#ifdef PIO_OFFLOAD
+  tbx_bool_t data_to_offload;
+  struct piom_ltask offload_ltask;
+#endif /* PIO_OFFLOAD */
 
   /* The following field MUST be the LAST within the structure */
   NM_SO_ALIGN_TYPE   buf[1];

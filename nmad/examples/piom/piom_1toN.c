@@ -22,8 +22,12 @@
 #include "piom_helper.h"
 
 #define COUNT 100
-#define MAX_THREADS 32
 #define INTERLEAVE 1
+#ifdef __MIC__
+#define MAX_THREADS 244
+#else /* __MIC__ */
+#define MAX_THREADS 32
+#endif /* __MIC__ */
 
 static int comp_double(const void*_a, const void*_b)
 {

@@ -115,7 +115,6 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
   nmad_lock_assert();
 
   /* ready to send					*/
-  FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER, p_pw, p_pw->p_drv, p_pw->trk_id);
   NM_TRACEF("posting new send request: gate %p, drv %p, trk %d",
 	    p_pw->p_gate,
 	    p_pw->p_drv,

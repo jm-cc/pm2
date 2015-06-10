@@ -126,7 +126,6 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
 					     struct nm_pkt_wrap *p_pw,
 					     nm_trk_id_t trk_id, struct nm_drv*p_drv)
 {
-  FUT_DO_PROBE4(FUT_NMAD_NIC_OPS_GATE_TO_TRACK, p_gate, p_pw, p_drv, trk_id );
   /* Packet is assigned to given track, driver, and gate */
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
   /* append pkt to scheduler post list */

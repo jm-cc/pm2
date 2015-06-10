@@ -118,17 +118,8 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
     }
   p_drv->nb_tracks = nb_trks;
 
-  nm_trk_id_t trk_id;
-  for(trk_id = 0; trk_id < p_drv->nb_tracks; trk_id++)
-    {
-      FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_INPUT_LIST, p_drv, trk_id, p_drv->nb_tracks);
-      FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_OUTPUT_LIST, p_drv, trk_id, p_drv->nb_tracks);
-    }
-
   const char*drv_url = (*p_drv->driver->get_driver_url)(p_drv);
   *p_url = drv_url;
-  FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv);
-  FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->assembly->name);
 
 #ifdef PIOMAN_POLL
   p_drv->ltask_binding = NULL;

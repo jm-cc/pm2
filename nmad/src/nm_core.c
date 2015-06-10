@@ -273,8 +273,6 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
     }
 #endif
 
-  FUT_DO_PROBE0(FUT_NMAD_INIT_CORE);
-
   /* allocate core object and init lists */
 
   struct nm_core *p_core = TBX_MALLOC(sizeof(struct nm_core));

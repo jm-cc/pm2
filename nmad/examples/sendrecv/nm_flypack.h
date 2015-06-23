@@ -18,10 +18,7 @@
 
 #include <nm_core_interface.h>
 
-/** the basic chunk of data */
-typedef char flypack_t[16];
-
-const static int chunk_size = sizeof(flypack_t);
+#define FLYPACK_CHUNK_SIZE 16
 
 struct flypack_data_s
 {
@@ -29,16 +26,36 @@ struct flypack_data_s
   nm_len_t len;
 };
 
+static nm_len_t flypack_chunk_size(void)
+{
+  static nm_len_t chunk_size = 0;
+  if(chunk_size == 0)
+    {
+      const char*s_chunk_size = getenv("FLYPACK_CHUNK_SIZE");
+      if(s_chunk_size != NULL)
+	{
+	  chunk_size = atoi(s_chunk_size);
+	}
+      else
+	{
+	  chunk_size = FLYPACK_CHUNK_SIZE;
+	}
+      fprintf(stderr, "# nmad: flypack chunk size = %d\n", (int)chunk_size);
+    }
+  return chunk_size;
+}
+
 static void flypack_traversal(const void*_content, nm_data_apply_t apply, void*_context)
 {
   const struct flypack_data_s*content = _content;
+  const nm_len_t chunk_size = flypack_chunk_size();
   if(content->len >= chunk_size)
     {
       const int chunk_count = content->len / chunk_size;
       int i;
       for(i = 0; i < chunk_count; i++)
 	{
-	  (*apply)(&((flypack_t*)content->buf)[i], chunk_size, _context);
+	  (*apply)(content->buf + chunk_size * i, chunk_size, _context);
 	}
     }
   else

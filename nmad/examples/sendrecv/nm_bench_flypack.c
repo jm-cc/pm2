@@ -14,40 +14,11 @@
  */
 
 
+#include "nm_flypack.h"
 #include "nm_bench_generic.h"
 #include <nm_sendrecv_interface.h>
 
 static const nm_tag_t data_tag = 0x01;
-
-typedef int flypack_t;
-
-const static int chunk_size = sizeof(flypack_t);
-
-struct flypack_data_s
-{
-  void*buf;
-  nm_len_t len;
-};
-
-static void flypack_traversal(const void*_content, nm_data_apply_t apply, void*_context)
-{
-  const struct flypack_data_s*content = _content;
-  if(content->len >= chunk_size)
-    {
-      const int chunk_count = content->len / chunk_size;
-      int i;
-      for(i = 0; i < chunk_count; i++)
-	{
-	  (*apply)(&((flypack_t*)content->buf)[i], chunk_size, _context);
-	}
-    }
-  else
-    {
-      (*apply)(content->buf, content->len, _context);
-    }
-}
-
-NM_DATA_TYPE(flypack, struct flypack_data_s, &flypack_traversal);
 
 static void sr_bench_flypack_server(void*buf, nm_len_t len)
 {

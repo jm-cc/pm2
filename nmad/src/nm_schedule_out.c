@@ -57,7 +57,6 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
   p_pack->p_gate = p_gate;
   if(p_pack->status & NM_PACK_SYNCHRONOUS)
     {
-#warning Paulette: lock
       tbx_fast_list_add_tail(&p_pack->_link, &p_core->pending_packs);
     }
   nm_data_aggregator_traversal(p_pack->p_data, &nm_core_pack_chunk, p_pack);

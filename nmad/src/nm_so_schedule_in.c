@@ -257,7 +257,6 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
   p_unpack->tag_mask = tag_mask;
   p_unpack->seq = NM_SEQ_NONE;
   /* store the unpack request */
-#warning Paulette: lock
   tbx_fast_list_add_tail(&p_unpack->_link, &p_core->unpacks);
   struct nm_unexpected_s*chunk = nm_unexpected_find_matching(p_core, p_unpack);
   while(chunk)
@@ -291,7 +290,6 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
       /* Decrement the packet wrapper reference counter. If no other
 	 chunks are still in use, the pw will be destroyed. */
       nm_pw_ref_dec(chunk->p_pw);
-#warning Paulette: lock
       tbx_fast_list_del(&chunk->link);
       nm_unexpected_free(nm_unexpected_allocator, chunk);
       nm_unexpected_mem_size--;
@@ -377,7 +375,6 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
     }
   else if(p_unpack->seq == NM_SEQ_NONE)
     {
-#warning Paulette: lock
       tbx_fast_list_del(&p_unpack->_link);
       const struct nm_core_event_s event =
 	{

@@ -13,22 +13,22 @@
  * General Public License for more details.
  */
 
-#ifndef NM_SO_STRATEGIES_H
-#define NM_SO_STRATEGIES_H
+#ifndef NM_STRATEGY_H
+#define NM_STRATEGY_H
 
 
 /* Driver for 'NewMad_Strategy' component interface
  */
 struct nm_strategy_iface_s
 {
+  /** submit a pack with iterator-based data description */
+  void (*pack_data)(void*_status, struct nm_pack_s*p_pack);
+
   /** submit a chunk of data to the strategy */
   void (*pack_chunk)(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 
   /** submit a chunk of control data */
   int (*pack_ctrl)(void*_status, struct nm_gate*p_gate, const union nm_header_ctrl_generic_s*p_ctrl);
-
-  /** submit a pack with iterator-based data description */
-  void (*pack_data)(void*_status, struct nm_pack_s*p_pack);
   
   /** Compute and apply the best possible packet rearrangement, then
       return next packet to send */
@@ -50,4 +50,4 @@ struct nm_strategy_iface_s
 
 PUK_IFACE_TYPE(NewMad_Strategy, struct nm_strategy_iface_s);
 
-#endif /* NM_SO_STRATEGIES_H */
+#endif /* NM_STRATEGY_H */

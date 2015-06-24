@@ -136,8 +136,8 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
 			struct nm_pkt_wrap *pp_pw2,
 			nm_len_t offset);
 
-void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
-		       const void *data, nm_len_t len, nm_len_t offset, int flags);
+void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
+			     const void *data, nm_len_t len, nm_len_t offset, int flags);
 
 void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 			     const void*data, nm_len_t len);

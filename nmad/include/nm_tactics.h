@@ -46,9 +46,9 @@ static inline void nm_tactic_pack_small_into_pw(struct nm_pack_s*p_pack, const c
 						nm_len_t copy_threshold, struct nm_pkt_wrap*p_pw)
 {
   if(len < copy_threshold)
-    nm_so_pw_add_data(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY);
+    nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY);
   else
-    nm_so_pw_add_data(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER);
+    nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER);
 }
 
 /** Pack small data into a new packet wrapper on track #0
@@ -69,7 +69,7 @@ static inline void nm_tactic_pack_rdv(struct nm_pack_s*p_pack, const char*data, 
 {
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-  nm_so_pw_add_data(p_pw, p_pack, data, len, offset, NM_PW_NOHEADER);
+  nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_NOHEADER);
   tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_header_ctrl_generic_s ctrl;
   nm_header_init_rdv(&ctrl, p_pack, len, offset, (p_pack->scheduled == p_pack->len) ? NM_PROTO_FLAG_LASTCHUNK : 0);

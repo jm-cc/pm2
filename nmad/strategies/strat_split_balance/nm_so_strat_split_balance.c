@@ -149,7 +149,7 @@ strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
   int flags = NM_PW_NOHEADER;
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc(flags, &p_pw);
-  nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, flags);
+  nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, flags);
   p_pw->chunk_offset = chunk_offset;
   tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_header_ctrl_generic_s ctrl;
@@ -180,7 +180,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 	      /* We can copy data into the header zone */
 	      flags = NM_SO_DATA_USE_COPY;
 	      struct nm_pkt_wrap TBX_UNUSED dummy_p_pw;
-	      nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, flags);
+	      nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, flags);
 	      return;
 	    }
 	}
@@ -191,7 +191,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
   /* We didn't have a chance to form an aggregate, so simply form a
      new packet wrapper and add it to the out_list */
   nm_so_pw_alloc(flags, &p_pw);
-  nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, flags);
+  nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, flags);
   p_pw->chunk_offset = chunk_offset;
   tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
   status->nb_packets++;

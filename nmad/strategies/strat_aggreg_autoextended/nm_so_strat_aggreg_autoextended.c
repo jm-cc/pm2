@@ -209,7 +209,7 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*
 		{
 		  flags = NM_SO_DATA_USE_COPY;
 		}
-	      nm_so_pw_add_data(p_pw, p_pack, ptr, len, chunk_offset, flags);
+	      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
 	      nb_data_aggregation ++;
 	      return;
 	    }
@@ -219,14 +219,14 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*
       if(len <= status->nm_so_copy_on_send_threshold)
 	flags |= NM_SO_DATA_USE_COPY;
       nm_so_pw_alloc(flags, &p_pw);
-      nm_so_pw_add_data(p_pw, p_pack, ptr, len, chunk_offset, flags);
+      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
       tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
     }
   else
     {
       /* large packet */
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-      nm_so_pw_add_data(p_pw, p_pack, ptr, len, chunk_offset, flags);
+      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
       nm_so_pw_finalize(p_pw);
       tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
       union nm_header_ctrl_generic_s ctrl;

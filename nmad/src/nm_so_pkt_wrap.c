@@ -387,7 +387,7 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
   return NM_ESUCCESS;
 }
 
-/** Append a fragment of data to the pkt wrapper being built for sending.
+/** Append a chunk of data to the pkt wrapper being built for sending.
  *
  *  @param p_pw the pkt wrapper pointer.
  *  @param tag the tag id which generated the fragment.
@@ -397,11 +397,11 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
  *  @param flags the flags controlling the way the fragment is appended.
  *  @return The NM status.
  */
-void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
-		       struct nm_pack_s*p_pack,
-		       const void *data, nm_len_t len,
-		       nm_len_t offset,
-		       int flags)
+void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
+			     struct nm_pack_s*p_pack,
+			     const void *data, nm_len_t len,
+			     nm_len_t offset,
+			     int flags)
 {
   const nm_core_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;

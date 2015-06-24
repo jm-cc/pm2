@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2014 (see AUTHORS file)
+ * Copyright (C) 2006-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg, &nm_strat_aggreg_load, NULL, NULL)
 /* Components structures:
  */
 
+static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack);
 static int  strat_aggreg_todo(void*, struct nm_gate*);
 static void strat_aggreg_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_aggreg_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
@@ -35,6 +36,7 @@ static void strat_aggreg_rdv_accept(void*, struct nm_gate*);
 
 static const struct nm_strategy_iface_s nm_strat_aggreg_driver =
   {
+    .pack_data          = &strat_aggreg_pack_data,
     .pack_chunk         = &strat_aggreg_pack_chunk,
     .pack_ctrl          = &strat_aggreg_pack_ctrl,
     .try_and_commit     = &strat_aggreg_try_and_commit,
@@ -157,6 +159,36 @@ static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
 {
   struct nm_strat_aggreg_gate *status = _status;
   return !(tbx_fast_list_empty(&status->out_list));
+}
+
+static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
+{
+  struct nm_strat_aggreg_gate*status = _status;
+  const nm_len_t len = p_pack->len;
+  if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
+    {
+      struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_HEADER_DATA_SIZE, len);
+      if(!p_pw)
+	{
+	  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+	  tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
+	}
+      {
+#warning TODO- select pack strategy depending on data sparsity
+
+#warning TODO- nm_pw_add_data(p_pw, p_pack, p_pack->data)
+
+	
+      }
+    }
+  else
+    {
+      /*
+	nm_tactic_pack_rdv(p_pack, ptr, len, chunk_offset);
+      */
+      padico_fatal("pack_data- rdv not supported yet.\n");
+    }
+  
 }
 
 /** push message chunk */

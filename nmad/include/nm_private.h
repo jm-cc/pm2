@@ -101,7 +101,7 @@ typedef uint16_t nm_drv_id_t;
 #include "nm_piom_ltasks.h"
 #endif
 
-#include "nm_so_strategies.h"
+#include "nm_strategy.h"
 #include "nm_so_headers.h"
 #include "nm_gate.h"
 #include "nm_core.h"

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2014 (see AUTHORS file)
+ * Copyright (C) 2006-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,16 +17,18 @@
 #define NM_SO_STRATEGIES_H
 
 
-typedef const union nm_header_ctrl_generic_s*nm_generic_header_t;
-
 /* Driver for 'NewMad_Strategy' component interface
  */
 struct nm_strategy_iface_s
 {
-  /** Submit a chunk of data to the strategy */
+  /** submit a chunk of data to the strategy */
   void (*pack_chunk)(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 
-  int (*pack_ctrl)(void*_status, struct nm_gate*p_gate, nm_generic_header_t p_ctrl);
+  /** submit a chunk of control data */
+  int (*pack_ctrl)(void*_status, struct nm_gate*p_gate, const union nm_header_ctrl_generic_s*p_ctrl);
+
+  /** submit a pack with iterator-based data description */
+  void (*pack_data)(void*_status, struct nm_pack_s*p_pack);
   
   /** Compute and apply the best possible packet rearrangement, then
       return next packet to send */
@@ -48,4 +50,4 @@ struct nm_strategy_iface_s
 
 PUK_IFACE_TYPE(NewMad_Strategy, struct nm_strategy_iface_s);
 
-#endif
+#endif /* NM_SO_STRATEGIES_H */

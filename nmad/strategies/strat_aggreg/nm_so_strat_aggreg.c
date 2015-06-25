@@ -164,7 +164,10 @@ static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
 static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
 {
   struct nm_strat_aggreg_gate*status = _status;
-  const nm_len_t len = p_pack->len;
+  nm_len_t len;
+  int blocks, is_contig;
+  nm_data_properties_compute(p_pack->p_data, &len, &blocks, &is_contig);
+  const nm_len_t density = len / blocks; /* average block size */
   if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_HEADER_DATA_SIZE, len);

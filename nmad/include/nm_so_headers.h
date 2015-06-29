@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,6 @@
 #ifndef NM_SO_HEADERS_H
 #define NM_SO_HEADERS_H
 
-#include <tbx_macros.h>
-
 typedef uint8_t nm_proto_t;
 
 #define NM_PROTO_ID_MASK     0x0F
@@ -25,16 +23,18 @@ typedef uint8_t nm_proto_t;
 
 /** a chunk of data */
 #define NM_PROTO_DATA        0x01
+/** a simplified (short header) chunk of data */
+#define NM_PROTO_SHORT_DATA  0x02
+/** new optimized packet format */
+#define NM_PROTO_PKT_DATA    0x03
 /** rendez-vous request */
-#define NM_PROTO_RDV         0x02
+#define NM_PROTO_RDV         0x04
 /** ready-to-receive, replay to rdv */
-#define NM_PROTO_RTR         0x03
-/** a simplified (short header) chunk of data- not implemented yet */
-#define NM_PROTO_SHORT_DATA  0x04
+#define NM_PROTO_RTR         0x05
 /** an ack for a ssend (sent when receiving first chunk) */
-#define NM_PROTO_ACK         0x05
+#define NM_PROTO_ACK         0x06
 /** ctrl chunk for strategy (don't decode in nm core) */
-#define NM_PROTO_STRAT       0x0A
+#define NM_PROTO_STRAT       0x07
 
 /* flag for last proto in packet */
 #define NM_PROTO_LAST        0x80
@@ -51,6 +51,16 @@ typedef uint8_t nm_proto_t;
 
 // Warning : All header structs (except the global one) _MUST_ begin
 // with the 'proto_id' field
+
+struct nm_header_pkt_data_s
+{
+  nm_proto_t    proto_id;  /**< proto ID- should be NM_PROTO_PKT_DATA */
+  nm_core_tag_t tag_id;
+  nm_seq_t      seq;
+  uint8_t       flags;
+  nm_len_t      len;
+  nm_len_t      chunk_offset;
+} __attribute__((packed));
 
 struct nm_header_data_s
 {

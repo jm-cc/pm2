@@ -468,7 +468,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
       struct iovec *last_treated_vec = vec;
       do 
 	{
-	  const nm_proto_t proto_id = *(nm_proto_t*)ptr;
+	  const nm_proto_t proto_id = *(nm_proto_t*)ptr & NM_PROTO_ID_MASK;
 	  nm_len_t proto_hsize = 0;
 	  if(proto_id == NM_PROTO_DATA)
 	    {

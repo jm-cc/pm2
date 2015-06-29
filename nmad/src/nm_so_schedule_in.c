@@ -317,7 +317,8 @@ int nm_core_iprobe(struct nm_core*p_core,
 	 (chunk->seq == next_seq) /* seq number matches */ )
 	{
 	  const void*header = chunk->header;
-	  const nm_proto_t proto_id = (*(nm_proto_t *)header) & NM_PROTO_ID_MASK;
+	  const nm_proto_t proto_id = (*(nm_proto_t*)header) & NM_PROTO_ID_MASK;
+	  const nm_proto_t proto_flags = (*(nm_proto_t*)header) & NM_PROTO_FLAG_MASK;
 	  int matches = 0;
 	  nm_len_t len = -1;
 	  switch(proto_id)
@@ -332,7 +333,7 @@ int nm_core_iprobe(struct nm_core*p_core,
 	    case NM_PROTO_DATA:
 	      {
 		const struct nm_header_data_s *h = header;
-		if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
+		if(proto_flags & NM_PROTO_FLAG_LASTCHUNK)
 		  {
 		    len = h->len + h->chunk_offset;
 		    matches = 1;
@@ -342,7 +343,7 @@ int nm_core_iprobe(struct nm_core*p_core,
 	    case NM_PROTO_RDV:
 	      {
 		const struct nm_header_ctrl_rdv_s *rdv = header;
-		if(rdv->flags & NM_PROTO_FLAG_LASTCHUNK)
+		if(proto_flags & NM_PROTO_FLAG_LASTCHUNK)
 		  {
 		    len = rdv->len + rdv->chunk_offset;
 		    matches = 1;
@@ -435,7 +436,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
     {
       if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
 	{
-	  nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
+	  nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
 	  assert(chunk_offset + chunk_len <= p_unpack->expected_len);
 	  assert(p_unpack->cumulated_len + chunk_len <= p_unpack->expected_len);
 	  nm_data_copy(p_unpack->p_data, chunk_offset, ptr, chunk_len);
@@ -447,7 +448,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
       const nm_core_tag_t tag = h->tag_id;
       const nm_seq_t seq = h->seq;
       nm_unexpected_store(p_core, p_gate, h, chunk_len, tag, seq, p_pw);
-      if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
+      if(h->proto_id & NM_PROTO_FLAG_LASTCHUNK)
 	{
 	  const struct nm_core_event_s event =
 	    {
@@ -473,7 +474,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
   if(p_unpack)
     {
       assert(p_unpack->p_gate != NULL);
-      nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
+      nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
       struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
       nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
     }
@@ -482,7 +483,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
       const nm_core_tag_t tag = h->tag_id;
       const nm_seq_t seq = h->seq;
       nm_unexpected_store(p_core, p_gate, h, chunk_len, tag, seq, p_pw);
-      if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
+      if(h->proto_id & NM_PROTO_FLAG_LASTCHUNK)
 	{
 	  const struct nm_core_event_s event =
 	    {
@@ -601,8 +602,8 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
 int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate)
 {
   int rc = 0;
-  const nm_proto_t proto_id = (*(nm_proto_t *)ptr) & NM_PROTO_ID_MASK;
-  const nm_proto_t proto_flag = (*(nm_proto_t *)ptr) & NM_PROTO_FLAG_MASK;
+  const nm_proto_t proto_id   = (*(const nm_proto_t*)ptr) & NM_PROTO_ID_MASK;
+  const nm_proto_t proto_flag = (*(const nm_proto_t*)ptr) & NM_PROTO_FLAG_MASK;
 
   assert(proto_id != 0);
   switch(proto_id)
@@ -630,7 +631,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	const void*data = ptr + NM_HEADER_DATA_SIZE + skip;
 	assert(p_pw->v_nb == 1);
 	assert(data + dh->len <= p_pw->v->iov_base + p_pw->v->iov_len);
-	const unsigned long size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
+	const unsigned long size = (proto_flag & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
 	if(skip == 0)
 	  { /* data is just after the header */
 	    rc += size;

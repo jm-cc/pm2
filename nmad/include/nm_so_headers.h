@@ -18,36 +18,34 @@
 
 typedef uint8_t nm_proto_t;
 
-#define NM_PROTO_ID_MASK     0x0F
-#define NM_PROTO_FLAG_MASK   0xF0
+/** mask for proto ID part */
+#define NM_PROTO_ID_MASK        0x0F
+/** mask for proto flags */
+#define NM_PROTO_FLAG_MASK      0xF0
 
 /** a chunk of data */
-#define NM_PROTO_DATA        0x01
+#define NM_PROTO_DATA           0x01
 /** a simplified (short header) chunk of data */
-#define NM_PROTO_SHORT_DATA  0x02
+#define NM_PROTO_SHORT_DATA     0x02
 /** new optimized packet format */
-#define NM_PROTO_PKT_DATA    0x03
+#define NM_PROTO_PKT_DATA       0x03
 /** rendez-vous request */
-#define NM_PROTO_RDV         0x04
+#define NM_PROTO_RDV            0x04
 /** ready-to-receive, replay to rdv */
-#define NM_PROTO_RTR         0x05
+#define NM_PROTO_RTR            0x05
 /** an ack for a ssend (sent when receiving first chunk) */
-#define NM_PROTO_ACK         0x06
+#define NM_PROTO_ACK            0x06
 /** ctrl chunk for strategy (don't decode in nm core) */
-#define NM_PROTO_STRAT       0x07
+#define NM_PROTO_STRAT          0x07
 
 /* flag for last proto in packet */
-#define NM_PROTO_LAST        0x80
-
-
-/* ** flags for data chunks */
-
+#define NM_PROTO_LAST           0x80
 /** last chunk of data for the given pack */
-#define NM_PROTO_FLAG_LASTCHUNK 0x01
+#define NM_PROTO_FLAG_LASTCHUNK 0x10
 /** data is 32 bit-aligned in packet */
-#define NM_PROTO_FLAG_ALIGNED   0x02
+#define NM_PROTO_FLAG_ALIGNED   0x20
 /** data sent as synchronous send- please send an ack on first chunk */
-#define NM_PROTO_FLAG_ACKREQ    0x04
+#define NM_PROTO_FLAG_ACKREQ    0x40
 
 // Warning : All header structs (except the global one) _MUST_ begin
 // with the 'proto_id' field
@@ -57,7 +55,6 @@ struct nm_header_pkt_data_s
   nm_proto_t    proto_id;  /**< proto ID- should be NM_PROTO_PKT_DATA */
   nm_core_tag_t tag_id;
   nm_seq_t      seq;
-  uint8_t       flags;
   nm_len_t      len;
   nm_len_t      chunk_offset;
 } __attribute__((packed));
@@ -67,7 +64,6 @@ struct nm_header_data_s
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_DATA */
   nm_core_tag_t tag_id;
   nm_seq_t seq;
-  uint8_t  flags;
   nm_len_t len;
   nm_len_t chunk_offset;
   uint16_t skip;
@@ -86,7 +82,6 @@ struct nm_header_ctrl_rdv_s
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_RDV */
   nm_core_tag_t tag_id;
   nm_seq_t seq;
-  uint8_t  flags;
   nm_len_t len;
   nm_len_t chunk_offset;
 } __attribute__((packed));
@@ -147,10 +142,10 @@ typedef struct nm_header_short_data_s nm_header_short_data_t;
 static inline void nm_header_init_data(nm_header_data_t*p_header, nm_core_tag_t tag_id, nm_seq_t seq, uint8_t flags,
 				       uint16_t skip, nm_len_t len, nm_len_t chunk_offset)
 { 
-  p_header->proto_id = NM_PROTO_DATA;
+  assert((flags & NM_PROTO_ID_MASK) == 0x00);
+  p_header->proto_id = NM_PROTO_DATA | flags;
   p_header->tag_id   = tag_id;
   p_header->seq      = seq;
-  p_header->flags    = flags;
   p_header->skip     = skip;
   p_header->len      = len;
   p_header->chunk_offset = chunk_offset;
@@ -170,12 +165,12 @@ static inline void nm_header_init_rdv(union nm_header_ctrl_generic_s*p_ctrl, str
 {
   if(p_pack->status & NM_PACK_SYNCHRONOUS)
     rdv_flags |= NM_PROTO_FLAG_ACKREQ;
-  p_ctrl->rdv.proto_id     = NM_PROTO_RDV;
+  assert((rdv_flags & NM_PROTO_ID_MASK) == 0);
+  p_ctrl->rdv.proto_id     = NM_PROTO_RDV | rdv_flags;
   p_ctrl->rdv.tag_id       = p_pack->tag;
   p_ctrl->rdv.seq          = p_pack->seq;
   p_ctrl->rdv.len          = len;
   p_ctrl->rdv.chunk_offset = chunk_offset;
-  p_ctrl->rdv.flags        = rdv_flags;
 }
 
 static inline void nm_header_init_rtr(union nm_header_ctrl_generic_s*p_ctrl, nm_core_tag_t tag, nm_seq_t seq,

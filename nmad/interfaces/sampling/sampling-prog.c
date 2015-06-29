@@ -331,7 +331,7 @@ static void nm_ns_eager_recv_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*
 	      const struct nm_header_data_s*dh = (const struct nm_header_data_s*)p_proto;
 	      const size_t data_len = dh->len;
 	      memcpy(ptr, dh + dh->skip, data_len);
-	      const size_t size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(data_len) : data_len;
+	      const size_t size = (proto & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(data_len) : data_len;
 	      p_proto += NM_HEADER_DATA_SIZE;
 	      if(dh->skip == 0)
 		p_proto += size;

@@ -22,6 +22,8 @@
 
 PADICO_MODULE_HOOK(NewMad_Core);
 
+static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
+				const struct nm_header_pkt_data_s*h, struct nm_pkt_wrap *p_pw);
 static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
 				  const void*ptr, const nm_header_short_data_t*h, struct nm_pkt_wrap *p_pw);
 static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
@@ -213,16 +215,16 @@ static inline void nm_so_data_flags_decode(struct nm_unpack_s*p_unpack, uint8_t 
 }
 
 /** store an unexpected chunk of data (data/short_data/rdv) */
-static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_gate,
-				       const void *header, nm_len_t len, nm_core_tag_t tag, nm_seq_t seq,
+static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_gate, const void *header,
+				       nm_len_t chunk_offset, nm_len_t chunk_len, nm_core_tag_t tag, nm_seq_t seq,
 				       struct nm_pkt_wrap *p_pw)
 {
-  struct nm_unexpected_s*chunk = nm_unexpected_alloc();
-  chunk->header = (void*)header;
-  chunk->p_pw = p_pw;
-  chunk->p_gate = p_gate;
-  chunk->seq = seq;
-  chunk->tag = tag;
+  struct nm_unexpected_s*p_chunk = nm_unexpected_alloc();
+  p_chunk->header = (void*)header;
+  p_chunk->p_pw   = p_pw;
+  p_chunk->p_gate = p_gate;
+  p_chunk->seq    = seq;
+  p_chunk->tag    = tag;
   nm_pw_ref_inc(p_pw);
   nm_unexpected_mem_size++;
   if(nm_unexpected_mem_size > 32*1024)
@@ -232,7 +234,20 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
 	TBX_FAILUREF("nmad: FATAL- %lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
     }
 #warning Paulette: lock
-  tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
+  tbx_fast_list_add_tail(&p_chunk->link, &p_core->unexpected);
+  const nm_proto_t*proto_id = header;
+  if(*proto_id & NM_PROTO_FLAG_LASTCHUNK)
+    {
+      const struct nm_core_event_s event =
+	{
+	  .status = NM_STATUS_UNEXPECTED,
+	  .p_gate = p_gate,
+	  .tag    = tag,
+	  .seq    = seq,
+	  .len    = chunk_offset + chunk_len
+	};
+      nm_core_status_event(p_core, &event, NULL);
+    }
 }
 
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*p_data)
@@ -389,6 +404,32 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
     return -NM_ENOTIMPL;
 }
 
+/** Process a acpked data request (NM_PROTO_PKT_DATA)- p_unpack may be NULL (unexpected)
+ */
+static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
+				const struct nm_header_pkt_data_s*h, struct nm_pkt_wrap *p_pw)
+{
+  if(p_unpack)
+    {
+      if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
+	{
+	  const nm_len_t chunk_len = h->data_len;
+	  const nm_len_t chunk_offset = h->chunk_offset;
+	  nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
+	  assert(chunk_offset + chunk_len <= p_unpack->expected_len);
+	  assert(p_unpack->cumulated_len + chunk_len <= p_unpack->expected_len);
+	  nm_data_pkt_unpack(p_unpack->p_data, h, p_pw);
+	  nm_so_unpack_check_completion(p_core, p_unpack, chunk_len);
+	}
+    }
+  else
+    {
+      const nm_core_tag_t tag = h->tag_id;
+      const nm_seq_t seq = h->seq;
+      nm_unexpected_store(p_core, p_gate, h, h->chunk_offset, h->data_len, tag, seq, p_pw);
+    }
+}
+
 /** Process a short data request (NM_PROTO_SHORT_DATA)- p_unpack may be NULL (unexpected)
  */
 static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
@@ -410,18 +451,7 @@ static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
     }
   else
     {
-      const nm_core_tag_t tag = h->tag_id;
-      const nm_seq_t seq = h->seq;
-      nm_unexpected_store(p_core, p_gate, h, len, tag, seq, p_pw);
-      const struct nm_core_event_s event =
-	{
-	  .status = NM_STATUS_UNEXPECTED,
-	  .p_gate = p_gate,
-	  .tag = tag,
-	  .seq = seq,
-	  .len = len
-	};
-      nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
+      nm_unexpected_store(p_core, p_gate, h, 0 /* offset */, len, h->tag_id, h->seq, p_pw);
     }
 }
 
@@ -445,21 +475,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
     }
   else
     {
-      const nm_core_tag_t tag = h->tag_id;
-      const nm_seq_t seq = h->seq;
-      nm_unexpected_store(p_core, p_gate, h, chunk_len, tag, seq, p_pw);
-      if(h->proto_id & NM_PROTO_FLAG_LASTCHUNK)
-	{
-	  const struct nm_core_event_s event =
-	    {
-	      .status = NM_STATUS_UNEXPECTED,
-	      .p_gate = p_gate,
-	      .tag = tag,
-	      .seq = seq,
-	      .len = chunk_offset + chunk_len
-	    };
-	  nm_core_status_event(p_core, &event, NULL);
-	}
+      nm_unexpected_store(p_core, p_gate, h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw);
     }
 }
 
@@ -480,21 +496,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
     }
   else
     {
-      const nm_core_tag_t tag = h->tag_id;
-      const nm_seq_t seq = h->seq;
-      nm_unexpected_store(p_core, p_gate, h, chunk_len, tag, seq, p_pw);
-      if(h->proto_id & NM_PROTO_FLAG_LASTCHUNK)
-	{
-	  const struct nm_core_event_s event =
-	    {
-	      .status = NM_STATUS_UNEXPECTED,
-	      .p_gate = p_gate,
-	      .tag = tag,
-	      .seq = seq,
-	      .len = chunk_offset + chunk_len
-	    };
-	  nm_core_status_event(p_core, &event, NULL);
-	}
+      nm_unexpected_store(p_core, p_gate, h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw);
     }
 }
 
@@ -599,7 +601,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
  * @returns the number of processed bytes in global header, 
  *          -1 if done (last chunk)
  */
-int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate)
+int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap*p_pw, struct nm_gate*p_gate)
 {
   int rc = 0;
   const nm_proto_t proto_id   = (*(const nm_proto_t*)ptr) & NM_PROTO_ID_MASK;
@@ -608,6 +610,15 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
   assert(proto_id != 0);
   switch(proto_id)
     {
+    case NM_PROTO_PKT_DATA:
+      {
+	const struct nm_header_pkt_data_s*h = ptr;
+	struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, h->seq, h->tag_id);
+	nm_pkt_data_handler(p_core, p_gate, p_unpack, h, p_pw);
+	rc = h->hlen;
+      }
+      break;
+      
     case NM_PROTO_SHORT_DATA:
       {
 	const struct nm_header_short_data_s*sh = ptr;
@@ -731,15 +742,15 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
   if(p_pw->trk_id == NM_TRK_SMALL)
     {
       /* ** Small packets - track #0 *********************** */
-      struct nm_gate*p_gate = p_pw->p_gate;
-      struct nm_core*p_core = p_gate->p_core;
-      struct iovec *vec = p_pw->v;
-      void *ptr = vec->iov_base;
+      struct nm_gate*const p_gate = p_pw->p_gate;
+      struct nm_core*const p_core = p_gate->p_core;
+      struct iovec*const v0 = p_pw->v;
+      const void*ptr = v0->iov_base + sizeof(struct nm_header_global_s);
       nm_len_t done = 0;
       while(done != -1)
 	{
 	  /* Iterate over header chunks */
-	  assert(ptr < vec->iov_base + vec->iov_len);
+	  assert(ptr < v0->iov_base + v0->iov_len);
 	  done = nm_decode_header_chunk(p_core, ptr, p_pw, p_gate);
 	  ptr += done;
 	}

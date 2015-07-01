@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2015 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,17 +29,15 @@ typedef uint32_t nm_pw_flag_t;
  */
 #define NM_PW_NOHEADER      (nm_pw_flag_t)0x0001
 
-/** Pkt has been allocated with full (NM_SO_MAX_UNEXPECTED) contiguous buffer, if set.
+/** pw allocated with NM_SO_MAX_UNEXPECTED contiguous buffer.
+ * Used to receive small pw on trk #0
  */
 #define NM_PW_BUFFER        (nm_pw_flag_t)0x0002
 
-/** Pkt has been allocated with a contiguous buffer and a global header has been prepared.
+/** pw allocated with a contiguous buffer and a global header has been prepared.
+ * Used to send small pw on trk #0
  */
 #define NM_PW_GLOBAL_HEADER (nm_pw_flag_t)0x0004
-
-/** v[0].iov_base has been dyanmically allocated
- */
-#define NM_PW_DYNAMIC_V0    (nm_pw_flag_t)0x0008
 
 /** Pkt has been finalized- ready to send on the wire.
  */
@@ -51,8 +49,13 @@ typedef uint32_t nm_pw_flag_t;
 
 /*@}*/
 
-/* Data flags */
-#define NM_SO_DATA_USE_COPY            0x0200
+/* Data flags, used when packing  */
+
+/** use memcpy, not iovec */
+#define NM_SO_DATA_USE_COPY   0x0200
+
+/* pointer is a struct nm_data_s */
+#define NM_PW_DATA_ITERATOR   0x0400
 
 /** notification of pw send completion */
 struct nm_pw_completion_s
@@ -117,8 +120,7 @@ struct nm_pkt_wrap
 #endif /* PIO_OFFLOAD */
 
   /* The following field MUST be the LAST within the structure */
-  NM_SO_ALIGN_TYPE   buf[1];
-
+  NM_SO_ALIGN_TYPE buf[1];
 };
 
 

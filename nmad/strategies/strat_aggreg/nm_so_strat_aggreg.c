@@ -179,8 +179,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
       {
 #warning TODO- select pack strategy depending on data sparsity
 
-#warning TODO- nm_pw_add_data(p_pw, p_pack, p_pack->data)
-
+	nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, /* chunk offset */ 0, NM_PW_DATA_ITERATOR);
 	
       }
     }

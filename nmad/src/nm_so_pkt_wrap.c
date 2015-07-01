@@ -165,7 +165,7 @@ int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_header_ctrl_gen
 
 /* ********************************************************* */
 
-static inline void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
+static inline void nm_pw_init(struct nm_pkt_wrap *p_pw)
 {
   p_pw->p_drv  = NULL;
   p_pw->trk_id = NM_TRK_NONE;
@@ -217,12 +217,7 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
     {
       /* full buffer as v[0]- used for short receive */
       p_pw = (struct nm_pkt_wrap*)nm_pw_buf_malloc(nm_pw_buf_allocator);
-      if (!p_pw)
-	{
-	  err = -NM_ENOMEM;
-	  goto out;
-	}
-      nm_so_pw_raz(p_pw);
+      nm_pw_init(p_pw);
       
       /* pw flags */
       p_pw->flags = NM_PW_BUFFER;
@@ -237,12 +232,7 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
     {
       /* no header preallocated- used for large send/recv */
       p_pw = nm_pw_nohd_malloc(nm_pw_nohd_allocator);
-      if (!p_pw)
-	{
-	  err = -NM_ENOMEM;
-	  goto out;
-	}
-      nm_so_pw_raz(p_pw);
+      nm_pw_init(p_pw);
       
       /* pw flags */
       p_pw->flags = NM_PW_NOHEADER;
@@ -254,18 +244,15 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
     {
       /* global header preallocated as v[0]- used for short sends */
       p_pw = (struct nm_pkt_wrap*)nm_pw_buf_malloc(nm_pw_buf_allocator);
-      if (!p_pw)
-	{
-	  err = -NM_ENOMEM;
-	  goto out;
-	}
-      nm_so_pw_raz(p_pw);
+      nm_pw_init(p_pw);
       
       /* first entry: global header */
       p_pw->v_nb = 1;
       p_pw->v[0].iov_base = p_pw->buf;
       p_pw->v[0].iov_len = 0;
       p_pw->length = 0;
+      /* reserve bits for v0 skip offset */
+      p_pw->v[0].iov_len += sizeof(struct nm_header_global_s);
       
       /* pw flags */
       p_pw->flags = NM_PW_GLOBAL_HEADER;
@@ -281,7 +268,6 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
 
   *pp_pw = p_pw;
 
- out:
   return err;
 }
 
@@ -298,10 +284,6 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   if(p_pw->destructor)
     {
       (*p_pw->destructor)(p_pw);
-    }
-  if(p_pw->flags & NM_PW_DYNAMIC_V0)
-    {
-      TBX_FREE(p_pw->v[0].iov_base);
     }
   /* clean whole iov */
   if(p_pw->v != p_pw->prealloc_v)
@@ -399,7 +381,7 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
  */
 void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
 			     struct nm_pack_s*p_pack,
-			     const void *data, nm_len_t len,
+			     const void*ptr, nm_len_t len,
 			     nm_len_t offset,
 			     int flags)
 {
@@ -422,26 +404,32 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
   if(p_pw->flags & NM_PW_GLOBAL_HEADER)
     {
       /* ** Data with a global header in v[0] */
+      if(flags & NM_PW_DATA_ITERATOR)
+	{
+	  /* data defined with iterator */
+	  const struct nm_data_s*p_data = ptr;
+	  nm_data_pkt_pack(p_pw, tag, seq, p_data, offset, len, proto_flags);
+	}
       if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
 	{
 	  /* Small data case */
-	  nm_so_pw_add_short_data(p_pw, tag, seq, data, len);
+	  nm_so_pw_add_short_data(p_pw, tag, seq, ptr, len);
 	}
       else if(flags & NM_SO_DATA_USE_COPY)
 	{
 	  /* Data immediately follows its header */
-	  nm_so_pw_add_data_in_header(p_pw, tag, seq, data, len, offset, proto_flags);
+	  nm_so_pw_add_data_in_header(p_pw, tag, seq, ptr, len, offset, proto_flags);
 	}
       else 
 	{
 	  /* Data handled by a separate iovec entry */
-	  nm_so_pw_add_data_in_iovec(p_pw, tag, seq, data, len, offset, proto_flags);
+	  nm_so_pw_add_data_in_iovec(p_pw, tag, seq, ptr, len, offset, proto_flags);
 	}
     }
   else if(p_pw->flags & NM_PW_NOHEADER)
     {
       /* ** Add raw data to pw, without header */
-      nm_so_pw_add_raw(p_pw, data, len, offset);
+      nm_so_pw_add_raw(p_pw, ptr, len, offset);
     }
 }
 
@@ -461,11 +449,11 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
   if(!(p_pw->flags & NM_PW_FINALIZED) && (p_pw->flags & NM_PW_GLOBAL_HEADER))
     {
       /* Fix the 'skip' fields */
-      struct iovec *vec = p_pw->v;
-      void *ptr = vec->iov_base;
-      unsigned long remaining_bytes = vec->iov_len;
+      const struct iovec*vec = p_pw->v;
+      void*ptr = vec->iov_base + sizeof(struct nm_header_global_s);
+      unsigned long remaining_bytes = vec->iov_len - sizeof(struct nm_header_global_s);
       unsigned long to_skip = 0;
-      struct iovec *last_treated_vec = vec;
+      const struct iovec*last_treated_vec = vec;
       do 
 	{
 	  const nm_proto_t proto_id = *(nm_proto_t*)ptr & NM_PROTO_ID_MASK;
@@ -473,7 +461,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 	  if(proto_id == NM_PROTO_DATA)
 	    {
 	      /* Data header */
-	      struct nm_header_data_s *h = ptr;
+	      struct nm_header_data_s*h = ptr;
 	      if(h->skip == 0)
 		{
 		  /* Data immediately follows */
@@ -508,6 +496,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 	  ptr += proto_hsize;
 	}
       while(remaining_bytes > 0);
+      nm_header_global_finalize(p_pw);
       p_pw->flags |= NM_PW_FINALIZED;
     }
   return err;

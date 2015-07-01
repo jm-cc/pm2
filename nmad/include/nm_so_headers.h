@@ -16,6 +16,27 @@
 #ifndef NM_SO_HEADERS_H
 #define NM_SO_HEADERS_H
 
+/** global header at the beginning of pw */
+struct nm_header_global_s
+{
+  uint16_t skip; /**< size of v0 actually used ( == skip value to reach v[1] ) */
+} __attribute__((packed));
+
+static inline void nm_header_global_finalize(struct nm_pkt_wrap*p_pw)
+{
+  struct nm_header_global_s*h = p_pw->v[0].iov_base;
+  const int v0len = p_pw->v[0].iov_len;
+  assert(v0len <= UINT16_MAX);
+  h->skip = v0len;
+}
+
+static inline uint16_t nm_header_global_skip(const struct nm_pkt_wrap*p_pw)
+{
+  assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
+  const struct nm_header_global_s*h = p_pw->v[0].iov_base;
+  return h->skip;
+}
+
 typedef uint8_t nm_proto_t;
 
 /** mask for proto ID part */
@@ -53,10 +74,11 @@ typedef uint8_t nm_proto_t;
 struct nm_header_pkt_data_s
 {
   nm_proto_t    proto_id;  /**< proto ID- should be NM_PROTO_PKT_DATA */
-  nm_core_tag_t tag_id;
-  nm_seq_t      seq;
-  nm_len_t      len;
+  nm_core_tag_t tag_id;    /**< tag for the message */
+  nm_seq_t      seq;       /**< sequence number */
+  nm_len_t      data_len;  /**< length of data enclosed */
   nm_len_t      chunk_offset;
+  uint16_t      hlen;      /**< length in header (header + data in header) */
 } __attribute__((packed));
 
 struct nm_header_data_s
@@ -130,7 +152,10 @@ typedef union nm_header_ctrl_generic_s nm_header_ctrl_generic_t;
 typedef struct nm_header_data_s nm_header_data_t;
 typedef struct nm_header_short_data_s nm_header_short_data_t;
 
-#define NM_HEADER_DATA_SIZE \
+#define NM_HEADER_PKT_DATA_SIZE \
+  nm_so_aligned(sizeof(struct nm_header_pkt_data_s))
+
+#define NM_HEADER_DATA_SIZE				\
   nm_so_aligned(sizeof(struct nm_header_data_s))
 
 #define NM_HEADER_SHORT_DATA_SIZE \
@@ -138,6 +163,18 @@ typedef struct nm_header_short_data_s nm_header_short_data_t;
 
 #define NM_HEADER_CTRL_SIZE \
   nm_so_aligned(sizeof(union nm_header_ctrl_generic_s))
+
+static inline void nm_header_init_pkt_data(struct nm_header_pkt_data_s*p_header, nm_core_tag_t tag_id, nm_seq_t seq, uint8_t flags,
+					   nm_len_t len, nm_len_t chunk_offset)
+{ 
+  assert((flags & NM_PROTO_ID_MASK) == 0x00);
+  p_header->proto_id = NM_PROTO_PKT_DATA | flags;
+  p_header->tag_id   = tag_id;
+  p_header->seq      = seq;
+  p_header->data_len = len;
+  p_header->chunk_offset = chunk_offset;
+  p_header->hlen = NM_HEADER_PKT_DATA_SIZE;
+}
 
 static inline void nm_header_init_data(nm_header_data_t*p_header, nm_core_tag_t tag_id, nm_seq_t seq, uint8_t flags,
 				       uint16_t skip, nm_len_t len, nm_len_t chunk_offset)
@@ -154,7 +191,7 @@ static inline void nm_header_init_data(nm_header_data_t*p_header, nm_core_tag_t 
 static inline void nm_header_init_short_data(nm_header_short_data_t*p_header, nm_core_tag_t tag_id, 
 					     nm_seq_t seq, nm_len_t len)
 {
-  p_header->proto_id = NM_PROTO_SHORT_DATA;
+  p_header->proto_id = NM_PROTO_SHORT_DATA | NM_PROTO_FLAG_LASTCHUNK;
   p_header->tag_id   = tag_id;
   p_header->seq      = seq;
   p_header->len      = len;

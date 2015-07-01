@@ -178,8 +178,6 @@ void nm_data_properties_compute(const struct nm_data_s*p_data, nm_len_t*p_len, i
 
 nm_len_t nm_data_size(const struct nm_data_s*p_data);
 
-void nm_data_copy(const struct nm_data_s*p_data, nm_len_t chunk_offset, const void *ptr, nm_len_t len);
-
 /** Sequence number */
 typedef uint16_t nm_seq_t;
 

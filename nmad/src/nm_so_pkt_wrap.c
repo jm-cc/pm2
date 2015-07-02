@@ -252,7 +252,9 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
       p_pw->v[0].iov_len = 0;
       p_pw->length = 0;
       /* reserve bits for v0 skip offset */
-      p_pw->v[0].iov_len += sizeof(struct nm_header_global_s);
+      const nm_len_t hlen = sizeof(struct nm_header_global_s);
+      p_pw->v[0].iov_len += hlen;
+      p_pw->length += hlen;
       
       /* pw flags */
       p_pw->flags = NM_PW_GLOBAL_HEADER;

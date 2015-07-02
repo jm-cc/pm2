@@ -32,7 +32,7 @@ static inline void nm_header_global_finalize(struct nm_pkt_wrap*p_pw)
 
 static inline uint16_t nm_header_global_skip(const struct nm_pkt_wrap*p_pw)
 {
-  assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
+  assert(p_pw->flags & (NM_PW_GLOBAL_HEADER | NM_PW_BUFFER));
   const struct nm_header_global_s*h = p_pw->v[0].iov_base;
   return h->skip;
 }
@@ -152,16 +152,16 @@ typedef union nm_header_ctrl_generic_s nm_header_ctrl_generic_t;
 typedef struct nm_header_data_s nm_header_data_t;
 typedef struct nm_header_short_data_s nm_header_short_data_t;
 
-#define NM_HEADER_PKT_DATA_SIZE \
-  nm_so_aligned(sizeof(struct nm_header_pkt_data_s))
+#define NM_HEADER_PKT_DATA_SIZE			\
+  sizeof(struct nm_header_pkt_data_s)
 
 #define NM_HEADER_DATA_SIZE				\
   nm_so_aligned(sizeof(struct nm_header_data_s))
 
-#define NM_HEADER_SHORT_DATA_SIZE \
+#define NM_HEADER_SHORT_DATA_SIZE			\
   nm_so_aligned(sizeof(struct nm_header_short_data_s))
 
-#define NM_HEADER_CTRL_SIZE \
+#define NM_HEADER_CTRL_SIZE				\
   nm_so_aligned(sizeof(union nm_header_ctrl_generic_s))
 
 static inline void nm_header_init_pkt_data(struct nm_header_pkt_data_s*p_header, nm_core_tag_t tag_id, nm_seq_t seq, uint8_t flags,

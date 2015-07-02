@@ -82,7 +82,7 @@ static inline void nm_pw_grow_n(struct nm_pkt_wrap*p_pw, int n)
     }
 }
 
-static inline struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw)
+struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw)
 {
   nm_pw_grow_n(p_pw, p_pw->v_nb + 1);
   assert(p_pw->v_nb <= p_pw->v_size);
@@ -412,7 +412,7 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
 	  const struct nm_data_s*p_data = ptr;
 	  nm_data_pkt_pack(p_pw, tag, seq, p_data, offset, len, proto_flags);
 	}
-      if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
+      else if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
 	{
 	  /* Small data case */
 	  nm_so_pw_add_short_data(p_pw, tag, seq, ptr, len);
@@ -506,6 +506,18 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
       nm_header_global_finalize(p_pw);
       p_pw->flags |= NM_PW_FINALIZED;
     }
+#ifdef DEBUG
+  {
+    int length = 0;
+    int i;
+    for(i = 0; i < p_pw->v_nb; i++)
+      {
+	length += p_pw->v[i].iov_len;
+      }
+    if(length != p_pw->length)
+      padico_fatal("# nmad: pw length inconsistency.\n");
+  }
+#endif /* DEBUG */
   return err;
 }
 

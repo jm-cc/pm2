@@ -274,6 +274,7 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
   /* store the unpack request */
   tbx_fast_list_add_tail(&p_unpack->_link, &p_core->unpacks);
   struct nm_unexpected_s*chunk = nm_unexpected_find_matching(p_core, p_unpack);
+#warning TODO- factorize code for nm_core_unpack_recv and nm_decode_header_chunk ######################
   while(chunk)
     {
       /* data is already here (at least one chunk)- process all matching chunks */
@@ -281,23 +282,30 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
       const nm_proto_t proto_id = (*(nm_proto_t *)header) & NM_PROTO_ID_MASK;
       switch(proto_id)
 	{
+	case NM_PROTO_PKT_DATA:
+	  {
+	    const struct nm_header_pkt_data_s*h = header;
+	    nm_pkt_data_handler(p_core, p_gate, p_unpack, h, chunk->p_pw);
+	  }
+	  break;
+	  
 	case NM_PROTO_SHORT_DATA:
 	  {
-	    struct nm_header_short_data_s *h = header;
+	    struct nm_header_short_data_s*h = header;
 	    const void *ptr = header + NM_HEADER_SHORT_DATA_SIZE;
 	    nm_short_data_handler(p_core, p_gate, p_unpack, ptr, h, NULL);
 	  }
 	  break;
 	case NM_PROTO_DATA:
 	  {
-	    struct nm_header_data_s *h = header;
+	    struct nm_header_data_s*h = header;
 	    const void *ptr = header + NM_HEADER_DATA_SIZE + h->skip;
 	    nm_small_data_handler(p_core, p_gate, p_unpack, ptr, h, NULL);
 	  }
 	  break;
 	case NM_PROTO_RDV:
 	  {
-	    struct nm_header_ctrl_rdv_s *rdv = header;
+	    struct nm_header_ctrl_rdv_s*rdv = header;
 	    nm_rdv_handler(p_core, p_gate, p_unpack, rdv, NULL);
 	  }
 	  break;
@@ -338,6 +346,7 @@ int nm_core_iprobe(struct nm_core*p_core,
 	  nm_len_t len = -1;
 	  switch(proto_id)
 	    {
+#warning TODO- NM_PROTO_PKT_DATA ############################
 	    case NM_PROTO_SHORT_DATA:
 	      {
 		const struct nm_header_short_data_s *h = header;

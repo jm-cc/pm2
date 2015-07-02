@@ -119,10 +119,17 @@ static void nm_data_chunk_extractor_apply(void*ptr, nm_len_t len, void*_context)
 void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
 				       nm_data_apply_t apply, void*_context)
 {
-  struct nm_data_chunk_extractor_s chunk_extractor = 
-    { .chunk_offset = chunk_offset, .chunk_len = chunk_len, .done = 0,
-      .apply = apply, ._context = _context };
-  nm_data_aggregator_traversal(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+  if(chunk_len != 0)
+    {
+      struct nm_data_chunk_extractor_s chunk_extractor = 
+	{ .chunk_offset = chunk_offset, .chunk_len = chunk_len, .done = 0,
+	  .apply = apply, ._context = _context };
+      nm_data_aggregator_traversal(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+    }
+  else
+    {
+      (*apply)(NULL, 0, _context);
+    }
 }
 
 /* ********************************************************* */
@@ -233,8 +240,9 @@ static void nm_data_flatten_apply(void*ptr, nm_len_t len, void*_context)
       uint16_t*p_len = v0->iov_base + v0->iov_len;
       assert(len <= UINT16_MAX);
       *p_len = len;
-      memcpy(v0->iov_base + v0->iov_len + 1, ptr, len);
-      v0->iov_len += len + 1;
+      memcpy(v0->iov_base + v0->iov_len + sizeof(uint16_t), ptr, len);
+      v0->iov_len += len + sizeof(uint16_t);
+      p_pw->length += len + sizeof(uint16_t);
     }
   else
     {
@@ -243,17 +251,20 @@ static void nm_data_flatten_apply(void*ptr, nm_len_t len, void*_context)
       uint16_t*p_skip = p_len + 1;
       assert(len <= UINT16_MAX);
       *p_len = len;
+#warning TODO- cache the skip value ##################################
       nm_len_t skip = 0;
       int i;
       for(i = 1; i < p_pw->v_nb; i++)
 	{
 	  skip += p_pw->v[i].iov_len;
 	}
-#warning TODO- cache the skip value ##################################
-      v0->iov_len += 4;
+      struct iovec*v = nm_pw_grow_iovec(p_context->p_pw);
+      v->iov_base = ptr;
+      v->iov_len = len;
       *p_skip = skip;
+      v0->iov_len += 2 * sizeof(uint16_t);
+      p_pw->length += len + 2 * sizeof(uint16_t);
     }
-  p_pw->length += len;
 }
 
 void nm_data_pkt_pack(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
@@ -265,10 +276,7 @@ void nm_data_pkt_pack(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
   v0->iov_len  += NM_HEADER_PKT_DATA_SIZE;
   p_pw->length += NM_HEADER_PKT_DATA_SIZE;
   struct nm_data_flatten_s flatten = { .p_pw = p_pw };
-  struct nm_data_chunk_extractor_s chunk_extractor = 
-    { .chunk_offset = chunk_offset, .chunk_len = chunk_len, .done = 0, 
-      .apply = &nm_data_flatten_apply, ._context = &flatten };
-  nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+  nm_data_chunk_extractor_traversal(p_data, chunk_offset, chunk_len, &nm_data_flatten_apply, &flatten);
   assert(v0->iov_len <= UINT16_MAX);
   h->hlen = (v0->iov_base + v0->iov_len) - (void*)h;
 }
@@ -292,7 +300,7 @@ static void nm_data_pkt_unpack_apply(void*ptr, nm_len_t len, void*_context)
 #warning TODO- only symmetrical types for now
   if(rlen != len)
     {
-      padico_fatal("# nmad: non-symetrical pack/unpack unsupported for data_pkt format.\n");
+      padico_fatal("# nmad: non-symetrical pack/unpack unsupported for data_pkt format; received len = %d; expected = %d.\n", rlen, len);
     }
   assert(rlen == len);
   if(rlen < NM_DATA_IOV_THRESHOLD)

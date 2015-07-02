@@ -152,6 +152,8 @@ void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_s
 
 void nm_so_pw_add_raw(struct nm_pkt_wrap*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset);
 
+struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw);
+
 /* forward declaration to resolve dependancy */
 union nm_header_ctrl_generic_s;
 

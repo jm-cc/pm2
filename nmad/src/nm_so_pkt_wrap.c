@@ -483,6 +483,11 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 	      struct nm_header_short_data_s*h = ptr;
 	      proto_hsize = NM_HEADER_SHORT_DATA_SIZE + h->len;
 	    }
+	  else if(proto_id == NM_PROTO_PKT_DATA)
+	    {
+	      struct nm_header_pkt_data_s*h = ptr;
+	      proto_hsize = h->hlen;
+	    }
 	  else
 	    {
 	      /* Ctrl header */

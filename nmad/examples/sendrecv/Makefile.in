@@ -39,6 +39,8 @@ $(TARGET_BIN_BENCH): nm_bench_%: nm_bench_%.pic.o nm_bench_generic.pic.o
 
 sr_thread: LIBS += -lpthread
 
+sr_iovec: CFLAGS += -g
+
 BENCH += nm_bench_sendrecv sr_latency
 
 include @nmad_srcdir@/nmad-tests.mk

@@ -288,7 +288,6 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
 	    nm_pkt_data_handler(p_core, p_gate, p_unpack, h, chunk->p_pw);
 	  }
 	  break;
-	  
 	case NM_PROTO_SHORT_DATA:
 	  {
 	    struct nm_header_short_data_s*h = header;
@@ -346,7 +345,16 @@ int nm_core_iprobe(struct nm_core*p_core,
 	  nm_len_t len = -1;
 	  switch(proto_id)
 	    {
-#warning TODO- NM_PROTO_PKT_DATA ############################
+	    case NM_PROTO_PKT_DATA:
+	      {
+		const struct nm_header_pkt_data_s*h = header;
+		if(proto_flags & NM_PROTO_FLAG_LASTCHUNK)
+		  {
+		    len = h->data_len + h->chunk_offset;
+		    matches = 1;
+		  }
+	      }
+	      break;
 	    case NM_PROTO_SHORT_DATA:
 	      {
 		const struct nm_header_short_data_s *h = header;

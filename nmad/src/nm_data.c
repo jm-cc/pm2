@@ -154,37 +154,34 @@ nm_len_t nm_data_size(const struct nm_data_s*p_data)
 
 /* ********************************************************* */
 
+
 /** compute various data properties
  */
 struct nm_data_properties_context_s
 {
-  nm_len_t size; /**< total size in bytes (accumulator) */
-  int blocks;    /**< number of blocks */
-  int is_contig; /**< is contiguous, up to the current position */
   void*blockend; /**< end of previous block*/
+  struct nm_data_properties_s props;
 };
 static void nm_data_properties_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_data_properties_context_s*p_context = _context;
-  p_context->size += len;
-  p_context->blocks += 1;
-  if(p_context->is_contig)
+  if(p_context->props.base_ptr == NULL)
+    p_context->props.base_ptr = ptr;
+  p_context->props.size += len;
+  p_context->props.blocks += 1;
+  if(p_context->props.is_contig)
     {
       if((p_context->blockend != NULL) && (ptr != p_context->blockend))
-	p_context->is_contig = 0;
+	p_context->props.is_contig = 0;
       p_context->blockend = ptr + len;
     }
 }
-void nm_data_properties_compute(const struct nm_data_s*p_data, nm_len_t*p_len, int*p_blocks, int*p_is_contig)
+void nm_data_properties_compute(const struct nm_data_s*p_data, struct nm_data_properties_s*p_props)
 {
-  struct nm_data_properties_context_s properties = { .size = 0, .blocks = 0, .is_contig = 1, .blockend = NULL };
-  nm_data_traversal_apply(p_data, &nm_data_properties_apply, &properties);
-  if(p_len)
-    *p_len = properties.size;
-  if(p_blocks)
-    *p_blocks = properties.blocks;
-  if(p_is_contig)
-    *p_is_contig = properties.is_contig;
+  struct nm_data_properties_context_s context = { .blockend = NULL,
+						  .props = { .size = 0, .blocks = 0, .is_contig = 1, .base_ptr = NULL }  };
+  nm_data_traversal_apply(p_data, &nm_data_properties_apply, &context);
+  *p_props = context.props;
 }
 
 /* ********************************************************* */

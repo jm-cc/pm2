@@ -22,9 +22,8 @@ static void nm_bench_dataprop(void*buf, nm_len_t len)
 {
   struct nm_data_s data;
   nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = buf, .len = len });
-  nm_len_t newlen;
-  int blocks, is_contig;
-  nm_data_properties_compute(&data, &newlen, &blocks, &is_contig);
+  struct nm_data_properties_s props;
+  nm_data_properties_compute(&data, &props);
 }
 
 const struct nm_bench_s nm_bench =

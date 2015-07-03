@@ -164,10 +164,11 @@ static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
 static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
 {
   struct nm_strat_aggreg_gate*status = _status;
-  nm_len_t len;
-  int blocks, is_contig;
-  nm_data_properties_compute(p_pack->p_data, &len, &blocks, &is_contig);
-  const nm_len_t density = len / blocks; /* average block size */
+  struct nm_data_properties_s props;
+  nm_data_properties_compute(p_pack->p_data, &props);
+  const nm_len_t len = props.size;
+  const nm_len_t density = len / props.blocks; /* average block size */
+  const nm_len_t chunk_offset = 0; /* pack full request */
   if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_HEADER_DATA_SIZE, len);
@@ -176,19 +177,22 @@ static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
 	  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
 	  tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
 	}
-      {
+      
 #warning TODO- select pack strategy depending on data sparsity
-
-	nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, /* chunk offset */ 0, NM_PW_DATA_ITERATOR);
+      
+      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, /* chunk offset */ 0, NM_PW_DATA_ITERATOR);
 	
-      }
     }
   else
     {
-      /*
-	nm_tactic_pack_rdv(p_pack, ptr, len, chunk_offset);
-      */
-      padico_fatal("pack_data- rdv not supported yet.\n");
+      if(props.is_contig)
+	{
+	  nm_tactic_pack_rdv(p_pack, props.base_ptr, len, chunk_offset);
+	}
+      else
+	{
+	  padico_fatal("pack_data- non-contig rdv not supported yet.\n");
+	}
     }
   
 }

@@ -285,40 +285,71 @@ void nm_data_pkt_pack(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 */
 struct nm_data_pkt_unpacker_s
 {
-  const struct nm_header_pkt_data_s*h;
-  const void*ptr; /**< source pkt buffer */
+  const struct nm_header_pkt_data_s*const h;
+  const void*ptr;     /**< current source chunk in buffer */
+  const void*rem_buf; /**< pointer to remainder from previous block */
+  uint16_t rem_len;   /**< length of remainder */
   const void*v1_base; /**< v0 + skip, base of iov-based fragments */
 };
 static void nm_data_pkt_unpack_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_data_pkt_unpacker_s*p_context = _context;
-  const uint16_t*p_len = p_context->ptr;
-  const uint16_t rlen = *p_len;
-#warning TODO- only symmetrical types for now
-  if(rlen != len)
+#warning TODO- move p_context->* indirections out of main loop ################
+  const uint16_t hlen = p_context->h->hlen;
+  const void*rbuffer  = p_context->rem_buf;
+  uint16_t rlen       = p_context->rem_len;
+  const void*rptr     = p_context->ptr;
+  while(len > 0)
     {
-      padico_fatal("# nmad: non-symetrical pack/unpack unsupported for data_pkt format; received len = %d; expected = %d.\n", rlen, len);
+      if(rbuffer == NULL)
+	{
+	  /* load next block */
+	  const uint16_t*p_len = rptr;
+	  rlen = *p_len;
+	  if((rptr - (void*)p_context->h) >= hlen)
+	    {
+	      p_context->rem_buf = NULL;
+	      return;
+	    }
+	  else if(rlen < NM_DATA_IOV_THRESHOLD)
+	    {
+	      rbuffer = rptr + 2;
+	      rptr += rlen + sizeof(uint16_t);
+	    }	  
+	  else
+	    {
+	      const uint16_t*p_skip = rptr + 2;
+	      rbuffer = p_context->v1_base + *p_skip;
+	      rptr += 2 * sizeof(uint16_t);
+	    }
+	}
+      uint16_t blen = rlen;
+      const void*const bbuffer = rbuffer;
+      if(blen > len)
+	{
+	  /* consume len bytes, and truncate block */
+	  blen = len;
+	  rbuffer += len;
+	  rlen -= len;
+	}
+      else
+	{
+	  /* consume block */
+	  rbuffer = NULL;
+	}
+      memcpy(ptr, bbuffer, blen);
+      ptr += blen;
+      len -= blen;
     }
-  assert(rlen == len);
-  if(rlen < NM_DATA_IOV_THRESHOLD)
-    {
-      const void*rbuffer = p_context->ptr + 2;
-      memcpy(ptr, rbuffer, rlen);
-      p_context->ptr += rlen + 2;
-    }
-  else
-    {
-      const uint16_t*p_skip = p_context->ptr + 2;
-      const void*rbuffer = p_context->v1_base + *p_skip;
-      memcpy(ptr, rbuffer, rlen);
-      p_context->ptr += 4;
-    }
+  p_context->rem_buf = rbuffer;
+  p_context->rem_len = rlen;
+  p_context->ptr = rptr;
 }
 
 /** unpack from pkt format to data format */
 void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap*p_pw)
 {
   struct nm_data_pkt_unpacker_s data_unpacker =
-    { .h = h, .ptr = h + 1, .v1_base = p_pw->v[0].iov_base + nm_header_global_skip(p_pw) };
+    { .h = h, .ptr = h + 1, .v1_base = p_pw->v[0].iov_base + nm_header_global_skip(p_pw), .rem_buf = NULL };
   nm_data_traversal_apply(p_data, &nm_data_pkt_unpack_apply, &data_unpacker);
 }

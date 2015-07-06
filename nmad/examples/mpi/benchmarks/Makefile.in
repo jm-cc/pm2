@@ -3,7 +3,9 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = mpi_latency mpi_multi_ping
+TARGET_BIN_BENCH = mpi_bench_sendrecv
+
+TARGET_BIN = mpi_latency mpi_multi_ping $(TARGET_BIN_BENCH)
 TARGET_LIB =
 SUBDIRS =
 
@@ -15,7 +17,8 @@ INSTALL_PREFIX := @nmad_root@
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
-CC       := @nmad_root@/bin/mpicc
+MPICC    ?= @nmad_root@/bin/mpicc
+CC       := $(MPICC)
 CFLAGS   := @tbx_CFLAGS@
 LD       := $(CC)
 LDFLAGS  :=
@@ -30,6 +33,8 @@ TESTS +=
 BENCH += mpi_latency
 
 include @nmad_srcdir@/nmad-tests.mk
+
+$(TARGET_BIN_BENCH): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o
 
 mpi_multi_ping: mpi_multi_ping.pic.o
 

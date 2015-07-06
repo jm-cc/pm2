@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN_BENCH = mpi_bench_sendrecv
+TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_sparse_vector
 
 TARGET_BIN = mpi_latency mpi_multi_ping $(TARGET_BIN_BENCH)
 TARGET_LIB =

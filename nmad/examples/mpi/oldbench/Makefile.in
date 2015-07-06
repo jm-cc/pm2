@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = mpi_latency mpi_multi_ping
+TARGET_BIN = pingpong 
 TARGET_LIB =
 SUBDIRS =
 
@@ -31,9 +31,17 @@ BENCH += mpi_latency
 
 include @nmad_srcdir@/nmad-tests.mk
 
-mpi_multi_ping: mpi_multi_ping.pic.o
 
-mpi_latency: mpi_latency.pic.o
+mpi_para_ping: mpi_para_ping.pic.o
 
-mpi_multi_ping_hetero: mpi_multi_ping_hetero.pic.o
+pingpong: pingpong.pic.o structType.pic.o vectorType.pic.o indexType.pic.o toolbox.pic.o
+
+index: index.pic.o indexType.pic.o toolbox.pic.o
+
+vector: vector.pic.o vectorType.pic.o toolbox.pic.o
+
+struct: struct.pic.o structType.pic.o toolbox.pic.o
+
+indexType_hetero_size: indexType_hetero_size.pic.o
+
 

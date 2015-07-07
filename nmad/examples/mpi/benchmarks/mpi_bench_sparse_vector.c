@@ -18,10 +18,31 @@
 static void*sparse_buf = NULL;
 static MPI_Datatype dtype = MPI_DATATYPE_NULL;
 
-static const int blocksize = 4;
+#define DEFAULT_BLOCKSIZE 8
+
+static int mpi_bench_sv_blocksize(void)
+{
+  static int blocksize = 0;
+  if(blocksize == 0)
+    {
+      const char*s_blocksize = getenv("BLOCKSIZE");
+      if(s_blocksize != NULL)
+	{
+	  blocksize = atoi(s_blocksize);
+	}
+      else
+	{
+	  blocksize = DEFAULT_BLOCKSIZE;
+	}
+      fprintf(stderr, "# madmpi: sparse vector block size = %d\n", blocksize);
+    }
+  return blocksize;
+
+}
 
 static void mpi_bench_sv_init(void*buf, size_t len)
 {
+  const int blocksize = mpi_bench_sv_blocksize();
   sparse_buf = realloc(sparse_buf, len * 2 + blocksize);
   int rc = MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &dtype);
   MPI_Type_commit(&dtype);

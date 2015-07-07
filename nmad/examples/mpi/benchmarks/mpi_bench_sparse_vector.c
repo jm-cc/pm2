@@ -22,8 +22,9 @@ static const int blocksize = 4;
 
 static void mpi_bench_sv_init(void*buf, size_t len)
 {
-  sparse_buf = realloc(sparse_buf, len * 2);
+  sparse_buf = realloc(sparse_buf, len * 2 + blocksize);
   int rc = MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &dtype);
+  MPI_Type_commit(&dtype);
 }
 
 static void mpi_bench_sv_server(void*buf, size_t len)

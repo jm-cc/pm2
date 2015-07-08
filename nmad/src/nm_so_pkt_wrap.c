@@ -67,24 +67,24 @@ int nm_so_pw_exit(void)
 
 /* ********************************************************* */
 
-/** Ensures p_pw->v contains at least n entries
- */
-static inline void nm_pw_grow_n(struct nm_pkt_wrap*p_pw, int n)
-{
-  if(n >= p_pw->v_size)
-    {
-      while(n >= p_pw->v_size)
-	p_pw->v_size *= 2;
-      if(p_pw->v == p_pw->prealloc_v)
-	p_pw->v = TBX_MALLOC(sizeof(struct iovec) * p_pw->v_size);
-      else
-	p_pw->v = TBX_REALLOC(p_pw->v, sizeof(struct iovec) * p_pw->v_size);
-    }
-}
-
 struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw)
 {
-  nm_pw_grow_n(p_pw, p_pw->v_nb + 1);
+  if(p_pw->v_nb + 1 >= p_pw->v_size)
+    {
+      while(p_pw->v_nb + 1 >= p_pw->v_size)
+	{
+	  p_pw->v_size *= 2;
+	}
+      if(p_pw->v == p_pw->prealloc_v)
+	{
+	  p_pw->v = TBX_MALLOC(p_pw->v_size * sizeof(struct iovec));
+	  memcpy(p_pw->v, p_pw->prealloc_v, NM_SO_PREALLOC_IOV_LEN * sizeof(struct iovec));
+	}
+      else
+	{
+	  p_pw->v = TBX_REALLOC(p_pw->v, p_pw->v_size * sizeof(struct iovec));
+	}
+    }
   assert(p_pw->v_nb <= p_pw->v_size);
   return &p_pw->v[p_pw->v_nb++];
 }
@@ -451,11 +451,11 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
   if(!(p_pw->flags & NM_PW_FINALIZED) && (p_pw->flags & NM_PW_GLOBAL_HEADER))
     {
       /* Fix the 'skip' fields */
-      const struct iovec*vec = p_pw->v;
-      void*ptr = vec->iov_base + sizeof(struct nm_header_global_s);
-      unsigned long remaining_bytes = vec->iov_len - sizeof(struct nm_header_global_s);
-      unsigned long to_skip = 0;
-      const struct iovec*last_treated_vec = vec;
+      const struct iovec*v0 = &p_pw->v[0];
+      void*ptr = v0->iov_base + sizeof(struct nm_header_global_s);
+      long remaining_bytes = v0->iov_len - sizeof(struct nm_header_global_s);
+      long to_skip = 0;
+      const struct iovec*last_treated_vec = v0;
       do 
 	{
 	  const nm_proto_t proto_id = *(nm_proto_t*)ptr & NM_PROTO_ID_MASK;
@@ -488,10 +488,14 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 	      struct nm_header_pkt_data_s*h = ptr;
 	      proto_hsize = h->hlen;
 	    }
-	  else
+	  else if(proto_id == NM_PROTO_RDV || proto_id == NM_PROTO_RTR || proto_id == NM_PROTO_ACK)
 	    {
 	      /* Ctrl header */
 	      proto_hsize = NM_HEADER_CTRL_SIZE;
+	    }
+	  else
+	    {
+	      padico_fatal("# nmad: unknown proto_id = %d while finalizing pw\n", proto_id);
 	    }
 	  assert(remaining_bytes >= proto_hsize);
 	  remaining_bytes -= proto_hsize;
@@ -501,6 +505,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 	      *p_proto |= NM_PROTO_LAST;
 	    }
 	  ptr += proto_hsize;
+	  assert(remaining_bytes >= 0);
 	}
       while(remaining_bytes > 0);
       nm_header_global_finalize(p_pw);

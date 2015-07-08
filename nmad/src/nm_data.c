@@ -221,6 +221,8 @@ void nm_data_copy(const struct nm_data_s*p_data, nm_len_t chunk_offset, const vo
 struct nm_data_flatten_s
 {
   struct nm_pkt_wrap*p_pw; /**< the pw to fill */
+  nm_len_t skip;
+  uint16_t*p_prev_len;     /**< previous block */
 };
 static void nm_data_flatten_apply(void*ptr, nm_len_t len, void*_context)
 {
@@ -229,38 +231,52 @@ static void nm_data_flatten_apply(void*ptr, nm_len_t len, void*_context)
   struct iovec*v0 = &p_pw->v[0];
   if(len < NM_DATA_IOV_THRESHOLD)
     {
-#warning TODO- aggregate with previous chunk if possible ####################################
-
 #warning TODO- remove nm_so_pw_finalize (save pointer to last header to set PROTO_LAST)
       
       /* small data in header */
-      uint16_t*p_len = v0->iov_base + v0->iov_len;
       assert(len <= UINT16_MAX);
-      *p_len = len;
-      memcpy(v0->iov_base + v0->iov_len + sizeof(uint16_t), ptr, len);
-      v0->iov_len += len + sizeof(uint16_t);
-      p_pw->length += len + sizeof(uint16_t);
+      if(p_context->p_prev_len != NULL)
+	{
+	  *p_context->p_prev_len += len;
+	  memcpy(v0->iov_base + v0->iov_len, ptr, len);
+	  v0->iov_len += len;
+	  p_pw->length += len;
+	}
+      else
+	{
+	  uint16_t*p_len = v0->iov_base + v0->iov_len;
+	  *p_len = len;
+	  memcpy(v0->iov_base + v0->iov_len + sizeof(uint16_t), ptr, len);
+	  v0->iov_len += len + sizeof(uint16_t);
+	  p_pw->length += len + sizeof(uint16_t);
+	  p_context->p_prev_len = p_len;
+	}
     }
   else
     {
       /* data in iovec */
-      uint16_t*p_len =  v0->iov_base + v0->iov_len;
+      uint16_t*p_len = v0->iov_base + v0->iov_len;
       uint16_t*p_skip = p_len + 1;
       assert(len <= UINT16_MAX);
       *p_len = len;
-#warning TODO- cache the skip value ##################################
-      nm_len_t skip = 0;
-      int i;
-      for(i = 1; i < p_pw->v_nb; i++)
+      if(p_context->skip == 0)
 	{
-	  skip += p_pw->v[i].iov_len;
+	  nm_len_t skip = 0;
+	  int i;
+	  for(i = 1; i < p_pw->v_nb; i++)
+	    {
+	      skip += p_pw->v[i].iov_len;
+	    }
+	  p_context->skip = skip;
 	}
       struct iovec*v = nm_pw_grow_iovec(p_context->p_pw);
       v->iov_base = ptr;
       v->iov_len = len;
-      *p_skip = skip;
-      v0->iov_len += 2 * sizeof(uint16_t);
+      *p_skip = p_context->skip;
+      p_pw->v[0].iov_len += 2 * sizeof(uint16_t);
       p_pw->length += len + 2 * sizeof(uint16_t);
+      p_context->skip += len;
+      p_context->p_prev_len = NULL;
     }
 }
 
@@ -272,8 +288,9 @@ void nm_data_pkt_pack(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
   nm_header_init_pkt_data(h, tag, seq, flags, chunk_len, chunk_offset);
   v0->iov_len  += NM_HEADER_PKT_DATA_SIZE;
   p_pw->length += NM_HEADER_PKT_DATA_SIZE;
-  struct nm_data_flatten_s flatten = { .p_pw = p_pw };
+  struct nm_data_flatten_s flatten = { .p_pw = p_pw, .skip = 0, .p_prev_len = NULL };
   nm_data_chunk_extractor_traversal(p_data, chunk_offset, chunk_len, &nm_data_flatten_apply, &flatten);
+  v0 = &p_pw->v[0]; /* pw->v may have moved- update */
   assert(v0->iov_len <= UINT16_MAX);
   h->hlen = (v0->iov_base + v0->iov_len) - (void*)h;
 }

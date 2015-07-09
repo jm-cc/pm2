@@ -292,27 +292,27 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
 	case NM_PROTO_PKT_DATA:
 	  {
 	    const struct nm_header_pkt_data_s*h = header;
-	    nm_pkt_data_handler(p_core, p_gate, p_unpack, h, chunk->p_pw);
+	    nm_pkt_data_handler(p_core, p_unpack->p_gate, p_unpack, h, chunk->p_pw);
 	  }
 	  break;
 	case NM_PROTO_SHORT_DATA:
 	  {
 	    struct nm_header_short_data_s*h = header;
 	    const void *ptr = header + NM_HEADER_SHORT_DATA_SIZE;
-	    nm_short_data_handler(p_core, p_gate, p_unpack, ptr, h, NULL);
+	    nm_short_data_handler(p_core, p_unpack->p_gate, p_unpack, ptr, h, NULL);
 	  }
 	  break;
 	case NM_PROTO_DATA:
 	  {
 	    struct nm_header_data_s*h = header;
 	    const void *ptr = header + NM_HEADER_DATA_SIZE + h->skip;
-	    nm_small_data_handler(p_core, p_gate, p_unpack, ptr, h, NULL);
+	    nm_small_data_handler(p_core, p_unpack->p_gate, p_unpack, ptr, h, NULL);
 	  }
 	  break;
 	case NM_PROTO_RDV:
 	  {
 	    struct nm_header_ctrl_rdv_s*rdv = header;
-	    nm_rdv_handler(p_core, p_gate, p_unpack, rdv, NULL);
+	    nm_rdv_handler(p_core, p_unpack->p_gate, p_unpack, rdv, NULL);
 	  }
 	  break;
 	}
@@ -525,14 +525,14 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
       else
 	{
 #warning TODO- non-ontiguous data with rdv; should forward nm_data to driver #####
-	  struct nm_pkt_wrap *p_pw = NULL;
-	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-	  p_pw->p_unpack = p_unpack;
+	  struct nm_pkt_wrap *p_large_pw = NULL;
+	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw);
+	  p_large_pw->p_unpack = p_unpack;
 	  void*buf = malloc(props.size);
-	  nm_so_pw_add_raw(p_pw, buf, chunk_len, chunk_offset);
-	  p_pw->flags |= NM_PW_DYNAMIC_V0;
-	  p_pw->p_gate = p_gate;
-	  tbx_fast_list_add_tail(&p_pw->link, &p_gate->pending_large_recv);
+	  nm_so_pw_add_raw(p_large_pw, buf, chunk_len, chunk_offset);
+	  p_large_pw->flags |= NM_PW_DYNAMIC_V0;
+	  p_large_pw->p_gate = p_gate;
+	  tbx_fast_list_add_tail(&p_large_pw->link, &p_gate->pending_large_recv);
 	}
     }
   else

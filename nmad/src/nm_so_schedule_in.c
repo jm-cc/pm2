@@ -179,7 +179,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
 #warning Paulette: lock
       tbx_fast_list_del(&p_unpack->_link);
 
-      if((p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
+      if((p_pw != NULL) && (p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
 	{
 	  nm_data_copy(p_unpack->p_data, 0 /* offset */, p_pw->v[0].iov_base, chunk_len);
 

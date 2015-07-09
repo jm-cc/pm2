@@ -171,13 +171,20 @@ static void nm_large_chunk_store(void*ptr, nm_len_t len, void*_context)
 }
 
 /** mark 'chunk_len' data as received in the given unpack, and check for unpack completion */
-static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_unpack_s*p_unpack, nm_len_t chunk_len)
+static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_pkt_wrap*p_pw, struct nm_unpack_s*p_unpack, nm_len_t chunk_len)
 {
   p_unpack->cumulated_len += chunk_len;
   if(p_unpack->cumulated_len == p_unpack->expected_len)
     {
 #warning Paulette: lock
       tbx_fast_list_del(&p_unpack->_link);
+
+      if((p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
+	{
+	  nm_data_copy(p_unpack->p_data, 0 /* offset */, p_pw->v[0].iov_base, chunk_len);
+
+	}
+      
       const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNPACK_COMPLETED,
@@ -436,7 +443,7 @@ static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, st
 	  assert(chunk_offset + chunk_len <= p_unpack->expected_len);
 	  assert(p_unpack->cumulated_len + chunk_len <= p_unpack->expected_len);
 	  nm_data_pkt_unpack(p_unpack->p_data, h, p_pw);
-	  nm_so_unpack_check_completion(p_core, p_unpack, chunk_len);
+	  nm_so_unpack_check_completion(p_core, p_pw, p_unpack, chunk_len);
 	}
     }
   else
@@ -463,7 +470,7 @@ static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 	  assert(chunk_offset + len <= p_unpack->expected_len);
 	  assert(p_unpack->cumulated_len + len <= p_unpack->expected_len);
 	  nm_data_copy(p_unpack->p_data, chunk_offset, ptr, len);
-	  nm_so_unpack_check_completion(p_core, p_unpack, len);
+	  nm_so_unpack_check_completion(p_core, p_pw, p_unpack, len);
 	}
     }
   else
@@ -487,7 +494,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 	  assert(chunk_offset + chunk_len <= p_unpack->expected_len);
 	  assert(p_unpack->cumulated_len + chunk_len <= p_unpack->expected_len);
 	  nm_data_copy(p_unpack->p_data, chunk_offset, ptr, chunk_len);
-	  nm_so_unpack_check_completion(p_core, p_unpack, chunk_len);
+	  nm_so_unpack_check_completion(p_core, p_pw, p_unpack, chunk_len);
 	}
     }
   else
@@ -508,8 +515,25 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
     {
       assert(p_unpack->p_gate != NULL);
       nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-      struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
-      nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+      struct nm_data_properties_s props;
+      nm_data_properties_compute(p_unpack->p_data, &props);
+      if(props.is_contig || (chunk_offset != 0) || (chunk_len != props.size))
+	{
+	  struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
+	  nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+	}
+      else
+	{
+#warning TODO- non-ontiguous data with rdv; should forward nm_data to driver #####
+	  struct nm_pkt_wrap *p_pw = NULL;
+	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+	  p_pw->p_unpack = p_unpack;
+	  void*buf = malloc(props.size);
+	  nm_so_pw_add_raw(p_pw, buf, chunk_len, chunk_offset);
+	  p_pw->flags |= NM_PW_DYNAMIC_V0;
+	  p_pw->p_gate = p_gate;
+	  tbx_fast_list_add_tail(&p_pw->link, &p_gate->pending_large_recv);
+	}
     }
   else
     {
@@ -778,7 +802,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       struct nm_unpack_s*p_unpack = p_pw->p_unpack;
       const nm_len_t len = p_pw->length;
       /* ** Large packet, data received directly in its final destination */
-      nm_so_unpack_check_completion(p_core, p_unpack, len);
+      nm_so_unpack_check_completion(p_core, p_pw, p_unpack, len);
     }
   
   nm_pw_ref_dec(p_pw);

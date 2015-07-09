@@ -39,6 +39,10 @@ typedef uint32_t nm_pw_flag_t;
  */
 #define NM_PW_GLOBAL_HEADER (nm_pw_flag_t)0x0004
 
+/** v[0] is dynamically allocated
+ */
+#define NM_PW_DYNAMIC_V0    (nm_pw_flag_t)0x0008
+
 /** Pkt has been finalized- ready to send on the wire.
  */
 #define NM_PW_FINALIZED     (nm_pw_flag_t)0x0010

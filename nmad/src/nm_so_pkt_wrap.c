@@ -287,6 +287,10 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
     {
       (*p_pw->destructor)(p_pw);
     }
+  if(flags & NM_PW_DYNAMIC_V0)
+    {
+      TBX_FREE(p_pw->v[0].iov_base);
+    }
   /* clean whole iov */
   if(p_pw->v != p_pw->prealloc_v)
     {
@@ -430,8 +434,29 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
     }
   else if(p_pw->flags & NM_PW_NOHEADER)
     {
-      /* ** Add raw data to pw, without header */
-      nm_so_pw_add_raw(p_pw, ptr, len, offset);
+      if(flags & NM_PW_DATA_ITERATOR)
+	{
+	  const struct nm_data_s*p_data = ptr;
+	  struct nm_data_properties_s props;
+	  nm_data_properties_compute(p_data, &props);
+	  if(props.is_contig)
+	    {
+	      nm_so_pw_add_raw(p_pw, props.base_ptr, len, offset);
+	    }
+	  else
+	    {
+#warning TODO- forward nm_data to driver ########
+	      void*buf = malloc(props.size);
+	      nm_data_copy_pack(p_data, offset, buf, len);
+	      nm_so_pw_add_raw(p_pw, buf, len, offset);
+	      p_pw->flags |= NM_PW_DYNAMIC_V0;
+	    }
+	}
+      else
+	{
+	  /* ** Add raw data to pw, without header */
+	  nm_so_pw_add_raw(p_pw, ptr, len, offset);
+	}
     }
 }
 

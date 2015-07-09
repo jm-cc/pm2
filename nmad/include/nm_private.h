@@ -141,6 +141,8 @@ TBX_INTERNAL int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pk
 
 void nm_data_copy(const struct nm_data_s*p_data, nm_len_t chunk_offset, const void *ptr, nm_len_t len);
 
+void nm_data_copy_pack(const struct nm_data_s*p_data, nm_len_t chunk_offset, void *ptr, nm_len_t len);
+
 void nm_data_pkt_pack(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 		      const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len, uint8_t flags);
 

@@ -211,22 +211,48 @@ void nm_data_copy(const struct nm_data_s*p_data, nm_len_t chunk_offset, const vo
     }
 }
 
+/* ********************************************************* */
+
+/** copy data to network buffer (contiguous) from user layout
+ */
+struct nm_data_copy_pack_s
+{
+  void*ptr; /**< dest buffer (contiguous) */
+};
+static void nm_data_copy_pack_apply(void*ptr, nm_len_t len, void*_context)
+{
+  struct nm_data_copy_pack_s*p_context = _context;
+  memcpy(p_context->ptr, ptr, len);
+  p_context->ptr += len;
+}
+/** copy chunk of data from user layout */
+void nm_data_copy_pack(const struct nm_data_s*p_data, nm_len_t chunk_offset, void *ptr, nm_len_t len)
+{
+  if(len > 0)
+    {
+      struct nm_data_copy_pack_s copy = { .ptr = ptr };
+      struct nm_data_chunk_extractor_s chunk_extractor = 
+	{ .chunk_offset = chunk_offset, .chunk_len = len, .done = 0, 
+	  .apply = &nm_data_copy_pack_apply, ._context = &copy };
+      nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+    }
+}
 
 /* ********************************************************* */
 
 #define NM_DATA_IOV_THRESHOLD 64
 
-/** flatten iterator-based data to struct nm_pkt_wrap
+/** pack iterator-based data to pw with global header
  */
-struct nm_data_flatten_s
+struct nm_data_pkt_packer_s
 {
   struct nm_pkt_wrap*p_pw; /**< the pw to fill */
   nm_len_t skip;
   uint16_t*p_prev_len;     /**< previous block */
 };
-static void nm_data_flatten_apply(void*ptr, nm_len_t len, void*_context)
+static void nm_data_pkt_pack_apply(void*ptr, nm_len_t len, void*_context)
 {
-  struct nm_data_flatten_s*p_context = _context;
+  struct nm_data_pkt_packer_s*p_context = _context;
   struct nm_pkt_wrap*p_pw = p_context->p_pw;
   struct iovec*v0 = &p_pw->v[0];
   if(len < NM_DATA_IOV_THRESHOLD)
@@ -288,8 +314,8 @@ void nm_data_pkt_pack(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
   nm_header_init_pkt_data(h, tag, seq, flags, chunk_len, chunk_offset);
   v0->iov_len  += NM_HEADER_PKT_DATA_SIZE;
   p_pw->length += NM_HEADER_PKT_DATA_SIZE;
-  struct nm_data_flatten_s flatten = { .p_pw = p_pw, .skip = 0, .p_prev_len = NULL };
-  nm_data_chunk_extractor_traversal(p_data, chunk_offset, chunk_len, &nm_data_flatten_apply, &flatten);
+  struct nm_data_pkt_packer_s packer = { .p_pw = p_pw, .skip = 0, .p_prev_len = NULL };
+  nm_data_chunk_extractor_traversal(p_data, chunk_offset, chunk_len, &nm_data_pkt_pack_apply, &packer);
   v0 = &p_pw->v[0]; /* pw->v may have moved- update */
   assert(v0->iov_len <= UINT16_MAX);
   h->hlen = (v0->iov_base + v0->iov_len) - (void*)h;

@@ -22,7 +22,7 @@
 #define NM_SO_MAX_UNEXPECTED  (16 * 1024)
 
 /* Number of preallocated iovec entries within packet wrappers */
-#define NM_SO_PREALLOC_IOV_LEN 8
+#define NM_SO_PREALLOC_IOV_LEN 32
 
 
 #define NM_SO_ALIGN_TYPE      uint32_t

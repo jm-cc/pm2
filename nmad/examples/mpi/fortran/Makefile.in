@@ -31,8 +31,8 @@ LIBS     :=
 	@$(SHOWMK) "  [F77]    $@"
 	$(Q)$(F77) $(F77FLAGS) -c -o $@ $<
 
-TESTS += basics datatype fpi
+TESTS += basics fdatatype fpi
 
 include @nmad_srcdir@/nmad-tests.mk
 
-test-datatype: NMAD_NODES = 4
+test-fdatatype: NMAD_NODES = 4

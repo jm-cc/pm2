@@ -74,6 +74,8 @@ typedef uint64_t nm_tag_t;
 
 typedef uint64_t nm_len_t;
 
+/** length is undefined */
+#define NM_LEN_UNDEFINED  ((nm_len_t)-1)
 
 
 #endif /* NM_PUBLIC_H */

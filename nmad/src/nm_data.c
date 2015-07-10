@@ -67,7 +67,7 @@ static void nm_data_aggregator_apply(void*ptr, nm_len_t len, void*_context)
   else
     {
       /* not contiguous; flush prev chunk, set current block as current chunk */
-      if((p_context->chunk_ptr != NULL) || (ptr == NULL))
+      if(p_context->chunk_len != NM_LEN_UNDEFINED)
 	{
 	  (*p_context->apply)(p_context->chunk_ptr, p_context->chunk_len, p_context->_context);
 	}
@@ -77,12 +77,17 @@ static void nm_data_aggregator_apply(void*ptr, nm_len_t len, void*_context)
 }
 void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context)
 {
-  struct nm_data_aggregator_s context = { .chunk_ptr = NULL, .chunk_len = 0, .apply = apply, ._context = _context };
+  struct nm_data_aggregator_s context = { .chunk_ptr = NULL, .chunk_len = NM_LEN_UNDEFINED, .apply = apply, ._context = _context };
   nm_data_traversal_apply(p_data, &nm_data_aggregator_apply, &context);
-  if(context.chunk_ptr != NULL)
+  if(context.chunk_len != NM_LEN_UNDEFINED)
     {
       /* flush last pending chunk */
       (*context.apply)(context.chunk_ptr, context.chunk_len, context._context);
+    }
+  else
+    {
+      /* zero-length data */
+      (*context.apply)(NULL, 0, context._context);
     }
  }
 

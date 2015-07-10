@@ -261,7 +261,7 @@ static void nm_data_pkt_pack_apply(void*ptr, nm_len_t len, void*_context)
       
       /* small data in header */
       assert(len <= UINT16_MAX);
-      if(p_context->p_prev_len != NULL)
+      if((p_context->p_prev_len != NULL) && (*p_context->p_prev_len + len < NM_DATA_IOV_THRESHOLD))
 	{
 	  *p_context->p_prev_len += len;
 	  memcpy(v0->iov_base + v0->iov_len, ptr, len);
@@ -337,7 +337,6 @@ struct nm_data_pkt_unpacker_s
 static void nm_data_pkt_unpack_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_data_pkt_unpacker_s*p_context = _context;
-#warning TODO- move p_context->* indirections out of main loop ################
   const uint16_t hlen = p_context->h->hlen;
   const void*rbuffer  = p_context->rem_buf;
   uint16_t rlen       = p_context->rem_len;

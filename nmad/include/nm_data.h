@@ -19,6 +19,7 @@
 #ifndef NM_DATA_H
 #define NM_DATA_H
 
+/** maximum size of content descriptor for nm_data */
 #define _NM_DATA_CONTENT_SIZE 32
 
 struct nm_data_s;

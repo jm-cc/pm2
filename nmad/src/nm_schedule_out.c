@@ -36,7 +36,7 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct n
 static void nm_core_pack_chunk(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_pack_s*p_pack = _context;
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
+  const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
   assert(r->driver->pack_chunk != NULL);
   (*r->driver->pack_chunk)(r->_status, p_pack, ptr, len, p_pack->scheduled);
 }
@@ -59,7 +59,18 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
     {
       tbx_fast_list_add_tail(&p_pack->_link, &p_core->pending_packs);
     }
-  nm_data_aggregator_traversal(p_pack->p_data, &nm_core_pack_chunk, p_pack);
+#ifdef TEST_PACK_DATA
+#warning TODO- for testing ###############################
+  const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
+  if(r->driver->pack_data != 0)
+    {
+      (*r->driver->pack_data)(r->_status, p_pack);
+    }
+  else
+#endif
+    {
+      nm_data_aggregator_traversal(p_pack->p_data, &nm_core_pack_chunk, p_pack);
+    }
   p_pack->p_data = NULL;
   nm_unlock_interface(p_core);
   nmad_unlock();

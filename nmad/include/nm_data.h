@@ -29,6 +29,15 @@ typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
 /** traversal function for data descriptors */
 typedef void (*nm_data_traversal_t)(const void*_content, nm_data_apply_t apply, void*_context);
 
+/** block of static properties for a given data descriptor */
+struct nm_data_properties_s
+{
+  int blocks;    /**< number of blocks; -1 if properties ar not initialized */
+  nm_len_t size; /**< total size in bytes (accumulator) */
+  int is_contig; /**< is data contiguous */
+  void*base_ptr; /**< base pointer, in case data is contiguous */
+};
+
 /** a data descriptor, used to pack/unpack data from app layout to/from contiguous buffers */
 struct nm_data_s
 {
@@ -37,17 +46,19 @@ struct nm_data_s
    * @param apply function to apply to all chunks
    * @param _context context pointer given to apply function
    */
-  nm_data_traversal_t traversal;
+  nm_data_traversal_t p_traversal;
+  struct nm_data_properties_s props;
   /** placeholder for type-dependant content */
   char _content[_NM_DATA_CONTENT_SIZE];
 };
 #define NM_DATA_TYPE(ENAME, TYPE, TRAVERSAL)				\
   static inline void nm_data_##ENAME##_set(struct nm_data_s*p_data, TYPE value) \
   {									\
-    p_data->traversal = TRAVERSAL;					\
+    p_data->p_traversal = TRAVERSAL;					\
+    p_data->props.blocks = -1;						\
     assert(sizeof(TYPE) <= _NM_DATA_CONTENT_SIZE);			\
-    TYPE*p_##ENAME = (TYPE*)&p_data->_content[0];			\
-    *p_##ENAME = value;							\
+    TYPE*p_content = (TYPE*)&p_data->_content[0];			\
+    *p_content = value;							\
   }
 
 /** data descriptor for contiguous data 
@@ -73,7 +84,7 @@ NM_DATA_TYPE(iov, struct nm_data_iov_s, &nm_data_traversal_iov);
  */
 static inline void nm_data_traversal_apply(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context)
 {
-  (*p_data->traversal)((void*)p_data->_content, apply, _context);
+  (*p_data->p_traversal)((void*)p_data->_content, apply, _context);
 }
 
 void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
@@ -81,15 +92,7 @@ void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t c
 
 void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context);
 
-struct nm_data_properties_s
-{
-  nm_len_t size; /**< total size in bytes (accumulator) */
-  int blocks;    /**< number of blocks */
-  int is_contig; /**< is data contiguous */
-  void*base_ptr; /**< base pointer, in case data is contiguous */
-};
-
-void nm_data_properties_compute(const struct nm_data_s*p_data, struct nm_data_properties_s*p_props);
+const struct nm_data_properties_s*nm_data_properties_get(struct nm_data_s*p_data);
 
 nm_len_t nm_data_size(const struct nm_data_s*p_data);
 

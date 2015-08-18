@@ -515,9 +515,8 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
     {
       assert(p_unpack->p_gate != NULL);
       nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-      struct nm_data_properties_s props;
-      nm_data_properties_compute(p_unpack->p_data, &props);
-      if(props.is_contig || (chunk_offset != 0) || (chunk_len != props.size))
+      const struct nm_data_properties_s*p_props = nm_data_properties_get(p_unpack->p_data);
+      if(p_props->is_contig || (chunk_offset != 0) || (chunk_len != p_props->size))
 	{
 	  struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
 	  nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
@@ -528,7 +527,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
 	  struct nm_pkt_wrap *p_large_pw = NULL;
 	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw);
 	  p_large_pw->p_unpack = p_unpack;
-	  void*buf = malloc(props.size);
+	  void*buf = malloc(p_props->size);
 	  nm_so_pw_add_raw(p_large_pw, buf, chunk_len, chunk_offset);
 	  p_large_pw->flags |= NM_PW_DYNAMIC_V0;
 	  p_large_pw->p_gate = p_gate;

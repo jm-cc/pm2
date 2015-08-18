@@ -181,12 +181,17 @@ static void nm_data_properties_apply(void*ptr, nm_len_t len, void*_context)
       p_context->blockend = ptr + len;
     }
 }
-void nm_data_properties_compute(const struct nm_data_s*p_data, struct nm_data_properties_s*p_props)
+
+const struct nm_data_properties_s*nm_data_properties_get(struct nm_data_s*p_data)
 {
-  struct nm_data_properties_context_s context = { .blockend = NULL,
-						  .props = { .size = 0, .blocks = 0, .is_contig = 1, .base_ptr = NULL }  };
-  nm_data_traversal_apply(p_data, &nm_data_properties_apply, &context);
-  *p_props = context.props;
+  if(p_data->props.blocks == -1)
+    {
+      struct nm_data_properties_context_s context = { .blockend = NULL,
+						      .props = { .size = 0, .blocks = 0, .is_contig = 1, .base_ptr = NULL }  };
+      nm_data_traversal_apply(p_data, &nm_data_properties_apply, &context);
+      p_data->props = context.props;
+    }
+  return &p_data->props;
 }
 
 /* ********************************************************* */

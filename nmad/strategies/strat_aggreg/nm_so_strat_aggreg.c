@@ -164,10 +164,9 @@ static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
 static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
 {
   struct nm_strat_aggreg_gate*status = _status;
-  struct nm_data_properties_s props;
-  nm_data_properties_compute(p_pack->p_data, &props);
-  const nm_len_t len = props.size;
-  const nm_len_t density = (props.blocks > 0) ? len / props.blocks : 0; /* average block size */
+  const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pack->p_data);
+  const nm_len_t len = p_props->size;
+  const nm_len_t density = (p_props->blocks > 0) ? len / p_props->blocks : 0; /* average block size */
   const nm_len_t chunk_offset = 0; /* pack full request */
   if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {

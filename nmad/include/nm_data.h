@@ -29,6 +29,19 @@ typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
 /** traversal function for data descriptors */
 typedef void (*nm_data_traversal_t)(const void*_content, nm_data_apply_t apply, void*_context);
 
+/** memcpy function for data descriptors- copy from descriptor to given buffer */
+typedef void (*nm_data_copy_from_t)(const void*_content, nm_len_t offset, nm_len_t len, void*destbuf);
+
+/** memcpy function for data descriptors- copy to descriptor from buffer */
+typedef void (*nm_data_copy_to_t)(const void*_content, nm_len_t offset, nm_len_t len, const void*srcbuf);
+
+struct nm_data_ops_s
+{
+  nm_data_traversal_t p_traversal;
+  nm_data_copy_from_t p_copyfrom;
+  nm_data_copy_to_t   p_copyto;
+};
+
 /** block of static properties for a given data descriptor */
 struct nm_data_properties_s
 {

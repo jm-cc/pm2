@@ -20,6 +20,9 @@
 
 #define FLYPACK_CHUNK_SIZE 16
 
+static void*flypack_buf = NULL;
+static nm_len_t flypack_len = 0;
+
 struct flypack_data_s
 {
   void*buf;
@@ -55,13 +58,39 @@ static void flypack_traversal(const void*_content, nm_data_apply_t apply, void*_
       int i;
       for(i = 0; i < chunk_count; i++)
 	{
-	  (*apply)(content->buf + chunk_size * i, chunk_size, _context);
+	  (*apply)(content->buf + 2 * chunk_size * i, chunk_size, _context);
 	}
     }
   else
     {
       (*apply)(content->buf, content->len, _context);
     }
+}
+
+static void flypack_copy_from(const void*_content, nm_len_t offset, nm_len_t len, void*destbuf)
+{
+  const struct flypack_data_s*content = _content;
+  const nm_len_t chunk_size = flypack_chunk_size();
+
+  nm_len_t done = 0;
+  
+  const nm_len_t first_chunk  = offset / chunk_size;
+  const nm_len_t first_offset = offset % chunk_size;
+  const nm_len_t first_len = (len > chunk_size - first_offset) ? chunk_size - first_offset : len;
+
+  memcpy(destbuf, content->buf + first_chunk * chunk_size * 2 + first_offset, first_len);
+  done += first_len;
+
+  nm_len_t cur_chunk = first_chunk + 1;
+  while(done > 0)
+    {
+      const nm_len_t cur_chunk_len = (len > chunk_size) ? chunk_size : len;
+      memcpy(destbuf + done, content->buf + cur_chunk * chunk_size  * 2, cur_chunk_len);
+      done += cur_chunk_len;
+      cur_chunk++;
+    }
+  
+  
 }
 
 NM_DATA_TYPE(flypack, struct flypack_data_s, &flypack_traversal);

@@ -21,6 +21,7 @@
 static const nm_tag_t data_tag = 0x01;
 
 static void*buffer = NULL;
+static void*flypack_buffer = NULL;
 
 struct nm_flypack_copy_s
 {
@@ -42,12 +43,13 @@ static void nm_flypack_unpack_apply(void*ptr, nm_len_t len, void*_context)
 static void nm_bench_flypack_local_init(void*buf, nm_len_t len)
 {
   buffer = realloc(buffer, len);
+  flypack_buffer = realloc(flypack_buffer, 2 * len);
 }
 
 static void nm_bench_flypack_local(void*buf, nm_len_t len)
 {
   struct nm_data_s data;
-  nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = buf, .len = len });
+  nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = flypack_buffer, .len = len });
   struct nm_flypack_copy_s copy_context = { .ptr = buffer };
   nm_data_traversal_apply(&data, &nm_flypack_pack_apply, &copy_context);
   copy_context.ptr = buffer;

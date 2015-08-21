@@ -170,6 +170,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
   const nm_len_t chunk_offset = 0; /* pack full request */
   if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
+      /* ** small send */
       struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_HEADER_DATA_SIZE, len);
       if(!p_pw)
 	{
@@ -184,6 +185,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
     }
   else
     {
+      /* ** large send */
       struct nm_pkt_wrap *p_pw = NULL;
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, chunk_offset, NM_PW_NOHEADER | NM_PW_DATA_ITERATOR);

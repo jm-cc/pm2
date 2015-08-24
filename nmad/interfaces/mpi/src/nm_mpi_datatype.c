@@ -30,6 +30,12 @@ static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*
 static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
 static void nm_mpi_datatype_iscontig(nm_mpi_datatype_t*p_datatype);
 static void nm_mpi_datatype_update_bounds(int blocklength, MPI_Aint displacement, nm_mpi_datatype_t*p_oldtype, nm_mpi_datatype_t*p_newtype);
+static void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context);
+
+const struct nm_data_ops_s nm_mpi_datatype_ops =
+  {
+    .p_traversal = &nm_mpi_datatype_traversal_apply
+  };
 
 
 /* ********************************************************* */
@@ -620,8 +626,7 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
 
 
 /** apply a function to every chunk of data in datatype */
-__PUK_SYM_INTERNAL
-void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context)
+static void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context)
 {
   const struct nm_data_mpi_datatype_s*const p_data = _content;
   const struct nm_mpi_datatype_s*const p_datatype = p_data->p_datatype;

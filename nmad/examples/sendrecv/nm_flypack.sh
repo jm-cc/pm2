@@ -3,7 +3,7 @@
 mkdir -p ./out-flypack
 hosts=william0,william1
 
-benches="dataprop flypack_local flypack manpack"
+benches="dataprop flypack_local flypack_copy flypack manpack"
 
 s=1
 smax=1024

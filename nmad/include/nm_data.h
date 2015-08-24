@@ -26,7 +26,11 @@ struct nm_data_s;
 /** function apply to each data chunk upon traversal */
 typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
 
-/** traversal function for data descriptors */
+/** funtion to traverse data with app layout, i.e. map op
+ * @param p_data data descriptor
+ * @param apply function to apply to all chunks
+ * @param _context context pointer given to apply function
+ */
 typedef void (*nm_data_traversal_t)(const void*_content, nm_data_apply_t apply, void*_context);
 
 /** memcpy function for data descriptors- copy from descriptor to given buffer */
@@ -35,6 +39,9 @@ typedef void (*nm_data_copy_from_t)(const void*_content, nm_len_t offset, nm_len
 /** memcpy function for data descriptors- copy to descriptor from buffer */
 typedef void (*nm_data_copy_to_t)(const void*_content, nm_len_t offset, nm_len_t len, const void*srcbuf);
 
+/** set of operations available on data type.
+ * May be NULL except p_traversal
+ */
 struct nm_data_ops_s
 {
   nm_data_traversal_t p_traversal;
@@ -54,12 +61,7 @@ struct nm_data_properties_s
 /** a data descriptor, used to pack/unpack data from app layout to/from contiguous buffers */
 struct nm_data_s
 {
-  /** funtion to traverse data with app layout, i.e. map
-   * @param p_data data descriptor
-   * @param apply function to apply to all chunks
-   * @param _context context pointer given to apply function
-   */
-  nm_data_traversal_t p_traversal;
+  struct nm_data_ops_s ops;
   struct nm_data_properties_s props;
   /** placeholder for type-dependant content */
   char _content[_NM_DATA_CONTENT_SIZE];
@@ -67,7 +69,7 @@ struct nm_data_s
 #define NM_DATA_TYPE(ENAME, TYPE, TRAVERSAL)				\
   static inline void nm_data_##ENAME##_set(struct nm_data_s*p_data, TYPE value) \
   {									\
-    p_data->p_traversal = TRAVERSAL;					\
+    p_data->ops.p_traversal = TRAVERSAL;				\
     p_data->props.blocks = -1;						\
     assert(sizeof(TYPE) <= _NM_DATA_CONTENT_SIZE);			\
     TYPE*p_content = (TYPE*)&p_data->_content[0];			\
@@ -97,7 +99,7 @@ NM_DATA_TYPE(iov, struct nm_data_iov_s, &nm_data_traversal_iov);
  */
 static inline void nm_data_traversal_apply(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context)
 {
-  (*p_data->p_traversal)((void*)p_data->_content, apply, _context);
+  (*p_data->ops.p_traversal)((void*)p_data->_content, apply, _context);
 }
 
 void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,

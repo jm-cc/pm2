@@ -19,11 +19,12 @@
 #include <nm_sendrecv_interface.h>
 
 static const nm_tag_t data_tag = 0x01;
+static void*flypack_buffer = NULL;
 
 static void sr_bench_flypack_server(void*buf, nm_len_t len)
 {
   struct nm_data_s data;
-  nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = buf, .len = len });
+  nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = flypack_buffer, .len = len });
   nm_sr_request_t request;
   nm_sr_irecv_data(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, &data, &request, NULL);
   nm_sr_rwait(nm_bench_common.p_session, &request);
@@ -35,7 +36,7 @@ static void sr_bench_flypack_server(void*buf, nm_len_t len)
 static void sr_bench_flypack_client(void*buf, nm_len_t len)
 {
   struct nm_data_s data;
-  nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = buf, .len = len });
+  nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = flypack_buffer, .len = len });
   nm_sr_request_t request;
   nm_sr_isend_data(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, &data, &request, NULL);
   nm_sr_swait(nm_bench_common.p_session, &request);
@@ -43,11 +44,17 @@ static void sr_bench_flypack_client(void*buf, nm_len_t len)
   nm_sr_rwait(nm_bench_common.p_session, &request);
 }
 
+static void nm_bench_flypack_init(void*buf, nm_len_t len)
+{
+  flypack_buffer = realloc(flypack_buffer, 2 * len);
+}
+
+
 const struct nm_bench_s nm_bench =
   {
     .name = "sendrecv on-the-fly pack",
     .server = &sr_bench_flypack_server,
     .client = &sr_bench_flypack_client,
-    .init   = NULL
+    .init   = &nm_bench_flypack_init
   };
 

@@ -66,10 +66,10 @@ struct nm_data_s
   /** placeholder for type-dependant content */
   char _content[_NM_DATA_CONTENT_SIZE];
 };
-#define NM_DATA_TYPE(ENAME, TYPE, TRAVERSAL)				\
+#define NM_DATA_TYPE(ENAME, TYPE, OPS)					\
   static inline void nm_data_##ENAME##_set(struct nm_data_s*p_data, TYPE value) \
   {									\
-    p_data->ops.p_traversal = TRAVERSAL;				\
+    p_data->ops = *(OPS);						\
     p_data->props.blocks = -1;						\
     assert(sizeof(TYPE) <= _NM_DATA_CONTENT_SIZE);			\
     TYPE*p_content = (TYPE*)&p_data->_content[0];			\
@@ -83,8 +83,8 @@ struct nm_data_contiguous_s
   void*ptr;
   nm_len_t len;
 };
-void nm_data_traversal_contiguous(const void*_content, nm_data_apply_t apply, void*_context);
-NM_DATA_TYPE(contiguous, struct nm_data_contiguous_s, &nm_data_traversal_contiguous);
+const struct nm_data_ops_s nm_data_ops_contiguous;
+NM_DATA_TYPE(contiguous, struct nm_data_contiguous_s, &nm_data_ops_contiguous);
 /** data descriptor for iov data
  */
 struct nm_data_iov_s
@@ -92,8 +92,8 @@ struct nm_data_iov_s
   struct iovec*v;
   int n;
 };
-void nm_data_traversal_iov(const void*_content, nm_data_apply_t apply, void*_context);
-NM_DATA_TYPE(iov, struct nm_data_iov_s, &nm_data_traversal_iov);
+const struct nm_data_ops_s nm_data_ops_iov;
+NM_DATA_TYPE(iov, struct nm_data_iov_s, &nm_data_ops_iov);
 
 /** helper function to apply iterator to data
  */

@@ -82,7 +82,7 @@ static void flypack_copy_from(const void*_content, nm_len_t offset, nm_len_t len
   done += first_len;
 
   nm_len_t cur_chunk = first_chunk + 1;
-  while(done > 0)
+  while(done < len)
     {
       const nm_len_t cur_chunk_len = (len > chunk_size) ? chunk_size : len;
       memcpy(destbuf + done, content->buf + cur_chunk * chunk_size  * 2, cur_chunk_len);
@@ -93,4 +93,10 @@ static void flypack_copy_from(const void*_content, nm_len_t offset, nm_len_t len
   
 }
 
-NM_DATA_TYPE(flypack, struct flypack_data_s, &flypack_traversal);
+const static struct nm_data_ops_s flypack_ops =
+  {
+    .p_traversal = &flypack_traversal,
+    .p_copyfrom  = &flypack_copy_from
+  };
+NM_DATA_TYPE(flypack, struct flypack_data_s, &flypack_ops);
+

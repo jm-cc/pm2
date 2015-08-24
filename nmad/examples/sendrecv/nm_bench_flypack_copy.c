@@ -50,12 +50,11 @@ static void nm_bench_flypack_copy(void*buf, nm_len_t len)
 {
   struct nm_data_s data;
   nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = flypack_buffer, .len = len });
-  /*  nm_data_traversal_apply(&data, &nm_flypack_pack_apply, &copy_context); */
   struct nm_flypack_copy_s copy_context = { .ptr = buffer };
   (*data.ops.p_copyfrom)(&data._content[0], 0, len, buf);
   
   copy_context.ptr = buffer ;
-  (*data.ops.p_copyfrom)(&data._content[0], 0, len, buf);
+  (*data.ops.p_copyto)(&data._content[0], 0, len, buf);
 }
 
 const struct nm_bench_s nm_bench =

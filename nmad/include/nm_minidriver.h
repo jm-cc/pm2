@@ -67,6 +67,7 @@ struct nm_minidriver_iface_s
   void (*connect)(void*_status, const void*remote_url, size_t url_size);
   /* sending primitives */
   void (*send_post)(void*_status, const struct iovec*v, int n);
+  void (*send_data)(void*_status, const struct nm_data_s*p_data);
   int  (*send_poll)(void*_status);
   void (*send_prefetch)(void*_status, const void*ptr, uint64_t size);
   /* receiving primitives */

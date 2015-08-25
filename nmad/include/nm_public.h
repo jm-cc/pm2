@@ -78,6 +78,11 @@ typedef uint64_t nm_len_t;
 #define NM_LEN_UNDEFINED  ((nm_len_t)-1)
 
 
+/* ** data iterators *************************************** */
+
+#include <nm_data.h>
+
+
 #endif /* NM_PUBLIC_H */
 
 

@@ -19,6 +19,8 @@
 #ifndef NM_DATA_H
 #define NM_DATA_H
 
+#include <assert.h>
+
 /** maximum size of content descriptor for nm_data */
 #define _NM_DATA_CONTENT_SIZE 32
 

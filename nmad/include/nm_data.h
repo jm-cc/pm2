@@ -111,7 +111,11 @@ void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t
 
 const struct nm_data_properties_s*nm_data_properties_get(struct nm_data_s*p_data);
 
-nm_len_t nm_data_size(const struct nm_data_s*p_data);
+static inline nm_len_t nm_data_size(const struct nm_data_s*p_data)
+{
+  const struct nm_data_properties_s*p_props = nm_data_properties_get((struct nm_data_s*)p_data);
+  return p_props->size;
+}
 
 
 #endif /* NM_DATA_H */

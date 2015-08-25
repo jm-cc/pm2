@@ -145,25 +145,6 @@ void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t c
     }
 }
 
-/* ********************************************************* */
-
-/** compute data size
- */
-struct nm_data_size_s
-{
-  nm_len_t size; /**< size accumulator */
-};
-static void nm_data_size_apply(void*ptr, nm_len_t len, void*_context)
-{
-  struct nm_data_size_s*p_context = _context;
-  p_context->size += len;
-}
-nm_len_t nm_data_size(const struct nm_data_s*p_data)
-{
-  struct nm_data_size_s size = { .size = 0 };
-  nm_data_traversal_apply(p_data, &nm_data_size_apply, &size);
-  return size.size;
-}
 
 /* ********************************************************* */
 

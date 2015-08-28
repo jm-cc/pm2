@@ -42,11 +42,12 @@ struct nm_drv_profile_s
  */
 struct nm_drv_cap_s
 {
-  int has_recv_any;  /**< driver accepts receive from NM_GATE_ANY */
-  int rdv_threshold; /**< preferred length for switching to rendez-vous. */
-  int min_period;    /**< minimum delay between poll (in microseconds) */
-  int is_exportable; /**< blocking calls may be exported by PIOMan */
+  int has_recv_any;   /**< driver accepts receive from NM_GATE_ANY */
+  int rdv_threshold;  /**< preferred length for switching to rendez-vous. */
+  int min_period;     /**< minimum delay between poll (in microseconds) */
+  int is_exportable;  /**< blocking calls may be exported by PIOMan */
   int max_unexpected; /**< maximum size of unexpected messages on trk #0 */
+  int supports_data;  /**< driver can send direct nm_data_s */
 };
 
 struct nm_minidriver_properties_s

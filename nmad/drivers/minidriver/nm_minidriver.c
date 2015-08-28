@@ -28,7 +28,11 @@ struct nm_minidriver_drv
 /** status for a driver context */
 struct nm_minidriver_context_s
 {
-  struct { puk_context_t minidriver; } trks_array[2]; /**< driver contexts for tracks */
+  struct
+  {
+    puk_context_t minidriver; /**< driver contexts for given track */
+    struct nm_minidriver_properties_s props;
+  } trks_array[2]; 
   char*url;                   /**< driver url for this node (used by connector) */
 };
 
@@ -165,7 +169,6 @@ static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_para
   /* resolve sub-drivers for trk#0 & trk#1 and get properties */
   puk_component_conn_t trk0 = puk_context_conn_lookup(context, NULL, "trk0");
   puk_component_conn_t trk1 = puk_context_conn_lookup(context, NULL, "trk1");
-  struct nm_minidriver_properties_s props[2];
   int i;
   for(i = 0; i < 2; i++)
     {
@@ -176,21 +179,21 @@ static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_para
       sprintf(s_index, "%d", p_drv->index);
       puk_context_putattr(conn->context, "index", s_index);
 #ifdef PM2_TOPOLOGY
-      props[i].profile.cpuset = NULL;
+      p_minidriver_context->trks_array[i].props.profile.cpuset = NULL;
 #endif /* PM2_TOPOLOGY */
-      (*minidriver_iface->getprops)(p_drv->index, &props[i]);
+      (*minidriver_iface->getprops)(p_drv->index, &p_minidriver_context->trks_array[i].props);
     }
 
   /* driver profile encoding */
 #ifdef PM2_TOPOLOGY
-  if(props[0].profile.cpuset != NULL)
+  if(p_minidriver_context->trks_array[0].props.profile.cpuset != NULL)
     {
       p_drv->profile.cpuset = hwloc_bitmap_alloc();
-      hwloc_bitmap_copy(p_drv->profile.cpuset, props[0].profile.cpuset);
+      hwloc_bitmap_copy(p_drv->profile.cpuset, p_minidriver_context->trks_array[0].props.profile.cpuset);
     }
 #endif /* PM2_TOPOLOGY */
-  p_drv->profile.latency = props[0].profile.latency;
-  p_drv->profile.bandwidth = props[1].profile.bandwidth;
+  p_drv->profile.latency = p_minidriver_context->trks_array[0].props.profile.latency;
+  p_drv->profile.bandwidth = p_minidriver_context->trks_array[1].props.profile.bandwidth;
 
   p_drv->priv = p_minidriver_drv;
   err = NM_ESUCCESS;
@@ -218,6 +221,7 @@ static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, 
 	  trk_caps[i].max_single_request_length	= SSIZE_MAX;
 	  trk_caps[i].max_iovec_request_length	= 0;
 	  trk_caps[i].max_iovec_size		= 1;
+	  trk_caps[i].supports_data             = p_minidriver_context->trks_array[i].props.capabilities.supports_data;
 	}
       else
 	{
@@ -228,6 +232,7 @@ static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, 
 	  trk_caps[i].max_single_request_length	= SSIZE_MAX;
 	  trk_caps[i].max_iovec_request_length	= 0;
 	  trk_caps[i].max_iovec_size		= 0;
+	  trk_caps[i].supports_data             = p_minidriver_context->trks_array[i].props.capabilities.supports_data;
 	}
       puk_context_t context = p_minidriver_context->trks_array[i].minidriver;
       const struct nm_minidriver_iface_s*minidriver_iface = 

@@ -31,9 +31,12 @@ struct nm_drv
   /** Assembly associated to the driver */
   puk_component_t assembly;
 
+  /** track capabilities */
+  struct nm_trk_cap trk_caps[NM_SO_MAX_TRACKS];
+  
   /** Driver interface, for use when no instance is needed */
   const struct nm_drv_iface_s*driver;
-  
+    
   /** recv request for trk#0 if driver supports recv_any */
   struct nm_pkt_wrap*p_in_rq;
 

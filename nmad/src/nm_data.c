@@ -187,53 +187,64 @@ const struct nm_data_properties_s*nm_data_properties_get(struct nm_data_s*p_data
 
 /** copy data from network buffer (contiguous) to user layout
  */
-struct nm_data_copy_s
+struct nm_data_copy_to_s
 {
   const void*ptr; /**< source buffer (contiguous) */
 };
-static void nm_data_copy_apply(void*ptr, nm_len_t len, void*_context)
+static void nm_data_copy_to_apply(void*ptr, nm_len_t len, void*_context)
 {
-  struct nm_data_copy_s*p_context = _context;
+  struct nm_data_copy_to_s*p_context = _context;
   memcpy(ptr, p_context->ptr, len);
   p_context->ptr += len;
 }
 /** copy chunk of data to user layout */
-void nm_data_copy(const struct nm_data_s*p_data, nm_len_t chunk_offset, const void *ptr, nm_len_t len)
+void nm_data_copy_to(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t len, const void*srcbuf)
 {
-  if(len > 0)
+  if(p_data->ops.p_copyto != NULL)
     {
-      struct nm_data_copy_s copy = { .ptr = ptr };
-      struct nm_data_chunk_extractor_s chunk_extractor = 
-	{ .chunk_offset = chunk_offset, .chunk_len = len, .done = 0, 
-	  .apply = &nm_data_copy_apply, ._context = &copy };
-      nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+      (*p_data->ops.p_copyto)((void*)p_data->_content, offset, len, srcbuf);
+    }
+  else
+    {
+      if(len > 0)
+	{
+	  struct nm_data_copy_to_s copy = { .ptr = srcbuf };
+	  struct nm_data_chunk_extractor_s chunk_extractor = 
+	    { .chunk_offset = offset, .chunk_len = len, .done = 0, 
+	      .apply = &nm_data_copy_to_apply, ._context = &copy };
+	  nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+	}
     }
 }
 
 /* ********************************************************* */
 
-/** copy data to network buffer (contiguous) from user layout
+/** copy data from network buffer (contiguous) to user layout
  */
-struct nm_data_copy_pack_s
+struct nm_data_copy_from_s
 {
   void*ptr; /**< dest buffer (contiguous) */
 };
-static void nm_data_copy_pack_apply(void*ptr, nm_len_t len, void*_context)
+static void nm_data_copy_from_apply(void*ptr, nm_len_t len, void*_context)
 {
-  struct nm_data_copy_pack_s*p_context = _context;
+  struct nm_data_copy_from_s*p_context = _context;
   memcpy(p_context->ptr, ptr, len);
   p_context->ptr += len;
 }
-/** copy chunk of data from user layout */
-void nm_data_copy_pack(const struct nm_data_s*p_data, nm_len_t chunk_offset, void *ptr, nm_len_t len)
+
+void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t len, void*destbuf)
 {
-  if(len > 0)
+  if(p_data->ops.p_copyfrom != NULL)
     {
-      struct nm_data_copy_pack_s copy = { .ptr = ptr };
-      struct nm_data_chunk_extractor_s chunk_extractor = 
-	{ .chunk_offset = chunk_offset, .chunk_len = len, .done = 0, 
-	  .apply = &nm_data_copy_pack_apply, ._context = &copy };
-      nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+      (*p_data->ops.p_copyfrom)((void*)p_data->_content, offset, len, destbuf);
+    }
+  else
+    {
+      if(len > 0)
+	{
+	  struct nm_data_copy_from_s copy = { .ptr = destbuf };
+	  nm_data_chunk_extractor_traversal(p_data, offset, len, &nm_data_copy_from_apply, &copy);
+	}
     }
 }
 

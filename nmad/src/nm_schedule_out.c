@@ -59,15 +59,13 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
     {
       tbx_fast_list_add_tail(&p_pack->_link, &p_core->pending_packs);
     }
-#ifdef TEST_PACK_DATA
-#warning TODO- for testing ###############################
+
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
   if(r->driver->pack_data != 0)
     {
       (*r->driver->pack_data)(r->_status, p_pack);
     }
   else
-#endif
     {
       nm_data_aggregator_traversal(p_pack->p_data, &nm_core_pack_chunk, p_pack);
     }
@@ -100,7 +98,7 @@ __inline__ void nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
   nmad_lock_assert();
   assert(p_pw->flags & NM_PW_FINALIZED || p_pw->flags & NM_PW_NOHEADER);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = r->driver->poll_send_iov(r->_status, p_pw);
+  int err = (*r->driver->poll_send_iov)(r->_status, p_pw);
   if(err == NM_ESUCCESS)
     {
 #ifdef PIOMAN_POLL
@@ -124,43 +122,40 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
 {
   nmad_lock_assert();
 
-  /* ready to send					*/
-  NM_TRACEF("posting new send request: gate %p, drv %p, trk %d",
-	    p_pw->p_gate,
-	    p_pw->p_drv,
-	    p_pw->trk_id);
-
 #ifdef PIO_OFFLOAD
-    nm_so_pw_offloaded_finalize(p_pw);
+  nm_so_pw_offloaded_finalize(p_pw);
 #endif
 
   nm_so_pw_finalize(p_pw);
 
   /* post request */
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = r->driver->post_send_iov(r->_status, p_pw);
+  if((p_pw->p_data != NULL) && !p_pw->p_drv->trk_caps[p_pw->trk_id].supports_data)
+    {
+      void*buf = malloc(p_pw->length);
+      nm_data_copy_from(p_pw->p_data, p_pw->chunk_offset, p_pw->length, buf);
+      struct iovec*vec = nm_pw_grow_iovec(p_pw);
+      vec->iov_base = (void*)buf;
+      vec->iov_len = p_pw->length;
+      p_pw->flags |= NM_PW_DYNAMIC_V0;
+      p_pw->p_data = NULL;
+    }
+  int err = (*r->driver->post_send_iov)(r->_status, p_pw);
   
   /* process post command status				*/
   
   if (err == -NM_EAGAIN)
     {
-      NM_TRACEF("new request pending: gate %p, drv %p, trk %d",
-		p_pw->p_gate,
-		p_pw->p_drv,
-		p_pw->trk_id);
-
 #ifdef NMAD_POLL
       /* put the request in the list of pending requests */
       tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->p_core->pending_send_list);
 #else /* NMAD_POLL */
       nm_ltask_submit_poll_send(p_pw);
 #endif /* NMAD_POLL */
-
     } 
   else if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
-      NM_TRACEF("request completed immediately");
       nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
     }
   else
@@ -217,7 +212,7 @@ void nm_out_prefetch(struct nm_core*p_core)
       if(!tbx_fast_list_empty(&p_gate->pending_large_send))
 	{
 	  struct nm_pkt_wrap *p_pw = nm_l2so(p_gate->pending_large_send.next);
-	  if(!(p_pw->flags & NM_PW_PREFETCHED))
+	  if((p_pw->p_data == NULL) && !(p_pw->flags & NM_PW_PREFETCHED))
 	    {
 	      p_drv = nm_drv_default(p_gate);
 	      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);

@@ -47,7 +47,7 @@ struct nm_drv_cap_s
   int min_period;     /**< minimum delay between poll (in microseconds) */
   int is_exportable;  /**< blocking calls may be exported by PIOMan */
   int max_unexpected; /**< maximum size of unexpected messages on trk #0 */
-  int supports_data;  /**< driver can send direct nm_data_s */
+  int supports_data;  /**< driver can send/recv direct nm_data_s */
 };
 
 struct nm_minidriver_properties_s
@@ -73,6 +73,7 @@ struct nm_minidriver_iface_s
   void (*send_prefetch)(void*_status, const void*ptr, uint64_t size);
   /* receiving primitives */
   void (*recv_init)(void*_status, struct iovec*v, int n);
+  void (*recv_data)(void*_status, const struct nm_data_s*p_data);
   int  (*poll_one)(void*_status);
   int  (*cancel_recv)(void*_status); 
 };

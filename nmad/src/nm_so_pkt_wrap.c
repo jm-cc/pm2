@@ -176,6 +176,7 @@ static inline void nm_pw_init(struct nm_pkt_wrap *p_pw)
   p_pw->flags = 0;
   p_pw->length = 0;
 
+  p_pw->p_data  = NULL;
   p_pw->v       = p_pw->prealloc_v;
   p_pw->v_size  = NM_SO_PREALLOC_IOV_LEN;
   p_pw->v_nb    = 0;
@@ -444,11 +445,11 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
 	    }
 	  else
 	    {
-#warning TODO- forward nm_data to driver ########
-	      void*buf = malloc(p_props->size);
-	      nm_data_copy_pack(p_data, offset, buf, len);
-	      nm_so_pw_add_raw(p_pw, buf, len, offset);
-	      p_pw->flags |= NM_PW_DYNAMIC_V0;
+#warning TEST- forward nm_data to driver ########
+	      p_pw->flags |= NM_PW_DATA_ITERATOR;
+	      p_pw->length = p_props->size;
+	      p_pw->chunk_offset = offset;
+	      p_pw->p_data = p_data;
 	    }
 	}
       else
@@ -536,6 +537,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
       p_pw->flags |= NM_PW_FINALIZED;
     }
 #ifdef DEBUG
+  if(!(p_pw->flags & NM_PW_DATA_ITERATOR))
   {
     int length = 0;
     int i;

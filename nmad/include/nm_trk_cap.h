@@ -75,7 +75,7 @@ struct nm_trk_cap {
          */
         uint8_t	rq_type;
 
-        /** whether driover supports direct nm_data */
+        /** whether driver supports direct nm_data send/recv */
         uint8_t supports_data;
 
         /** Iovec type.

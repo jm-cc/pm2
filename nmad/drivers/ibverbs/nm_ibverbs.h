@@ -39,6 +39,8 @@
 uint32_t nm_ibverbs_checksum(const char*data, nm_len_t len);
 uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, nm_len_t len);
 int nm_ibverbs_checksum_enabled(void);
+uint32_t nm_ibverbs_copy_from_and_checksum(void*dest, struct nm_data_s*p_data, const void*src, nm_len_t offset, nm_len_t len);
+uint32_t nm_ibverbs_copy_to_and_checksum(const void*src, struct nm_data_s*p_data, void*dest, nm_len_t offset, nm_len_t len);
 
 extern int nm_ibverbs_alignment;
 extern int nm_ibverbs_memalign;

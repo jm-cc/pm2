@@ -305,7 +305,15 @@ static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap*__restri
 {
   struct nm_minidriver*status = _status;
   struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
-  (*minidriver->driver->send_post)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
+  if(p_pw->p_data != NULL)
+    {
+      assert(minidriver->driver->send_data != NULL);
+      (*minidriver->driver->send_data)(minidriver->_status, p_pw->p_data);
+    }
+  else
+    {
+      (*minidriver->driver->send_post)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
+    }
   int err = nm_minidriver_poll_send_iov(_status, p_pw);
   return err;
 }
@@ -353,7 +361,15 @@ static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap*__restri
     {
       struct nm_minidriver*status = _status;
       struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
-      (*minidriver->driver->recv_init)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
+      if(p_pw->p_data != NULL)
+	{
+	  assert(minidriver->driver->recv_data != NULL);
+	  (*minidriver->driver->recv_data)(minidriver->_status, p_pw->p_data);
+	}
+      else
+	{
+	  (*minidriver->driver->recv_init)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
+	}
     }
   err = nm_minidriver_poll_recv_iov(_status, p_pw);
   return err;

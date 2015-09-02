@@ -117,6 +117,11 @@ static inline nm_len_t nm_data_size(const struct nm_data_s*p_data)
   return p_props->size;
 }
 
+/** copy chunk of data from user layout to contiguous buffer */
+void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t len, void*destbuf);
+
+/** copy chunk of data from contiguous buffer to user layout */
+void nm_data_copy_to(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t len, const void*srcbuf);
 
 #endif /* NM_DATA_H */
 

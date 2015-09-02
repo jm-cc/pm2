@@ -181,8 +181,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
 
       if((p_pw != NULL) && (p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
 	{
-	  nm_data_copy(p_unpack->p_data, 0 /* offset */, p_pw->v[0].iov_base, chunk_len);
-
+	  nm_data_copy_to(p_unpack->p_data, 0 /* offset */, chunk_len, p_pw->v[0].iov_base);
 	}
       
       const struct nm_core_event_s event =
@@ -469,7 +468,7 @@ static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 	  nm_so_data_flags_decode(p_unpack, flags, chunk_offset, len);
 	  assert(chunk_offset + len <= p_unpack->expected_len);
 	  assert(p_unpack->cumulated_len + len <= p_unpack->expected_len);
-	  nm_data_copy(p_unpack->p_data, chunk_offset, ptr, len);
+	  nm_data_copy_to(p_unpack->p_data, chunk_offset, len, ptr);
 	  nm_so_unpack_check_completion(p_core, p_pw, p_unpack, len);
 	}
     }
@@ -493,7 +492,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 	  nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
 	  assert(chunk_offset + chunk_len <= p_unpack->expected_len);
 	  assert(p_unpack->cumulated_len + chunk_len <= p_unpack->expected_len);
-	  nm_data_copy(p_unpack->p_data, chunk_offset, ptr, chunk_len);
+	  nm_data_copy_to(p_unpack->p_data, chunk_offset, chunk_len, ptr);
 	  nm_so_unpack_check_completion(p_core, p_pw, p_unpack, chunk_len);
 	}
     }
@@ -519,11 +518,20 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
       if(p_props->is_contig || (chunk_offset != 0) || (chunk_len != p_props->size))
 	{
 	  struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
-	  nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+	  if((chunk_offset != 0) || (chunk_len != p_props->size))
+	    {
+	      nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+	    }
+	  else
+	    {
+	      nm_data_aggregator_traversal(p_unpack->p_data, &nm_large_chunk_store, &large_chunk);
+	    }
 	}
       else
 	{
-#warning TODO- non-ontiguous data with rdv; should forward nm_data to driver #####
+#warning TODO- non-contiguous data with rdv; should forward nm_data to driver #####
+
+	  
 	  struct nm_pkt_wrap *p_large_pw = NULL;
 	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw);
 	  p_large_pw->p_unpack = p_unpack;

@@ -85,17 +85,25 @@ static void nm_data_aggregator_apply(void*ptr, nm_len_t len, void*_context)
 }
 void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context)
 {
-  struct nm_data_aggregator_s context = { .chunk_ptr = NULL, .chunk_len = NM_LEN_UNDEFINED, .apply = apply, ._context = _context };
-  nm_data_traversal_apply(p_data, &nm_data_aggregator_apply, &context);
-  if(context.chunk_len != NM_LEN_UNDEFINED)
+  const struct nm_data_properties_s*p_props = nm_data_properties_get(p_data);
+  if(p_props->is_contig)
     {
-      /* flush last pending chunk */
-      (*context.apply)(context.chunk_ptr, context.chunk_len, context._context);
+      (*apply)(p_props->base_ptr, p_props->size, _context);
     }
   else
     {
-      /* zero-length data */
-      (*context.apply)(NULL, 0, context._context);
+      struct nm_data_aggregator_s context = { .chunk_ptr = NULL, .chunk_len = NM_LEN_UNDEFINED, .apply = apply, ._context = _context };
+      nm_data_traversal_apply(p_data, &nm_data_aggregator_apply, &context);
+      if(context.chunk_len != NM_LEN_UNDEFINED)
+	{
+	  /* flush last pending chunk */
+	  (*context.apply)(context.chunk_ptr, context.chunk_len, context._context);
+	}
+      else
+	{
+	  /* zero-length data */
+	  (*context.apply)(NULL, 0, context._context);
+	}
     }
  }
 
@@ -132,13 +140,19 @@ static void nm_data_chunk_extractor_apply(void*ptr, nm_len_t len, void*_context)
 void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
 				       nm_data_apply_t apply, void*_context)
 {
-#warning TODO- optimize chunk_offset == 0
   if(chunk_len != 0)
     {
-      struct nm_data_chunk_extractor_s chunk_extractor = 
-	{ .chunk_offset = chunk_offset, .chunk_len = chunk_len, .done = 0,
-	  .apply = apply, ._context = _context };
-      nm_data_aggregator_traversal(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+      if((chunk_offset == 0) && (chunk_len == nm_data_size(p_data)))
+	{
+	  nm_data_aggregator_traversal(p_data, apply, _context);
+	}
+	else
+	  {
+	    struct nm_data_chunk_extractor_s chunk_extractor = 
+	      { .chunk_offset = chunk_offset, .chunk_len = chunk_len, .done = 0,
+		.apply = apply, ._context = _context };
+	    nm_data_aggregator_traversal(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+	  }
     }
   else
     {

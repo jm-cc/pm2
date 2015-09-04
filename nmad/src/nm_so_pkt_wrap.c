@@ -335,39 +335,49 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
   assert(p_pw2->flags & NM_PW_NOHEADER);
   assert(p_pw2->length == 0);
   const nm_len_t total_length = p_pw->length;
-  int idx_pw = 0;
-  nm_len_t len = 0;
-  while(len < total_length)
+  if(p_pw->p_data != NULL)
     {
-      if(len >= offset)
-	{
-	  /* consume the whole segment */
-	  const nm_len_t chunk_len = p_pw->v[idx_pw].iov_len;
-	  nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base, chunk_len, 0);
-	  len += p_pw->v[idx_pw].iov_len;
-	  p_pw->length -= chunk_len;
-	  p_pw->v_nb--;
-	  assert(p_pw->v_nb <= p_pw->v_size);
-	  p_pw->v[idx_pw].iov_len = 0;
-	  p_pw->v[idx_pw].iov_base = NULL;
-	}
-      else if(len + p_pw->v[idx_pw].iov_len > offset)
-	{
-	  /* cut in the middle of an iovec segment */
-	  const nm_len_t iov_offset = offset - len;
-	  const nm_len_t chunk_len = p_pw->v[idx_pw].iov_len - iov_offset;
-	  nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base + iov_offset, chunk_len, 0);
-	  len += p_pw->v[idx_pw].iov_len;
-	  p_pw->v[idx_pw].iov_len = iov_offset;
-	  p_pw->length -= chunk_len;
-	}
-      else
-	{
-	  len += p_pw->v[idx_pw].iov_len;
-	}
-      idx_pw++;
+      p_pw2->p_data = p_pw->p_data;
+      p_pw2->length = total_length - offset;
+      p_pw2->chunk_offset = p_pw->chunk_offset + offset;
+      p_pw->length = offset;
     }
-  p_pw2->chunk_offset = p_pw->chunk_offset + offset;
+  else
+    {
+      int idx_pw = 0;
+      nm_len_t len = 0;
+      while(len < total_length)
+	{
+	  if(len >= offset)
+	    {
+	      /* consume the whole segment */
+	      const nm_len_t chunk_len = p_pw->v[idx_pw].iov_len;
+	      nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base, chunk_len, 0);
+	      len += p_pw->v[idx_pw].iov_len;
+	      p_pw->length -= chunk_len;
+	      p_pw->v_nb--;
+	      assert(p_pw->v_nb <= p_pw->v_size);
+	      p_pw->v[idx_pw].iov_len = 0;
+	      p_pw->v[idx_pw].iov_base = NULL;
+	    }
+	  else if(len + p_pw->v[idx_pw].iov_len > offset)
+	    {
+	      /* cut in the middle of an iovec segment */
+	      const nm_len_t iov_offset = offset - len;
+	      const nm_len_t chunk_len = p_pw->v[idx_pw].iov_len - iov_offset;
+	      nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base + iov_offset, chunk_len, 0);
+	      len += p_pw->v[idx_pw].iov_len;
+	      p_pw->v[idx_pw].iov_len = iov_offset;
+	      p_pw->length -= chunk_len;
+	    }
+	  else
+	    {
+	      len += p_pw->v[idx_pw].iov_len;
+	    }
+	  idx_pw++;
+	}
+      p_pw2->chunk_offset = p_pw->chunk_offset + offset;
+    }
 
   /* check that no data was lost :-) */
   assert(p_pw->length + p_pw2->length == total_length);
@@ -438,19 +448,9 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
       if(flags & NM_PW_DATA_ITERATOR)
 	{
 	  const struct nm_data_s*p_data = ptr;
-	  const struct nm_data_properties_s*p_props = nm_data_properties_get(p_data);
-	  if(p_props->is_contig)
-	    {
-	      nm_so_pw_add_raw(p_pw, p_props->base_ptr, len, offset);
-	    }
-	  else
-	    {
-#warning TEST- forward nm_data to driver ########
-	      p_pw->flags |= NM_PW_DATA_ITERATOR;
-	      p_pw->length = p_props->size;
-	      p_pw->chunk_offset = offset;
-	      p_pw->p_data = p_data;
-	    }
+	  p_pw->length = nm_data_size(p_data);
+	  p_pw->chunk_offset = offset;
+	  p_pw->p_data = p_data;
 	}
       else
 	{
@@ -537,7 +537,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
       p_pw->flags |= NM_PW_FINALIZED;
     }
 #ifdef DEBUG
-  if(!(p_pw->flags & NM_PW_DATA_ITERATOR))
+  if(p_pw->p_data == NULL)
   {
     int length = 0;
     int i;

@@ -137,6 +137,22 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap*p_pw, int nb_chunks, co
 	}
       if(chunks[i].trk_id == NM_TRK_LARGE)
 	{
+	  if(p_pw->p_data != NULL && !chunks[i].p_drv->trk_caps[NM_TRK_LARGE].supports_data)
+	    {
+	      const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pw->p_data);
+	      struct iovec*vec = nm_pw_grow_iovec(p_pw);
+	      if(p_props->is_contig)
+		{
+		  vec->iov_base = p_props->base_ptr + p_pw->chunk_offset;
+		}
+	      else
+		{
+		  void*buf = malloc(p_pw->length);
+		  vec->iov_base = buf;
+		  p_pw->flags |= NM_PW_DYNAMIC_V0;
+		}
+	      vec->iov_len = p_pw->length;
+	    }
 	  nm_core_post_recv(p_pw, p_pw->p_gate, chunks[i].trk_id, chunks[i].p_drv);
 	}
       else

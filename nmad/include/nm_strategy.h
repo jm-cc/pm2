@@ -22,7 +22,7 @@
 struct nm_strategy_iface_s
 {
   /** submit a pack with iterator-based data description */
-  void (*pack_data)(void*_status, struct nm_pack_s*p_pack);
+  void (*pack_data)(void*_status, struct nm_pack_s*p_pack, nm_len_t len, nm_len_t chunk_offset);
 
   /** submit a chunk of data to the strategy */
   void (*pack_chunk)(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);

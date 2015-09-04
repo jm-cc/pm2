@@ -132,6 +132,7 @@ static void nm_data_chunk_extractor_apply(void*ptr, nm_len_t len, void*_context)
 void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
 				       nm_data_apply_t apply, void*_context)
 {
+#warning TODO- optimize chunk_offset == 0
   if(chunk_len != 0)
     {
       struct nm_data_chunk_extractor_s chunk_extractor = 
@@ -399,9 +400,10 @@ static void nm_data_pkt_unpack_apply(void*ptr, nm_len_t len, void*_context)
 }
 
 /** unpack from pkt format to data format */
-void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap*p_pw)
+void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap*p_pw,
+			nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_data_pkt_unpacker_s data_unpacker =
     { .h = h, .ptr = h + 1, .v1_base = p_pw->v[0].iov_base + nm_header_global_skip(p_pw), .rem_buf = NULL };
-  nm_data_traversal_apply(p_data, &nm_data_pkt_unpack_apply, &data_unpacker);
+  nm_data_chunk_extractor_traversal(p_data, chunk_offset, chunk_len, &nm_data_pkt_unpack_apply, &data_unpacker);
 }

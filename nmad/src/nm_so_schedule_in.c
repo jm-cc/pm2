@@ -183,7 +183,6 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
 	{
 	  nm_data_copy_to(p_unpack->p_data, 0 /* offset */, chunk_len, p_pw->v[0].iov_base);
 	}
-      
       const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNPACK_COMPLETED,
@@ -427,7 +426,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
     return -NM_ENOTIMPL;
 }
 
-/** Process a acpked data request (NM_PROTO_PKT_DATA)- p_unpack may be NULL (unexpected)
+/** Process a packed data request (NM_PROTO_PKT_DATA)- p_unpack may be NULL (unexpected)
  */
 static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
 				const struct nm_header_pkt_data_s*h, struct nm_pkt_wrap *p_pw)
@@ -441,7 +440,7 @@ static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, st
 	  nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
 	  assert(chunk_offset + chunk_len <= p_unpack->expected_len);
 	  assert(p_unpack->cumulated_len + chunk_len <= p_unpack->expected_len);
-	  nm_data_pkt_unpack(p_unpack->p_data, h, p_pw);
+	  nm_data_pkt_unpack(p_unpack->p_data, h, p_pw, chunk_offset, chunk_len);
 	  nm_so_unpack_check_completion(p_core, p_pw, p_unpack, chunk_len);
 	}
     }
@@ -515,30 +514,21 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
       assert(p_unpack->p_gate != NULL);
       nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
       const struct nm_data_properties_s*p_props = nm_data_properties_get(p_unpack->p_data);
-      if(p_props->is_contig || (chunk_offset != 0) || (chunk_len != p_props->size))
+      if((chunk_offset != 0) || (chunk_len != p_props->size))
 	{
+#warning TODO- check the condition. nm_data should be able to manage offset!=0
 	  struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
-	  if((chunk_offset != 0) || (chunk_len != p_props->size))
-	    {
-	      nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
-	    }
-	  else
-	    {
-	      nm_data_aggregator_traversal(p_unpack->p_data, &nm_large_chunk_store, &large_chunk);
-	    }
+	  nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
 	}
       else
 	{
-#warning TODO- non-contiguous data with rdv; should forward nm_data to driver #####
-
-	  
-	  struct nm_pkt_wrap *p_large_pw = NULL;
+	  struct nm_pkt_wrap*p_large_pw = NULL;
 	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw);
-	  p_large_pw->p_unpack = p_unpack;
-	  void*buf = malloc(p_props->size);
-	  nm_so_pw_add_raw(p_large_pw, buf, chunk_len, chunk_offset);
-	  p_large_pw->flags |= NM_PW_DYNAMIC_V0;
-	  p_large_pw->p_gate = p_gate;
+	  p_large_pw->p_unpack     = p_unpack;
+	  p_large_pw->p_data       = p_unpack->p_data;
+	  p_large_pw->p_gate       = p_gate;
+	  p_large_pw->chunk_offset = chunk_offset;
+	  p_large_pw->length       = chunk_len;
 	  tbx_fast_list_add_tail(&p_large_pw->link, &p_gate->pending_large_recv);
 	}
     }
@@ -601,13 +591,20 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
 	  else
 	    {
 	      /* rdv eventually accepted on trk#0- rollback and repack */
-	      void*ptr = p_large_pw->v[0].iov_base;
-	      /* rollback chunk on trk#1 */
-	      p_pack->scheduled -= chunk_len; 
-	      nm_so_pw_free(p_large_pw);
-	      /* repack chunk on trk#0 */
 	      struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
-	      (*r->driver->pack_chunk)(r->_status, p_pack, ptr, chunk_len, chunk_offset);
+	      p_pack->scheduled -= chunk_len;
+	      if(p_large_pw->p_data == NULL)
+		{
+		  void*ptr = p_large_pw->v[0].iov_base;
+		  /* repack chunk on trk#0 */
+		  (*r->driver->pack_chunk)(r->_status, p_pack, ptr, chunk_len, chunk_offset);
+		}
+	      else
+		{
+		  /* repack chunk on trk#0 */
+		  (*r->driver->pack_data)(r->_status, p_pack, chunk_len, chunk_offset);
+		}
+	      nm_so_pw_free(p_large_pw);
 	    }
 	  return;
 	}

@@ -61,15 +61,14 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
     }
 
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
-  if(r->driver->pack_data != 0)
+  if(r->driver->pack_data != NULL)
     {
-      (*r->driver->pack_data)(r->_status, p_pack);
+      (*r->driver->pack_data)(r->_status, p_pack, nm_data_size(p_pack->p_data), 0);
     }
   else
     {
       nm_data_aggregator_traversal(p_pack->p_data, &nm_core_pack_chunk, p_pack);
     }
-  p_pack->p_data = NULL;
   nm_unlock_interface(p_core);
   nmad_unlock();
   return err;

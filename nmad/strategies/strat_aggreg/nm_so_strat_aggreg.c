@@ -27,7 +27,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg, &nm_strat_aggreg_load, NULL, NULL)
 /* Components structures:
  */
 
-static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack);
+static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_aggreg_todo(void*, struct nm_gate*);
 static void strat_aggreg_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_aggreg_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
@@ -161,13 +161,11 @@ static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
   return !(tbx_fast_list_empty(&status->out_list));
 }
 
-static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
+static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack, nm_len_t len, nm_len_t chunk_offset)
 {
   struct nm_strat_aggreg_gate*status = _status;
   const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pack->p_data);
-  const nm_len_t len = p_props->size;
   const nm_len_t density = (p_props->blocks > 0) ? len / p_props->blocks : 0; /* average block size */
-  const nm_len_t chunk_offset = 0; /* pack full request */
   if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       /* ** small send */
@@ -180,7 +178,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack)
       
 #warning TODO- select pack strategy depending on data sparsity
       
-      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, /* chunk offset */ 0, NM_PW_DATA_ITERATOR);
+      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, chunk_offset, NM_PW_DATA_ITERATOR);
 	
     }
   else

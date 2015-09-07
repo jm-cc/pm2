@@ -184,9 +184,14 @@ static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack, nm_len
   else
     {
       /* ** large send */
+      nm_pw_flag_t flags = NM_PW_NOHEADER | NM_PW_DATA_ITERATOR;
+      if((!p_props->is_contig) && (density < 1024) && (p_pack->p_data->ops.p_copyfrom == NULL))
+	{
+	  flags |= NM_SO_DATA_USE_COPY;
+	}
       struct nm_pkt_wrap *p_pw = NULL;
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, chunk_offset, NM_PW_NOHEADER | NM_PW_DATA_ITERATOR);
+      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, chunk_offset, flags);
       tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
       union nm_header_ctrl_generic_s ctrl;
       nm_header_init_rdv(&ctrl, p_pack, len, chunk_offset, (p_pack->scheduled == p_pack->len) ? NM_PROTO_FLAG_LASTCHUNK : 0);

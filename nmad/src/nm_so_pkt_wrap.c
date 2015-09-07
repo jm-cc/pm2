@@ -432,7 +432,7 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
 	  /* Small data case */
 	  nm_so_pw_add_short_data(p_pw, tag, seq, ptr, len);
 	}
-      else if(flags & NM_SO_DATA_USE_COPY)
+      else if(flags & NM_PW_DATA_USE_COPY)
 	{
 	  /* Data immediately follows its header */
 	  nm_so_pw_add_data_in_header(p_pw, tag, seq, ptr, len, offset, proto_flags);

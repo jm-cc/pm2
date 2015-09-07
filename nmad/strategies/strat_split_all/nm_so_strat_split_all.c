@@ -220,7 +220,7 @@ strat_split_all_pack_ctrl(void *_status,
 //  /* First allocate a packet wrapper */
 //  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
 //                                          data, len, chunk_offset, is_last_chunk,
-//                                          NM_SO_DATA_DONT_USE_HEADER,
+//                                          NM_PW_DATA_DONT_USE_HEADER,
 //                                          &p_so_pw);
 //  if(err != NM_ESUCCESS)
 //    goto out;
@@ -366,7 +366,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 					len_to_send, 
 					offset, 
 					last,
-					NM_SO_DATA_DONT_USE_HEADER,
+					NM_PW_DATA_DONT_USE_HEADER,
 					&p_data_pw);
       
       tbx_fast_list_add_tail(&p_data_pw->link,
@@ -394,7 +394,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
         /* Check if it is the last request we will put in the wrapper */
 	if(proto_id >= NM_SO_PROTO_DATA_FIRST) {
 	  if(h->len <= NM_SO_COPY_ON_SEND_THRESHOLD)
-  	    flags = NM_SO_DATA_USE_COPY;
+  	    flags = NM_PW_DATA_USE_COPY;
 	  
 	  if(p_so_pw->length + NM_HEADER_DATA_SIZE + 16 >= threshold){
 	    // il faut que le header + un minimum de données (16o pour le moment) soient contigus
@@ -434,7 +434,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
       /* data header */
 #warning  propre au drv normalement
       if(h->len <= NM_SO_COPY_ON_SEND_THRESHOLD)
-        flags = NM_SO_DATA_USE_COPY;
+        flags = NM_PW_DATA_USE_COPY;
 
       h->is_last_chunk = tbx_true;
       nm_so_pw_add_data_chunk(p_so_pw, proto_id, h->seq, p_req->data+h->chunk_offset, h->len, h->chunk_offset, flags);

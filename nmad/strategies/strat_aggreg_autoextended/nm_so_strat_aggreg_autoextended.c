@@ -207,7 +207,7 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*
 	    {
 	      if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen)
 		{
-		  flags = NM_SO_DATA_USE_COPY;
+		  flags = NM_PW_DATA_USE_COPY;
 		}
 	      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
 	      nb_data_aggregation ++;
@@ -217,7 +217,7 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*
       /* cannot aggregate- create a new pw */
       flags = NM_PW_GLOBAL_HEADER;
       if(len <= status->nm_so_copy_on_send_threshold)
-	flags |= NM_SO_DATA_USE_COPY;
+	flags |= NM_PW_DATA_USE_COPY;
       nm_so_pw_alloc(flags, &p_pw);
       nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
       tbx_fast_list_add_tail(&p_pw->link, &status->out_list);

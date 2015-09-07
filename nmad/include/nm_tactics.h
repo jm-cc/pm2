@@ -46,7 +46,7 @@ static inline void nm_tactic_pack_small_into_pw(struct nm_pack_s*p_pack, const c
 						nm_len_t copy_threshold, struct nm_pkt_wrap*p_pw)
 {
   if(len < copy_threshold)
-    nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY);
+    nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER | NM_PW_DATA_USE_COPY);
   else
     nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER);
 }

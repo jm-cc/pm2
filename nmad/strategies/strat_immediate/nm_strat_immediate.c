@@ -125,7 +125,7 @@ static void strat_immediate_pack_chunk(void*_status, struct nm_pack_s*p_pack, vo
       nm_gate_t p_gate = p_pack->p_gate;
       nm_drv_t p_drv = nm_drv_default(p_gate);
       nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
-      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY);
+      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, NM_PW_GLOBAL_HEADER | NM_PW_DATA_USE_COPY);
       nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
       return NM_ESUCCESS;
     }

@@ -55,8 +55,8 @@ typedef uint32_t nm_pw_flag_t;
 
 /* Data flags, used when packing  */
 
-/** use memcpy, not iovec */
-#define NM_SO_DATA_USE_COPY   0x0200
+/** use memcpy, not iovec/iterator */
+#define NM_PW_DATA_USE_COPY   0x0200
 
 /* pointer is a struct nm_data_s */
 #define NM_PW_DATA_ITERATOR   0x0400

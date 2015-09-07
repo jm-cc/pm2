@@ -178,7 +178,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 	  if(size <= h_rlen)
 	    {
 	      /* We can copy data into the header zone */
-	      flags = NM_SO_DATA_USE_COPY;
+	      flags = NM_PW_DATA_USE_COPY;
 	      struct nm_pkt_wrap TBX_UNUSED dummy_p_pw;
 	      nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, flags);
 	      return;
@@ -186,7 +186,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 	}
     }
 
-  flags = NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY;
+  flags = NM_PW_GLOBAL_HEADER | NM_PW_DATA_USE_COPY;
 
   /* We didn't have a chance to form an aggregate, so simply form a
      new packet wrapper and add it to the out_list */

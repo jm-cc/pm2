@@ -130,7 +130,7 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
   /* post request */
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   if((p_pw->p_data != NULL) &&
-     ((p_pw->flags & NM_SO_DATA_USE_COPY) || !p_pw->p_drv->trk_caps[p_pw->trk_id].supports_data))
+     ((p_pw->flags & NM_PW_DATA_USE_COPY) || !p_pw->p_drv->trk_caps[p_pw->trk_id].supports_data))
     {
       void*buf = malloc(p_pw->length);
       nm_data_copy_from(p_pw->p_data, p_pw->chunk_offset, p_pw->length, buf);

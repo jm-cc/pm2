@@ -21,6 +21,16 @@
 
 #include "piom_helper.h"
 
+#ifndef PIOMAN_MULTITHREAD
+
+int main(int argc, char**argv)
+{
+  fprintf(stderr, "# piom_1toN: pioman built without thread support- not running test.\n");
+  return 1;
+}
+
+#else /* PIOMAN_MULTITHREAD */
+
 #define COUNT 100
 #define INTERLEAVE 1
 #ifdef __MIC__
@@ -126,4 +136,5 @@ int main(int argc, char**argv)
   return 0;
 }
 
+#endif /* PIOMAN_MULTITHREAD */
 

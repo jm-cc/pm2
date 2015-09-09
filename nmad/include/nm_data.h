@@ -23,6 +23,7 @@
 
 /** maximum size of content descriptor for nm_data */
 #define _NM_DATA_CONTENT_SIZE 32
+#define _NM_DATA_GENERATOR_SIZE 32
 
 struct nm_data_s;
 /** function apply to each data chunk upon traversal */
@@ -41,6 +42,19 @@ typedef void (*nm_data_copy_from_t)(const void*_content, nm_len_t offset, nm_len
 /** memcpy function for data descriptors- copy to descriptor from buffer */
 typedef void (*nm_data_copy_to_t)(const void*_content, nm_len_t offset, nm_len_t len, const void*srcbuf);
 
+/** initializes a generator (i.e. semi-coroutine) for the given data type */
+typedef void (*nm_data_generator_t)(const void*_content, void*_generator);
+struct nm_data_chunk_s
+{
+  const void*ptr;
+  nm_len_t len;
+};
+/** returns next data chunk for the given generator.
+ * _content and _generator must be consistent accross calls
+ * no error checking is done
+ */
+typedef struct nm_data_chunk_s (*nm_data_next_t)(const void*_content, void*_generator);
+
 /** set of operations available on data type.
  * May be NULL except p_traversal
  */
@@ -49,6 +63,8 @@ struct nm_data_ops_s
   nm_data_traversal_t p_traversal;
   nm_data_copy_from_t p_copyfrom;
   nm_data_copy_to_t   p_copyto;
+  nm_data_generator_t p_generator;
+  nm_data_next_t      p_next;
 };
 
 /** block of static properties for a given data descriptor */
@@ -68,13 +84,13 @@ struct nm_data_s
   /** placeholder for type-dependant content */
   char _content[_NM_DATA_CONTENT_SIZE];
 };
-#define NM_DATA_TYPE(ENAME, TYPE, OPS)					\
-  static inline void nm_data_##ENAME##_set(struct nm_data_s*p_data, TYPE value) \
+#define NM_DATA_TYPE(ENAME, CONTENT_TYPE, OPS)				\
+  static inline void nm_data_##ENAME##_set(struct nm_data_s*p_data, CONTENT_TYPE value) \
   {									\
     p_data->ops = *(OPS);						\
     p_data->props.blocks = -1;						\
-    assert(sizeof(TYPE) <= _NM_DATA_CONTENT_SIZE);			\
-    TYPE*p_content = (TYPE*)&p_data->_content[0];			\
+    assert(sizeof(CONTENT_TYPE) <= _NM_DATA_CONTENT_SIZE);		\
+    CONTENT_TYPE*p_content = (CONTENT_TYPE*)&p_data->_content[0];	\
     *p_content = value;							\
   }
 

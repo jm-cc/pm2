@@ -22,8 +22,28 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 
 /* ********************************************************* */
+/* ** contiguous data */
 
-static void nm_data_traversal_contiguous(const void*_content, nm_data_apply_t apply, void*_context)
+struct nm_data_contiguous_generator_s
+{
+  nm_len_t done; /**< amount of data processed so far */
+};
+static void nm_data_contiguous_generator(const void*_content, void*_generator)
+{
+  const struct nm_data_contiguous_s*p_contiguous = _content;
+  struct nm_data_contiguous_generator_s*p_generator = _generator;
+  p_generator->done = 0;
+}
+static struct nm_data_chunk_s nm_data_contiguous_next(const void*_content, void*_generator)
+{
+  const struct nm_data_contiguous_s*p_contiguous = _content;
+  struct nm_data_contiguous_generator_s*p_generator = _generator;
+  struct nm_data_chunk_s chunk = { .ptr = p_contiguous->ptr + p_generator->done, .len = p_contiguous->len - p_generator->done };
+  p_generator->done += chunk.len;
+  assert(p_generator->done <= p_contiguous->len);
+  return chunk;
+}
+static void nm_data_contiguous_traversal(const void*_content, nm_data_apply_t apply, void*_context)
 {
   const struct nm_data_contiguous_s*p_contiguous = _content;
   void*ptr = p_contiguous->ptr;
@@ -32,12 +52,34 @@ static void nm_data_traversal_contiguous(const void*_content, nm_data_apply_t ap
 }
 const struct nm_data_ops_s nm_data_ops_contiguous =
   {
-    .p_traversal = &nm_data_traversal_contiguous
+    .p_traversal = &nm_data_contiguous_traversal,
+    .p_generator = &nm_data_contiguous_generator,
+    .p_next      = &nm_data_contiguous_next
   };
 
 /* ********************************************************* */
+/* ** iovec data */
 
-static void nm_data_traversal_iov(const void*_content, nm_data_apply_t apply, void*_context)
+struct nm_data_iov_generator_s
+{
+  int i; /**< current index in v */
+};
+static void nm_data_iov_generator(const void*_content, void*_generator)
+{
+  struct nm_data_iov_generator_s*p_generator = _generator;
+  p_generator->i = 0;
+}
+static struct nm_data_chunk_s nm_data_iov_next(const void*_content, void*_generator)
+{
+  const struct nm_data_iov_s*p_iov = _content;
+  struct nm_data_iov_generator_s*p_generator = _generator;
+  const struct iovec*v = &p_iov->v[p_generator->i];
+  struct nm_data_chunk_s chunk = { .ptr = v->iov_base, .len = v->iov_len };
+  assert(p_generator->i < p_iov->n);
+  p_generator->i++;
+  return chunk;
+}
+static void nm_data_iov_traversal(const void*_content, nm_data_apply_t apply, void*_context)
 {
   const struct nm_data_iov_s*p_iov = _content;
   const struct iovec*const v = p_iov->v;
@@ -50,7 +92,9 @@ static void nm_data_traversal_iov(const void*_content, nm_data_apply_t apply, vo
 }
 const struct nm_data_ops_s nm_data_ops_iov =
   {
-    .p_traversal = &nm_data_traversal_iov
+    .p_traversal = &nm_data_iov_traversal,
+    .p_generator = &nm_data_iov_generator,
+    .p_next      = &nm_data_iov_next
   };
 
 /* ********************************************************* */

@@ -42,8 +42,13 @@ typedef void (*nm_data_copy_from_t)(const void*_content, nm_len_t offset, nm_len
 /** memcpy function for data descriptors- copy to descriptor from buffer */
 typedef void (*nm_data_copy_to_t)(const void*_content, nm_len_t offset, nm_len_t len, const void*srcbuf);
 
+typedef struct nm_data_generator_s
+{
+  char _bytes[_NM_DATA_GENERATOR_SIZE];
+} nm_data_generator_t;
+
 /** initializes a generator (i.e. semi-coroutine) for the given data type */
-typedef void (*nm_data_generator_t)(const void*_content, void*_generator);
+typedef void (*nm_data_generator_init_t)(const void*_content, void*_generator);
 struct nm_data_chunk_s
 {
   const void*ptr;
@@ -63,7 +68,7 @@ struct nm_data_ops_s
   nm_data_traversal_t p_traversal;
   nm_data_copy_from_t p_copyfrom;
   nm_data_copy_to_t   p_copyto;
-  nm_data_generator_t p_generator;
+  nm_data_generator_init_t p_generator;
   nm_data_next_t      p_next;
 };
 
@@ -138,6 +143,20 @@ void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t 
 
 /** copy chunk of data from contiguous buffer to user layout */
 void nm_data_copy_to(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t len, const void*srcbuf);
+
+typedef struct nm_data_slicer_s
+{
+  struct nm_data_s*p_data;
+  struct nm_data_chunk_s pending_chunk;
+  nm_data_generator_t generator;
+} nm_data_slicer_t;
+
+void nm_data_slicer_init(struct nm_data_s*p_data, nm_data_slicer_t*p_slicer);
+
+void nm_data_slicer_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len);
+
+void nm_data_slicer_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_len_t slice_len);
+
 
 #endif /* NM_DATA_H */
 

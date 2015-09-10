@@ -67,6 +67,28 @@ static void flypack_traversal(const void*_content, nm_data_apply_t apply, void*_
     }
 }
 
+struct flypack_generator_s
+{
+  nm_len_t chunk_size;
+  nm_len_t i;
+};
+static void flypack_generator_init(const void*_content, void*_generator)
+{
+  const struct flypack_data_s*p_content = _content;
+  struct flypack_generator_s*p_generator = _generator;
+  p_generator->chunk_size = flypack_chunk_size();
+  p_generator->i = 0;
+}
+static struct nm_data_chunk_s flypack_generator_next(const void*_content, void*_generator)
+{
+  const struct flypack_data_s*p_content = _content;
+  struct flypack_generator_s*p_generator = _generator;
+  struct nm_data_chunk_s chunk = { .ptr = p_content->buf + 2 * p_generator->chunk_size * p_generator->i, .len = p_generator->chunk_size };
+  p_generator->i++;
+  return chunk;
+}
+
+
 static inline void _flypack_copy(const void*_content, const nm_len_t offset, const nm_len_t len, void*const destbuf, const int from)
 {
   const struct flypack_data_s*content = _content;
@@ -106,7 +128,9 @@ const static struct nm_data_ops_s flypack_ops =
   {
     .p_traversal = &flypack_traversal,
     .p_copyfrom  = &flypack_copy_from,
-    .p_copyto    = &flypack_copy_to
+    .p_copyto    = &flypack_copy_to,
+    .p_generator = &flypack_generator_init,
+    .p_next      = &flypack_generator_next
   };
 NM_DATA_TYPE(flypack, struct flypack_data_s, &flypack_ops);
 

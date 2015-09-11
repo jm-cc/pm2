@@ -214,6 +214,23 @@ void nm_data_slicer_init(struct nm_data_s*p_data, nm_data_slicer_t*p_slicer)
   p_slicer->pending_chunk = (struct nm_data_chunk_s){ .ptr = NULL, .len = 0 };
   (*p_data->ops.p_generator)(p_data->_content, &p_slicer->generator);
 }
+
+void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset)
+{
+  struct nm_data_chunk_s chunk = p_slicer->pending_chunk;
+  const struct nm_data_s*const p_data = p_slicer->p_data;
+  while(offset > 0)
+    {
+      if(chunk.len == 0)
+	chunk = (*p_data->ops.p_next)(p_data->_content, &p_slicer->generator);
+      const nm_len_t chunk_len = (chunk.len > offset) ? offset : chunk.len;
+      chunk.ptr += chunk_len;
+      chunk.len -= chunk_len;
+      offset    -= chunk_len;
+    }
+  p_slicer->pending_chunk = chunk;
+}
+
 void nm_data_slicer_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len)
 {
   struct nm_data_chunk_s chunk = p_slicer->pending_chunk;

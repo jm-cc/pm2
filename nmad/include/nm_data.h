@@ -153,10 +153,11 @@ typedef struct nm_data_slicer_s
 
 void nm_data_slicer_init(struct nm_data_s*p_data, nm_data_slicer_t*p_slicer);
 
+void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset);
+
 void nm_data_slicer_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len);
 
 void nm_data_slicer_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_len_t slice_len);
-
 
 #endif /* NM_DATA_H */
 

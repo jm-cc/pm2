@@ -28,15 +28,15 @@ struct nm_data_contiguous_generator_s
 {
   nm_len_t done; /**< amount of data processed so far */
 };
-static void nm_data_contiguous_generator(const void*_content, void*_generator)
+static void nm_data_contiguous_generator(struct nm_data_s*p_data, void*_generator)
 {
-  const struct nm_data_contiguous_s*p_contiguous = _content;
+  const struct nm_data_contiguous_s*p_contiguous = nm_data_contiguous_content(p_data);
   struct nm_data_contiguous_generator_s*p_generator = _generator;
   p_generator->done = 0;
 }
-static struct nm_data_chunk_s nm_data_contiguous_next(const void*_content, void*_generator)
+static struct nm_data_chunk_s nm_data_contiguous_next(struct nm_data_s*p_data, void*_generator)
 {
-  const struct nm_data_contiguous_s*p_contiguous = _content;
+  const struct nm_data_contiguous_s*p_contiguous = nm_data_contiguous_content(p_data);
   struct nm_data_contiguous_generator_s*p_generator = _generator;
   struct nm_data_chunk_s chunk = { .ptr = p_contiguous->ptr + p_generator->done, .len = p_contiguous->len - p_generator->done };
   p_generator->done += chunk.len;
@@ -64,14 +64,14 @@ struct nm_data_iov_generator_s
 {
   int i; /**< current index in v */
 };
-static void nm_data_iov_generator(const void*_content, void*_generator)
+static void nm_data_iov_generator(struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_iov_generator_s*p_generator = _generator;
   p_generator->i = 0;
 }
-static struct nm_data_chunk_s nm_data_iov_next(const void*_content, void*_generator)
+static struct nm_data_chunk_s nm_data_iov_next(struct nm_data_s*p_data, void*_generator)
 {
-  const struct nm_data_iov_s*p_iov = _content;
+  const struct nm_data_iov_s*p_iov = nm_data_iov_content(p_data);
   struct nm_data_iov_generator_s*p_generator = _generator;
   const struct iovec*v = &p_iov->v[p_generator->i];
   struct nm_data_chunk_s chunk = { .ptr = v->iov_base, .len = v->iov_len };
@@ -205,24 +205,68 @@ void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t c
 }
 
 /* ********************************************************* */
+/* ** generic generator, using traversal */
+/* use with care, complexity is n^2 */
+
+struct nm_data_generic_traversal_s
+{
+  const int target;
+  int done;
+  struct nm_data_chunk_s chunk;
+};
+static void nm_data_generic_apply(void*ptr, nm_len_t len, void*_context)
+{
+  struct nm_data_generic_traversal_s*p_generic = _context;
+  if(p_generic->target == p_generic->done)
+    {
+      p_generic->chunk.ptr = ptr;
+      p_generic->chunk.len = len;
+    }
+  p_generic->done++;
+}
+struct nm_data_generic_generator_s
+{
+  int i;
+};
+void nm_data_generic_generator(struct nm_data_s*p_data, void*_generator)
+{
+  struct nm_data_generic_generator_s*p_generator = _generator;
+  p_generator->i = 0;
+}
+struct nm_data_chunk_s nm_data_generic_next(struct nm_data_s*p_data, void*_generator)
+{
+  struct nm_data_generic_generator_s*p_generator = _generator;
+  struct nm_data_generic_traversal_s generic_traversal =
+    {
+      .target = p_generator->i,
+      .done   = 0,
+      .chunk  = (struct nm_data_chunk_s){.ptr = NULL, .len = 0 }
+    };
+  nm_data_traversal_apply(p_data, &nm_data_generic_apply, &generic_traversal);
+  p_generator->i++;
+  return generic_traversal.chunk;
+}
+
+
+/* ********************************************************* */
 
 /* ** sliced generator */
 
-void nm_data_slicer_init(struct nm_data_s*p_data, nm_data_slicer_t*p_slicer)
+void nm_data_slicer_init(nm_data_slicer_t*p_slicer, struct nm_data_s*p_data)
 {
   p_slicer->p_data = p_data;
   p_slicer->pending_chunk = (struct nm_data_chunk_s){ .ptr = NULL, .len = 0 };
-  (*p_data->ops.p_generator)(p_data->_content, &p_slicer->generator);
+  (*p_data->ops.p_generator)(p_data, &p_slicer->generator);
 }
 
 void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset)
 {
   struct nm_data_chunk_s chunk = p_slicer->pending_chunk;
-  const struct nm_data_s*const p_data = p_slicer->p_data;
+  struct nm_data_s*const p_data = p_slicer->p_data;
   while(offset > 0)
     {
       if(chunk.len == 0)
-	chunk = (*p_data->ops.p_next)(p_data->_content, &p_slicer->generator);
+	chunk = (*p_data->ops.p_next)(p_data, &p_slicer->generator);
       const nm_len_t chunk_len = (chunk.len > offset) ? offset : chunk.len;
       chunk.ptr += chunk_len;
       chunk.len -= chunk_len;
@@ -234,11 +278,11 @@ void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset)
 void nm_data_slicer_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len)
 {
   struct nm_data_chunk_s chunk = p_slicer->pending_chunk;
-  const struct nm_data_s*const p_data = p_slicer->p_data;
+  struct nm_data_s*const p_data = p_slicer->p_data;
   while(slice_len > 0)
     {
       if(chunk.len == 0)
-	chunk = (*p_data->ops.p_next)(p_data->_content, &p_slicer->generator);
+	chunk = (*p_data->ops.p_next)(p_data, &p_slicer->generator);
       const nm_len_t chunk_len = (chunk.len > slice_len) ? slice_len : chunk.len;
       memcpy(dest_ptr, chunk.ptr, chunk_len);
       dest_ptr += chunk_len;
@@ -252,11 +296,11 @@ void nm_data_slicer_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t
 void nm_data_slicer_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_len_t slice_len)
 {
   struct nm_data_chunk_s chunk = p_slicer->pending_chunk;
-  const struct nm_data_s*const p_data = p_slicer->p_data;
+  struct nm_data_s*const p_data = p_slicer->p_data;
   while(slice_len > 0)
     {
       if(chunk.len == 0)
-	chunk = (*p_data->ops.p_next)(p_data->_content, &p_slicer->generator);
+	chunk = (*p_data->ops.p_next)(p_data, &p_slicer->generator);
       const nm_len_t chunk_len = (chunk.len > slice_len) ? slice_len : chunk.len;
       memcpy(chunk.ptr, src_ptr, chunk_len);
       src_ptr   += chunk_len;

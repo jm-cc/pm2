@@ -48,17 +48,21 @@ typedef struct nm_data_generator_s
 } nm_data_generator_t;
 
 /** initializes a generator (i.e. semi-coroutine) for the given data type */
-typedef void (*nm_data_generator_init_t)(const void*_content, void*_generator);
+typedef void (*nm_data_generator_init_t)(struct nm_data_s*p_data, void*_generator);
 struct nm_data_chunk_s
 {
-  const void*ptr;
+  void*ptr;
   nm_len_t len;
 };
 /** returns next data chunk for the given generator.
  * _content and _generator must be consistent accross calls
  * no error checking is done
  */
-typedef struct nm_data_chunk_s (*nm_data_next_t)(const void*_content, void*_generator);
+typedef struct nm_data_chunk_s (*nm_data_next_t)(struct nm_data_s*p_data, void*_generator);
+
+/* forward declarations, functions used in macro below */
+void nm_data_generic_generator(struct nm_data_s*p_data, void*_generator);
+struct nm_data_chunk_s nm_data_generic_next(struct nm_data_s*p_data, void*_generator);
 
 /** set of operations available on data type.
  * May be NULL except p_traversal
@@ -93,10 +97,19 @@ struct nm_data_s
   static inline void nm_data_##ENAME##_set(struct nm_data_s*p_data, CONTENT_TYPE value) \
   {									\
     p_data->ops = *(OPS);						\
+    if(p_data->ops.p_generator == NULL)					\
+      {									\
+	p_data->ops.p_generator = &nm_data_generic_generator;		\
+	p_data->ops.p_next = &nm_data_generic_next;			\
+      }									\
     p_data->props.blocks = -1;						\
     assert(sizeof(CONTENT_TYPE) <= _NM_DATA_CONTENT_SIZE);		\
     CONTENT_TYPE*p_content = (CONTENT_TYPE*)&p_data->_content[0];	\
     *p_content = value;							\
+  }									\
+  static inline CONTENT_TYPE*nm_data_##ENAME##_content(struct nm_data_s*p_data)	\
+  {									\
+    return (CONTENT_TYPE*)p_data->_content;				\
   }
 
 /** data descriptor for contiguous data 
@@ -150,8 +163,9 @@ typedef struct nm_data_slicer_s
   struct nm_data_chunk_s pending_chunk;
   nm_data_generator_t generator;
 } nm_data_slicer_t;
+#define NM_DATA_SLICER_NULL ((struct nm_data_slicer_s){ .p_data = NULL })
 
-void nm_data_slicer_init(struct nm_data_s*p_data, nm_data_slicer_t*p_slicer);
+void nm_data_slicer_init(nm_data_slicer_t*p_slicer, struct nm_data_s*p_data);
 
 void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset);
 

@@ -69,7 +69,7 @@ struct nm_ibverbs_lr2
   struct
   {
     const void*message;
-    const struct nm_data_s*p_data;
+    nm_data_slicer_t slicer;
     nm_len_t size;
     nm_len_t done;
     void*rbuf;
@@ -82,7 +82,7 @@ struct nm_ibverbs_lr2
   struct
   {
     void*message;
-    const struct nm_data_s*p_data;
+    nm_data_slicer_t slicer;
     nm_len_t size;
     void*rbuf;
     nm_len_t done;
@@ -208,7 +208,7 @@ static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t u
 static inline void nm_ibverbs_lr2_send_init(struct nm_ibverbs_lr2*lr2)
 {
   assert(lr2->send.message == NULL);
-  assert(lr2->send.p_data == NULL);
+  assert(lr2->send.slicer.p_data == NULL);
   lr2->send.done    = 0;
   lr2->send.rbuf    = lr2->buffer.rbuf;
   lr2->send.sbuf    = lr2->buffer.sbuf;
@@ -222,7 +222,7 @@ static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n)
   assert(n == 1);
   nm_ibverbs_lr2_send_init(lr2);
   lr2->send.message = v[0].iov_base;
-  lr2->send.p_data  = NULL;
+  lr2->send.slicer  = NM_DATA_SLICER_NULL;
   lr2->send.size    = v[0].iov_len;
 }
 static void nm_ibverbs_lr2_send_data(void*_status, const struct nm_data_s*p_data)
@@ -230,8 +230,8 @@ static void nm_ibverbs_lr2_send_data(void*_status, const struct nm_data_s*p_data
   struct nm_ibverbs_lr2*lr2 = _status;
   nm_ibverbs_lr2_send_init(lr2);
   lr2->send.message = NULL;
-  lr2->send.p_data  = p_data;
   lr2->send.size    = nm_data_size((struct nm_data_s*)p_data);
+  nm_data_slicer_init(&lr2->send.slicer, p_data);
 }
 
 static int nm_ibverbs_lr2_send_poll(void*_status)
@@ -281,7 +281,7 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 	      const nm_len_t block_payload = (chunk_todo % block_max_payload == 0) ?
 		block_max_payload : (chunk_todo % block_max_payload);
 	      struct lr2_header_s*h = lr2->send.sbuf + chunk_offset + block_payload;
-	      h->checksum = 1 | nm_ibverbs_copy_from_and_checksum(lr2->send.sbuf + chunk_offset, lr2->send.p_data, lr2->send.message, lr2->send.done + (chunk_payload - chunk_todo), block_payload);
+	      h->checksum = 1 | nm_ibverbs_copy_from_and_checksum(lr2->send.sbuf + chunk_offset, &lr2->send.slicer, lr2->send.message, lr2->send.done + (chunk_payload - chunk_todo), block_payload);
 	      chunk_todo   -= block_payload;
 	      chunk_offset += block_payload + lr2_hsize;
 	    }
@@ -299,7 +299,7 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
     }
   nm_ibverbs_send_flush(lr2->cnx, NM_IBVERBS_WRID_PACKET);
   lr2->send.message = NULL;
-  lr2->send.p_data = NULL;
+  lr2->send.slicer = NM_DATA_SLICER_NULL;
   return NM_ESUCCESS;
 }
 
@@ -333,7 +333,7 @@ static void nm_ibverbs_lr2_recv_init(void*_status, struct iovec*v, int n)
   struct nm_ibverbs_lr2*lr2 = _status;
   lr2->recv.done    = 0;
   lr2->recv.message = v->iov_base;
-  lr2->recv.p_data  = NULL;
+  lr2->recv.slicer  = NM_DATA_SLICER_NULL;
   lr2->recv.size    = v->iov_len;
   lr2->recv.rbuf    = lr2->buffer.rbuf;
   lr2->recv.step    = 0;
@@ -345,11 +345,11 @@ static void nm_ibverbs_lr2_recv_data(void*_status, const struct nm_data_s*p_data
   struct nm_ibverbs_lr2*lr2 = _status;
   lr2->recv.done    = 0;
   lr2->recv.message = NULL;
-  lr2->recv.p_data  = p_data;
   lr2->recv.size    = nm_data_size(p_data);
   lr2->recv.rbuf    = lr2->buffer.rbuf;
   lr2->recv.step    = 0;
   lr2->recv.nbuffer = 0;
+  nm_data_slicer_init(&lr2->recv.slicer, p_data);
 }
 
 static int nm_ibverbs_lr2_poll_one(void*_status)
@@ -387,7 +387,7 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	      {
 	      }
 	  const uint32_t checksum =
-	    1 | nm_ibverbs_copy_to_and_checksum(lr2->recv.rbuf + chunk_offset, lr2->recv.p_data, lr2->recv.message,
+	    1 | nm_ibverbs_copy_to_and_checksum(lr2->recv.rbuf + chunk_offset, &lr2->recv.slicer, lr2->recv.message,
 						lr2->recv.done, block_payload);
 	  if(h->checksum != checksum)
 	    {
@@ -406,6 +406,7 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	lr2->recv.step++;
     }
   lr2->recv.message = NULL;
+  lr2->recv.slicer = NM_DATA_SLICER_NULL;
   return NM_ESUCCESS;
  wouldblock:
   return -NM_EAGAIN;

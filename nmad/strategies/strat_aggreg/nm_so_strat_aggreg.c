@@ -185,7 +185,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_pack_s*p_pack, nm_len
     {
       /* ** large send */
       nm_pw_flag_t flags = NM_PW_NOHEADER | NM_PW_DATA_ITERATOR;
-      if((!p_props->is_contig) && (density < 1024) && (p_pack->p_data->ops.p_copyfrom == NULL))
+      if((!p_props->is_contig) && (density < 1024) && (p_pack->p_data->ops.p_generator == NULL))
 	{
 	  flags |= NM_PW_DATA_USE_COPY;
 	}

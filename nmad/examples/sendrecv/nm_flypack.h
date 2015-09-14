@@ -98,7 +98,11 @@ static struct nm_data_chunk_s flypack_generator_next(struct nm_data_s*p_data, vo
 {
   const struct flypack_data_s*p_content = nm_data_flypack_content(p_data);
   struct flypack_generator_s*p_generator = _generator;
-  struct nm_data_chunk_s chunk = { .ptr = p_content->buf + 2 * p_generator->chunk_size * p_generator->i, .len = p_generator->chunk_size };
+  struct nm_data_chunk_s chunk =
+    {
+      .ptr = p_content->buf + 2 * p_generator->chunk_size * p_generator->i,
+      .len = (p_generator->chunk_size > p_content->len) ? p_content->len : p_generator->chunk_size
+    };
   p_generator->i++;
   return chunk;
 }

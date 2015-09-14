@@ -188,14 +188,14 @@ void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t c
     {
       if((chunk_offset == 0) && (chunk_len == nm_data_size(p_data)))
 	{
-	  nm_data_aggregator_traversal(p_data, apply, _context);
+	  nm_data_traversal_apply(p_data, apply, _context);
 	}
 	else
 	  {
 	    struct nm_data_chunk_extractor_s chunk_extractor = 
 	      { .chunk_offset = chunk_offset, .chunk_len = chunk_len, .done = 0,
 		.apply = apply, ._context = _context };
-	    nm_data_aggregator_traversal(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
+	    nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
 	  }
     }
   else

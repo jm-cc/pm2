@@ -23,23 +23,6 @@ static const nm_tag_t data_tag = 0x01;
 static void*buffer = NULL;
 static void*flypack_buffer = NULL;
 
-struct nm_flypack_copy_s
-{
-  void*ptr;
-};
-static void nm_flypack_pack_apply(void*ptr, nm_len_t len, void*_context)
-{
-  struct nm_flypack_copy_s*p_context = _context;
-  memcpy(ptr, p_context->ptr, len);
-  p_context->ptr += len;
-}
-static void nm_flypack_unpack_apply(void*ptr, nm_len_t len, void*_context)
-{
-  struct nm_flypack_copy_s*p_context = _context;
-  memcpy(p_context->ptr, ptr, len);
-  p_context->ptr += len;
-}
-
 static void nm_bench_flypack_copy_init(void*buf, nm_len_t len)
 {
   buffer = realloc(buffer, len);
@@ -50,11 +33,8 @@ static void nm_bench_flypack_copy(void*buf, nm_len_t len)
 {
   struct nm_data_s data;
   nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = flypack_buffer, .len = len });
-  struct nm_flypack_copy_s copy_context = { .ptr = buffer };
-  (*data.ops.p_copyfrom)(&data._content[0], 0, len, buf);
-  
-  copy_context.ptr = buffer ;
-  (*data.ops.p_copyto)(&data._content[0], 0, len, buf);
+  nm_data_copy_from(&data, 0, len, buf);
+  nm_data_copy_to(&data, 0, len, buf);
 }
 
 const struct nm_bench_s nm_bench =

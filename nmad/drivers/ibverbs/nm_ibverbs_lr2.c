@@ -208,7 +208,7 @@ static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t u
 static inline void nm_ibverbs_lr2_send_init(struct nm_ibverbs_lr2*lr2)
 {
   assert(lr2->send.message == NULL);
-  assert(lr2->send.slicer.p_data == NULL);
+  assert(nm_data_slicer_isnull(&lr2->send.slicer));
   lr2->send.done    = 0;
   lr2->send.rbuf    = lr2->buffer.rbuf;
   lr2->send.sbuf    = lr2->buffer.sbuf;

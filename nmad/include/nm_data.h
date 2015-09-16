@@ -168,6 +168,11 @@ typedef struct nm_data_slicer_s
 } nm_data_slicer_t;
 #define NM_DATA_SLICER_NULL ((struct nm_data_slicer_s){ .p_data = NULL })
 
+static inline int nm_data_slicer_isnull(const nm_data_slicer_t*p_slicer)
+{
+  return (p_slicer->p_data == NULL);
+}
+
 void nm_data_slicer_init(nm_data_slicer_t*p_slicer, struct nm_data_s*p_data);
 
 void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset);

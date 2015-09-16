@@ -544,13 +544,13 @@ uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, nm_len_t le
 
 uint32_t nm_ibverbs_copy_from_and_checksum(void*dest, nm_data_slicer_t*p_slicer, const void*src, nm_len_t offset, nm_len_t len)
 {
-  assert(!((p_slicer->p_data == NULL) && (src == NULL)));
-  assert(!((p_slicer->p_data != NULL) && (src != NULL)));
-  if(_nm_ibverbs_checksum && (p_slicer->p_data != NULL))
+  assert(!(nm_data_slicer_isnull(p_slicer) && (src == NULL)));
+  assert(!(!nm_data_slicer_isnull(p_slicer) && (src != NULL)));
+  if(_nm_ibverbs_checksum && !nm_data_slicer_isnull(p_slicer))
     {
       padico_fatal("ibverbs: FATAL- checksums not supported yet with nm_data.\n");
     }
-  if(p_slicer->p_data != NULL)
+  if(!nm_data_slicer_isnull(p_slicer))
     {
       nm_data_slicer_copy_from(p_slicer, dest, len);
       return 1;
@@ -563,13 +563,13 @@ uint32_t nm_ibverbs_copy_from_and_checksum(void*dest, nm_data_slicer_t*p_slicer,
 
 uint32_t nm_ibverbs_copy_to_and_checksum(const void*src, nm_data_slicer_t*p_slicer, void*dest, nm_len_t offset, nm_len_t len)
 {
-  assert(!((p_slicer->p_data == NULL) && (dest == NULL)));
-  assert(!((p_slicer->p_data != NULL) && (dest != NULL)));
+  assert(!(nm_data_slicer_isnull(p_slicer) && (dest == NULL)));
+  assert(!((!nm_data_slicer_isnull(p_slicer)) && (dest != NULL)));
   if(_nm_ibverbs_checksum && (p_slicer->p_data != NULL))
     {
       padico_fatal("ibverbs: FATAL- checksums not supported yet with nm_data.\n");
     }
-  if(p_slicer->p_data != NULL)
+  if(!nm_data_slicer_isnull(p_slicer))
     {
       nm_data_slicer_copy_to(p_slicer, src, len);
       return 1;

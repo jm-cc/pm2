@@ -299,7 +299,11 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
     }
   nm_ibverbs_send_flush(lr2->cnx, NM_IBVERBS_WRID_PACKET);
   lr2->send.message = NULL;
-  lr2->send.slicer = NM_DATA_SLICER_NULL;
+  if(!nm_data_slicer_isnull(&lr2->send.slicer))
+    {
+      nm_data_slicer_destroy(&lr2->send.slicer);
+      lr2->send.slicer = NM_DATA_SLICER_NULL;
+    }
   return NM_ESUCCESS;
 }
 
@@ -406,7 +410,11 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	lr2->recv.step++;
     }
   lr2->recv.message = NULL;
-  lr2->recv.slicer = NM_DATA_SLICER_NULL;
+  if(!nm_data_slicer_isnull(&lr2->recv.slicer))
+    {
+      nm_data_slicer_destroy(&lr2->recv.slicer);
+      lr2->recv.slicer = NM_DATA_SLICER_NULL;
+    }
   return NM_ESUCCESS;
  wouldblock:
   return -NM_EAGAIN;

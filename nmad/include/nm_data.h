@@ -54,19 +54,25 @@ struct nm_data_chunk_s
  */
 typedef struct nm_data_chunk_s (*nm_data_next_t)(struct nm_data_s*p_data, void*_generator);
 
+/** destroys resources allocated by generator */
+typedef void (*nm_data_generator_destroy)(struct nm_data_s*p_data, void*_generator);
+
 /* forward declarations, functions used in macro below */
 void nm_data_generic_generator(struct nm_data_s*p_data, void*_generator);
 struct nm_data_chunk_s nm_data_generic_next(struct nm_data_s*p_data, void*_generator);
 void nm_data_coroutine_generator(struct nm_data_s*p_data, void*_generator);
 struct nm_data_chunk_s nm_data_coroutine_next(struct nm_data_s*p_data, void*_generator);
+void nm_data_coroutine_generator_destroy(struct nm_data_s*p_data, void*_generator);
 
-#undef NM_DATA_USE_COROUTINE
+#define NM_DATA_USE_COROUTINE
 #ifdef NM_DATA_USE_COROUTINE
-#define nm_data_default_generator nm_data_coroutine_generator
-#define nm_data_default_next      nm_data_coroutine_next
+#define nm_data_default_generator         nm_data_coroutine_generator
+#define nm_data_default_next              nm_data_coroutine_next
+#define nm_data_default_generator_destroy nm_data_coroutine_generator_destroy
 #else
-#define nm_data_default_generator nm_data_generic_generator
-#define nm_data_default_next      nm_data_generic_next
+#define nm_data_default_generator         nm_data_generic_generator
+#define nm_data_default_next              nm_data_generic_next
+#define nm_data_default_generator_destroy NULL
 #endif
 
 /** set of operations available on data type.
@@ -77,6 +83,7 @@ struct nm_data_ops_s
   nm_data_traversal_t      p_traversal;
   nm_data_generator_init_t p_generator;
   nm_data_next_t           p_next;
+  nm_data_generator_destroy p_generator_destroy;
 };
 
 /** block of static properties for a given data descriptor */
@@ -104,6 +111,7 @@ struct nm_data_s
       {									\
 	p_data->ops.p_generator = &nm_data_default_generator;		\
 	p_data->ops.p_next      = &nm_data_default_next;		\
+	p_data->ops.p_generator_destroy = &nm_data_default_generator_destroy; \
       }									\
     p_data->props.blocks = -1;						\
     assert(sizeof(CONTENT_TYPE) <= _NM_DATA_CONTENT_SIZE);		\
@@ -165,6 +173,7 @@ typedef struct nm_data_slicer_s
   struct nm_data_s*p_data;
   struct nm_data_chunk_s pending_chunk;
   struct nm_data_generator_s generator;
+  nm_len_t done;
 } nm_data_slicer_t;
 #define NM_DATA_SLICER_NULL ((struct nm_data_slicer_s){ .p_data = NULL })
 
@@ -180,6 +189,8 @@ void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset);
 void nm_data_slicer_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len);
 
 void nm_data_slicer_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_len_t slice_len);
+
+void nm_data_slicer_destroy(nm_data_slicer_t*p_slicer);
 
 #endif /* NM_DATA_H */
 

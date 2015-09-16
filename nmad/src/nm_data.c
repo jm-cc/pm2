@@ -20,6 +20,7 @@
 
 #include <alloca.h>
 #include <setjmp.h>
+#include <ucontext.h>
 
 PADICO_MODULE_HOOK(NewMad_Core);
 
@@ -260,68 +261,77 @@ struct nm_data_coroutine_traversal_s
   struct nm_data_chunk_s chunk;
   jmp_buf caller_context;
   jmp_buf traversal_context;
+  ucontext_t generator_context;
 };
 static void nm_data_coroutine_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_data_coroutine_traversal_s*p_coroutine = _context;
-  /* fprintf(stderr, "# coroutine_apply- len = %d; ptr = %p\n", len, ptr); */
+  /*  fprintf(stderr, "# coroutine_apply- len = %d; ptr = %p\n", len, ptr); */
   p_coroutine->chunk.ptr = ptr;
   p_coroutine->chunk.len = len;
-  if(setjmp(p_coroutine->traversal_context))
+  if(_setjmp(p_coroutine->traversal_context))
     return;
-  longjmp(p_coroutine->caller_context, 1);
+  _longjmp(p_coroutine->caller_context, 1);
 }
 static void nm_data_coroutine_trampoline(struct nm_data_s*p_data, struct nm_data_coroutine_traversal_s*p_coroutine)
 {
-  /*  fprintf(stderr, "# coroutine_trampoline-\n"); */
-  if(setjmp(p_coroutine->traversal_context) == 0)
+  /* fprintf(stderr, "# coroutine_trampoline-\n");  */
+  if(_setjmp(p_coroutine->traversal_context) == 0)
     {
       /* init */
-      longjmp(p_coroutine->caller_context, 1);
+      _longjmp(p_coroutine->caller_context, 1);
     }
   else
     {
       /* back from longjmp- perform traversal */
-      /*    fprintf(stderr, "# coroutine_trampoline- back from longjmp\n"); */
+      /*   fprintf(stderr, "# coroutine_trampoline- back from longjmp\n"); */
       nm_data_traversal_apply(p_data, &nm_data_coroutine_apply, p_coroutine);
+      fprintf(stderr, "# coroutine_trampoline- ### after traversal ###\n");
     }
 }
 struct nm_data_coroutine_generator_s
 {
   struct nm_data_coroutine_traversal_s*p_coroutine;
+  void*stack;
 };
 void nm_data_coroutine_generator(struct nm_data_s*p_data, void*_generator)
 {
-  /*  fprintf(stderr, "# coroutine_generator-\n"); */
   struct nm_data_coroutine_generator_s*p_generator = _generator;
-  void*reserve = alloca(NM_DATA_COROUTINE_STACK);
-  p_generator->p_coroutine = alloca(sizeof(struct nm_data_coroutine_traversal_s));
-  p_generator->p_coroutine->chunk = (struct nm_data_chunk_s){ .ptr = NULL, .len = 0 };
-  memset(reserve, 0, 1); /* write into stack reserve block so that optimizer keeps alloca */
-#ifdef DEBUG
-  memset(reserve, 0, NM_DATA_COROUTINE_STACK);
-#endif
-  if(setjmp(p_generator->p_coroutine->caller_context) == 0)
+  /* fprintf(stderr, "# coroutine_generator- generator = %p; data size = %d\n", p_generator, nm_data_size(p_data)); */
+  p_generator->p_coroutine = malloc(sizeof(struct nm_data_coroutine_traversal_s));
+  getcontext(&p_generator->p_coroutine->generator_context);
+  p_generator->stack = malloc(NM_DATA_COROUTINE_STACK);
+  p_generator->p_coroutine->generator_context.uc_stack.ss_sp = p_generator->stack;
+  p_generator->p_coroutine->generator_context.uc_stack.ss_size = NM_DATA_COROUTINE_STACK;
+  makecontext(&p_generator->p_coroutine->generator_context, (void*)&nm_data_coroutine_trampoline, 2, p_data, p_generator->p_coroutine);
+  if(_setjmp(p_generator->p_coroutine->caller_context) == 0)
     {
-      nm_data_coroutine_trampoline(p_data, p_generator->p_coroutine);
+      setcontext(&p_generator->p_coroutine->generator_context);
       fprintf(stderr, "# ### after trampoline\n");
     }
   else
     {
       /* back from longjmp */
-      /*   fprintf(stderr, "# coroutine_generator- back from longjmp\n"); */
+      /* fprintf(stderr, "# coroutine_generator- generator = %p; back from longjmp\n", p_generator);  */
     }
 }
 struct nm_data_chunk_s nm_data_coroutine_next(struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_coroutine_generator_s*p_generator = _generator;
-  /*  fprintf(stderr, "# coroutine_next-\n"); */
-  if(setjmp(p_generator->p_coroutine->caller_context) == 0)
+  /*  fprintf(stderr, "# coroutine_next- generator = %p\n", p_generator); */
+  if(_setjmp(p_generator->p_coroutine->caller_context) == 0)
     {
       /* init */
-      longjmp(p_generator->p_coroutine->traversal_context, 1);
+      _longjmp(p_generator->p_coroutine->traversal_context, 1);
     }
   return p_generator->p_coroutine->chunk;
+}
+
+void nm_data_coroutine_generator_destroy(struct nm_data_s*p_data, void*_generator)
+{
+  struct nm_data_coroutine_generator_s*p_generator = _generator;
+  free(p_generator->stack);
+  free(p_generator->p_coroutine);
 }
 
 
@@ -331,6 +341,9 @@ struct nm_data_chunk_s nm_data_coroutine_next(struct nm_data_s*p_data, void*_gen
 
 void nm_data_slicer_init(nm_data_slicer_t*p_slicer, struct nm_data_s*p_data)
 {
+#ifdef DEBUG
+  p_slicer->done = 0;
+#endif /* DEBUG */
   p_slicer->p_data = p_data;
   p_slicer->pending_chunk = (struct nm_data_chunk_s){ .ptr = NULL, .len = 0 };
   (*p_data->ops.p_generator)(p_data, &p_slicer->generator);
@@ -350,6 +363,10 @@ void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset)
       offset    -= chunk_len;
     }
   p_slicer->pending_chunk = chunk;
+#ifdef DEBUG
+  p_slicer->done += offset;
+  assert(p_slicer->done <= nm_data_size(p_slicer->p_data));
+#endif /* DEBUG */
 }
 
 void nm_data_slicer_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len)
@@ -366,6 +383,10 @@ void nm_data_slicer_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t
       chunk.ptr += chunk_len;
       chunk.len -= chunk_len;
       slice_len -= chunk_len;
+#ifdef DEBUG
+      p_slicer->done += chunk_len;
+      assert(p_slicer->done <= nm_data_size(p_slicer->p_data));
+#endif /* DEBUG */
     }
   p_slicer->pending_chunk = chunk;
 }
@@ -384,10 +405,22 @@ void nm_data_slicer_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_le
       chunk.ptr += chunk_len;
       chunk.len -= chunk_len;
       slice_len -= chunk_len;
+#ifdef DEBUG
+      p_slicer->done += chunk_len;
+      assert(p_slicer->done <= nm_data_size(p_slicer->p_data));
+#endif /* DEBUG */
     }
   p_slicer->pending_chunk = chunk;
 }
 
+void nm_data_slicer_destroy(nm_data_slicer_t*p_slicer)
+{
+  struct nm_data_s*const p_data = p_slicer->p_data;
+  if(p_data->ops.p_generator_destroy)
+    {
+      (*p_data->ops.p_generator_destroy)(p_data, &p_slicer->generator);
+    }
+ }
 
 
 /* ********************************************************* */

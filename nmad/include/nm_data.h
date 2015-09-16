@@ -36,10 +36,10 @@ typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
  */
 typedef void (*nm_data_traversal_t)(const void*_content, nm_data_apply_t apply, void*_context);
 
-typedef struct nm_data_generator_s
+struct nm_data_generator_s
 {
   char _bytes[_NM_DATA_GENERATOR_SIZE];
-} nm_data_generator_t;
+};
 
 /** initializes a generator (i.e. semi-coroutine) for the given data type */
 typedef void (*nm_data_generator_init_t)(struct nm_data_s*p_data, void*_generator);
@@ -164,7 +164,7 @@ typedef struct nm_data_slicer_s
 {
   struct nm_data_s*p_data;
   struct nm_data_chunk_s pending_chunk;
-  nm_data_generator_t generator;
+  struct nm_data_generator_s generator;
 } nm_data_slicer_t;
 #define NM_DATA_SLICER_NULL ((struct nm_data_slicer_s){ .p_data = NULL })
 

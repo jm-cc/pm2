@@ -34,7 +34,7 @@ static void nm_bench_flypack_generator_init(void*buf, nm_len_t len)
 
 static void nm_bench_flypack_generator(void*buf, nm_len_t len)
 {
-  nm_data_generator_t generator;
+  struct nm_data_generator_s generator;
   const nm_len_t todo = nm_data_size(&data);
   (*data.ops.p_generator)(&data, &generator);
   nm_len_t done = 0;

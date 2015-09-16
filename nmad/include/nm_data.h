@@ -57,6 +57,17 @@ typedef struct nm_data_chunk_s (*nm_data_next_t)(struct nm_data_s*p_data, void*_
 /* forward declarations, functions used in macro below */
 void nm_data_generic_generator(struct nm_data_s*p_data, void*_generator);
 struct nm_data_chunk_s nm_data_generic_next(struct nm_data_s*p_data, void*_generator);
+void nm_data_coroutine_generator(struct nm_data_s*p_data, void*_generator);
+struct nm_data_chunk_s nm_data_coroutine_next(struct nm_data_s*p_data, void*_generator);
+
+#undef NM_DATA_USE_COROUTINE
+#ifdef NM_DATA_USE_COROUTINE
+#define nm_data_default_generator nm_data_coroutine_generator
+#define nm_data_default_next      nm_data_coroutine_next
+#else
+#define nm_data_default_generator nm_data_generic_generator
+#define nm_data_default_next      nm_data_generic_next
+#endif
 
 /** set of operations available on data type.
  * May be NULL except p_traversal
@@ -91,8 +102,8 @@ struct nm_data_s
     p_data->ops = *(OPS);						\
     if(p_data->ops.p_generator == NULL)					\
       {									\
-	p_data->ops.p_generator = &nm_data_generic_generator;		\
-	p_data->ops.p_next = &nm_data_generic_next;			\
+	p_data->ops.p_generator = &nm_data_default_generator;		\
+	p_data->ops.p_next      = &nm_data_default_next;		\
       }									\
     p_data->props.blocks = -1;						\
     assert(sizeof(CONTENT_TYPE) <= _NM_DATA_CONTENT_SIZE);		\

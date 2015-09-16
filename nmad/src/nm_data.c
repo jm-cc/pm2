@@ -18,6 +18,9 @@
 
 #include <nm_private.h>
 
+#include <alloca.h>
+#include <setjmp.h>
+
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
@@ -245,6 +248,80 @@ struct nm_data_chunk_s nm_data_generic_next(struct nm_data_s*p_data, void*_gener
   nm_data_traversal_apply(p_data, &nm_data_generic_apply, &generic_traversal);
   p_generator->i++;
   return generic_traversal.chunk;
+}
+
+/* ********************************************************* */
+/* ** coroutine generator, using traversal */
+
+#define NM_DATA_COROUTINE_STACK (1 * 1024 * 1024)
+
+struct nm_data_coroutine_traversal_s
+{
+  struct nm_data_chunk_s chunk;
+  jmp_buf caller_context;
+  jmp_buf traversal_context;
+};
+static void nm_data_coroutine_apply(void*ptr, nm_len_t len, void*_context)
+{
+  struct nm_data_coroutine_traversal_s*p_coroutine = _context;
+  /* fprintf(stderr, "# coroutine_apply- len = %d; ptr = %p\n", len, ptr); */
+  p_coroutine->chunk.ptr = ptr;
+  p_coroutine->chunk.len = len;
+  if(setjmp(p_coroutine->traversal_context))
+    return;
+  longjmp(p_coroutine->caller_context, 1);
+}
+static void nm_data_coroutine_trampoline(struct nm_data_s*p_data, struct nm_data_coroutine_traversal_s*p_coroutine)
+{
+  /*  fprintf(stderr, "# coroutine_trampoline-\n"); */
+  if(setjmp(p_coroutine->traversal_context) == 0)
+    {
+      /* init */
+      longjmp(p_coroutine->caller_context, 1);
+    }
+  else
+    {
+      /* back from longjmp- perform traversal */
+      /*    fprintf(stderr, "# coroutine_trampoline- back from longjmp\n"); */
+      nm_data_traversal_apply(p_data, &nm_data_coroutine_apply, p_coroutine);
+    }
+}
+struct nm_data_coroutine_generator_s
+{
+  struct nm_data_coroutine_traversal_s*p_coroutine;
+};
+void nm_data_coroutine_generator(struct nm_data_s*p_data, void*_generator)
+{
+  /*  fprintf(stderr, "# coroutine_generator-\n"); */
+  struct nm_data_coroutine_generator_s*p_generator = _generator;
+  void*reserve = alloca(NM_DATA_COROUTINE_STACK);
+  p_generator->p_coroutine = alloca(sizeof(struct nm_data_coroutine_traversal_s));
+  p_generator->p_coroutine->chunk = (struct nm_data_chunk_s){ .ptr = NULL, .len = 0 };
+  memset(reserve, 0, 1); /* write into stack reserve block so that optimizer keeps alloca */
+#ifdef DEBUG
+  memset(reserve, 0, NM_DATA_COROUTINE_STACK);
+#endif
+  if(setjmp(p_generator->p_coroutine->caller_context) == 0)
+    {
+      nm_data_coroutine_trampoline(p_data, p_generator->p_coroutine);
+      fprintf(stderr, "# ### after trampoline\n");
+    }
+  else
+    {
+      /* back from longjmp */
+      /*   fprintf(stderr, "# coroutine_generator- back from longjmp\n"); */
+    }
+}
+struct nm_data_chunk_s nm_data_coroutine_next(struct nm_data_s*p_data, void*_generator)
+{
+  struct nm_data_coroutine_generator_s*p_generator = _generator;
+  /*  fprintf(stderr, "# coroutine_next-\n"); */
+  if(setjmp(p_generator->p_coroutine->caller_context) == 0)
+    {
+      /* init */
+      longjmp(p_generator->p_coroutine->traversal_context, 1);
+    }
+  return p_generator->p_coroutine->chunk;
 }
 
 

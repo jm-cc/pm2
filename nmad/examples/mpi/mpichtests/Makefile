@@ -31,7 +31,7 @@ TESTS_COLL := \
 TESTS_IO := \
   io/getextent io/resized
 
-TEST_P2P := \
+TESTS_P2P := \
   pt2pt/sendself pt2pt/large_message pt2pt/sendall pt2pt/sendrecv1 pt2pt/sendrecv2 pt2pt/sendrecv3
 
 TESTS_ALL = $(TESTS_BASIC) $(TESTS_DATATYPE) $(TESTS_GROUP) $(TESTS_COLL) $(TESTS_IO) $(TESTS_P2P)
@@ -62,6 +62,9 @@ run-group: runtests
 
 run-coll: TESTS = $(TESTS_COLL)
 run-coll: runtests
+
+run-p2p: TESTS = $(TESTS_P2P)
+run-p2p: runtests
 
 runtests: buildtests
 	@( for t in $(TESTS); do                           \

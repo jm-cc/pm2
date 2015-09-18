@@ -174,6 +174,7 @@ typedef struct nm_data_slicer_s
   struct nm_data_chunk_s pending_chunk;
   struct nm_data_generator_s generator;
   nm_len_t done;
+  struct nm_data_slicer_coroutine_s*p_coroutine;
 } nm_data_slicer_t;
 #define NM_DATA_SLICER_NULL ((struct nm_data_slicer_s){ .p_data = NULL })
 
@@ -181,6 +182,23 @@ static inline int nm_data_slicer_isnull(const nm_data_slicer_t*p_slicer)
 {
   return (p_slicer->p_data == NULL);
 }
+
+
+#define USE_COROUTINE_SLICER
+
+#ifdef USE_COROUTINE_SLICER
+#define nm_data_slicer_init      nm_data_slicer_coroutine_init
+#define nm_data_slicer_forward   nm_data_slicer_coroutine_forward
+#define nm_data_slicer_copy_from nm_data_slicer_coroutine_copy_from
+#define nm_data_slicer_copy_to   nm_data_slicer_coroutine_copy_to
+#define nm_data_slicer_destroy   nm_data_slicer_coroutine_destroy
+#else
+#define nm_data_slicer_init      nm_data_slicer_generator_init
+#define nm_data_slicer_forward   nm_data_slicer_generator_forward
+#define nm_data_slicer_copy_from nm_data_slicer_generator_copy_from
+#define nm_data_slicer_copy_to   nm_data_slicer_generator_copy_to
+#define nm_data_slicer_destroy   nm_data_slicer_generator_destroy
+#endif
 
 void nm_data_slicer_init(nm_data_slicer_t*p_slicer, struct nm_data_s*p_data);
 

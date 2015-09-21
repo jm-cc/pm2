@@ -20,6 +20,9 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
+#define MPI_VERSION 3
+#define MPI_SUBVERSION 0
+
 /** @name Functions: Environmental management */
 /* @{ */
 

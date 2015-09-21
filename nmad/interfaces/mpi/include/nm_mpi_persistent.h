@@ -35,7 +35,7 @@
  * @param request communication request handle
  * @return MPI status
  */
-int MPI_Send_init(void* buf,
+int MPI_Send_init(const void* buf,
                   int count,
                   MPI_Datatype datatype,
                   int dest,

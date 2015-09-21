@@ -131,7 +131,7 @@ int mpi_bcast(void*buffer, int count, MPI_Datatype datatype, int root, MPI_Comm 
   return MPI_SUCCESS;
 }
 
-int mpi_gather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
+int mpi_gather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_GATHER;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
@@ -168,7 +168,7 @@ int mpi_gather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf,
   return MPI_SUCCESS;
 }
 
-int mpi_gatherv(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int*recvcounts, int *displs, MPI_Datatype recvtype, int root, MPI_Comm comm)
+int mpi_gatherv(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, const int*recvcounts, const int*displs, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_GATHERV;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
@@ -209,7 +209,7 @@ int mpi_gatherv(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf
   return MPI_SUCCESS;
 }
 
-int mpi_allgather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+int mpi_allgather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
 {
 #if 0
   int err;
@@ -253,7 +253,7 @@ int mpi_allgather(void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvb
 #endif
 }
 
-int mpi_allgatherv(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int *recvcounts, int *displs, MPI_Datatype recvtype, MPI_Comm comm)
+int mpi_allgatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *displs, MPI_Datatype recvtype, MPI_Comm comm)
 {
   int err, i, recvcount = 0;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
@@ -275,7 +275,7 @@ int mpi_allgatherv(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *re
   return err;
 }
 
-int mpi_scatter(void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
+int mpi_scatter(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_SCATTER;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
@@ -353,7 +353,7 @@ int mpi_scatterv(const void*sendbuf, const int sendcounts[], const int displs[],
   return MPI_SUCCESS;
 }
 
-int mpi_alltoall(void* sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+int mpi_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_ALLTOALL;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
@@ -388,7 +388,7 @@ int mpi_alltoall(void* sendbuf, int sendcount, MPI_Datatype sendtype, void*recvb
   return MPI_SUCCESS;
 }
 
-int mpi_alltoallv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sendtype, void *recvbuf, int *recvcounts, int *rdispls, MPI_Datatype recvtype, MPI_Comm comm)
+int mpi_alltoallv(const void* sendbuf, const int *sendcounts, const int *sdispls, MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *rdispls, MPI_Datatype recvtype, MPI_Comm comm)
 {
   int tag = NM_MPI_TAG_PRIVATE_ALLTOALLV;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
@@ -432,7 +432,7 @@ int mpi_alltoallv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sen
   return MPI_SUCCESS;
 }
 
-int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
+int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_REDUCE;
   if(op == MPI_OP_NULL)
@@ -495,7 +495,7 @@ int mpi_reduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI
     }
 }
 
-int mpi_allreduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+int mpi_allreduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
   int err;
   const int root = 0;
@@ -505,7 +505,7 @@ int mpi_allreduce(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, 
   return err;
 }
 
-int mpi_reduce_scatter(void*sendbuf, void*recvbuf, int*recvcounts, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+int mpi_reduce_scatter(const void*sendbuf, void*recvbuf, const int*recvcounts, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
   int count = 0, i;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);

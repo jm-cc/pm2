@@ -272,7 +272,7 @@ int MPI_Comm_get_parent(MPI_Comm*parent);
  */
 int MPI_Comm_compare(MPI_Comm comm1, MPI_Comm comm2, int*result);
 
-int MPI_Cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*_comm_cart);
+int MPI_Cart_create(MPI_Comm comm_old, int ndims, const int*dims, const int*periods, int reorder, MPI_Comm*_comm_cart);
 
 int MPI_Cart_coords(MPI_Comm comm, int rank, int ndims, int*coords);
 

@@ -613,7 +613,7 @@ int mpi_comm_get_parent(MPI_Comm*parent)
   return MPI_SUCCESS;
 }
 
-int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*newcomm)
+int mpi_cart_create(MPI_Comm comm_old, int ndims, const int*dims, const int*periods, int reorder, MPI_Comm*newcomm)
 {
   MPI_Comm comm_cart = MPI_COMM_NULL;
   int err = mpi_comm_dup(comm_old, &comm_cart);

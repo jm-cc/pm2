@@ -43,7 +43,7 @@
 
 #include "mpi.h"
 
-#define MADMPI_VERSION    1
+#define MADMPI_VERSION    3
 #define MADMPI_SUBVERSION 0
 
 
@@ -573,7 +573,7 @@ int nm_mpi_check_tag(int user_tag);
 
 /* Internal symbols for MPI functions */
 
-int mpi_issend(void* buf,
+int mpi_issend(const void* buf,
 	       int count,
 	       MPI_Datatype datatype,
 	       int dest,
@@ -629,21 +629,21 @@ int mpi_errhandler_set(MPI_Comm comm,
 int mpi_get_version(int *version,
 		    int *subversion);
 
-int mpi_bsend(void *buffer,
+int mpi_bsend(const void *buffer,
 	      int count,
 	      MPI_Datatype datatype,
 	      int dest,
 	      int tag,
 	      MPI_Comm comm);
 
-int mpi_send(void *buffer,
+int mpi_send(const void *buffer,
              int count,
              MPI_Datatype datatype,
              int dest,
              int tag,
              MPI_Comm comm);
 
-int mpi_isend(void *buffer,
+int mpi_isend(const void *buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
@@ -651,14 +651,14 @@ int mpi_isend(void *buffer,
               MPI_Comm comm,
               MPI_Request *request);
 
-int mpi_rsend(void* buffer,
+int mpi_rsend(const void* buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
               int tag,
               MPI_Comm comm);
 
-int mpi_ssend(void* buffer,
+int mpi_ssend(const void* buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
@@ -689,7 +689,7 @@ int mpi_irecv(void *buffer,
               MPI_Comm comm,
               MPI_Request *request);
 
-int mpi_sendrecv(void *sendbuf,
+int mpi_sendrecv(const void *sendbuf,
                  int sendcount,
                  MPI_Datatype sendtype,
                  int dest,
@@ -765,7 +765,7 @@ int mpi_get_count(MPI_Status *status,
 int mpi_request_is_equal(MPI_Request request1,
 			 MPI_Request request2);
 
-int mpi_send_init(void* buf,
+int mpi_send_init(const void* buf,
                   int count,
                   MPI_Datatype datatype,
                   int dest,
@@ -794,7 +794,7 @@ int mpi_bcast(void* buffer,
               int root,
               MPI_Comm comm);
 
-int mpi_gather(void *sendbuf,
+int mpi_gather(const void *sendbuf,
                int sendcount,
                MPI_Datatype sendtype,
                void *recvbuf,
@@ -803,17 +803,17 @@ int mpi_gather(void *sendbuf,
                int root,
                MPI_Comm comm);
 
-int mpi_gatherv(void *sendbuf,
+int mpi_gatherv(const void *sendbuf,
                 int sendcount,
                 MPI_Datatype sendtype,
                 void *recvbuf,
-                int *recvcounts,
-                int *displs,
+                const int *recvcounts,
+                const int *displs,
                 MPI_Datatype recvtype,
                 int root,
                 MPI_Comm comm);
 
-int mpi_allgather(void *sendbuf,
+int mpi_allgather(const void *sendbuf,
                   int sendcount,
                   MPI_Datatype sendtype,
                   void *recvbuf,
@@ -821,16 +821,16 @@ int mpi_allgather(void *sendbuf,
                   MPI_Datatype recvtype,
                   MPI_Comm comm);
 
-int mpi_allgatherv(void *sendbuf,
+int mpi_allgatherv(const void *sendbuf,
                    int sendcount,
                    MPI_Datatype sendtype,
                    void *recvbuf,
-                   int *recvcounts,
-                   int *displs,
+                   const int *recvcounts,
+                   const int *displs,
                    MPI_Datatype recvtype,
                    MPI_Comm comm);
 
-int mpi_scatter(void *sendbuf,
+int mpi_scatter(const void *sendbuf,
                 int sendcount,
                 MPI_Datatype sendtype,
                 void *recvbuf,
@@ -839,7 +839,7 @@ int mpi_scatter(void *sendbuf,
                 int root,
                 MPI_Comm comm);
 
-int mpi_alltoall(void* sendbuf,
+int mpi_alltoall(const void* sendbuf,
 		 int sendcount,
 		 MPI_Datatype sendtype,
 		 void *recvbuf,
@@ -847,13 +847,13 @@ int mpi_alltoall(void* sendbuf,
 		 MPI_Datatype recvtype,
 		 MPI_Comm comm);
 
-int mpi_alltoallv(void* sendbuf,
-		  int *sendcounts,
-		  int *sdispls,
+int mpi_alltoallv(const void* sendbuf,
+		  const int *sendcounts,
+		  const int *sdispls,
 		  MPI_Datatype sendtype,
 		  void *recvbuf,
-		  int *recvcounts,
-		  int *rdispls,
+		  const int *recvcounts,
+		  const int *rdispls,
 		  MPI_Datatype recvtype,
 		  MPI_Comm comm);
 
@@ -863,7 +863,7 @@ int mpi_op_create(MPI_User_function *function,
 
 int mpi_op_free(MPI_Op *op);
 
-int mpi_reduce(void* sendbuf,
+int mpi_reduce(const void* sendbuf,
                void* recvbuf,
                int count,
                MPI_Datatype datatype,
@@ -871,16 +871,16 @@ int mpi_reduce(void* sendbuf,
                int root,
                MPI_Comm comm);
 
-int mpi_allreduce(void* sendbuf,
+int mpi_allreduce(const void* sendbuf,
                   void* recvbuf,
                   int count,
                   MPI_Datatype datatype,
                   MPI_Op op,
                   MPI_Comm comm);
 
-int mpi_reduce_scatter(void *sendbuf,
+int mpi_reduce_scatter(const void *sendbuf,
                        void *recvbuf,
-                       int *recvcounts,
+                       const int *recvcounts,
                        MPI_Datatype datatype,
                        MPI_Op op,
                        MPI_Comm comm);

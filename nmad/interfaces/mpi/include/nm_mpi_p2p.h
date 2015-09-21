@@ -33,7 +33,7 @@
  * @param comm communicator
  * @return MPI status
  */
-int MPI_Send(void *buffer,
+int MPI_Send(const void*buffer,
              int count,
              MPI_Datatype datatype,
              int dest,
@@ -41,7 +41,7 @@ int MPI_Send(void *buffer,
              MPI_Comm comm);
 
 
-int MPI_Issend(void* buf,
+int MPI_Issend(const void*buf,
 	       int count,
 	       MPI_Datatype datatype,
 	       int dest,
@@ -60,7 +60,7 @@ int MPI_Issend(void* buf,
  * @param request pointer to request
  * @return MPI status
  */
-int MPI_Isend(void *buffer,
+int MPI_Isend(const void*buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
@@ -78,7 +78,7 @@ int MPI_Isend(void *buffer,
  * @param comm communicator
  * @return MPI status
  */
-int MPI_Rsend(void* buffer,
+int MPI_Rsend(const void*buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
@@ -95,14 +95,14 @@ int MPI_Rsend(void* buffer,
  * @param comm communicator
  * @return MPI status
  */
-int MPI_Ssend(void* buffer,
+int MPI_Ssend(const void* buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
               int tag,
               MPI_Comm comm);
 
-int MPI_Bsend(void *buffer,
+int MPI_Bsend(const void *buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
@@ -165,7 +165,7 @@ int MPI_Irecv(void* buffer,
  * @param status status object
  * @return MPI status
  */
-int MPI_Sendrecv(void *sendbuf,
+int MPI_Sendrecv(const void *sendbuf,
                  int sendcount,
                  MPI_Datatype sendtype,
                  int dest,

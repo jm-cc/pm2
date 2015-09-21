@@ -80,6 +80,9 @@ void nm_mpi_io_exit(void)
 
 int mpi_file_open(MPI_Comm comm, char*filename, int amode, MPI_Info info, MPI_File*fh)
 {
+
+  fprintf(stderr, "# madmpi: MPI_File_open = %s\n", filename);
+  
   nm_mpi_file_t*p_file = nm_mpi_handle_file_alloc(&nm_mpi_files);
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   if(p_comm == NULL)

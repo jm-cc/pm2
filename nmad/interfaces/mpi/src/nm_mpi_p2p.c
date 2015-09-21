@@ -39,7 +39,7 @@ NM_MPI_ALIAS(MPI_Recv_init, mpi_recv_init);
 
 /* ********************************************************* */
 
-int mpi_issend(void*buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
+int mpi_issend(const void*buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   *request = p_req->id;
@@ -63,7 +63,7 @@ int mpi_issend(void*buffer, int count, MPI_Datatype datatype, int dest, int tag,
 }
 
 
-int mpi_bsend(void *buffer,
+int mpi_bsend(const void *buffer,
 	      int count,
 	      MPI_Datatype datatype,
 	      int dest,
@@ -74,7 +74,7 @@ int mpi_bsend(void *buffer,
 	return mpi_send(buffer, count, datatype, dest, tag, comm);
 }
 
-int mpi_send(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+int mpi_send(const void *buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 {
   nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
   MPI_Request           request = p_req->id;
@@ -98,7 +98,7 @@ int mpi_send(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, 
   return err;
 }
 
-int mpi_isend(void *buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
+int mpi_isend(const void *buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   *request = p_req->id;
@@ -121,7 +121,7 @@ int mpi_isend(void *buffer, int count, MPI_Datatype datatype, int dest, int tag,
   return err;
 }
 
-int mpi_rsend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+int mpi_rsend(const void* buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 {
   nm_mpi_request_t       *p_req = nm_mpi_request_alloc();
   MPI_Request           request = p_req->id;
@@ -145,7 +145,7 @@ int mpi_rsend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag,
   return err;
 }
 
-int mpi_ssend(void* buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+int mpi_ssend(const void* buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 {
   MPI_Request req;
   int err = mpi_issend(buffer, count, datatype, dest, tag, comm, &req);
@@ -191,7 +191,7 @@ int mpi_irecv(void *buffer, int count, MPI_Datatype datatype, int source, int ta
   return err;
 }
 
-int mpi_sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag,
+int mpi_sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag,
                  void *recvbuf, int recvcount, MPI_Datatype recvtype, int source, int recvtag,
                  MPI_Comm comm, MPI_Status *status)
 {
@@ -258,7 +258,7 @@ int mpi_probe(int source, int tag, MPI_Comm comm, MPI_Status *status)
   return err;
 }
 
-int mpi_send_init(void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
+int mpi_send_init(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   *request = p_req->id;

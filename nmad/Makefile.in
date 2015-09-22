@@ -53,7 +53,7 @@ endif
 .PHONY: examples check tests bench eztrace
 
 eztrace:
-	eztrace_create_plugin -o eztrace_nmad_core ./nmad-eztrace.tpl
+	eztrace_create_plugin -o eztrace_nmad_core -I $(srcdir)/include -I @nmad_builddir@/include ./nmad-eztrace.tpl
 
 examples:
 	$(Q)$(MAKE) install

@@ -441,7 +441,7 @@ for e in `( cd ${nmad_srcdir}; find examples -name Makefile.in )`; do
 done
 
 out_sh="${out_sh} interfaces/sampling/nmad-sample"
-out_mk="${out_mk} Makefile examples/Makefile nmad.pc"
+out_mk="${out_mk} Makefile examples/Makefile nmad.pc nmad-eztrace.tpl"
 
 
 AC_OUTPUT_COMMANDS([chmod +x ${out_sh} ], [ out_sh="${out_sh}" ])

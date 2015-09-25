@@ -77,6 +77,9 @@ enum piom_trace_event_e
 	PIOM_TRACE_VAR_LTASKS
     } event;
 
+/* forward declaration for trace functions */
+struct piom_ltask_locality_s;
+
 #ifdef PIOMAN_TRACE
 struct piom_trace_info_s
 {
@@ -89,31 +92,43 @@ struct piom_trace_info_s
 
 TBX_INTERNAL void piom_trace_flush(void);
 
-TBX_INTERNAL void piom_trace_queue_new(struct piom_trace_info_s*trace_info);
+TBX_INTERNAL void piom_trace_local_new(struct piom_trace_info_s*trace_info);
 
-TBX_INTERNAL void piom_trace_queue_event(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, void*_value);
+TBX_INTERNAL void piom_trace_local_event(enum piom_trace_event_e _event, void*_value);
 
-static inline void piom_trace_queue_state(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event)
-{
-    piom_trace_queue_event(trace_info, _event, NULL);
-}
-static inline void piom_trace_queue_var(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, int _value)
-{
-    void*value = (void*)((uintptr_t)_value);
-    piom_trace_queue_event(trace_info, _event, value);
-}
+TBX_INTERNAL void piom_trace_remote_event(const struct piom_ltask_locality_s*local, enum piom_trace_event_e _event, void*_value);
 
 #else /* PIOMAN_TRACE */
 
 struct piom_trace_info_s
 { /* empty */ };
 
-static inline void piom_trace_queue_event(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, void*_value)
+static inline void piom_trace_local_event(enum piom_trace_event_e _event, void*_value)
 { /* empty */ }
-static inline void piom_trace_queue_state(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event)
-{ /* empty */ }
-static inline void piom_trace_queue_var(const struct piom_trace_info_s*trace_info, enum piom_trace_event_e _event, int _value)
+static inline void piom_trace_remote_event(const struct piom_ltask_locality_s*local, enum piom_trace_event_e _event, void* _value)
 { /* empty */ }
 #endif /* PIOMAN_TRACE */
+
+static inline void piom_trace_local_state(enum piom_trace_event_e _event)
+{
+    piom_trace_local_event(_event, NULL);
+}
+static inline void piom_trace_remote_state(const struct piom_ltask_locality_s*local, enum piom_trace_event_e _event)
+{
+    piom_trace_remote_event(local, _event, NULL);
+}
+static inline void piom_trace_remote_var(const struct piom_ltask_locality_s*local, enum piom_trace_event_e _event, int _value)
+{
+    void*value = (void*)((uintptr_t)_value);
+    piom_trace_remote_event(local, _event, value);
+}
+
+/** locality information, for a given hwloc obj */
+struct piom_ltask_locality_s
+{
+    struct piom_ltask_queue*queue;       /**< local queue, NULL if none at this level */
+    struct piom_trace_info_s trace_info; /**< context for trace subsystem */
+    struct piom_ltask_locality_s*parent; /**< shortcut to parent local info */
+};
 
 #endif /* PIOM_PRIVATE_H */

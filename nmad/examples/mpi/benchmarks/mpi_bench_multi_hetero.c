@@ -41,7 +41,7 @@ static void mpi_bench_multi_hetero_client(void*buf, size_t len)
   MPI_Recv(buf + small, large, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 }
 
-const struct mpi_bench_s mpi_bench =
+const struct mpi_bench_s mpi_bench_multi_hetero =
   {
     .name = "MPI heterogeneous multi ping",
     .server = &mpi_bench_multi_hetero_server,

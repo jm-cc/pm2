@@ -27,7 +27,7 @@ static void mpi_bench_sr_client(void*buf, size_t len)
   MPI_Recv(buf, len, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 }
 
-const struct mpi_bench_s mpi_bench =
+const struct mpi_bench_s mpi_bench_sendrecv =
   {
     .name = "MPI sendrecv",
     .server = &mpi_bench_sr_server,

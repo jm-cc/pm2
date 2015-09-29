@@ -22,6 +22,18 @@
 
 #define TAG 0
 
+/* ********************************************************* */
+
+/** parameters for a benchmark */
+struct mpi_bench_param_s
+{
+  size_t start_len;
+  size_t end_len;
+  double multiplier;
+  size_t increment;
+  int    iterations;
+};
+
 struct mpi_bench_s
 {
   const char*name;
@@ -34,12 +46,17 @@ struct mpi_bench_s
   double param_mult;
 };
 
+void mpi_bench_init(int argc, char**argv);
+void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_param_s*params);
+void mpi_bench_finalize(void);
+
+
 /* ********************************************************* */
 
 struct mpi_bench_common_s
 {
-  int size;
-  int self, peer;
+  int self, peer, size;
+  int is_server;
   MPI_Comm comm;
 };
 

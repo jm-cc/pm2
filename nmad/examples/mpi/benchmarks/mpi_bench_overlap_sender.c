@@ -37,7 +37,7 @@ static void mpi_bench_overlap_sender_client(void*buf, size_t len)
   MPI_Recv(buf, 0, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 }
 
-const struct mpi_bench_s mpi_bench =
+const struct mpi_bench_s mpi_bench_overlap_sender =
   {
     .name       = "MPI overlap sender",
     .rtt        = 1,

@@ -16,7 +16,7 @@
 #include "mpi_bench_generic.h"
 
 
-static void mpi_bench_bidir(void*buf, size_t len)
+static void mpi_bench_bidir_client(void*buf, size_t len)
 {
   MPI_Request sreq = MPI_REQUEST_NULL, rreq = MPI_REQUEST_NULL;
   MPI_Irecv(buf, len, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, &rreq);
@@ -25,10 +25,10 @@ static void mpi_bench_bidir(void*buf, size_t len)
   MPI_Wait(&rreq, MPI_STATUS_IGNORE);
 }
 
-const struct mpi_bench_s mpi_bench =
+const struct mpi_bench_s mpi_bench_bidir =
   {
     .name = "MPI bidir",
-    .server = &mpi_bench_bidir,
-    .client = &mpi_bench_bidir
+    .server = &mpi_bench_bidir_client,
+    .client = &mpi_bench_bidir_client
   };
 

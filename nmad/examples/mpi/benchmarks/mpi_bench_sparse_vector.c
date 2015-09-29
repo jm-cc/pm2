@@ -60,7 +60,7 @@ static void mpi_bench_sv_client(void*buf, size_t len)
   MPI_Recv(sparse_buf, 1, dtype, mpi_bench_common.peer, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 }
 
-const struct mpi_bench_s mpi_bench =
+const struct mpi_bench_s mpi_bench_sparse_vector =
   {
     .name   = "MPI sparse vector",
     .init   = &mpi_bench_sv_init,

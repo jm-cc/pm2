@@ -5,7 +5,7 @@ include @puk_root@/etc/common_vars.mk
 
 TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_sparse_vector
 
-TARGET_BIN = mpi_latency $(TARGET_BIN_BENCH)
+TARGET_BIN = $(TARGET_BIN_BENCH)
 TARGET_LIB =
 SUBDIRS =
 
@@ -30,11 +30,10 @@ include @puk_root@/etc/common_rules.mk
 #$(TARGET_BIN): %: %.pic.o
 
 TESTS +=
-BENCH += mpi_latency
+BENCH +=
 
 include @nmad_srcdir@/nmad-tests.mk
 
 $(TARGET_BIN_BENCH): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o
 
-mpi_latency: mpi_latency.pic.o
 

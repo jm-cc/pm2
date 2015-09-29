@@ -27,7 +27,7 @@ include @puk_root@/etc/common_rules.mk
 $(TARGET_BIN): %: %.pic.o
 
 TESTS +=
-BENCH += mpi_bench
+BENCH += mpi_bench mpi_latency
 
 include @nmad_srcdir@/nmad-tests.mk
 

@@ -76,7 +76,6 @@ static void clear_buffer(char*buffer, size_t len)
   memset(buffer, 0, len);
 }
 
-
 static void usage_ping(void)
 {
   fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
@@ -106,10 +105,10 @@ int main(int argc, char	**argv)
 {
   size_t start_len      = MIN_DEFAULT;
   size_t end_len        = MAX_DEFAULT;
-  double   multiplier     = MULT_DEFAULT;
+  double multiplier     = MULT_DEFAULT;
   size_t increment      = INCR_DEFAULT;
-  int      iterations     = LOOPS_DEFAULT;
-  int      i;
+  int    iterations     = LOOPS_DEFAULT;
+  int    i;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_bench_common.size);
@@ -153,78 +152,89 @@ int main(int argc, char	**argv)
 	  MPI_Abort(mpi_bench_common.comm, -1);
 	}
     }
-  
-  if(is_server)
+  int param;
+  for(param = mpi_bench.param_min ;
+      (param < mpi_bench.param_max) || (param == 0 && mpi_bench.setparam == NULL) ;
+      param = 1 + param * mpi_bench.param_mult)
     {
-      /* server
-       */
-      size_t len;
-      for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
+      if(mpi_bench.setparam)
 	{
-	  int k;
-	  char* buf = malloc(len);
-	  clear_buffer(buf, len);
-	  iterations = _iterations(iterations, len);
-	  if(mpi_bench.init != NULL)
-	    (*mpi_bench.init)(buf, len);
-	  MPI_Barrier(mpi_bench_common.comm);
-	  for(k = 0; k < iterations; k++)
+	  if(is_server)
+	    printf("# set param: %d\n", param);
+	  (*mpi_bench.setparam)(param);
+	}
+      if(is_server)
+	{
+	  /* server
+	   */
+	  size_t len;
+	  for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
 	    {
-	      (*mpi_bench.server)(buf, len);
+	      int k;
+	      char* buf = malloc(len);
+	      clear_buffer(buf, len);
+	      iterations = _iterations(iterations, len);
+	      if(mpi_bench.init != NULL)
+		(*mpi_bench.init)(buf, len);
+	      MPI_Barrier(mpi_bench_common.comm);
+	      for(k = 0; k < iterations; k++)
+		{
+		  (*mpi_bench.server)(buf, len);
+		  MPI_Barrier(mpi_bench_common.comm);
+		}
+	      free(buf);
 	      MPI_Barrier(mpi_bench_common.comm);
 	    }
-	  free(buf);
-	  MPI_Barrier(mpi_bench_common.comm);
 	}
-    }
-  else 
-    {
-      /* client
-       */
-      tbx_tick_t t1, t2;
-      double*lats = malloc(sizeof(double) * iterations);
-      printf("# bench: %s begin\n", mpi_bench.name);
-      printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max\n");
-      size_t len;
-      for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
+      else 
 	{
-	  char* buf = malloc(len);
-	  fill_buffer(buf, len);
-	  iterations = _iterations(iterations, len);
-	  int k;
-	  if(mpi_bench.init != NULL)
-	    (*mpi_bench.init)(buf, len);
-	  MPI_Barrier(mpi_bench_common.comm);
-	  for(k = 0; k < iterations; k++)
+	  /* client
+	   */
+	  tbx_tick_t t1, t2;
+	  double*lats = malloc(sizeof(double) * iterations);
+	  printf("# bench: %s begin\n", mpi_bench.name);
+	  printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max\n");
+	  size_t len;
+	  for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
 	    {
-	      TBX_GET_TICK(t1);
-	      (*mpi_bench.client)(buf, len);
-	      TBX_GET_TICK(t2);
-	      const double delay = TBX_TIMING_DELAY(t1, t2);
-	      const double t = delay / 2;
-	      lats[k] = t;
+	      char* buf = malloc(len);
+	      fill_buffer(buf, len);
+	      iterations = _iterations(iterations, len);
+	      int k;
+	      if(mpi_bench.init != NULL)
+		(*mpi_bench.init)(buf, len);
+	      MPI_Barrier(mpi_bench_common.comm);
+	      for(k = 0; k < iterations; k++)
+		{
+		  TBX_GET_TICK(t1);
+		  (*mpi_bench.client)(buf, len);
+		  TBX_GET_TICK(t2);
+		  const double delay = TBX_TIMING_DELAY(t1, t2);
+		  const double t = mpi_bench.rtt ? delay : (delay / 2);
+		  lats[k] = t;
+		  MPI_Barrier(mpi_bench_common.comm);
+		}
+	      qsort(lats, iterations, sizeof(double), &comp_double);
+	      const double min_lat = lats[0];
+	      const double max_lat = lats[iterations - 1];
+	      const double med_lat = lats[(iterations - 1) / 2];
+	      double avg_lat = 0.0;
+	      for(k = 0; k < iterations; k++)
+		{
+		  avg_lat += lats[k];
+		}
+	      avg_lat /= iterations;
+	      const double bw_million_byte = len / min_lat;
+	      const double bw_mbyte        = bw_million_byte / 1.048576;
+	      
+	      printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\n",
+		     (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
+	      fflush(stdout);
+	      free(buf);
 	      MPI_Barrier(mpi_bench_common.comm);
 	    }
-	  qsort(lats, iterations, sizeof(double), &comp_double);
-	  const double min_lat = lats[0];
-	  const double max_lat = lats[iterations - 1];
-	  const double med_lat = lats[(iterations - 1) / 2];
-	  double avg_lat = 0.0;
-	  for(k = 0; k < iterations; k++)
-	    {
-	      avg_lat += lats[k];
-	    }
-	  avg_lat /= iterations;
-	  const double bw_million_byte = len / min_lat;
-	  const double bw_mbyte        = bw_million_byte / 1.048576;
-
-	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\n",
-		 (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
-	  fflush(stdout);
-	  free(buf);
-	  MPI_Barrier(mpi_bench_common.comm);
+	  printf("# bench: %s end\n", mpi_bench.name);
 	}
-      printf("# bench: %s end\n", mpi_bench.name);
     }
   MPI_Finalize();
   exit(0);

@@ -20,12 +20,18 @@
 #ifndef MPI_BENCH_GENERIC_H
 #define MPI_BENCH_GENERIC_H
 
+#define TAG 0
+
 struct mpi_bench_s
 {
   const char*name;
+  const int rtt; /** whether we should output round-trip time or half-rtt (one way latency) */
   void (*server)(void*buf, size_t len);
   void (*client)(void*buf, size_t len);
   void (*init)(void*buf, size_t len);
+  void (*setparam)(int param);
+  int param_min, param_max;
+  double param_mult;
 };
 
 /* ********************************************************* */
@@ -38,6 +44,31 @@ struct mpi_bench_common_s
 };
 
 extern struct mpi_bench_common_s mpi_bench_common;
+
+
+/* ********************************************************* */
+
+#define MIN_COMPUTE 0
+#define MAX_COMPUTE 5000
+
+static volatile double r = 1.0;
+
+static void mpi_bench_do_compute(int usec)
+{
+  tbx_tick_t t1, t2;
+  double delay = 0.0;
+  TBX_GET_TICK(t1);
+  while(delay < usec)
+    {
+      int k;
+      for(k = 0; k < 10; k++)
+	{
+	  r = (r * 1.1) + 2.213890 - k;
+	}
+      TBX_GET_TICK(t2);
+      delay = TBX_TIMING_DELAY(t1, t2);
+    }
+}
 
 
 #endif /* MPI_BENCH_GENERIC_H */

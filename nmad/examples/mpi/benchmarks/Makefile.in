@@ -3,9 +3,9 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_sparse_vector
+TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_sparse_vector
 
-TARGET_BIN = mpi_latency mpi_multi_ping $(TARGET_BIN_BENCH)
+TARGET_BIN = mpi_latency $(TARGET_BIN_BENCH)
 TARGET_LIB =
 SUBDIRS =
 
@@ -36,9 +36,5 @@ include @nmad_srcdir@/nmad-tests.mk
 
 $(TARGET_BIN_BENCH): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o
 
-mpi_multi_ping: mpi_multi_ping.pic.o
-
 mpi_latency: mpi_latency.pic.o
-
-mpi_multi_ping_hetero: mpi_multi_ping_hetero.pic.o
 

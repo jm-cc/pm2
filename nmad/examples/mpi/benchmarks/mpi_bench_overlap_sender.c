@@ -46,6 +46,6 @@ const struct mpi_bench_s mpi_bench =
     .setparam   = &mpi_bench_overlap_sender_setparam,
     .param_min  = MIN_COMPUTE,
     .param_max  = MAX_COMPUTE,
-    .param_mult = 1.2
+    .param_mult = MULT_COMPUTE
   };
 

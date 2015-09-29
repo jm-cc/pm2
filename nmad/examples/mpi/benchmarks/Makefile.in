@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_sparse_vector mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir
+TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_sparse_vector mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig
 
 TARGET_BIN = $(TARGET_BIN_BENCH)
 TARGET_LIB =

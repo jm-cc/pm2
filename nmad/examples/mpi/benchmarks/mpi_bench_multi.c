@@ -44,8 +44,9 @@ static void mpi_bench_multi_client(void*buf, size_t len)
 
 const struct mpi_bench_s mpi_bench_multi =
   {
-    .name = "MPI multi ping",
-    .server = &mpi_bench_multi_server,
-    .client = &mpi_bench_multi_client
+    .label   = "mpi_bench_multi",
+    .name    = "MPI multi ping",
+    .server  = &mpi_bench_multi_server,
+    .client  = &mpi_bench_multi_client
   };
 

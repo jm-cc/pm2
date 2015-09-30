@@ -37,6 +37,7 @@ static void mpi_bench_overlap_send_overhead_client(void*buf, size_t len)
 
 const struct mpi_bench_s mpi_bench_overlap_send_overhead =
   {
+    .label      = "mpi_bench_overlap_send_overhead",
     .name       = "MPI send overhead",
     .rtt        = 1,
     .server     = &mpi_bench_overlap_send_overhead_server,

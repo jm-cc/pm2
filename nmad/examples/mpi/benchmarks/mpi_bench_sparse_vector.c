@@ -62,6 +62,7 @@ static void mpi_bench_sv_client(void*buf, size_t len)
 
 const struct mpi_bench_s mpi_bench_sparse_vector =
   {
+    .label  = "mpi_bench_sparse_vector",
     .name   = "MPI sparse vector",
     .init   = &mpi_bench_sv_init,
     .server = &mpi_bench_sv_server,

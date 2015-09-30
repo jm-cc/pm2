@@ -36,6 +36,7 @@ struct mpi_bench_param_s
 
 struct mpi_bench_s
 {
+  const char*label;
   const char*name;
   const int rtt; /** whether we should output round-trip time or half-rtt (one way latency) */
   void (*server)(void*buf, size_t len);

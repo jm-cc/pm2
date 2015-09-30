@@ -52,6 +52,7 @@ static void mpi_bench_overlap_sender_noncontig_client(void*buf, size_t len)
 
 const struct mpi_bench_s mpi_bench_overlap_sender_noncontig =
   {
+    .label      = "mpi_bench_overlap_sender_noncontig",
     .name       = "MPI overlap sender non-contig",
     .rtt        = 1,
     .init       = &mpi_bench_overlap_sender_noncontig_init,

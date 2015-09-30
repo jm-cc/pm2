@@ -42,4 +42,4 @@ stub_%.c:
 
 $(TARGET_BIN_BENCH): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o mpi_bench_single.pic.o stub_%.pic.o
 
-mpi_bench_overlap: mpi_bench_overlap.pic.o mpi_bench_generic.pic.o mpi_bench_overlap_sender.pic.o mpi_bench_overlap_recv.pic.o mpi_bench_overlap_bidir.pic.o mpi_bench_overlap_sender_noncontig.pic.o mpi_bench_overlap_send_overhead.pic.o
+mpi_bench_overlap: mpi_bench_overlap.pic.o mpi_bench_generic.pic.o mpi_bench_sendrecv.pic.o mpi_bench_overlap_sender.pic.o mpi_bench_overlap_recv.pic.o mpi_bench_overlap_bidir.pic.o mpi_bench_overlap_sender_noncontig.pic.o mpi_bench_overlap_send_overhead.pic.o

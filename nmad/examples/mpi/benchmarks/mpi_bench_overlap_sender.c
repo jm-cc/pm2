@@ -39,6 +39,7 @@ static void mpi_bench_overlap_sender_client(void*buf, size_t len)
 
 const struct mpi_bench_s mpi_bench_overlap_sender =
   {
+    .label      = "mpi_bench_overlap_sender",
     .name       = "MPI overlap sender",
     .rtt        = 1,
     .server     = &mpi_bench_overlap_sender_server,

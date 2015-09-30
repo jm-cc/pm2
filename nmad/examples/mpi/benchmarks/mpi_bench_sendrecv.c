@@ -29,8 +29,9 @@ static void mpi_bench_sr_client(void*buf, size_t len)
 
 const struct mpi_bench_s mpi_bench_sendrecv =
   {
-    .name = "MPI sendrecv",
-    .server = &mpi_bench_sr_server,
-    .client = &mpi_bench_sr_client
+    .label   = "mpi_bench_sendrecv",
+    .name    = "MPI sendrecv",
+    .server  = &mpi_bench_sr_server,
+    .client  = &mpi_bench_sr_client
   };
 

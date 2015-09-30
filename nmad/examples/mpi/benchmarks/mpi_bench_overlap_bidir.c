@@ -48,6 +48,7 @@ static void mpi_bench_overlap_bidir_client(void*buf, size_t len)
 
 const struct mpi_bench_s mpi_bench_overlap_bidir =
   {
+    .label      = "mpi_bench_overlap_bidir",
     .name       = "MPI overlap bidir",
     .rtt        = 0,
     .server     = &mpi_bench_overlap_bidir_server,

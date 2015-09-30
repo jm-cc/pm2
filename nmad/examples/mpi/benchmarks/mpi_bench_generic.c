@@ -92,10 +92,17 @@ void mpi_bench_init(int argc, char**argv)
   mpi_bench_common.comm = MPI_COMM_WORLD;
   mpi_bench_common.is_server = (mpi_bench_common.self == 0);
   mpi_bench_common.peer = 1 - mpi_bench_common.self;
+  if(!mpi_bench_common.is_server)
+    {
+      printf("# MadMPI benchmark - copyright (C) 2015 INRIA\n");
+      printf("#\n");
+    }
 }
 
 void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_param_s*params)
 {
+  if(!mpi_bench_common.is_server)
+    printf("# bench: %s begin\n", mpi_bench->label);
   int param;
   for(param = mpi_bench->param_min ;
       (param < mpi_bench->param_max) || (param == 0 && mpi_bench->setparam == NULL) ;
@@ -105,7 +112,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
       if(mpi_bench->setparam)
 	{
 	  if(!mpi_bench_common.is_server)
-	    printf("# set param: %d\n", param);
+	    printf("# bench: %s/%d begin\n", mpi_bench->label, param);
 	  (*mpi_bench->setparam)(param);
 	}
       if(mpi_bench_common.is_server)
@@ -130,6 +137,8 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      free(buf);
 	      MPI_Barrier(mpi_bench_common.comm);
 	    }
+	  if(mpi_bench->setparam)
+	    printf("# bench: %s/%d end\n", mpi_bench->label, param);
 	}
       else 
 	{
@@ -137,7 +146,6 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	   */
 	  tbx_tick_t t1, t2;
 	  double*lats = malloc(sizeof(double) * params->iterations);
-	  printf("# bench: %s begin\n", mpi_bench->name);
 	  printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max\n");
 	  size_t len;
 	  for(len = params->start_len; len <= params->end_len; len = _next(len, params->multiplier, params->increment))
@@ -178,9 +186,10 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      free(buf);
 	      MPI_Barrier(mpi_bench_common.comm);
 	    }
-	  printf("# bench: %s end\n", mpi_bench->name);
 	}
     }
+  if(!mpi_bench_common.is_server)
+      printf("# bench: %s end\n", mpi_bench->label);
 }
 
 void mpi_bench_finalize(void)

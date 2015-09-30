@@ -96,7 +96,7 @@ TBX_INTERNAL void piom_trace_local_new(struct piom_trace_info_s*trace_info);
 
 TBX_INTERNAL void piom_trace_local_event(enum piom_trace_event_e _event, void*_value);
 
-TBX_INTERNAL void piom_trace_remote_event(const struct piom_ltask_locality_s*local, enum piom_trace_event_e _event, void*_value);
+TBX_INTERNAL void piom_trace_remote_event(piom_topo_obj_t obj, enum piom_trace_event_e _event, void*_value);
 
 #else /* PIOMAN_TRACE */
 
@@ -105,7 +105,7 @@ struct piom_trace_info_s
 
 static inline void piom_trace_local_event(enum piom_trace_event_e _event, void*_value)
 { /* empty */ }
-static inline void piom_trace_remote_event(const struct piom_ltask_locality_s*local, enum piom_trace_event_e _event, void* _value)
+static inline void piom_trace_remote_event(piom_topo_obj_t obj, enum piom_trace_event_e _event, void* _value)
 { /* empty */ }
 #endif /* PIOMAN_TRACE */
 
@@ -113,14 +113,14 @@ static inline void piom_trace_local_state(enum piom_trace_event_e _event)
 {
     piom_trace_local_event(_event, NULL);
 }
-static inline void piom_trace_remote_state(const struct piom_ltask_locality_s*local, enum piom_trace_event_e _event)
+static inline void piom_trace_remote_state(piom_topo_obj_t obj, enum piom_trace_event_e _event)
 {
-    piom_trace_remote_event(local, _event, NULL);
+    piom_trace_remote_event(obj, _event, NULL);
 }
-static inline void piom_trace_remote_var(const struct piom_ltask_locality_s*local, enum piom_trace_event_e _event, int _value)
+static inline void piom_trace_remote_var(piom_topo_obj_t obj, enum piom_trace_event_e _event, int _value)
 {
     void*value = (void*)((uintptr_t)_value);
-    piom_trace_remote_event(local, _event, value);
+    piom_trace_remote_event(obj, _event, value);
 }
 
 /** locality information, for a given hwloc obj */

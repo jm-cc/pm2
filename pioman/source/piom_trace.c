@@ -58,8 +58,9 @@ void piom_trace_local_new(struct piom_trace_info_s*trace_info)
     __piom_trace.containers[i] = trace_info;
 }
 
-void piom_trace_remote_event(const struct piom_ltask_locality_s*local, enum piom_trace_event_e _event, void*_value)
+void piom_trace_remote_event(piom_topo_obj_t obj, enum piom_trace_event_e _event, void*_value)
 {
+    const struct piom_ltask_locality_s*local = obj->userdata;
     assert(local != NULL);
     struct piom_trace_entry_s*entry = piom_trace_get_entry();
     if(entry)
@@ -74,8 +75,7 @@ void piom_trace_remote_event(const struct piom_ltask_locality_s*local, enum piom
 void piom_trace_local_event(enum piom_trace_event_e _event, void*_value)
 {
     piom_topo_obj_t obj = piom_ltask_current_obj();
-    const struct piom_ltask_locality_s*local = obj->userdata;
-    piom_trace_remote_event(local, _event, _value);
+    piom_trace_remote_event(obj, _event, _value);
 }
 
 void piom_trace_flush(void)

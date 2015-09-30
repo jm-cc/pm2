@@ -217,7 +217,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue_single_reader(&queue->submit_queue);
 	    if(task == NULL)
 		task = piom_ltask_lfqueue_dequeue_single_reader(&queue->ltask_queue);
-	    piom_trace_remote_var(queue->binding->userdata, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
+	    piom_trace_remote_var(queue->binding, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
 	    if(task)
 		{
 		    piom_trace_local_state(PIOM_TRACE_STATE_INIT);
@@ -522,7 +522,7 @@ void piom_init_ltasks(void)
 			    local->trace_info.rank = o->logical_index;
 			    local->trace_info.parent = local->parent ? &local->parent->trace_info : NULL;
 			    piom_trace_local_new(&local->trace_info);
-			    piom_trace_remote_state(local, PIOM_TRACE_STATE_NONE);
+			    piom_trace_remote_state(o, PIOM_TRACE_STATE_NONE);
 #endif /* PIOMAN_TRACE */
 			}
 		}
@@ -640,7 +640,7 @@ void piom_exit_ltasks(void)
 			    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask.topology, d, i);
 			    const struct piom_ltask_locality_s*local = o->userdata;
 			    piom_ltask_queue_t*queue = local->queue;
-			    piom_trace_remote_state(queue->binding->userdata, PIOM_TRACE_STATE_NONE);
+			    piom_trace_remote_state(queue->binding, PIOM_TRACE_STATE_NONE);
 			    __piom_exit_queue(queue);
 			    TBX_FREE(queue);
 			    o->userdata = NULL;
@@ -671,7 +671,7 @@ static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_que
 	    rc = piom_ltask_lfqueue_enqueue(&queue->submit_queue, task);
 	}
     while(rc != 0);
-    piom_trace_remote_var(queue->binding->userdata, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
+    piom_trace_remote_var(queue->binding, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
 }
 
 static inline int __piom_ltask_submit_in_lwp(struct piom_ltask*task)
@@ -700,7 +700,7 @@ void piom_ltask_submit(struct piom_ltask *task)
     task->state = PIOM_LTASK_STATE_NONE;
     piom_ltask_queue_t*queue = __piom_get_queue(task->binding);
     assert(queue != NULL);
-    piom_trace_remote_event(queue->binding->userdata, PIOM_TRACE_EVENT_SUBMIT, task);
+    piom_trace_remote_event(queue->binding, PIOM_TRACE_EVENT_SUBMIT, task);
     __piom_ltask_submit_in_queue(task, queue);
 }
 

@@ -104,7 +104,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
       int iterations = params->iterations;
       if(mpi_bench->setparam)
 	{
-	  if(mpi_bench_common.is_server)
+	  if(!mpi_bench_common.is_server)
 	    printf("# set param: %d\n", param);
 	  (*mpi_bench->setparam)(param);
 	}

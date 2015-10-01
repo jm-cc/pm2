@@ -1,4 +1,5 @@
 #! /bin/bash
+export LC_ALL=C
 
 file="$1"
 outdir="${file}.d"
@@ -41,19 +42,67 @@ echo
 echo "# ## computing overlap ratio..."
 echo
 
-benchref=${outdir}/mpi_bench_sendrecv.dat
-sizes=$( sed -e "/^#/ d" ${benchref} | cut -f 1 | tr '\n' ' ' )
-echo "# sizes: ${sizes}"
+size_list=$( sed -e "/^#/ d" ${outdir}/mpi_bench_sendrecv.dat | cut -f 1 | tr '\n' ' ' )
+echo "# sizes: ${size_list}"
+
+mpi_bench_extract_line() {
+    b=$1
+    s=$2
+    benchfile=${outdir}/${b}.dat
+    sed -e "/${b} begin/,/${b} end/ !d;/^#/ d;/^${s}\t/ !d" ${benchfile}
+}
+
+mpi_bench_extract_line_param() {
+    b=$1
+    s=$2
+    p=$3
+    benchfile=${outdir}/${b}.dat
+    sed -e "/${b}\/${p} begin/,/${b}\/${p} end/ !d;/^#/ d;/^${s}\t/ !d" ${benchfile}
+}
 
 for b in mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig; do
+    case b in
+	*noncontig*)
+	    benchref=mpi_bench_noncontig
+	    ;;
+	*)
+	    benchref=mpi_bench_sendrecv
+	    ;;
+    esac
     benchfile=${outdir}/${b}.dat
     echo "# file ${benchfile}"
     params=$( sed -e "s+^# bench: ${b}/\(.*\) begin+\1+p;d" ${benchfile} | tr '\n' ' ' )
     echo "# params list: ${params}"
-
-    for p in ${params}; do
-	echo "# param: ${p}"
-	sed -e "/\/${p} begin/,/\/${p} end/ !d;/^#/ d" ${benchfile}
+    latref0=$( mpi_bench_extract_line ${benchref} 0 | cut -f 5 )
+    echo "# generated from ${b}"                    > ${outdir}/${b}-ratio2d-comm.dat
+    echo "# size | comp.time | ratio | lat | lat0" >> ${outdir}/${b}-ratio2d-comm.dat
+    echo "# generated from ${b}"                    > ${outdir}/${b}-ratio2d-comp.dat
+    echo "# size | comp.time | ratio | lat | lat0" >> ${outdir}/${b}-ratio2d-comp.dat
+    for s in ${size_list}; do
+	echo "# size: ${s}"
+	latref=$( mpi_bench_extract_line ${benchref} ${s} | cut -f 5 )
+	int_latref=$( echo ${latref} | cut -f 1 -d '.' )
+	echo "# generated from ${b} for size=${s}" > ${outdir}/${b}-${s}-comp.dat
+	echo "# reference latency: ${latref}"     >> ${outdir}/${b}-${s}-comp.dat
+	echo "# comp.time | ratio | lat."         >> ${outdir}/${b}-${s}-comp.dat
+	echo "# generated from ${b} for size=${s}" > ${outdir}/${b}-${s}-comm.dat
+	echo "# reference latency: ${latref}"     >> ${outdir}/${b}-${s}-comm.dat
+	echo "# comp.time | ratio | lat."         >> ${outdir}/${b}-${s}-comm.dat
+	for p in ${params}; do
+	    rtt=$( mpi_bench_extract_line_param ${b} ${s} ${p} | cut -f 5 )
+	    lat=$( bc <<< "scale=2; ${rtt} - ${latref0} " )
+	    if [ ${p} -lt ${int_latref} ]; then
+		ratio=$( bc <<< "scale=2; if(${lat} > ${latref}) (( ${lat} - ${latref} ) / ${p}) else 0" )
+		echo "${p} ${ratio} ${lat}" >> ${outdir}/${b}-${s}-comp.dat
+		echo "${s} ${p} ${ratio} ${lat} ${latref}" >> ${outdir}/${b}-ratio2d-comp.dat
+	    else
+		ratio=$( bc <<< "scale=2; if(${lat} > ${p}) (( ${lat} - ${p} ) / ${latref}) else 0" )
+		echo "${p} ${ratio} ${lat}" >> ${outdir}/${b}-${s}-comm.dat
+		echo "${s} ${p} ${ratio} ${lat} ${latref}" >> ${outdir}/${b}-ratio2d-comm.dat
+	    fi
+	done
+	echo  >> ${outdir}/${b}-ratio2d-comm.dat
+	echo  >> ${outdir}/${b}-ratio2d-comp.dat
     done
     
     echo

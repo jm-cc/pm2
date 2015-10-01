@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_sparse_vector mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead
+TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_sparse_vector mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_noncontig
 
 TARGET_BIN = $(TARGET_BIN_BENCH) mpi_bench_overlap
 TARGET_LIB =
@@ -42,4 +42,4 @@ stub_%.c:
 
 $(TARGET_BIN_BENCH): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o mpi_bench_single.pic.o stub_%.pic.o
 
-mpi_bench_overlap: mpi_bench_overlap.pic.o mpi_bench_generic.pic.o mpi_bench_sendrecv.pic.o mpi_bench_overlap_sender.pic.o mpi_bench_overlap_recv.pic.o mpi_bench_overlap_bidir.pic.o mpi_bench_overlap_sender_noncontig.pic.o mpi_bench_overlap_send_overhead.pic.o
+mpi_bench_overlap: mpi_bench_overlap.pic.o mpi_bench_generic.pic.o mpi_bench_sendrecv.pic.o mpi_bench_noncontig.pic.o mpi_bench_overlap_sender.pic.o mpi_bench_overlap_recv.pic.o mpi_bench_overlap_bidir.pic.o mpi_bench_overlap_sender_noncontig.pic.o mpi_bench_overlap_send_overhead.pic.o

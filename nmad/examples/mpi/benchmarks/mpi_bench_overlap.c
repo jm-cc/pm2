@@ -22,9 +22,11 @@
 #define MAX_DEFAULT     (128 * 1024 * 1024)
 #define MULT_DEFAULT    1.5
 #define INCR_DEFAULT    0
-#define LOOPS_DEFAULT   25
+#define LOOPS_DEFAULT   50
+#define LOOPS_REFERENCE 1000
 
 extern struct mpi_bench_s mpi_bench_sendrecv;
+extern struct mpi_bench_s mpi_bench_noncontig;
 extern struct mpi_bench_s mpi_bench_overlap_sender;
 extern struct mpi_bench_s mpi_bench_overlap_recv;
 extern struct mpi_bench_s mpi_bench_overlap_bidir;
@@ -43,7 +45,10 @@ int main(int argc, char	**argv)
     };
 
   mpi_bench_init(argc, argv);
+  params.iterations = LOOPS_REFERENCE;
   mpi_bench_run(&mpi_bench_sendrecv, &params);
+  mpi_bench_run(&mpi_bench_noncontig, &params);
+  params.iterations = LOOPS_DEFAULT;
   mpi_bench_run(&mpi_bench_overlap_sender, &params);
   mpi_bench_run(&mpi_bench_overlap_recv, &params);
   mpi_bench_run(&mpi_bench_overlap_bidir, &params);

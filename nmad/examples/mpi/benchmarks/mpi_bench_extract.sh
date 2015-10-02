@@ -108,6 +108,7 @@ set view map
 set pm3d interpolate 0,0
 set key bmargin box
 set key off
+set title "${file}"
 set xlabel "Message size (bytes)"
 set ylabel "Computation time (usec.)"
 set cblabel "${b}"
@@ -118,6 +119,7 @@ splot \
   "${outdir}/${b}-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title "${b}" with pm3d , \
   "${outdir}/${benchref}.dat" using 1:2:(2) title "Ref. latency" with linespoints lw 2
 
+set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 MB" 4*1024*1024, "32 MB" 32*1024*1024 )
 set xrange [2048:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
 set yrange [20:$( echo ${params} | tr ' ' '\n' | tail -1 )]
 set cbrange [0:2]
@@ -125,7 +127,53 @@ set output "${outdir}/${b}-log.pdf"
 set logscale x 2
 set logscale y 10
 replot
+
 EOF
-    
     echo
 done
+
+echo "# ## generating global plot..."
+
+gnuplot <<EOF
+set term pdfcairo color fontscale 0.3
+set output "${outdir}/overlap-lin.pdf"
+
+set multiplot layout 2,2 title "${file}"
+
+set view map
+set pm3d interpolate 0,0
+set key off
+set title "${file}"
+set xlabel "Message size (bytes)"
+set ylabel "Computation time (usec.)"
+set cblabel "overlap overhead"
+
+set tmargin 0.2
+set bmargin 0.2
+
+set xrange [0:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
+set yrange [0:$( echo ${params} | tr ' ' '\n' | tail -1 )]
+set cbrange [0:2]
+do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig"] {
+  set title b
+  splot "${outdir}/".b."-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title b with pm3d 
+}
+
+unset multiplot
+set output "${outdir}/overlap-log.pdf"
+set multiplot layout 2,2 title "${file}"
+set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 MB" 4*1024*1024, "32 MB" 32*1024*1024 )
+set xrange [2048:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
+set yrange [20:$( echo ${params} | tr ' ' '\n' | tail -1 )]
+set cbrange [0:2]
+set logscale x 2
+set logscale y 10
+do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig"] {
+  set title b
+  splot "${outdir}/".b."-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title b with pm3d 
+}
+
+
+EOF
+
+echo

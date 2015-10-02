@@ -113,9 +113,11 @@ static const struct nm_minidriver_iface_s nm_ibverbs_rcache_minidriver =
     .getprops    = &nm_ibverbs_rcache_getprops,
     .init        = &nm_ibverbs_rcache_init,
     .connect     = &nm_ibverbs_rcache_connect,
+    .send_data   = NULL,
     .send_post   = &nm_ibverbs_rcache_send_post,
     .send_poll   = &nm_ibverbs_rcache_send_poll,
     .recv_init   = &nm_ibverbs_rcache_recv_init,
+    .recv_data   = NULL,
     .poll_one    = &nm_ibverbs_rcache_poll_one,
     .cancel_recv = NULL
   };
@@ -187,6 +189,7 @@ static void nm_ibverbs_rcache_destroy(void*_status)
 static void nm_ibverbs_rcache_getprops(int index, struct nm_minidriver_properties_s*props)
 {
   nm_ibverbs_hca_get_profile(index, &props->profile);
+  props->capabilities.supports_data = 0;
 }
 
 

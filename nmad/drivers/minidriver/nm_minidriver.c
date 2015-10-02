@@ -184,6 +184,7 @@ static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_para
       (*minidriver_iface->getprops)(p_drv->index, &p_minidriver_context->trks_array[i].props);
     }
 
+  
   /* driver profile encoding */
 #ifdef PM2_TOPOLOGY
   if(p_minidriver_context->trks_array[0].props.profile.cpuset != NULL)
@@ -361,7 +362,7 @@ static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap*__restri
     {
       struct nm_minidriver*status = _status;
       struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
-      if(p_pw->p_data != NULL)
+      if(p_pw->p_data != NULL && p_pw->v[0].iov_base == NULL)
 	{
 	  assert(minidriver->driver->recv_data != NULL);
 	  (*minidriver->driver->recv_data)(minidriver->_status, p_pw->p_data);

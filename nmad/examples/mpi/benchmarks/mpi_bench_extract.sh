@@ -102,11 +102,29 @@ EOF
     done
 
     gnuplot <<EOF
-set term pdf
+set term pdfcairo color fontscale 0.3
 set output "${outdir}/${b}-ratio2d.pdf"
 set view map
 set pm3d interpolate 0,0
-splot [2048:][0:20000][0:]  "${outdir}/${b}-ratio2d.dat" using 1:2:(\$3>2?2:\$3) with pm3d, "${outdir}/${benchref}.dat" using 1:2:(2) with linespoints lw 2
+set key bmargin box
+set key off
+set xlabel "Message size (bytes)"
+set ylabel "Computation time (usec.)"
+set cblabel "${b}"
+set xrange [0:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
+set yrange [0:$( echo ${params} | tr ' ' '\n' | tail -1 )]
+set cbrange [0:2]
+splot \
+  "${outdir}/${b}-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title "${b}" with pm3d , \
+  "${outdir}/${benchref}.dat" using 1:2:(2) title "Ref. latency" with linespoints lw 2
+
+set xrange [2048:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
+set yrange [20:$( echo ${params} | tr ' ' '\n' | tail -1 )]
+set cbrange [0:2]
+set output "${outdir}/${b}-log.pdf"
+set logscale x 2
+set logscale y 10
+replot
 EOF
     
     echo

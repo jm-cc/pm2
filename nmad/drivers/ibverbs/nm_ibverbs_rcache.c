@@ -21,7 +21,7 @@
 #ifdef PUKABI
 #include <Padico/Puk-ABI.h>
 #else
-//#define MINI_PUKABI
+#define MINI_PUKABI
 #endif
 
 #ifdef MINI_PUKABI
@@ -516,6 +516,7 @@ const struct puk_mem_reg_s*puk_mem_reg(void*context, const void*ptr, size_t len)
 	}
     }
   struct puk_mem_reg_s*r = puk_mem_slot_lookup();
+
   if(r)
     {
       r->context  = context;

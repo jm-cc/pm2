@@ -67,7 +67,7 @@ extern struct mpi_bench_common_s mpi_bench_common;
 /* ********************************************************* */
 
 #define MIN_COMPUTE 0
-#define MAX_COMPUTE 10000
+#define MAX_COMPUTE 20000
 #define MULT_COMPUTE 1.5
 
 static volatile double r = 1.0;

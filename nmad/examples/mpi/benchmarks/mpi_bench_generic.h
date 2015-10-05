@@ -50,6 +50,7 @@ struct mpi_bench_s
   void (*server)(void*buf, size_t len);
   void (*client)(void*buf, size_t len);
   void (*init)(void*buf, size_t len);
+  void (*finalize)(void);
   void (*setparam)(int param);
   const struct mpi_bench_param_bounds_s*(*getparams)(void);
 };

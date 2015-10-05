@@ -196,6 +196,10 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	}
     }
   while((param_bounds != NULL) && (p <= param_bounds->max));
+  if(mpi_bench->finalize != NULL)
+    {
+      (*mpi_bench->finalize)();
+    }
   if(!mpi_bench_common.is_server)
       printf("# bench: %s end\n", mpi_bench->label);
 }

@@ -32,6 +32,7 @@ extern struct mpi_bench_s mpi_bench_overlap_recv;
 extern struct mpi_bench_s mpi_bench_overlap_bidir;
 extern struct mpi_bench_s mpi_bench_overlap_sender_noncontig;
 extern struct mpi_bench_s mpi_bench_overlap_send_overhead;
+extern struct mpi_bench_s mpi_bench_overlap_Nload;
 
 int main(int argc, char	**argv)
 {
@@ -54,6 +55,7 @@ int main(int argc, char	**argv)
   mpi_bench_run(&mpi_bench_overlap_bidir, &params);
   mpi_bench_run(&mpi_bench_overlap_sender_noncontig, &params);
   mpi_bench_run(&mpi_bench_overlap_send_overhead, &params);
+  mpi_bench_run(&mpi_bench_overlap_Nload, &params);
   mpi_bench_finalize();
   exit(0);
 }

@@ -66,12 +66,12 @@ void nm_data_coroutine_generator_destroy(struct nm_data_s*p_data, void*_generato
 
 #define NM_DATA_USE_COROUTINE
 #ifdef NM_DATA_USE_COROUTINE
-#define nm_data_default_generator         nm_data_coroutine_generator
-#define nm_data_default_next              nm_data_coroutine_next
-#define nm_data_default_generator_destroy nm_data_coroutine_generator_destroy
+#define nm_data_default_generator         &nm_data_coroutine_generator
+#define nm_data_default_next              &nm_data_coroutine_next
+#define nm_data_default_generator_destroy &nm_data_coroutine_generator_destroy
 #else
-#define nm_data_default_generator         nm_data_generic_generator
-#define nm_data_default_next              nm_data_generic_next
+#define nm_data_default_generator         &nm_data_generic_generator
+#define nm_data_default_next              &nm_data_generic_next
 #define nm_data_default_generator_destroy NULL
 #endif
 
@@ -109,9 +109,9 @@ struct nm_data_s
     p_data->ops = *(OPS);						\
     if(p_data->ops.p_generator == NULL)					\
       {									\
-	p_data->ops.p_generator = &nm_data_default_generator;		\
-	p_data->ops.p_next      = &nm_data_default_next;		\
-	p_data->ops.p_generator_destroy = &nm_data_default_generator_destroy; \
+	p_data->ops.p_generator = nm_data_default_generator;		\
+	p_data->ops.p_next      = nm_data_default_next;			\
+	p_data->ops.p_generator_destroy = nm_data_default_generator_destroy; \
       }									\
     p_data->props.blocks = -1;						\
     assert(sizeof(CONTENT_TYPE) <= _NM_DATA_CONTENT_SIZE);		\

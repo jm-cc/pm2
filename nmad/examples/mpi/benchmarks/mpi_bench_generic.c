@@ -103,17 +103,20 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 {
   if(!mpi_bench_common.is_server)
     printf("# bench: %s begin\n", mpi_bench->label);
-  int param;
-  for(param = mpi_bench->param_min ;
-      (param < mpi_bench->param_max) || (param == 0 && mpi_bench->setparam == NULL) ;
-      param = 1 + param * mpi_bench->param_mult)
+  const struct mpi_bench_param_bounds_s*param_bounds = NULL;
+  if(mpi_bench->setparam != NULL && mpi_bench->getparams != NULL)
+    {
+      param_bounds = (*mpi_bench->getparams)();
+    }
+  int p = (param_bounds != NULL) ? param_bounds->min : 0;
+  do
     {
       int iterations = params->iterations;
       if(mpi_bench->setparam)
 	{
 	  if(!mpi_bench_common.is_server)
-	    printf("# bench: %s/%d begin\n", mpi_bench->label, param);
-	  (*mpi_bench->setparam)(param);
+	    printf("# bench: %s/%d begin\n", mpi_bench->label, p);
+	  (*mpi_bench->setparam)(p);
 	}
       if(mpi_bench_common.is_server)
 	{
@@ -185,9 +188,14 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      MPI_Barrier(mpi_bench_common.comm);
 	    }
 	  if(mpi_bench->setparam)
-	    printf("# bench: %s/%d end\n", mpi_bench->label, param);
+	    printf("# bench: %s/%d end\n", mpi_bench->label, p);
+	}
+      if(param_bounds)
+	{
+	  p = param_bounds->incr + p * param_bounds->mult;
 	}
     }
+  while((param_bounds != NULL) && (p <= param_bounds->max));
   if(!mpi_bench_common.is_server)
       printf("# bench: %s end\n", mpi_bench->label);
 }

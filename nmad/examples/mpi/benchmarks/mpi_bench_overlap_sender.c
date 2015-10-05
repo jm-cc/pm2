@@ -17,6 +17,19 @@
 
 static int compute = 500;
 
+static const struct mpi_bench_param_bounds_s param_bounds =
+  {
+    .min  = MIN_COMPUTE,
+    .max  = MAX_COMPUTE,
+    .mult = MULT_COMPUTE,
+    .incr = 1
+  };
+
+static const struct mpi_bench_param_bounds_s*mpi_bench_overlap_sender_getparams(void)
+{
+  return &param_bounds;
+}
+
 static void mpi_bench_overlap_sender_setparam(int param)
 {
   compute = param;
@@ -45,8 +58,6 @@ const struct mpi_bench_s mpi_bench_overlap_sender =
     .server     = &mpi_bench_overlap_sender_server,
     .client     = &mpi_bench_overlap_sender_client,
     .setparam   = &mpi_bench_overlap_sender_setparam,
-    .param_min  = MIN_COMPUTE,
-    .param_max  = MAX_COMPUTE,
-    .param_mult = MULT_COMPUTE
+    .getparams  = &mpi_bench_overlap_sender_getparams
   };
 

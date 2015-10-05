@@ -34,6 +34,14 @@ struct mpi_bench_param_s
   int    iterations;
 };
 
+/** bounds for parameterized benchmarks */
+struct mpi_bench_param_bounds_s
+{
+  int min, max;
+  double mult;
+  int incr;
+};
+
 struct mpi_bench_s
 {
   const char*label;
@@ -43,8 +51,7 @@ struct mpi_bench_s
   void (*client)(void*buf, size_t len);
   void (*init)(void*buf, size_t len);
   void (*setparam)(int param);
-  int param_min, param_max;
-  double param_mult;
+  const struct mpi_bench_param_bounds_s*(*getparams)(void);
 };
 
 void mpi_bench_init(int argc, char**argv);
@@ -54,6 +61,7 @@ void mpi_bench_finalize(void);
 
 /* ********************************************************* */
 
+/** common variables shared between init, main, and individual benchmarks */
 struct mpi_bench_common_s
 {
   int self, peer, size;

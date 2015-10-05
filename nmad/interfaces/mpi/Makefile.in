@@ -65,3 +65,8 @@ $(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.
 $(madmpi_f90_builddir)/mpi.mod: | $(madmpi_f90_builddir)/mpi1.mod
 $(madmpi_f90_builddir)/mpi1.mod: | $(madmpi_f90_builddir)/mpi_constants.mod
 
+install: install-link
+
+install-link: | install-bin
+	$(SHOWMK) "  [LN]     mpiexec"
+	$(Q)$(LN) mpirun @nmad_root@/bin/mpiexec

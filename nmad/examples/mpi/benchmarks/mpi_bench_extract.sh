@@ -60,7 +60,11 @@ mpi_bench_extract_line_param() {
     sed -e "/${b}\/${p} begin/,/${b}\/${p} end/ !d;/^#/ d;/^${s}\t/ !d" ${benchfile}
 }
 
-for b in mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig; do
+for b in mpi_bench_overlap_sender \
+	 mpi_bench_overlap_recv \
+	 mpi_bench_overlap_bidir \
+	 mpi_bench_overlap_sender_noncontig \
+	 mpi_bench_overlap_Nload; do
     case ${b} in
 	*noncontig*)
 	    benchref=mpi_bench_noncontig
@@ -79,13 +83,22 @@ for b in mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir
     for s in ${size_list}; do
 	echo "# size: ${s}"
 	latref=$( mpi_bench_extract_line ${benchref} ${s} | cut -f 2 )
-	int_latref=$( echo ${latref} | cut -f 1 -d '.' )
 	echo "# generated from ${b} for size=${s}" > ${outdir}/${b}-s${s}.dat
 	echo "# reference latency: ${latref}"     >> ${outdir}/${b}-s${s}.dat
 	echo "# comp.time | ratio | rtt."         >> ${outdir}/${b}-s${s}.dat
 	for p in ${params}; do
 	    rtt=$( mpi_bench_extract_line_param ${b} ${s} ${p} | cut -f 2 )
-	    ratio=$( bc << EOF
+	    case ${b} in
+		*Nload*)
+		    ratio=$( bc << EOF
+scale=2
+lat=${rtt} - ${latref}
+if( lat > 0 ) lat / ${latref} else 0
+EOF
+			 )
+		    ;;
+		*)
+		    ratio=$( bc << EOF
 scale=2
 lat = ${rtt} - ${latref0}
 if( ${p} < ${latref}) {
@@ -94,7 +107,9 @@ if( ${p} < ${latref}) {
   if(lat > ${p}) (( lat - ${p} ) / ${latref}) else 0
 }
 EOF
-		 )
+			 )
+		    ;;
+	    esac
 	    echo "${p} ${ratio} ${rtt}"                >> ${outdir}/${b}-s${s}.dat
 	    echo "${s} ${p} ${ratio} ${rtt} ${latref}" >> ${outdir}/${b}-ratio2d.dat
 	done
@@ -173,6 +188,12 @@ do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_
   splot "${outdir}/".b."-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title b with pm3d 
 }
 
+unset multiplot
+set output "${outdir}/overlap-Nload.pdf"
+unset logscale y
+set ylabel "Threads number"
+set yrange [0:16]
+splot "${outdir}/mpi_bench_overlap_Nload-ratio2d.dat" using  1:2:(\$3>2?2:\$3) title "Nload" with pm3d 
 
 EOF
 

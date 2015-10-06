@@ -50,14 +50,8 @@ static const struct mpi_bench_param_bounds_s*mpi_bench_overlap_Nload_getparams(v
 
 static void mpi_bench_overlap_Nload_setparam(int param)
 {
-  /* stop previous threads */
-  compute_stop = 1;
-  int i;
-  for(i = 0; i < threads; i++)
-    {
-      pthread_join(tids[i], NULL);
-    }
   /* start this round threads */
+  int i;
   compute_stop = 0;
   threads = param;
   for(i = 0; i < threads; i++)
@@ -68,12 +62,14 @@ static void mpi_bench_overlap_Nload_setparam(int param)
 
 static void mpi_bench_overlap_Nload_finalize(void)
 {
-  compute_stop = 1;
+  /* stop previous threads */
   int i;
+  compute_stop = 1;
   for(i = 0; i < threads; i++)
     {
       pthread_join(tids[i], NULL);
     }
+  threads = 0;
 }
 
 static void mpi_bench_overlap_Nload_server(void*buf, size_t len)

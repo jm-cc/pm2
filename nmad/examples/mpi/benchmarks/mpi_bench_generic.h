@@ -15,7 +15,9 @@
 
 
 #include <mpi.h>
-#include <tbx.h>
+#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifndef MPI_BENCH_GENERIC_H
 #define MPI_BENCH_GENERIC_H
@@ -73,6 +75,30 @@ struct mpi_bench_common_s
 extern struct mpi_bench_common_s mpi_bench_common;
 
 
+/* ** Timing *********************************************** */
+
+/* Use POSIX clock_gettime to measure time. Some MPI 
+ * implementations still use gettimeofday for MPI_Wtime(), 
+ * we cannot rely on it.
+ */
+
+typedef struct timespec mpi_bench_tick_t;
+
+static inline void mpi_bench_get_tick(mpi_bench_tick_t*t)
+{
+#ifdef CLOCK_MONOTONIC_RAW
+#  define CLOCK_TYPE CLOCK_MONOTONIC_RAW
+#else
+#  define CLOCK_TYPE CLOCK_MONOTONIC
+#endif
+  clock_gettime(CLOCK_TYPE, t);
+}
+static inline double mpi_bench_timing_delay(const mpi_bench_tick_t*const t1, const mpi_bench_tick_t*const t2)
+{
+  const double delay = 1000000.0 * (t2->tv_sec - t1->tv_sec) + (t2->tv_nsec - t1->tv_nsec) / 1000.0;
+  return delay;
+}
+
 /* ********************************************************* */
 
 #define MIN_COMPUTE 0
@@ -83,9 +109,9 @@ static volatile double r = 1.0;
 
 static void mpi_bench_do_compute(int usec)
 {
-  tbx_tick_t t1, t2;
+  mpi_bench_tick_t t1, t2;
   double delay = 0.0;
-  TBX_GET_TICK(t1);
+  mpi_bench_get_tick(&t1);
   while(delay < usec)
     {
       int k;
@@ -93,8 +119,8 @@ static void mpi_bench_do_compute(int usec)
 	{
 	  r = (r * 1.1) + 2.213890 - k;
 	}
-      TBX_GET_TICK(t2);
-      delay = TBX_TIMING_DELAY(t1, t2);
+      mpi_bench_get_tick(&t2);
+      delay = mpi_bench_timing_delay(&t1, &t2);
     }
 }
 

@@ -145,7 +145,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	{
 	  /* client
 	   */
-	  tbx_tick_t t1, t2;
+	  mpi_bench_tick_t t1, t2;
 	  double*lats = malloc(sizeof(double) * params->iterations);
 	  printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max\n");
 	  size_t len;
@@ -160,10 +160,10 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      MPI_Barrier(mpi_bench_common.comm);
 	      for(k = 0; k < iterations; k++)
 		{
-		  TBX_GET_TICK(t1);
+		  mpi_bench_get_tick(&t1);
 		  (*mpi_bench->client)(buf, len);
-		  TBX_GET_TICK(t2);
-		  const double delay = TBX_TIMING_DELAY(t1, t2);
+		  mpi_bench_get_tick(&t2);
+		  const double delay = mpi_bench_timing_delay(&t1, &t2);
 		  const double t = mpi_bench->rtt ? delay : (delay / 2);
 		  lats[k] = t;
 		  MPI_Barrier(mpi_bench_common.comm);

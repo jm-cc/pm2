@@ -19,10 +19,10 @@ TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 MPICC    ?= @nmad_root@/bin/mpicc
 CC       := $(MPICC)
-CFLAGS   := @tbx_CFLAGS@
+CFLAGS   :=
 LD       := $(CC)
 LDFLAGS  :=
-LIBS     := -lm -lpthread @tbx_LIBS@
+LIBS     := -lm -lpthread
 CC_DEP   := $(CC) -MM
 
 CLEAN_MORE += $(wildcard stub_*.c)

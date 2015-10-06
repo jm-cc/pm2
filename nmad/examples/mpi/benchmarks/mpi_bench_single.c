@@ -42,7 +42,7 @@ static void usage_ping(void)
 }
 
 /* variable defined in stub */
-extern const struct mpi_bench_s*mpi_bench_default;
+const extern struct mpi_bench_s*mpi_bench_default;
 
 int main(int argc, char	**argv)
 {

@@ -25,14 +25,14 @@
 #define LOOPS_DEFAULT   50
 #define LOOPS_REFERENCE 1000
 
-extern struct mpi_bench_s mpi_bench_sendrecv;
-extern struct mpi_bench_s mpi_bench_noncontig;
-extern struct mpi_bench_s mpi_bench_overlap_sender;
-extern struct mpi_bench_s mpi_bench_overlap_recv;
-extern struct mpi_bench_s mpi_bench_overlap_bidir;
-extern struct mpi_bench_s mpi_bench_overlap_sender_noncontig;
-extern struct mpi_bench_s mpi_bench_overlap_send_overhead;
-extern struct mpi_bench_s mpi_bench_overlap_Nload;
+const extern struct mpi_bench_s mpi_bench_sendrecv;
+const extern struct mpi_bench_s mpi_bench_noncontig;
+const extern struct mpi_bench_s mpi_bench_overlap_sender;
+const extern struct mpi_bench_s mpi_bench_overlap_recv;
+const extern struct mpi_bench_s mpi_bench_overlap_bidir;
+const extern struct mpi_bench_s mpi_bench_overlap_sender_noncontig;
+const extern struct mpi_bench_s mpi_bench_overlap_send_overhead;
+const extern struct mpi_bench_s mpi_bench_overlap_Nload;
 
 int main(int argc, char	**argv)
 {

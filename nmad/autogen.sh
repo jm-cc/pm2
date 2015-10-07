@@ -1,4 +1,7 @@
 #! /bin/sh
 
-autoreconf -v
+export M4PATH=../building-tools:./building-tools:${M4PATH}
+
+${AUTOCONF:-autoconf} 
+${AUTOHEADER:-autoheader} -f
 

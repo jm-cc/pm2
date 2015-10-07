@@ -7,8 +7,8 @@ AC_REVISION($Revision: 3960 $)
 AC_INIT(include/nm_public.h)
 AC_CONFIG_HEADER(include/nm_private_config.h include/nm_config.h)
 
-m4_include([../building-tools/pkg.m4])
-m4_include([../building-tools/tools.m4])
+m4_include([pkg.m4])
+m4_include([tools.m4])
 
 dnl -- directories
 dnl --------------------------------------------------------

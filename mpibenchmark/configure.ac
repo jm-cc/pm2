@@ -39,6 +39,6 @@ AC_PADICO_DEBUG
 dnl --- output
 dnl --------------------------------------------------------
 
-AC_PADICO_OUT_COMMON_MK(./building-tools)
+AC_PADICO_OUT_COMMON_MK
 AC_PADICO_OUT_ROOT
 AC_PADICO_OUTPUT

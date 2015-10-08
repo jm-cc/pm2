@@ -449,6 +449,6 @@ done
 AC_PADICO_OUT_SH([interfaces/sampling/nmad-sample])
 out_mk="${out_mk} Makefile examples/Makefile nmad.pc nmad-eztrace.tpl"
 
-AC_PADICO_OUT_COMMON_MK(../building-tools)
+AC_PADICO_OUT_COMMON_MK
 AC_PADICO_OUTPUT
 

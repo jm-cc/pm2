@@ -107,6 +107,7 @@ static inline double mpi_bench_timing_delay(const mpi_bench_tick_t*const t1, con
 
 static volatile double r = 1.0;
 
+static void mpi_bench_do_compute(int usec) __attribute__((unused));
 static void mpi_bench_do_compute(int usec)
 {
   mpi_bench_tick_t t1, t2;

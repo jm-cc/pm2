@@ -25,6 +25,9 @@ AC_PADICO_DEP
 AC_PADICO_LINKER
 AX_MPI
 
+AC_SEARCH_LIBS(pthread_create,  [pthread c], [], [ AC_MSG_ERROR([Cannot find pthread_create() ]) ])
+
+
 dnl --- check features
 dnl --------------------------------------------------------
 

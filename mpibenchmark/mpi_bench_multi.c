@@ -47,6 +47,7 @@ const struct mpi_bench_s mpi_bench_multi =
     .label   = "mpi_bench_multi",
     .name    = "MPI multi ping",
     .server  = &mpi_bench_multi_server,
-    .client  = &mpi_bench_multi_client
+    .client  = &mpi_bench_multi_client,
+    .init    = &mpi_bench_multi_init
   };
 

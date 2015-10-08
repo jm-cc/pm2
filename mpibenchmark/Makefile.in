@@ -17,10 +17,9 @@ TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 MPICC     = @MPICC@
 CC       := $(MPICC)
-CFLAGS   := -I.
+CFLAGS   += -I.
 LD       := $(CC)
-LDFLAGS  :=
-LIBS     := -lm -lpthread
+LDFLAGS  +=
 CC_DEP   := $(CC) -MM
 
 CLEAN_MORE += $(wildcard stub_*.c)

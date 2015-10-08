@@ -14,6 +14,7 @@
  */
 
 #include "mpi_bench_generic.h"
+#include <pthread.h>
 
 #define MAX_THREADS 16
 

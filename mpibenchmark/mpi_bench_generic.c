@@ -56,7 +56,6 @@ static inline size_t _next(size_t len, double multiplier, size_t increment)
 
 static void fill_buffer(char*buffer, size_t len) __attribute__((unused));
 static void clear_buffer(char*buffer, size_t len) __attribute__((unused));
-static void control_buffer(const char*msg, const char*buffer, size_t len) __attribute__((unused));
 
 static void fill_buffer(char*buffer, size_t len)
 {

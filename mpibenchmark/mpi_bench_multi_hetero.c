@@ -46,6 +46,7 @@ const struct mpi_bench_s mpi_bench_multi_hetero =
     .label   = "mpi_bench_multi_hetero",
     .name    = "MPI heterogeneous multi ping",
     .server  = &mpi_bench_multi_hetero_server,
-    .client  = &mpi_bench_multi_hetero_client
+    .client  = &mpi_bench_multi_hetero_client,
+    .init    = &mpi_bench_multi_hetero_init
   };
 

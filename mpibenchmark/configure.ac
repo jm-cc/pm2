@@ -26,6 +26,7 @@ AC_PADICO_LINKER
 AX_MPI
 
 AC_SEARCH_LIBS(pthread_create,  [pthread c], [], [ AC_MSG_ERROR([Cannot find pthread_create() ]) ])
+AC_SEARCH_LIBS(clock_gettime,  [rt c], [], [ AC_MSG_ERROR([Cannot find clock_gettime() ]) ])
 
 
 dnl --- check features

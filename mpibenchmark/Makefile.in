@@ -1,7 +1,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include @puk_root@/etc/common_vars.mk
+include @abs_top_builddir@/common_vars.mk
 
 TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_sparse_vector mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_noncontig mpi_bench_overlap_Nload
 
@@ -13,13 +13,11 @@ INSTALL_BIN     = $(TARGET_BIN)
 INSTALL_LIB     = $(TARGET_LIB)
 INSTALL_INCLUDE = 
 
-INSTALL_PREFIX := @nmad_root@
-
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
-MPICC    ?= @nmad_root@/bin/mpicc
+MPICC     = @MPICC@
 CC       := $(MPICC)
-CFLAGS   :=
+CFLAGS   := -I.
 LD       := $(CC)
 LDFLAGS  :=
 LIBS     := -lm -lpthread
@@ -27,7 +25,7 @@ CC_DEP   := $(CC) -MM
 
 CLEAN_MORE += $(wildcard stub_*.c)
 
-include @puk_root@/etc/common_rules.mk
+include @abs_top_builddir@/common_rules.mk
 
 #$(TARGET_BIN): %: %.pic.o
 

@@ -14,6 +14,7 @@ m4_include([ax_mpi.m4])
 dnl --- Directories and version
 dnl --------------------------------------------------------
 
+AC_PADICO_PACKAGE([mpibenchmark])
 AC_PADICO_BUILDDIR
 AC_PADICO_SRCDIR
 
@@ -25,6 +26,12 @@ AC_PADICO_COMPILER
 AC_PADICO_DEP
 AC_PADICO_LINKER
 AX_MPI
+
+dnl --- check features
+dnl --------------------------------------------------------
+
+AC_PADICO_OPTIMIZE
+AC_PADICO_DEBUG
 
 
 dnl --- output

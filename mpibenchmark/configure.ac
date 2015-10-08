@@ -2,7 +2,7 @@ dnl ----- configure.ac for mpibench -----
 
 AC_PREREQ(2.50)
 
-AC_INIT(autogen.sh)
+AC_INIT(mpi_bench_sendrecv.c)
 
 m4_include([misc.m4])
 m4_include([compiler.m4])
@@ -15,8 +15,6 @@ dnl --- Directories and version
 dnl --------------------------------------------------------
 
 AC_PADICO_PACKAGE([mpibenchmark])
-AC_PADICO_BUILDDIR
-AC_PADICO_SRCDIR
 
 dnl --- Compiler and base tools
 dnl --------------------------------------------------------

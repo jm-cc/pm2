@@ -23,7 +23,7 @@ ifeq (@with_pioman@,yes)
   endif
 endif
 ifeq (@nmad_enable_mpi@,yes)
-  EXAMPLE_DIRS += mpi/basics mpi/benchmarks mpi/oldbench
+  EXAMPLE_DIRS += mpi/basics mpi/oldbench
   ifneq (@nmad_fortran_target@,none)
     EXAMPLE_DIRS += mpi/fortran mpi/f90
   endif

@@ -2,7 +2,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include @puk_root@/etc/common_vars.mk
+include @abs_top_builddir@/common_vars.mk
 
 TARGET_MOD = NewMad_Driver_mx
 TARGET_BIN =
@@ -18,6 +18,6 @@ INSTALL_INIT =
 CFLAGS := @NMAD_CORE_CFLAGS@ @mx_CFLAGS@ 
 MODLIBS += @mx_LIBS@
 
-include @puk_root@/etc/common_rules.mk
+include @abs_top_builddir@/common_rules.mk
 
 NewMad_Driver_mx: nm_mx.pic.o

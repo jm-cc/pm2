@@ -1,7 +1,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include @puk_root@/etc/common_vars.mk
+include @abs_top_builddir@/common_vars.mk
 
 TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/*.c))
 TARGET_LIB =
@@ -18,7 +18,7 @@ TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 CFLAGS  := $(shell env PKG_CONFIG_PATH=@nmad_root@/lib/pkgconfig pkg-config --cflags nmad)
 LIBS    := $(shell env PKG_CONFIG_PATH=@nmad_root@/lib/pkgconfig pkg-config --libs nmad)
 
-include @puk_root@/etc/common_rules.mk
+include @abs_top_builddir@/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 

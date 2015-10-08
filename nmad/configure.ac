@@ -9,9 +9,15 @@ AC_CONFIG_HEADER(include/nm_private_config.h include/nm_config.h)
 
 m4_include([pkg.m4])
 m4_include([tools.m4])
+m4_include([misc.m4])
+m4_include([out.m4])
+m4_include([compiler.m4])
+m4_include([features.m4])
 
 dnl -- directories
 dnl --------------------------------------------------------
+
+AC_PADICO_PACKAGE([nmad])
 
 dnl -- build dir
 AC_MSG_CHECKING([nmad build directory])
@@ -45,9 +51,11 @@ AC_MSG_RESULT(${nmad_srcdir})
 dnl -- tools
 dnl --------------------------------------------------------
 
-AC_PATH_PROG([BASH], [bash])
-AC_SUBST([BASH])
-
+AC_PADICO_BASE_TOOLS
+AC_PADICO_GNU_MAKE
+AC_PADICO_DEP
+AC_PADICO_LINKER
+AC_PADICO_DYNLD
 
 dnl -- options
 dnl --------------------------------------------------------
@@ -309,13 +317,7 @@ if test "x${with_cci}" != "xno" ; then
 fi
 
 dnl -- LZ4 compression
-AC_CHECK_HEADER(lz4.h, 
-                [ HAVE_LZ4_H="yes"
-                  HAVE_LIBLZ4="yes"
-                  AC_DEFINE(HAVE_LZ4_H, 1, [Define if you have the <lz4.h> header file.])],
-                [ HAVE_LZ4_H="no"
-                  HAVE_LIBLZ4="no" ])
-AC_SUBST(HAVE_LIBLZ4)
+AC_PADICO_CHECK_LZ4
 
 dnl -- Fortran
 AC_MSG_CHECKING([for Fortran support in tbx])
@@ -352,7 +354,11 @@ AC_ARG_ENABLE(mpi,
 	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
                     nmad_enable_mpi=yes
 		    nmad_interfaces="${nmad_interfaces} mpi"
-		    out_sh="${out_sh} interfaces/mpi/bin/mpirun interfaces/mpi/bin/mpicc interfaces/mpi/bin/mpicxx interfaces/mpi/bin/mpif77 interfaces/mpi/bin/mpif90"
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpirun])
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpicc])
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpicxx])
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpif77])
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpif90])
 	        fi
 	      ],
 	      [
@@ -440,10 +446,9 @@ for e in `( cd ${nmad_srcdir}; find examples -name Makefile.in )`; do
     out_mk="${out_mk} `echo ${e} | sed -e s/Makefile.in/Makefile/g`"
 done
 
-out_sh="${out_sh} interfaces/sampling/nmad-sample"
+AC_PADICO_OUT_SH([interfaces/sampling/nmad-sample])
 out_mk="${out_mk} Makefile examples/Makefile nmad.pc nmad-eztrace.tpl"
 
-
-AC_OUTPUT_COMMANDS([chmod +x ${out_sh} ], [ out_sh="${out_sh}" ])
-AC_OUTPUT(${out_mk} ${out_sh})
+AC_PADICO_OUT_COMMON_MK(../building-tools)
+AC_PADICO_OUTPUT
 

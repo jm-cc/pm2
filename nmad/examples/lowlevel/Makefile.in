@@ -1,7 +1,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include @puk_root@/etc/common_vars.mk
+include @abs_top_builddir@/common_vars.mk
 
 TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/*.c))
 TARGET_LIB =
@@ -27,7 +27,7 @@ ifeq (@NMAD_ENABLE_DEBUG,yes)
 CFLAGS += $(DEBUG_CFLAGS)
 endif
 
-include @puk_root@/etc/common_rules.mk
+include @abs_top_builddir@/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 

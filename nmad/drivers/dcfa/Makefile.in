@@ -2,7 +2,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include @puk_root@/etc/common_vars.mk
+include @abs_top_builddir@/common_vars.mk
 
 TARGET_MOD = NewMad_dcfa_bycopy NewMad_dcfa_rcache NewMad_dcfa_common NewMad_dcfa_lr2
 TARGET_BIN =
@@ -18,7 +18,7 @@ INSTALL_INIT =
 CFLAGS :=  @NMAD_CORE_CFLAGS@ @dcfa_CFLAGS@ 
 MODLIBS += @dcfa_LIBS@ --requires NewMad_Connector
 
-include @puk_root@/etc/common_rules.mk
+include @abs_top_builddir@/common_rules.mk
 
 NewMad_dcfa_common: nm_dcfa_common.pic.o
 

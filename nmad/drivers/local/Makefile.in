@@ -1,7 +1,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include @puk_root@/etc/common_vars.mk
+include @abs_top_builddir@/common_vars.mk
 
 TARGET_MOD = NewMad_Driver_local
 
@@ -14,7 +14,7 @@ INSTALL_INIT =
 
 CFLAGS := @NMAD_CORE_CFLAGS@
 
-include @puk_root@/etc/common_rules.mk
+include @abs_top_builddir@/common_rules.mk
 
 NewMad_Driver_local: nm_local.pic.o
 

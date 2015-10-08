@@ -2,7 +2,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include @puk_root@/etc/common_vars.mk
+include @abs_top_builddir@/common_vars.mk
 
 TARGET_MOD = NewMad_Connector
 TARGET_BIN =
@@ -21,6 +21,6 @@ LIBS    := -L@nmad_builddir@ @NMAD_LIBS@
 
 CLEAN_MORE += src/nm_connector.pic.o
 
-include @puk_root@/etc/common_rules.mk
+include @abs_top_builddir@/common_rules.mk
 
 NewMad_Connector: src/nm_connector.pic.o

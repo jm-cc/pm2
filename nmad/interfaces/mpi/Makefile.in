@@ -3,7 +3,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include @puk_root@/etc/common_vars.mk
+include @abs_top_builddir@/common_vars.mk
 
 TARGET_LIB = libmadmpi.so
 TARGET_BIN =
@@ -48,7 +48,7 @@ INSTALL_INCLUDE  += $(MADMPI_F90_MODS)
 TARGETS          += $(MADMPI_F90_MODS)
 endif
 
-include @puk_root@/etc/common_rules.mk
+include @abs_top_builddir@/common_rules.mk
 
 $(TARGET_LIB): $(OBJ_FILES)
 

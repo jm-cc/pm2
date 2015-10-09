@@ -3,9 +3,14 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_BIN_BENCH = mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_sparse_vector mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_noncontig mpi_bench_overlap_Nload
+BENCH_BASE     := mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_noncontig
+BENCH_OVERLAP  := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_overlap_*.c))
+BENCH_DATATYPE := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_sparse_*.c))
+BENCH_THREAD   := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_thread_*.c))
 
-TARGET_BIN = $(TARGET_BIN_BENCH) mpi_bench_overlap
+BENCH_ALL      := $(BENCH_BASE) $(BENCH_OVERLAP) $(BENCH_DATATYPE) $(BENCH_THREAD)
+
+TARGET_BIN = $(BENCH_ALL) mpi_bench_overlap
 TARGET_LIB =
 SUBDIRS =
 
@@ -17,10 +22,11 @@ TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 MPICC     = @MPICC@
 CC       := $(MPICC)
-CFLAGS   += -I.
+CFLAGS   += -I. @hwloc_CFLAGS@ @DEFS@
 LD       := $(CC)
 LDFLAGS  +=
-CC_DEP   := $(CC) -MM
+LIBS     += @hwloc_LIBS@
+CC_DEP   := $(MPICC) @CDEPFLAGS@
 
 CLEAN_MORE += $(wildcard stub_*.c)
 
@@ -35,6 +41,7 @@ stub_%.c:
 	$(Q)echo "extern const struct mpi_bench_s mpi_bench_$*;" >> $@
 	$(Q)echo "const struct mpi_bench_s*mpi_bench_default = &mpi_bench_$*;" >> $@
 
-$(TARGET_BIN_BENCH): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o mpi_bench_single.pic.o stub_%.pic.o
+$(BENCH_ALL): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o mpi_bench_single.pic.o stub_%.pic.o
 
-mpi_bench_overlap: mpi_bench_overlap.pic.o mpi_bench_generic.pic.o mpi_bench_sendrecv.pic.o mpi_bench_noncontig.pic.o mpi_bench_overlap_sender.pic.o mpi_bench_overlap_recv.pic.o mpi_bench_overlap_bidir.pic.o mpi_bench_overlap_sender_noncontig.pic.o mpi_bench_overlap_send_overhead.pic.o mpi_bench_overlap_Nload.pic.o
+mpi_bench_overlap: $(patsubst %, %.pic.o, mpi_bench_overlap mpi_bench_generic $(BENCH_BASE) $(BENCH_OVERLAP))
+

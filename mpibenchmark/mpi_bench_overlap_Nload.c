@@ -16,11 +16,15 @@
 #include "mpi_bench_generic.h"
 #include <pthread.h>
 
-#define MAX_THREADS 16
+#define MAX_THREADS 512
+#define DEFAULT_THREADS 16
+#ifdef HAVE_HWLOC
+#include <hwloc.h>
+#endif /* HAVE_HWLOC */
 
 static int threads = 0;
 
-static const struct mpi_bench_param_bounds_s param_bounds =
+static struct mpi_bench_param_bounds_s param_bounds =
   {
     .min  = 0,
     .max  = MAX_THREADS,
@@ -46,6 +50,31 @@ static void*do_compute(void*_dummy)
 
 static const struct mpi_bench_param_bounds_s*mpi_bench_overlap_Nload_getparams(void)
 {
+#ifdef HAVE_HWLOC
+  printf("# counting cores with hwloc...\n");
+  hwloc_topology_t topology;
+  hwloc_topology_init(&topology);
+  hwloc_topology_load(topology);
+  int depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
+  char*level = "processing units";
+  if(depth == HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+      depth = hwloc_get_type_depth(topology, HWLOC_OBJ_CORE);
+      level = "cores";
+    }
+  if(depth == HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+      printf("# WARNING- cannot find number of cores.\n");
+    }
+  else
+    {
+      param_bounds.max = hwloc_get_nbobjs_by_depth(topology, depth);
+      printf("# found %d %s; using %d threads.\n", param_bounds.max, level, param_bounds.max);
+    }
+  hwloc_topology_destroy(topology);
+#else /* HAVE_HWLOC */
+  printf("# hwloc not available, using default threads count = %d\n", DEFAULT_THREADS);
+#endif /* HAVE_HWLOC */
   return &param_bounds;
 }
 

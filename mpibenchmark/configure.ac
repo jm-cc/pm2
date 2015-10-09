@@ -9,6 +9,7 @@ m4_include([compiler.m4])
 m4_include([tools.m4])
 m4_include([features.m4])
 m4_include([out.m4])
+m4_include([pkg.m4])
 m4_include([ax_mpi.m4])
 
 dnl --- Directories and version
@@ -28,12 +29,12 @@ AX_MPI
 AC_SEARCH_LIBS(pthread_create,  [pthread c], [], [ AC_MSG_ERROR([Cannot find pthread_create() ]) ])
 AC_SEARCH_LIBS(clock_gettime,  [rt c], [], [ AC_MSG_ERROR([Cannot find clock_gettime() ]) ])
 
-
 dnl --- check features
 dnl --------------------------------------------------------
 
 AC_PADICO_OPTIMIZE
 AC_PADICO_DEBUG
+AC_PADICO_CHECK_HWLOC
 
 
 dnl --- output

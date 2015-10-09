@@ -27,7 +27,7 @@ static int threads = 0;
 static struct mpi_bench_param_bounds_s param_bounds =
   {
     .min  = 0,
-    .max  = MAX_THREADS,
+    .max  = DEFAULT_THREADS,
     .mult = 1,
     .incr = 1
   };
@@ -90,7 +90,7 @@ static void mpi_bench_overlap_Nload_setparam(int param)
     }
 }
 
-static void mpi_bench_overlap_Nload_finalize(void)
+static void mpi_bench_overlap_Nload_finalizeparam(void)
 {
   /* stop previous threads */
   int i;
@@ -104,13 +104,13 @@ static void mpi_bench_overlap_Nload_finalize(void)
 
 static void mpi_bench_overlap_Nload_server(void*buf, size_t len)
 {
-  MPI_Recv(buf, len, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-  MPI_Send(buf, len, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD);
+  MPI_Recv(buf, len, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  MPI_Send(buf, len, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD);
 }
 
 static void mpi_bench_overlap_Nload_client(void*buf, size_t len)
 {
-  MPI_Send(buf, len, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD);
+  MPI_Send(buf, len, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD);
   MPI_Recv(buf, len, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 }
 
@@ -123,6 +123,6 @@ const struct mpi_bench_s mpi_bench_overlap_Nload =
     .client     = &mpi_bench_overlap_Nload_client,
     .setparam   = &mpi_bench_overlap_Nload_setparam,
     .getparams  = &mpi_bench_overlap_Nload_getparams,
-    .finalize   = &mpi_bench_overlap_Nload_finalize
+    .finalizeparam = &mpi_bench_overlap_Nload_finalizeparam
   };
 

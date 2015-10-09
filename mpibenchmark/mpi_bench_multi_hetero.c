@@ -19,7 +19,7 @@
 
 static int small = 0, large = 0;
 
-static void mpi_bench_multi_hetero_init(void*buf, size_t len)
+static void mpi_bench_multi_hetero_init(void*buf, size_t len, int count)
 {
   small = (len > SMALL) ? SMALL : len;
   large = len - small;

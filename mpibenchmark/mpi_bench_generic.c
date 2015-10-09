@@ -101,7 +101,7 @@ void mpi_bench_init(int argc, char**argv)
       char hostname[256];
       gethostname(hostname, 256);
       printf("# MadMPI benchmark - copyright (C) 2015 INRIA\n");
-      printf("# $Revision: $ build %s\n", __DATE__);
+      printf("# build %s\n", __DATE__);
       printf("# running on host %s\n", hostname);
       printf("# \n");
     }
@@ -138,13 +138,15 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      clear_buffer(buf, len);
 	      iterations = _iterations(iterations, len);
 	      if(mpi_bench->init != NULL)
-		(*mpi_bench->init)(buf, len);
+		(*mpi_bench->init)(buf, len, iterations);
 	      MPI_Barrier(mpi_bench_common.comm);
 	      for(k = 0; k < iterations; k++)
 		{
 		  (*mpi_bench->server)(buf, len);
 		  MPI_Barrier(mpi_bench_common.comm);
 		}
+	      if(mpi_bench->finalize != NULL)
+		(*mpi_bench->finalize)();
 	      free(buf);
 	      MPI_Barrier(mpi_bench_common.comm);
 	    }
@@ -164,7 +166,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      iterations = _iterations(iterations, len);
 	      int k;
 	      if(mpi_bench->init != NULL)
-		(*mpi_bench->init)(buf, len);
+		(*mpi_bench->init)(buf, len, iterations);
 	      MPI_Barrier(mpi_bench_common.comm);
 	      for(k = 0; k < iterations; k++)
 		{
@@ -176,6 +178,8 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 		  lats[k] = t;
 		  MPI_Barrier(mpi_bench_common.comm);
 		}
+	      if(mpi_bench->finalize != NULL)
+		(*mpi_bench->finalize)();
 	      qsort(lats, iterations, sizeof(double), &comp_double);
 	      const double min_lat = lats[0];
 	      const double max_lat = lats[iterations - 1];
@@ -202,9 +206,9 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	{
 	  p = param_bounds->incr + p * param_bounds->mult;
 	}
-      if(mpi_bench->finalize != NULL)
+      if(mpi_bench->finalizeparam != NULL)
 	{
-	  (*mpi_bench->finalize)();
+	  (*mpi_bench->finalizeparam)();
 	}
     }
   while((param_bounds != NULL) && (p <= param_bounds->max));

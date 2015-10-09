@@ -48,12 +48,13 @@ struct mpi_bench_s
 {
   const char*label;
   const char*name;
-  const int rtt; /** whether we should output round-trip time or half-rtt (one way latency) */
+  const int rtt; /**< whether we should output round-trip time or half-rtt (one way latency) */
   void (*server)(void*buf, size_t len);
   void (*client)(void*buf, size_t len);
-  void (*init)(void*buf, size_t len);
-  void (*finalize)(void);
-  void (*setparam)(int param);
+  void (*init)(void*buf, size_t len, int count); /**< called before a round with a given set of param+size */
+  void (*finalize)(void); /**< called at the end of a round for a given param+size */
+  void (*setparam)(int param); /**< set a new param */
+  void (*finalizeparam)(void); /**< called at the end of a round for a given param */
   const struct mpi_bench_param_bounds_s*(*getparams)(void);
 };
 

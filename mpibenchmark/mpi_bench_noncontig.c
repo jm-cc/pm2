@@ -21,7 +21,7 @@ static void*sparse_buf = NULL;
 static MPI_Datatype dtype = MPI_DATATYPE_NULL;
 
 
-static void mpi_bench_noncontig_init(void*buf, size_t len)
+static void mpi_bench_noncontig_init(void*buf, size_t len, int count)
 {
   const int blocksize = BLOCKSIZE;
   sparse_buf = malloc(len * 2 + blocksize);

@@ -39,7 +39,7 @@ static void mpi_bench_overlap_sender_noncontig_setparam(int param)
   compute = param;
 }
 
-static void mpi_bench_overlap_sender_noncontig_init(void*buf, size_t len)
+static void mpi_bench_overlap_sender_noncontig_init(void*buf, size_t len, int count)
 {
   const int blocksize = BLOCKSIZE;
   sparse_buf = malloc(len * 2 + blocksize);

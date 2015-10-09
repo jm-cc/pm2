@@ -87,14 +87,23 @@ void mpi_bench_init(int argc, char**argv)
 {
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_bench_common.size);
+  if(mpi_bench_common.size != 2)
+    {
+      fprintf(stderr, "# MadMPI benchmark needs 2 nodes.\n");
+      abort();
+    }
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_bench_common.self);
   mpi_bench_common.comm = MPI_COMM_WORLD;
   mpi_bench_common.is_server = (mpi_bench_common.self == 0);
   mpi_bench_common.peer = 1 - mpi_bench_common.self;
   if(!mpi_bench_common.is_server)
     {
+      char hostname[256];
+      gethostname(hostname, 256);
       printf("# MadMPI benchmark - copyright (C) 2015 INRIA\n");
-      printf("#\n");
+      printf("# $Revision: $ build %s\n", __DATE__);
+      printf("# running on host %s\n", hostname);
+      printf("# \n");
     }
 }
 

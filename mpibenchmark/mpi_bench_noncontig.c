@@ -24,10 +24,19 @@ static MPI_Datatype dtype = MPI_DATATYPE_NULL;
 static void mpi_bench_noncontig_init(void*buf, size_t len)
 {
   const int blocksize = BLOCKSIZE;
-  sparse_buf = realloc(sparse_buf, len * 2 + blocksize);
+  sparse_buf = malloc(len * 2 + blocksize);
   MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &dtype);
   MPI_Type_commit(&dtype);
-  /* TODO- we never free the dtype from previous iteration */
+}
+
+static void mpi_bench_noncontig_finalize(void)
+{
+  if(dtype != MPI_DATATYPE_NULL)
+    {
+      MPI_Type_free(&dtype);
+    }
+  free(sparse_buf);
+  sparse_buf = NULL;
 }
 
 static void mpi_bench_noncontig_server(void*buf, size_t len)
@@ -48,6 +57,7 @@ const struct mpi_bench_s mpi_bench_noncontig =
     .name       = "MPI non-contig sendrecv",
     .rtt        = 0,
     .init       = &mpi_bench_noncontig_init,
+    .finalize   = &mpi_bench_noncontig_finalize,
     .server     = &mpi_bench_noncontig_server,
     .client     = &mpi_bench_noncontig_client
   };

@@ -42,11 +42,21 @@ static void mpi_bench_overlap_sender_noncontig_setparam(int param)
 static void mpi_bench_overlap_sender_noncontig_init(void*buf, size_t len)
 {
   const int blocksize = BLOCKSIZE;
-  sparse_buf = realloc(sparse_buf, len * 2 + blocksize);
+  sparse_buf = malloc(len * 2 + blocksize);
   MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &dtype);
   MPI_Type_commit(&dtype);
-  /* TODO- we never free the dtype from previous iteration */
 }
+
+static void mpi_bench_overlap_sender_noncontig_finalize(void)
+{
+  if(dtype != MPI_DATATYPE_NULL)
+    {
+      MPI_Type_free(&dtype);
+    }
+  free(sparse_buf);
+  sparse_buf = NULL;
+}
+
 
 static void mpi_bench_overlap_sender_noncontig_server(void*buf, size_t len)
 {
@@ -69,6 +79,7 @@ const struct mpi_bench_s mpi_bench_overlap_sender_noncontig =
     .name       = "MPI overlap sender non-contig",
     .rtt        = 1,
     .init       = &mpi_bench_overlap_sender_noncontig_init,
+    .finalize   = &mpi_bench_overlap_sender_noncontig_finalize,
     .server     = &mpi_bench_overlap_sender_noncontig_server,
     .client     = &mpi_bench_overlap_sender_noncontig_client,
     .setparam   = &mpi_bench_overlap_sender_noncontig_setparam,

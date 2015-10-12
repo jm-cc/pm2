@@ -10,12 +10,12 @@ BENCH_THREAD   := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_th
 
 BENCH_ALL      := $(BENCH_BASE) $(BENCH_OVERLAP) $(BENCH_DATATYPE) $(BENCH_THREAD)
 
-TARGET_BIN = $(BENCH_ALL) mpi_bench_overlap
+TARGET_BIN = $(BENCH_ALL) mpi_bench_overlap 
 TARGET_LIB =
 SUBDIRS =
 
-INSTALL_BIN     = $(TARGET_BIN)
-INSTALL_LIB     = $(TARGET_LIB) mpi_bench_extract
+INSTALL_BIN     = $(TARGET_BIN) mpi_bench_extract
+INSTALL_LIB     = $(TARGET_LIB)
 INSTALL_INCLUDE = 
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)

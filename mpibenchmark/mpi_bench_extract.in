@@ -62,6 +62,12 @@ mpi_bench_extract_line_param() {
     sed -e "/${b}\/${p} begin/,/${b}\/${p} end/ !d;/^#/ d;/^${s}\t/ !d" ${benchfile}
 }
 
+mpi_bench_extract_params() {
+    b=$1
+    benchfile=${outdir}/${b}.dat
+    sed -e "s+^# bench: ${b}/\(.*\) begin+\1+p;d" ${benchfile} | tr '\n' ' '
+}
+
 for b in mpi_bench_overlap_sender \
 	 mpi_bench_overlap_recv \
 	 mpi_bench_overlap_bidir \
@@ -77,7 +83,7 @@ for b in mpi_bench_overlap_sender \
     esac
     benchfile=${outdir}/${b}.dat
     echo "# file ${benchfile}"
-    params=$( sed -e "s+^# bench: ${b}/\(.*\) begin+\1+p;d" ${benchfile} | tr '\n' ' ' )
+    params=$( mpi_bench_extract_params ${b} )
     echo "# params list: ${params}"
     latref0=$( mpi_bench_extract_line ${benchref} 0 | cut -f 2 )
     echo "# generated from ${b}"                    > ${outdir}/${b}-ratio2d.dat
@@ -118,9 +124,13 @@ EOF
 	echo  >> ${outdir}/${b}-ratio2d.dat
     done
 
-    @GNUPLOT@ <<EOF
+    cat > ${outdir}/${b}.gp <<EOF
+# -*- mode: Gnuplot;-*-
+reset
+cd "${outdir}"
+
 set term pdfcairo color fontscale 0.3
-set output "${outdir}/${b}-ratio2d.pdf"
+set output "${b}-lin.pdf"
 set view map
 set pm3d interpolate 0,0
 set key bmargin box
@@ -130,30 +140,33 @@ set xlabel "Message size (bytes)"
 set ylabel "Computation time (usec.)"
 set cblabel "${b}"
 set xrange [0:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
-set yrange [0:$( echo ${params} | tr ' ' '\n' | tail -1 )]
+set yrange [0:$( mpi_bench_extract_params ${b} | tr ' ' '\n' | tail -1 )]
 set cbrange [0:2]
 splot \
-  "${outdir}/${b}-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title "${b}" with pm3d , \
-  "${outdir}/${benchref}.dat" using 1:2:(2) title "Ref. latency" with linespoints lw 2
+  "${b}-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title "${b}" with pm3d , \
+  "${benchref}.dat" using 1:2:(2) title "Ref. latency" with linespoints lw 2
 
 set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 MB" 4*1024*1024, "32 MB" 32*1024*1024 )
 set xrange [2048:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
-set yrange [20:$( echo ${params} | tr ' ' '\n' | tail -1 )]
+set yrange [20:$( mpi_bench_extract_params ${b} | tr ' ' '\n' | tail -1 )]
 set cbrange [0:2]
-set output "${outdir}/${b}-log.pdf"
+set output "${b}-log.pdf"
 set logscale x 2
 set logscale y 10
 replot
-
 EOF
     echo
 done
 
 echo "# ## generating global plot..."
 
-@GNUPLOT@ <<EOF
+cat > ${outdir}/overlap.gp <<EOF
+# -*- mode: Gnuplot;-*-
+reset
+cd "${outdir}"
+
 set term pdfcairo color fontscale 0.3
-set output "${outdir}/overlap-lin.pdf"
+set output "overlap-lin.pdf"
 
 set multiplot layout 2,2 title "${file}"
 
@@ -169,34 +182,43 @@ set tmargin 0.2
 set bmargin 0.2
 
 set xrange [0:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
-set yrange [0:$( echo ${params} | tr ' ' '\n' | tail -1 )]
+set yrange [0:$( mpi_bench_extract_params mpi_bench_overlap_sender | tr ' ' '\n' | tail -1 )]
 set cbrange [0:2]
 do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig"] {
   set title b
-  splot "${outdir}/".b."-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title b with pm3d 
+  splot b."-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title b with pm3d 
 }
 
 unset multiplot
-set output "${outdir}/overlap-log.pdf"
+set output "overlap-log.pdf"
 set multiplot layout 2,2 title "${file}"
 set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 MB" 4*1024*1024, "32 MB" 32*1024*1024 )
 set xrange [2048:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
-set yrange [20:$( echo ${params} | tr ' ' '\n' | tail -1 )]
+set yrange [20:$( mpi_bench_extract_params mpi_bench_overlap_sender | tr ' ' '\n' | tail -1 )]
 set cbrange [0:2]
 set logscale x 2
 set logscale y 10
 do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig"] {
   set title b
-  splot "${outdir}/".b."-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title b with pm3d 
+  splot b."-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title b with pm3d 
 }
 
 unset multiplot
-set output "${outdir}/overlap-Nload.pdf"
+set output "overlap-Nload.pdf"
 unset logscale y
 set ylabel "Threads number"
-set yrange [0:16]
-splot "${outdir}/mpi_bench_overlap_Nload-ratio2d.dat" using  1:2:(\$3>2?2:\$3) title "Nload" with pm3d 
-
+set yrange [0:$( mpi_bench_extract_params mpi_bench_overlap_Nload | tr ' ' '\n' | tail -1 )]
+splot "mpi_bench_overlap_Nload-ratio2d.dat" using  1:2:(\$3>2?2:\$3) title "Nload" with pm3d 
 EOF
 
+if [ "x@GNUPLOT@" != "x" ]; then
+    echo "# invoking gnuplot..."
+    for f in  ${outdir}/*.gp; do
+	echo "# tracing ${f}..."
+	@GNUPLOT@ ${f}
+    done
+    echo "# done."
+else
+    echo "# gnuplot not detected"
+fi
 echo

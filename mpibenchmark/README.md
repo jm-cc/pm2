@@ -22,9 +22,9 @@ Installation
 
 MadMPI benchmark follows usual autoconf procedure:
 
-./configure [your options here]
-make
-make install
+    ./configure [your options here]
+    make
+    make install
 
 The "make install" step is optional. The benchmark may run from its
 build directory.

@@ -1,4 +1,6 @@
-#! /bin/bash
+#! @BASH@
+# -*- mode: Sh;-*-
+
 export LC_ALL=C
 
 file="$1"
@@ -116,7 +118,7 @@ EOF
 	echo  >> ${outdir}/${b}-ratio2d.dat
     done
 
-    gnuplot <<EOF
+    @GNUPLOT@ <<EOF
 set term pdfcairo color fontscale 0.3
 set output "${outdir}/${b}-ratio2d.pdf"
 set view map
@@ -149,7 +151,7 @@ done
 
 echo "# ## generating global plot..."
 
-gnuplot <<EOF
+@GNUPLOT@ <<EOF
 set term pdfcairo color fontscale 0.3
 set output "${outdir}/overlap-lin.pdf"
 

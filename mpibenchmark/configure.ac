@@ -35,11 +35,13 @@ dnl --------------------------------------------------------
 AC_PADICO_OPTIMIZE
 AC_PADICO_DEBUG
 AC_PADICO_CHECK_HWLOC
+AC_PADICO_CHECK_GNUPLOT
 
 
 dnl --- output
 dnl --------------------------------------------------------
 
+AC_PADICO_OUT_SH([mpi_bench_extract])
 AC_PADICO_OUT_COMMON_MK
 AC_PADICO_OUT_ROOT
 AC_PADICO_OUTPUT

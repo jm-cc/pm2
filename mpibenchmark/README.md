@@ -1,0 +1,61 @@
+#
+README for MadMPI benchmark
+===========================
+
+This document describes MadMPI benchmark installation and configuration.
+
+for any question, mailto: Alexandre.Denis@inria.fr
+
+for more information, see http://pm2.gforge.inria.fr/mpibenchmark/
+
+
+Requirements
+------------
+  - MPI library
+  - autoconf (v 2.50 or later, for svn users)
+  - hwloc (optional)
+  - gnuplot (optional)
+  
+
+Installation
+------------
+
+MadMPI benchmark follows usual autoconf procedure:
+
+./configure [your options here]
+make
+make install
+
+The "make install" step is optional. The benchmark may run from its
+build directory.
+
+
+Documentation
+-------------
+
+- Benchmarks may be run separetely (single benchmark per binary), or as
+  a binary running a full series.
+
+- For overlap benchmarks, run 'mpi_bench_overlap' on 2 nodes, capture its
+  standard output in a file, and pass this file to 'mpi_bench_extract'.
+  The processed data is outputed to a <file>.d/ directory containing:
+
+    + raw series for each packet size (files <bench>-s<size>.dat)
+    + 2D data formated to feed gnuplot pm3d graphs (files <bench>-ratio2d.dat>)
+    + gnuplot scripts (files <bench>.gp)
+    + individual graphs for each benchmark (files <bench>.pdf)
+    + synthetic graphs (files overlap-*.pdf)
+    
+- The benchmarks are:
+
+    + `mpi_bench_sendrecv`: send/receive pingpong, used as a reference
+    + `mpi_bench_noncontig`: send/receive pingpong with non-contiguous datatype, used as a reference
+    + `mpi_bench_overlap_sender`: overlap on sender side
+      (i.e. MPI_Isend, computation, MPI_Wait), total time
+    + `mpi_bench_overlap_recv`: overlap on receiver side
+      (i.e. MPI_Irecv, computation, MPI_Wait), total time
+    + `mpi_bench_overlap_bidir`: overlap on both sides
+    + `mpi_bench_overlap_sender_noncontig`: overlap on sender side, with non-contiguous datatype
+    + `mpi_bench_send_overhead`: overlap on sender side
+      (i.e. MPI_Isend, computation, MPI_Wait), measure time on sender side only
+

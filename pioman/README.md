@@ -31,7 +31,7 @@ PIOMan may be used standalone or used through NewMadeleine.
 
 - Through other PM2 modules: please see installation instructions for NewMadeleine
   http://pm2.gforge.inria.fr/newmadeleine/doc/
-  In this case, pioman is not visible to th end-user.
+  In this case, pioman is not visible to the end-user.
 
 
 Documentation

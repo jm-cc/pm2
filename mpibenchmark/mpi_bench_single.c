@@ -55,7 +55,7 @@ int main(int argc, char	**argv)
       .iterations  = LOOPS_DEFAULT
     };
 
-  mpi_bench_init(argc, argv);
+  mpi_bench_init(argc, argv, mpi_bench_default->threads);
   
   if (argc > 1 && strcmp(argv[1], "--help") == 0)
     {

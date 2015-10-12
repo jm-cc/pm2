@@ -83,13 +83,26 @@ static int comp_double(const void*_a, const void*_b)
     return 0;
 }
 
-void mpi_bench_init(int argc, char**argv)
+void mpi_bench_init(int argc, char**argv, int threads)
 {
-  MPI_Init(&argc, &argv);
+  const int requested = threads ? MPI_THREAD_MULTIPLE : MPI_THREAD_FUNNELED;
+  int provided = requested;
+  int rc = MPI_Init_thread(&argc, &argv, requested, &provided);
+  if(rc != 0)
+    {
+      fprintf(stderr, "# MadMPI benchmark: MPI_Init_thread()- rc = %d\n", rc);
+      abort();
+    }
+  if(provided < requested)
+    {
+      fprintf(stderr, "# MadMPI benchmark: MPI_Init_thread()- requested = %d; provided = %d\n", requested, provided);
+      abort();
+    }
+
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_bench_common.size);
   if(mpi_bench_common.size != 2)
     {
-      fprintf(stderr, "# MadMPI benchmark needs 2 nodes.\n");
+      fprintf(stderr, "# MadMPI benchmark: needs 2 nodes, cannot run on %d nodes.\n", mpi_bench_common.size);
       abort();
     }
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_bench_common.self);
@@ -101,8 +114,10 @@ void mpi_bench_init(int argc, char**argv)
       char hostname[256];
       gethostname(hostname, 256);
       printf("# MadMPI benchmark - copyright (C) 2015 INRIA\n");
-      printf("# build %s\n", __DATE__);
-      printf("# running on host %s\n", hostname);
+      printf("# This program comes with ABSOLUTELY NO WARRANTY.\n"
+	     "# This is free software, and you are welcome to redistribute it\n"
+	     "# under certain conditions; see file 'COPYING' for details.\n#\n");
+      printf("# running on host: %s; build date: %s\n", hostname, __DATE__);
       printf("# \n");
     }
 }
@@ -110,7 +125,10 @@ void mpi_bench_init(int argc, char**argv)
 void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_param_s*params)
 {
   if(!mpi_bench_common.is_server)
-    printf("# bench: %s begin\n", mpi_bench->label);
+    {
+      printf("# bench: %s begin\n", mpi_bench->label);
+      printf("# measured time is: %s\n", mpi_bench->rtt ? "round-trip" : "one-way");
+    }
   const struct mpi_bench_param_bounds_s*param_bounds = NULL;
   if(mpi_bench->setparam != NULL && mpi_bench->getparams != NULL)
     {

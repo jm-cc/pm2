@@ -49,6 +49,7 @@ struct mpi_bench_s
   const char*label;
   const char*name;
   const int rtt; /**< whether we should output round-trip time or half-rtt (one way latency) */
+  const int threads; /**< whether we need MPI_THREAD_MULTIPLE */
   void (*server)(void*buf, size_t len);
   void (*client)(void*buf, size_t len);
   void (*init)(void*buf, size_t len, int count); /**< called before a round with a given set of param+size */
@@ -58,7 +59,7 @@ struct mpi_bench_s
   const struct mpi_bench_param_bounds_s*(*getparams)(void);
 };
 
-void mpi_bench_init(int argc, char**argv);
+void mpi_bench_init(int argc, char**argv, int threads);
 void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_param_s*params);
 void mpi_bench_finalize(void);
 

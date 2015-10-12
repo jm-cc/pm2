@@ -45,7 +45,7 @@ int main(int argc, char	**argv)
       .iterations  = LOOPS_DEFAULT
     };
 
-  mpi_bench_init(argc, argv);
+  mpi_bench_init(argc, argv, 0);
   params.iterations = LOOPS_REFERENCE;
   mpi_bench_run(&mpi_bench_sendrecv, &params);
   mpi_bench_run(&mpi_bench_noncontig, &params);

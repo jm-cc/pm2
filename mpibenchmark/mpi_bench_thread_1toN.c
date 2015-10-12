@@ -120,6 +120,7 @@ const struct mpi_bench_s mpi_bench_thread_1toN =
     .label      = "mpi_bench_thread_1toN",
     .name       = "MPI threaded 1 to N threads",
     .rtt        = 1,
+    .threads    = 1,
     .server     = &mpi_bench_thread_1toN_server,
     .client     = &mpi_bench_thread_1toN_client,
     .getparams  = &mpi_bench_thread_1toN_getparams,

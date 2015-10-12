@@ -205,6 +205,7 @@ do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_
 
 unset multiplot
 set output "overlap-Nload.pdf"
+set title "mpi_bench_overlap_Nload"
 unset logscale y
 set ylabel "Threads number"
 set yrange [0:$( mpi_bench_extract_params mpi_bench_overlap_Nload | tr ' ' '\n' | tail -1 )]

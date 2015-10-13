@@ -9,6 +9,24 @@ for any question, mailto: Alexandre.Denis@inria.fr
 for more information, see http://pm2.gforge.inria.fr/mpibenchmark/
 
 
+Quick Start
+-----------
+
+A quick cheat sheet for the impatient:
+
+    ./configure
+    make
+    mpiexec -n 2 -host host1,host2 ./mpi_bench_overlap | tee out.dat
+
+It runs from 10 minutes through 1h, depanding on network speed. Then build the
+performance report using:
+
+    ./mpi_bench_extract out.dat
+
+And send the `out.dat` to <Alexandre.Denis@inria.fr> to have integrated on
+the MadMPI benchmark web site.
+
+
 Requirements
 ------------
   - MPI library

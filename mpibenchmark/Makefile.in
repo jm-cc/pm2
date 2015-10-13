@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-BENCH_BASE     := mpi_bench_sendrecv mpi_bench_bidir mpi_bench_multi mpi_bench_multi_hetero mpi_bench_noncontig
+BENCH_BASE     := mpi_bench_sendrecv mpi_bench_bidir mpi_bench_send_overhead mpi_bench_multi mpi_bench_multi_hetero mpi_bench_noncontig
 BENCH_OVERLAP  := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_overlap_*.c))
 BENCH_DATATYPE := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_sparse_*.c))
 BENCH_THREAD   := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_thread_*.c))

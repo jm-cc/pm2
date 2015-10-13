@@ -21,7 +21,6 @@
 #include "mpi_bench_generic.h"
 
 #define COUNT 100
-#define MAX_THREADS 32
 
 static int threads = 0;
 static struct
@@ -35,12 +34,12 @@ static struct
 static struct mpi_bench_param_bounds_s param_bounds =
   {
     .min  = 1,
-    .max  = MAX_THREADS,
+    .max  = THREADS_DEFAULT,
     .mult = 1,
     .incr = 1
   };
 
-static pthread_t tids[MAX_THREADS];
+static pthread_t tids[THREADS_MAX];
 
 
 static void*ping_thread(void*_i)
@@ -59,6 +58,7 @@ static void*ping_thread(void*_i)
 
 static const struct mpi_bench_param_bounds_s*mpi_bench_thread_1toN_rr_getparams(void)
 {
+  param_bounds.max = mpi_bench_get_threads();
   return &param_bounds;
 }
 

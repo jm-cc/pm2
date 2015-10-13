@@ -31,6 +31,8 @@ struct mpi_bench_common_s mpi_bench_common =
     .comm = MPI_COMM_NULL
   };
 
+/* ** Iterations ******************************************* */
+
 static inline size_t _iterations(int iterations, size_t len)
 {
   const uint64_t max_data = 512 * 1024 * 1024;
@@ -54,6 +56,8 @@ static inline size_t _next(size_t len, double multiplier, size_t increment)
   return next;
 }
 
+/* ** Buffers ********************************************** */
+
 static void fill_buffer(char*buffer, size_t len) __attribute__((unused));
 static void clear_buffer(char*buffer, size_t len) __attribute__((unused));
 
@@ -70,6 +74,46 @@ static void clear_buffer(char*buffer, size_t len)
 {
   memset(buffer, 0, len);
 }
+
+/* ** Threads ********************************************** */
+
+int mpi_bench_get_threads(void)
+{
+  int n = THREADS_DEFAULT;
+#ifdef HAVE_HWLOC
+  printf("# counting cores with hwloc...\n");
+  hwloc_topology_t topology;
+  hwloc_topology_init(&topology);
+  hwloc_topology_load(topology);
+  int depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
+  char*level = "processing units";
+  if(depth == HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+      depth = hwloc_get_type_depth(topology, HWLOC_OBJ_CORE);
+      level = "cores";
+    }
+  if(depth == HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+      printf("# WARNING- cannot find number of cores.\n");
+    }
+  else
+    {
+      n = hwloc_get_nbobjs_by_depth(topology, depth);
+      printf("# found %d %s; using %d threads.\n", n, level, n);
+    }
+  hwloc_topology_destroy(topology);
+#else /* HAVE_HWLOC */
+  printf("# hwloc not available, using default threads count = %d\n", n);
+#endif /* HAVE_HWLOC */
+  if(n > THREADS_MAX)
+    {
+      printf(" WARNING- %d threads is more than max. Limiting to %d threads.\n", n, THREADS_MAX);
+      n = THREADS_MAX;
+    }
+  return n;
+}
+
+/* ** Benchmark ******************************************** */
 
 static int comp_double(const void*_a, const void*_b)
 {

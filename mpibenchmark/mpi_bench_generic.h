@@ -22,6 +22,10 @@
 #ifndef MPI_BENCH_GENERIC_H
 #define MPI_BENCH_GENERIC_H
 
+#ifdef HAVE_HWLOC
+#include <hwloc.h>
+#endif /* HAVE_HWLOC */
+
 #define TAG 0
 
 /* ********************************************************* */
@@ -101,7 +105,7 @@ static inline double mpi_bench_timing_delay(const mpi_bench_tick_t*const t1, con
   return delay;
 }
 
-/* ********************************************************* */
+/* ** Compute ********************************************** */
 
 #define MIN_COMPUTE 0
 #define MAX_COMPUTE 20000
@@ -126,6 +130,14 @@ static void mpi_bench_do_compute(int usec)
       delay = mpi_bench_timing_delay(&t1, &t2);
     }
 }
+
+/* ** Threads ********************************************** */
+
+#define THREADS_MAX 512
+#define THREADS_DEFAULT 16
+
+/** Get the max number of threads to use */
+int mpi_bench_get_threads(void);
 
 
 #endif /* MPI_BENCH_GENERIC_H */

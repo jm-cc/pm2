@@ -80,11 +80,7 @@ bench:
 #
 docs: doxygen
 
-doxygen: @abs_top_builddir@/doc/Doxyfile $(SRC_FILES) README.md
-	doxygen doc/Doxyfile
-	@echo
-	@echo "# documentation generated in: @nmad_builddir@/doc/html/index.html"
-	@echo
+doxygen: $(SRC_FILES)
 
 upload-doc: doxygen
 	rsync -avz @nmad_builddir@/doc/html/ scm.gforge.inria.fr:/home/groups/pm2/htdocs/newmadeleine/doc/

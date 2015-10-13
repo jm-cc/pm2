@@ -152,9 +152,12 @@ AC_SUBST(PIOMAN_LIBS)
 
 
 out_sh=""
-out_mk="Makefile pioman.pc"
+out_mk="Makefile pioman.pc doc/Doxyfile"
 
 dnl -- output 
+
+building_tools=${srcdir}/../building-tools
+AC_SUBST([building_tools])
 
 dnl AC_OUTPUT_COMMANDS([chmod +x ${out_sh} ], [ out_sh="${out_sh}" ])
 AC_OUTPUT(${out_mk} ${out_sh})

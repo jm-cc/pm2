@@ -149,9 +149,8 @@ $(TARGET_LIB): $(OBJ_FILES)
 #
 docs: doxygen
 
-doxygen: @pioman_srcdir@/doc/Doxyfile $(SRC_FILES)
-	@mkdir -p @pioman_builddir@/doc/html/
-	env PIOMAN_SRCDIR=@pioman_srcdir@ PIOMAN_BUILDDIR=@pioman_builddir@ doxygen @pioman_srcdir@/doc/Doxyfile
+doxygen: @abs_top_builddir@/doc/Doxyfile $(SRC_FILES)
+	doxygen doc/Doxyfile
 	@echo
 	@echo "# documentation generated in: @pioman_builddir@/doc/html/index.html"
 	@echo

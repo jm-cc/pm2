@@ -13,7 +13,8 @@
  * General Public License for more details.
  */
 
-/** @file flypack- primitives for packing data on the fly.
+/** @file 
+ * flypack: primitives for packing data on the fly.
  */
 
 #include <nm_core_interface.h>

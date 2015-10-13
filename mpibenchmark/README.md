@@ -68,6 +68,8 @@ Documentation
 
     + `mpi_bench_sendrecv`: send/receive pingpong, used as a reference
     + `mpi_bench_noncontig`: send/receive pingpong with non-contiguous datatype, used as a reference
+    + `mpi_bench_send_overhead`: processor time consumed on sender side to send data
+      (the overhead from LogP). Usefull to explain overlap benchmarks.
     + `mpi_bench_overlap_sender`: overlap on sender side
       (i.e. MPI_Isend, computation, MPI_Wait), total time
     + `mpi_bench_overlap_recv`: overlap on receiver side

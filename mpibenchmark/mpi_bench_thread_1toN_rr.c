@@ -57,22 +57,22 @@ static void*ping_thread(void*_i)
   return NULL;
 }
 
-static const struct mpi_bench_param_bounds_s*mpi_bench_thread_1toN_getparams(void)
+static const struct mpi_bench_param_bounds_s*mpi_bench_thread_1toN_rr_getparams(void)
 {
   return &param_bounds;
 }
 
-static void mpi_bench_thread_1toN_setparam(int param)
+static void mpi_bench_thread_1toN_rr_setparam(int param)
 {
   threads = param;
 }
 
-static void mpi_bench_thread_1toN_finalizeparam(void)
+static void mpi_bench_thread_1toN_rr_finalizeparam(void)
 {
   threads = 0;
 }
 
-static void mpi_bench_thread_1toN_init(void*buf, size_t len, int count)
+static void mpi_bench_thread_1toN_rr_init(void*buf, size_t len, int count)
 {
   global.iterations = count;
   global.buf = buf;
@@ -89,7 +89,7 @@ static void mpi_bench_thread_1toN_init(void*buf, size_t len, int count)
     }
 }
 
-static void mpi_bench_thread_1toN_finalize(void)
+static void mpi_bench_thread_1toN_rr_finalize(void)
 {
   if(mpi_bench_common.is_server)
     {
@@ -102,12 +102,12 @@ static void mpi_bench_thread_1toN_finalize(void)
     }
 }
 
-static void mpi_bench_thread_1toN_server(void*buf, size_t len)
+static void mpi_bench_thread_1toN_rr_server(void*buf, size_t len)
 {
   /* do nothing- work is done in thread */
 }
 
-static void mpi_bench_thread_1toN_client(void*buf, size_t len)
+static void mpi_bench_thread_1toN_rr_client(void*buf, size_t len)
 {
   MPI_Send(buf, len, MPI_CHAR, mpi_bench_common.peer, TAG + global.dest, MPI_COMM_WORLD);
   MPI_Recv(buf, 0, MPI_CHAR, mpi_bench_common.peer, TAG + global.dest, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -115,18 +115,18 @@ static void mpi_bench_thread_1toN_client(void*buf, size_t len)
 }
 
 
-const struct mpi_bench_s mpi_bench_thread_1toN =
+const struct mpi_bench_s mpi_bench_thread_1toN_rr =
   {
-    .label      = "mpi_bench_thread_1toN",
-    .name       = "MPI threaded 1 to N threads",
+    .label      = "mpi_bench_thread_1toN_rr",
+    .name       = "MPI threaded 1 to N threads, round-robin",
     .rtt        = 1,
     .threads    = 1,
-    .server     = &mpi_bench_thread_1toN_server,
-    .client     = &mpi_bench_thread_1toN_client,
-    .getparams  = &mpi_bench_thread_1toN_getparams,
-    .setparam   = &mpi_bench_thread_1toN_setparam,
-    .finalizeparam = &mpi_bench_thread_1toN_finalizeparam,
-    .init       = &mpi_bench_thread_1toN_init,
-    .finalize   = &mpi_bench_thread_1toN_finalize
+    .server     = &mpi_bench_thread_1toN_rr_server,
+    .client     = &mpi_bench_thread_1toN_rr_client,
+    .getparams  = &mpi_bench_thread_1toN_rr_getparams,
+    .setparam   = &mpi_bench_thread_1toN_rr_setparam,
+    .finalizeparam = &mpi_bench_thread_1toN_rr_finalizeparam,
+    .init       = &mpi_bench_thread_1toN_rr_init,
+    .finalize   = &mpi_bench_thread_1toN_rr_finalize
   };
 

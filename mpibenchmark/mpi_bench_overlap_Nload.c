@@ -61,7 +61,7 @@ static void mpi_bench_overlap_Nload_setparam(int param)
     }
 }
 
-static void mpi_bench_overlap_Nload_finalizeparam(void)
+static void mpi_bench_overlap_Nload_endparam(void)
 {
   /* stop previous threads */
   int i;
@@ -92,8 +92,8 @@ const struct mpi_bench_s mpi_bench_overlap_Nload =
     .rtt        = 0,
     .server     = &mpi_bench_overlap_Nload_server,
     .client     = &mpi_bench_overlap_Nload_client,
-    .setparam   = &mpi_bench_overlap_Nload_setparam,
     .getparams  = &mpi_bench_overlap_Nload_getparams,
-    .finalizeparam = &mpi_bench_overlap_Nload_finalizeparam
+    .setparam   = &mpi_bench_overlap_Nload_setparam,
+    .endparam   = &mpi_bench_overlap_Nload_endparam
   };
 

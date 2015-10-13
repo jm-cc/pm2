@@ -54,7 +54,7 @@ static void mpi_bench_thread_1toN_single_setparam(int param)
   threads = param;
 }
 
-static void mpi_bench_thread_1toN_single_finalizeparam(void)
+static void mpi_bench_thread_1toN_single_endparam(void)
 {
   threads = 0;
 }
@@ -117,7 +117,7 @@ const struct mpi_bench_s mpi_bench_thread_1toN_single =
     .client     = &mpi_bench_thread_1toN_single_client,
     .getparams  = &mpi_bench_thread_1toN_single_getparams,
     .setparam   = &mpi_bench_thread_1toN_single_setparam,
-    .finalizeparam = &mpi_bench_thread_1toN_single_finalizeparam,
+    .endparam   = &mpi_bench_thread_1toN_single_endparam,
     .init       = &mpi_bench_thread_1toN_single_init,
     .finalize   = &mpi_bench_thread_1toN_single_finalize
   };

@@ -219,7 +219,12 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	   */
 	  mpi_bench_tick_t t1, t2;
 	  double*lats = malloc(sizeof(double) * params->iterations);
-	  printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max\n");
+	  printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max");
+	  if(mpi_bench->setparam)
+	    {
+	      printf("   \t| param");
+	    }
+	  printf("\n");
 	  size_t len;
 	  for(len = params->start_len; len <= params->end_len; len = _next(len, params->multiplier, params->increment))
 	    {
@@ -254,9 +259,14 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      avg_lat /= iterations;
 	      const double bw_million_byte = len / min_lat;
 	      const double bw_mbyte        = bw_million_byte / 1.048576;
-	      
-	      printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\n",
+
+	      printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf",
 		     (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
+	      if(mpi_bench->setparam)
+		{
+		  printf("\t%d", p);
+		}
+	      printf("\n");
 	      fflush(stdout);
 	      free(buf);
 	      MPI_Barrier(mpi_bench_common.comm);
@@ -268,9 +278,9 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	{
 	  p = param_bounds->incr + p * param_bounds->mult;
 	}
-      if(mpi_bench->finalizeparam != NULL)
+      if(mpi_bench->endparam != NULL)
 	{
-	  (*mpi_bench->finalizeparam)();
+	  (*mpi_bench->endparam)();
 	}
     }
   while((param_bounds != NULL) && (p <= param_bounds->max));

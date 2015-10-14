@@ -15,7 +15,7 @@ m4_include([ax_mpi.m4])
 dnl --- Directories and version
 dnl --------------------------------------------------------
 
-AC_PADICO_PACKAGE([mpibenchmark])
+AC_PADICO_PACKAGE([MadMPI benchmark], [mpibenchmark])
 
 dnl --- Compiler and base tools
 dnl --------------------------------------------------------

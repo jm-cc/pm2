@@ -45,3 +45,4 @@ $(BENCH_ALL): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o mpi_bench_s
 
 mpi_bench_overlap: $(patsubst %, %.pic.o, mpi_bench_overlap mpi_bench_generic $(BENCH_BASE) $(BENCH_OVERLAP))
 
+docs: doxygen

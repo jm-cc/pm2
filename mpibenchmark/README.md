@@ -19,11 +19,11 @@ A quick cheat sheet for the impatient:
     mpiexec -n 2 -host host1,host2 ./mpi_bench_overlap | tee out.dat
 
 It runs from 10 minutes through 1h, depanding on network speed. Then build the
-performance report using:
+**performance report** using:
 
     ./mpi_bench_extract out.dat
 
-And send the `out.dat` to <Alexandre.Denis@inria.fr> to have integrated on
+Please send the `out.dat` to <Alexandre.Denis@inria.fr> to have it integrated on
 the MadMPI benchmark web site.
 
 
@@ -33,6 +33,7 @@ Requirements
   - autoconf (v 2.50 or later, for svn users)
   - hwloc (optional)
   - gnuplot (optional)
+  - doxygen (optional, for doc generation)
   
 
 Installation
@@ -56,12 +57,12 @@ Documentation
 
 - For overlap benchmarks, run 'mpi_bench_overlap' on 2 nodes, capture its
   standard output in a file, and pass this file to 'mpi_bench_extract'.
-  The processed data is outputed to a <file>.d/ directory containing:
+  The processed data is outputed to a ${file}.d/ directory containing:
 
-    + raw series for each packet size (files <bench>-s<size>.dat)
-    + 2D data formated to feed gnuplot pm3d graphs (files <bench>-ratio2d.dat>)
-    + gnuplot scripts (files <bench>.gp)
-    + individual graphs for each benchmark (files <bench>.pdf)
+    + raw series for each packet size (files ${bench}-s${size}.dat)
+    + 2D data formated to feed gnuplot pm3d graphs (files ${bench}-ratio2d.dat>)
+    + gnuplot scripts (files ${bench}.gp)
+    + individual graphs for each benchmark (files ${bench}.pdf)
     + synthetic graphs (files overlap-*.pdf)
     
 - The benchmarks are:

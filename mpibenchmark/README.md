@@ -1,4 +1,4 @@
-#
+# -*- mode: Markdown;-*-
 README for MadMPI benchmark
 ===========================
 

@@ -6,7 +6,7 @@ export LC_ALL=C
 out=pdf
 
 usage() {
-    echo "# usage: ${0} [--pdf|--png] <file>" >&2
+    echo "# usage: ${0} [--pdf|--png|--svg|--canvas] <file>" >&2
     }
 
 while [ "x${1}" != "x" ]; do
@@ -100,9 +100,6 @@ echo
 echo "# ## computing overlap ratio..."
 echo
 
-size_list=$( sed -e "/^#/ d" ${outdir}/mpi_bench_sendrecv.dat | cut -f 1 | tr '\n' ' ' )
-echo "# sizes: ${size_list}"
-
 mpi_bench_extract_line() {
     b=$1
     s=$2
@@ -123,6 +120,13 @@ mpi_bench_extract_params() {
     benchfile=${outdir}/${b}.dat
     sed -e "s+^# bench: ${b}/\(.*\) begin+\1+p;d" ${benchfile} | tr '\n' ' '
 }
+
+mpi_bench_extract_sizes() {
+    sed -e "/^#/ d" ${outdir}/mpi_bench_sendrecv.dat | cut -f 1 | tr '\n' ' '
+}
+
+size_list=$( mpi_bench_extract_sizes  )
+echo "# sizes: ${size_list}"
 
 for b in mpi_bench_overlap_sender \
 	 mpi_bench_overlap_recv \

@@ -3,14 +3,70 @@
 
 export LC_ALL=C
 
-file="$1"
-outdir="${file}.d"
+out=pdf
 
+usage() {
+    echo "# usage: ${0} [--pdf|--png] <file>" >&2
+    }
+
+while [ "x${1}" != "x" ]; do
+    case "$1" in
+	--pdf)
+	    out=pdf
+	    ;;
+	--png)
+	    out=png
+	    ;;
+	--svg)
+	    out=svg
+	    ;;
+	--canvas)
+	    out=canvas
+	    ;;
+	-h|--help)
+	    usage
+	    exit
+	    ;;
+	-*)
+	    usage
+	    exit 1
+	    ;;
+	*)
+	    file="$1"
+	    ;;
+    esac
+    shift
+done
+case "${out}" in
+    png)
+	export GNUPLOT_TERM="png  fontscale 1 size 800,600 font arial 12"
+	export GNUPLOT_EXT=png
+	;;
+    pdf)
+	export GNUPLOT_TERM="pdfcairo color fontscale 0.3"
+	export GNUPLOT_EXT=pdf
+	;;
+    svg)
+	export GNUPLOT_TERM="svg"
+	export GNUPLOT_EXT=svg
+	;;
+    canvas)
+	export GNUPLOT_TERM="canvas"
+	export GNUPLOT_EXT=html
+	;;
+esac
+
+if [ "x${file}" = "x" ]; then
+    usage
+    exit 1
+fi
 if [ ! -r "${file}" ]; then
     echo "# ${0}: cannot read file '${file}'." >&2
+    usage
     exit 1
 fi
 
+outdir="${file}.d"
 mkdir -p ${outdir}
 
 bench_list=$( sed -e 's/# bench: \(mpi_bench_[a-zA-Z0-9_]*\) begin/\1/p;d' ${file} | tr '\n\r' ' ' )
@@ -129,8 +185,8 @@ EOF
 reset
 cd "${outdir}"
 
-set term pdfcairo color fontscale 0.3
-set output "${b}-lin.pdf"
+set term ${GNUPLOT_TERM}
+set output "${b}-lin.${GNUPLOT_EXT}"
 set view map
 set pm3d interpolate 0,0
 set key bmargin box
@@ -150,7 +206,7 @@ set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 M
 set xrange [2048:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
 set yrange [20:$( mpi_bench_extract_params ${b} | tr ' ' '\n' | tail -1 )]
 set cbrange [0:2]
-set output "${b}-log.pdf"
+set output "${b}-log.${GNUPLOT_EXT}"
 set logscale x 2
 set logscale y 10
 replot
@@ -165,8 +221,8 @@ cat > ${outdir}/overlap.gp <<EOF
 reset
 cd "${outdir}"
 
-set term pdfcairo color fontscale 0.3
-set output "overlap-lin.pdf"
+set term ${GNUPLOT_TERM} 
+set output "overlap-lin.${GNUPLOT_EXT}"
 
 set multiplot layout 2,2 title "${file}"
 
@@ -178,9 +234,6 @@ set xlabel "Message size (bytes)"
 set ylabel "Computation time (usec.)"
 set cblabel "overlap overhead"
 
-set tmargin 0.2
-set bmargin 0.2
-
 set xrange [0:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
 set yrange [0:$( mpi_bench_extract_params mpi_bench_overlap_sender | tr ' ' '\n' | tail -1 )]
 set cbrange [0:2]
@@ -190,7 +243,7 @@ do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_
 }
 
 unset multiplot
-set output "overlap-log.pdf"
+set output "overlap-log.${GNUPLOT_EXT}"
 set multiplot layout 2,2 title "${file}"
 set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 MB" 4*1024*1024, "32 MB" 32*1024*1024 )
 set xrange [2048:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
@@ -204,7 +257,7 @@ do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_
 }
 
 unset multiplot
-set output "overlap-Nload.pdf"
+set output "overlap-Nload.${GNUPLOT_EXT}"
 set title "mpi_bench_overlap_Nload"
 unset logscale y
 set ylabel "Threads number"

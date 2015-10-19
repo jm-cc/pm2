@@ -145,6 +145,7 @@ static inline nm_mpi_communicator_t*nm_mpi_communicator_alloc(nm_comm_t p_nm_com
   p_new_comm->attrs = NULL;
   p_new_comm->p_errhandler = p_errhandler;
   p_new_comm->name = NULL;
+  p_new_comm->kind = NM_MPI_COMMUNICATOR_UNSPEC;
   return p_new_comm;
 }
 

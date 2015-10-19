@@ -55,11 +55,11 @@
 /* @} */
 
 /** error handler */
-struct nm_mpi_errhandler_s
+typedef struct nm_mpi_errhandler_s
 {
   int id;
   MPI_Handler_function*function;
-};
+} nm_mpi_errhandler_t;
 
 #define ERROR(...) {							\
     fprintf(stderr, "\n# madmpi: FATAL- %s\n\t", __TBX_FUNCTION__);	\
@@ -112,24 +112,24 @@ typedef struct nm_mpi_group_s
 /** Internal communicator */
 typedef struct nm_mpi_communicator_s
 {
-  /** id of the communicator */
-  int id;
-  /** underlying nmad communicator */
-  nm_comm_t p_comm;
-  /** communicator attributes, hashed by keyval descriptor */
-  puk_hashtable_t attrs;
-  /** cartesian topology */
-  struct nm_mpi_cart_topology_s
+  int id;                            /**< id of the communicator */
+  nm_comm_t p_comm;                  /**< underlying nmad communicator */
+  puk_hashtable_t attrs;             /**< communicator attributes, hashed by keyval descriptor */
+  nm_mpi_errhandler_t*p_errhandler;  /**< error handler attached to communicator */
+  char*name;                         /**< communicator name */
+  enum nm_mpi_communicator_kind_e
+    {
+      NM_MPI_COMMUNICATOR_UNSPEC = 0,
+      NM_MPI_COMMUNICATOR_INTRA  = 1,
+      NM_MPI_COMMUNICATOR_INTER
+    } kind;
+  struct nm_mpi_cart_topology_s  /**< cartesian topology */
   {
     int ndims;    /**< number of dimensions */
     int*dims;     /**< number of procs in each dim. */
     int*periods;  /**< whether each dim. is periodic */
     int size;     /**< pre-computed size of cartesian topology */
   } cart_topology;
-  /** error handler attached to communicator */
-  struct nm_mpi_errhandler_s*p_errhandler;
-  /** communicator name */
-  char*name;
 } nm_mpi_communicator_t;
 /* @} */
 
@@ -153,7 +153,7 @@ typedef int nm_mpi_communication_mode_t;
 /** Internal communication request */
 typedef struct nm_mpi_request_s
 {
-  /* identifier of the request */
+  /** identifier of the request */
   MPI_Request id;
   /** type of the request */
   nm_mpi_request_type_t request_type;

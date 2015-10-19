@@ -22,6 +22,15 @@ struct nm_comm_s
   puk_hashtable_t reverse; /**< reverse table: p_gate -> rank */
 };
 
+/** @internal internal nmad inter-communicator */
+struct nm_intercomm_s
+{
+  struct nm_comm_s*local_comm;
+  struct nm_comm_s*remote_comm;
+  nm_tag_t tag;
+};
+
+
 /* ********************************************************* */
 
 static inline int nm_comm_size(nm_comm_t p_comm)

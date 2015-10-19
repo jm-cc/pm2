@@ -53,7 +53,7 @@ int mpi_issend(const void*buffer, int count, MPI_Datatype datatype, int dest, in
   p_req->request_type = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype = nm_mpi_datatype_get(datatype);
-  p_req->buffer = buffer;
+  p_req->sbuf = buffer;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->communication_mode = NM_MPI_MODE_SYNCHRONOUS;
@@ -88,7 +88,7 @@ int mpi_send(const void *buffer, int count, MPI_Datatype datatype, int dest, int
   p_req->request_type = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype = nm_mpi_datatype_get(datatype);
-  p_req->buffer = buffer;
+  p_req->sbuf = buffer;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->communication_mode = NM_MPI_MODE_IMMEDIATE;
@@ -112,7 +112,7 @@ int mpi_isend(const void *buffer, int count, MPI_Datatype datatype, int dest, in
   p_req->request_type = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype = nm_mpi_datatype_get(datatype);
-  p_req->buffer = buffer;
+  p_req->sbuf = buffer;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->communication_mode = NM_MPI_MODE_IMMEDIATE;
@@ -135,7 +135,7 @@ int mpi_rsend(const void* buffer, int count, MPI_Datatype datatype, int dest, in
   p_req->request_type = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype = nm_mpi_datatype_get(datatype);
-  p_req->buffer = buffer;
+  p_req->sbuf = buffer;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->communication_mode = NM_MPI_MODE_READY;
@@ -166,7 +166,7 @@ int mpi_recv(void *buffer, int count, MPI_Datatype datatype, int source, int tag
   p_req->request_type = NM_MPI_REQUEST_RECV;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype = nm_mpi_datatype_get(datatype);
-  p_req->buffer = buffer;
+  p_req->rbuf = buffer;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->p_comm = p_comm;
@@ -183,7 +183,7 @@ int mpi_irecv(void *buffer, int count, MPI_Datatype datatype, int source, int ta
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->request_type = NM_MPI_REQUEST_RECV;
   p_req->p_datatype = nm_mpi_datatype_get(datatype);
-  p_req->buffer = buffer;
+  p_req->rbuf = buffer;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->p_comm = p_comm;
@@ -274,7 +274,7 @@ int mpi_send_init(const void* buf, int count, MPI_Datatype datatype, int dest, i
   p_req->request_type = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_SEND;
   p_req->p_datatype = nm_mpi_datatype_get(datatype);
-  p_req->buffer = buf;
+  p_req->sbuf = buf;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->communication_mode = NM_MPI_MODE_IMMEDIATE;
@@ -292,7 +292,7 @@ int mpi_recv_init(void* buf, int count, MPI_Datatype datatype, int source, int t
   p_req->request_type = NM_MPI_REQUEST_RECV;
   p_req->request_persistent_type = NM_MPI_REQUEST_RECV;
   p_req->p_datatype = nm_mpi_datatype_get(datatype);
-  p_req->buffer = buf;
+  p_req->rbuf = buf;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->p_comm = p_comm;

@@ -90,7 +90,7 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
   p_datatype->refcount++;
   nm_session_t p_session = nm_comm_get_session(p_req->p_comm->p_comm);
   struct nm_data_s data;
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = p_req->buffer, .p_datatype = p_req->p_datatype, .count = p_req->count });
+  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = (void*)p_req->sbuf, .p_datatype = p_req->p_datatype, .count = p_req->count });
   nm_sr_send_init(p_session, &(p_req->request_nmad));
   nm_sr_send_pack_data(p_session, &(p_req->request_nmad), &data);
   switch(p_req->communication_mode)
@@ -159,7 +159,7 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
   p_datatype->refcount++;
   nm_session_t p_session = nm_comm_get_session(p_req->p_comm->p_comm);
   struct nm_data_s data;
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = p_req->buffer, .p_datatype = p_req->p_datatype, .count = p_req->count });
+  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = p_req->rbuf, .p_datatype = p_req->p_datatype, .count = p_req->count });
   nm_sr_recv_init(p_session, &(p_req->request_nmad));
   nm_sr_recv_unpack_data(p_session, &(p_req->request_nmad), &data);
   const int err = nm_sr_recv_irecv(p_session, &(p_req->request_nmad), p_req->gate, nm_tag, tag_mask);

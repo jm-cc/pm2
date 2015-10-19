@@ -178,7 +178,11 @@ typedef struct nm_mpi_request_s
   /** number of elements to be exchanged */
   int count;
   /** pointer to the data to be exchanged */
-  void *buffer;
+  union
+  {
+    void*rbuf;       /**< pointer used for receiving */
+    const void*sbuf; /**< pointer for sending */
+  };
 } __attribute__((__may_alias__)) nm_mpi_request_t;
 
 /* @} */

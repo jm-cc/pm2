@@ -47,7 +47,7 @@ static nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_d
   p_req->request_type            = NM_MPI_REQUEST_SEND;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype              = p_datatype;
-  p_req->buffer                  = (void*)buffer;
+  p_req->sbuf                    = buffer;
   p_req->count                   = count;
   p_req->user_tag                = tag;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
@@ -65,7 +65,7 @@ static nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatyp
   p_req->request_type            = NM_MPI_REQUEST_RECV;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype              = p_datatype;
-  p_req->buffer                  = buffer;
+  p_req->rbuf                    = buffer;
   p_req->count                   = count;
   p_req->user_tag                = tag;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
@@ -289,7 +289,7 @@ int mpi_scatter(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void *
       for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
 	{
 	  if(i == root) continue;
-	  requests[i] = nm_mpi_coll_isend(nm_mpi_datatype_get_ptr(sendbuf, i * sendcount, p_send_datatype),
+	  requests[i] = nm_mpi_coll_isend(nm_mpi_datatype_get_ptr((void*)sendbuf, i * sendcount, p_send_datatype),
 					  sendcount, p_send_datatype, i, tag, p_comm);
 	}
       for(i = 0; i < nm_comm_size(p_comm->p_comm); i++)
@@ -300,7 +300,7 @@ int mpi_scatter(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void *
       // copy local data for self
       if(sendbuf != MPI_IN_PLACE)
 	{
-	  nm_mpi_datatype_copy(nm_mpi_datatype_get_ptr(sendbuf, nm_comm_rank(p_comm->p_comm) * sendcount, p_recv_datatype), p_send_datatype, sendcount,
+	  nm_mpi_datatype_copy(nm_mpi_datatype_get_ptr((void*)sendbuf, nm_comm_rank(p_comm->p_comm) * sendcount, p_recv_datatype), p_send_datatype, sendcount,
 			       recvbuf, p_recv_datatype, recvcount);
 	}
       FREE_AND_SET_NULL(requests);
@@ -366,12 +366,12 @@ int mpi_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void
     {
       if(i == nm_comm_rank(p_comm->p_comm))
 	{
-	  nm_mpi_datatype_copy(nm_mpi_datatype_get_ptr(sendbuf, i * sendcount, p_send_datatype), p_send_datatype, sendcount,
+	  nm_mpi_datatype_copy(nm_mpi_datatype_get_ptr((void*)sendbuf, i * sendcount, p_send_datatype), p_send_datatype, sendcount,
 			       nm_mpi_datatype_get_ptr(recvbuf, i * recvcount, p_recv_datatype), p_recv_datatype, recvcount);
 	}
       else
 	{
-	  send_requests[i] = nm_mpi_coll_isend(nm_mpi_datatype_get_ptr(sendbuf, i * sendcount, p_send_datatype),
+	  send_requests[i] = nm_mpi_coll_isend(nm_mpi_datatype_get_ptr((void*)sendbuf, i * sendcount, p_send_datatype),
 					       sendcount, p_send_datatype, i, tag, p_comm);
 	  recv_requests[i] = nm_mpi_coll_irecv(nm_mpi_datatype_get_ptr(recvbuf, i * recvcount, p_recv_datatype),
 					       recvcount, p_recv_datatype, i, tag, p_comm);
@@ -403,7 +403,7 @@ int mpi_alltoallv(const void* sendbuf, const int *sendcounts, const int *sdispls
 	{
 	  recv_requests[i] = NULL;
 	  send_requests[i] = NULL;
-	  nm_mpi_datatype_copy(nm_mpi_datatype_get_ptr(sendbuf, sdispls[i], p_send_datatype), p_send_datatype, sendcounts[i],
+	  nm_mpi_datatype_copy(nm_mpi_datatype_get_ptr((void*)sendbuf, sdispls[i], p_send_datatype), p_send_datatype, sendcounts[i],
 			       nm_mpi_datatype_get_ptr(recvbuf, rdispls[i], p_recv_datatype), p_recv_datatype, recvcounts[i]);
 	}
       else
@@ -414,7 +414,7 @@ int mpi_alltoallv(const void* sendbuf, const int *sendcounts, const int *sdispls
 	  else
 	    recv_requests[i] = NULL;
 	  if(sendcounts[i] > 0)
-	    send_requests[i] = nm_mpi_coll_isend(nm_mpi_datatype_get_ptr(sendbuf, sdispls[i], p_send_datatype),
+	    send_requests[i] = nm_mpi_coll_isend(nm_mpi_datatype_get_ptr((void*)sendbuf, sdispls[i], p_send_datatype),
 						 sendcounts[i], p_send_datatype, i, tag, p_comm);
 	  else
 	    send_requests[i] = NULL;
@@ -488,7 +488,7 @@ int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatyp
     }
   else
     {
-      void*ptr = (sendbuf == MPI_IN_PLACE) ? recvbuf : sendbuf;
+      const void*ptr = (sendbuf == MPI_IN_PLACE) ? recvbuf : sendbuf;
       nm_mpi_request_t*p_req = nm_mpi_coll_isend(ptr, count, p_datatype, root, tag, p_comm);
       nm_mpi_coll_wait(p_req);
       return MPI_SUCCESS;

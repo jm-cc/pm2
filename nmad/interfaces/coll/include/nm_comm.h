@@ -20,9 +20,6 @@
 /** NewMadeleine communicator opaque type */
 typedef struct nm_comm_s*nm_comm_t;
 
-/** inter-communicator type */
-typedef struct nm_intercomm_s*nm_intercomm_t;
-
 extern nm_comm_t nm_comm_world(void);
 
 extern nm_comm_t nm_comm_self(void);
@@ -45,9 +42,14 @@ static nm_session_t nm_comm_get_session(nm_comm_t p_comm);
 
 static nm_group_t   nm_comm_group(nm_comm_t comm);
 
+
+/** inter-communicator type */
+typedef struct nm_intercomm_s*nm_intercomm_t;
+
 extern nm_intercomm_t nm_intercomm_create(nm_comm_t p_local_comm, nm_comm_t p_remote_comm, nm_tag_t tag);
 
-extern nm_gate_t nm_intercomm_get_gate(nm_intercomm_t p_intercomm, int rank);
+static nm_gate_t      nm_intercomm_get_gate(nm_intercomm_t p_intercomm, int rank);
 
-extern int nm_intercomm_get_dest(nm_intercomm_t p_intercomm, nm_gate_t p_gate);
+static int            nm_intercomm_get_dest(nm_intercomm_t p_intercomm, nm_gate_t p_gate);
 
+static nm_session_t   nm_intercomm_get_session(nm_intercomm_t p_intercomm);

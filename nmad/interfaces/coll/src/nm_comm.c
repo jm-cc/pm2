@@ -200,21 +200,12 @@ void nm_comm_destroy(nm_comm_t p_comm)
 
 nm_intercomm_t nm_intercomm_create(nm_comm_t p_local_comm, nm_comm_t p_remote_comm, nm_tag_t tag)
 {
-  nm_intercomm_t newintercomm = malloc(sizeof(struct nm_intercomm_s));
-  newintercomm->local_comm = p_local_comm;
-  newintercomm->remote_comm = p_remote_comm;
-  newintercomm->tag = tag;
-  return newintercomm;
+  nm_intercomm_t p_newintercomm = malloc(sizeof(struct nm_intercomm_s));
+  nm_group_t p_group = nm_group_union(nm_comm_group(p_local_comm), nm_comm_group(p_remote_comm));
+  p_newintercomm->p_overlay_comm = nm_comm_create(nm_comm_world(), p_group);
+  p_newintercomm->p_local_comm = p_local_comm;
+  p_newintercomm->p_remote_comm = p_remote_comm;
+  p_newintercomm->tag = tag;
+  return p_newintercomm;
 }
 
-nm_gate_t nm_intercomm_get_gate(nm_intercomm_t p_intercomm, int rank)
-{
-  nm_gate_t p_gate = nm_comm_get_gate(p_intercomm->remote_comm, rank);
-  return p_gate;
-}
-
-int nm_intercomm_get_dest(nm_intercomm_t p_intercomm, nm_gate_t p_gate)
-{
-  int rank = nm_comm_get_dest(p_intercomm->remote_comm, p_gate);
-  return rank;
-}

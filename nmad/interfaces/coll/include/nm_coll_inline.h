@@ -25,8 +25,9 @@ struct nm_comm_s
 /** @internal internal nmad inter-communicator */
 struct nm_intercomm_s
 {
-  struct nm_comm_s*local_comm;
-  struct nm_comm_s*remote_comm;
+  nm_comm_t p_overlay_comm;  /**< an overlay communicator spanning all nodes */
+  struct nm_comm_s*p_local_comm;
+  struct nm_comm_s*p_remote_comm;
   nm_tag_t tag;
 };
 
@@ -62,4 +63,21 @@ static inline nm_session_t nm_comm_get_session(nm_comm_t p_comm)
 static inline nm_group_t nm_comm_group(nm_comm_t p_comm)
 {
   return p_comm->group;
+}
+
+static inline nm_gate_t nm_intercomm_get_gate(nm_intercomm_t p_intercomm, int rank)
+{
+  nm_gate_t p_gate = nm_comm_get_gate(p_intercomm->p_remote_comm, rank);
+  return p_gate;
+}
+
+static inline int nm_intercomm_get_dest(nm_intercomm_t p_intercomm, nm_gate_t p_gate)
+{
+  int rank = nm_comm_get_dest(p_intercomm->p_remote_comm, p_gate);
+  return rank;
+}
+
+static inline nm_session_t nm_intercomm_get_session(nm_intercomm_t p_intercomm)
+{
+  return nm_comm_get_session(p_intercomm->p_overlay_comm);
 }

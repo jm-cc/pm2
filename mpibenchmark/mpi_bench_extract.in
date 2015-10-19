@@ -39,7 +39,7 @@ while [ "x${1}" != "x" ]; do
 done
 case "${out}" in
     png)
-	export GNUPLOT_TERM="png  fontscale 1 size 800,600 font arial 12"
+	export GNUPLOT_TERM="png noenhanced  fontscale 1 size 800,600 font arial 12"
 	export GNUPLOT_EXT=png
 	;;
     pdf)
@@ -146,14 +146,17 @@ for b in mpi_bench_overlap_sender \
     params=$( mpi_bench_extract_params ${b} )
     echo "# params list: ${params}"
     latref0=$( mpi_bench_extract_line ${benchref} 0 | cut -f 2 )
-    echo "# generated from ${b}"                    > ${outdir}/${b}-ratio2d.dat
-    echo "# size | comp.time | ratio | rtt | lat0" >> ${outdir}/${b}-ratio2d.dat
+    echo "# generated from ${b}"                       > ${outdir}/${b}-ratio2d.dat
+    echo "# size | comp.time | ratio | rtt | lat_ref" >> ${outdir}/${b}-ratio2d.dat
+    echo "# generated from ${b} and ${benchref}"       > ${outdir}/${b}-ref.dat
+    echo "# size | comp.time | rtt | lat_ref"         >> ${outdir}/${b}-ref.dat
     for s in ${size_list}; do
 	echo "# size: ${s}"
 	latref=$( mpi_bench_extract_line ${benchref} ${s} | cut -f 2 )
-	echo "# generated from ${b} for size=${s}" > ${outdir}/${b}-s${s}.dat
-	echo "# reference latency: ${latref}"     >> ${outdir}/${b}-s${s}.dat
-	echo "# comp.time | ratio | rtt."         >> ${outdir}/${b}-s${s}.dat
+	mkdir -p ${outdir}/${b}-series
+	echo "# generated from ${b} for size=${s}" > ${outdir}/${b}-series/${b}-s${s}.dat
+	echo "# reference latency: ${latref}"     >> ${outdir}/${b}-series/${b}-s${s}.dat
+	echo "# comp.time | ratio | rtt."         >> ${outdir}/${b}-series/${b}-s${s}.dat
 	for p in ${params}; do
 	    rtt=$( mpi_bench_extract_line_param ${b} ${s} ${p} | cut -f 2 )
 	    case ${b} in
@@ -178,19 +181,29 @@ EOF
 			 )
 		    ;;
 	    esac
-	    echo "${p} ${ratio} ${rtt}"                >> ${outdir}/${b}-s${s}.dat
 	    echo "${s} ${p} ${ratio} ${rtt} ${latref}" >> ${outdir}/${b}-ratio2d.dat
+	    echo "${s} ${p} ${rtt} ${latref}"          >> ${outdir}/${b}-ref.dat
+	    echo "${p} ${ratio} ${rtt}"                >> ${outdir}/${b}-series/${b}-s${s}.dat
 	done
 	echo  >> ${outdir}/${b}-ratio2d.dat
+	echo  >> ${outdir}/${b}-ref.dat
     done
 
-    cat > ${outdir}/${b}.gp <<EOF
+    if [ ${b} != mpi_bench_overlap_Nload ]; then
+	if [ "x@GNUPLOT@" != "x" ]; then
+	    echo "# invoking gnuplot for bench ${b}..."
+	    @GNUPLOT@ -e "GNUPLOT_OUT = \"${out}\"" -c @srcdir@/trace.gp ${file} ${b}
+	    echo "# done."
+	else
+	    echo "# gnuplot not detected"
+	fi
+	
+	cat > ${outdir}/${b}.gp <<EOF
 # -*- mode: Gnuplot;-*-
 reset
 cd "${outdir}"
 
 set term ${GNUPLOT_TERM}
-set output "${b}-lin.${GNUPLOT_EXT}"
 set view map
 set pm3d interpolate 0,0
 set key bmargin box
@@ -199,12 +212,14 @@ set title "${file}"
 set xlabel "Message size (bytes)"
 set ylabel "Computation time (usec.)"
 set cblabel "${b}"
-set xrange [0:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
-set yrange [0:$( mpi_bench_extract_params ${b} | tr ' ' '\n' | tail -1 )]
-set cbrange [0:2]
-splot \
-  "${b}-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title "${b}" with pm3d , \
-  "${benchref}.dat" using 1:2:(2) title "Ref. latency" with linespoints lw 2
+
+# set output "${b}-lin.${GNUPLOT_EXT}"
+# set xrange [0:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
+# set yrange [0:$( mpi_bench_extract_params ${b} | tr ' ' '\n' | tail -1 )]
+# set cbrange [0:2]
+# splot \
+#   "${b}-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title "${b}" with pm3d , \
+#   "${benchref}.dat" using 1:2:(2) title "Ref. latency" with linespoints lw 2
 
 set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 MB" 4*1024*1024, "32 MB" 32*1024*1024 )
 set xrange [2048:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
@@ -213,8 +228,11 @@ set cbrange [0:2]
 set output "${b}-log.${GNUPLOT_EXT}"
 set logscale x 2
 set logscale y 10
-replot
+splot \
+  "${b}-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title "${b}" with pm3d , \
+  "${benchref}.dat" using 1:2:(2) title "Ref. latency" with linespoints lw 2
 EOF
+    fi
     echo
 done
 
@@ -226,10 +244,6 @@ reset
 cd "${outdir}"
 
 set term ${GNUPLOT_TERM} 
-set output "overlap-lin.${GNUPLOT_EXT}"
-
-set multiplot layout 2,2 title "${file}"
-
 set view map
 set pm3d interpolate 0,0
 set key off
@@ -238,15 +252,17 @@ set xlabel "Message size (bytes)"
 set ylabel "Computation time (usec.)"
 set cblabel "overlap overhead"
 
-set xrange [0:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
-set yrange [0:$( mpi_bench_extract_params mpi_bench_overlap_sender | tr ' ' '\n' | tail -1 )]
-set cbrange [0:2]
-do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig"] {
-  set title b
-  splot b."-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title b with pm3d 
-}
+# set output "overlap-lin.${GNUPLOT_EXT}"
+# set multiplot layout 2,2 title "${file}"
+# set xrange [0:$( echo ${size_list} | tr ' ' '\n' | tail -1 )]
+# set yrange [0:$( mpi_bench_extract_params mpi_bench_overlap_sender | tr ' ' '\n' | tail -1 )]
+# set cbrange [0:2]
+# do for [b in "mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig"] {
+#   set title b
+#   splot b."-ratio2d.dat" using 1:2:(\$3>2?2:\$3) title b with pm3d 
+# }
+# unset multiplot
 
-unset multiplot
 set output "overlap-log.${GNUPLOT_EXT}"
 set multiplot layout 2,2 title "${file}"
 set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 MB" 4*1024*1024, "32 MB" 32*1024*1024 )

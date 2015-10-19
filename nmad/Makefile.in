@@ -82,6 +82,4 @@ docs: doxygen
 
 doxygen: $(SRC_FILES)
 
-upload-doc: doxygen
-	rsync -avz @nmad_builddir@/doc/html/ scm.gforge.inria.fr:/home/groups/pm2/htdocs/newmadeleine/doc/
 

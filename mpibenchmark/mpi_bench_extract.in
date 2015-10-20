@@ -178,7 +178,7 @@ EOF
 reset
 
 load "@srcdir@/plot/term-${out}.gp"
-call "@srcdir@/trace.gp" "${file}" "${b}"
+call "@srcdir@/plot/trace-overlap.gp" "${file}" "${b}"
 
 EOF
 	if [ "x@GNUPLOT@" != "x" -a -r ${outdir}/${b}.gp ]; then

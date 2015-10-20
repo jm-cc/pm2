@@ -13,7 +13,7 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #  General Public License for more details.
 
-# Trace 2D graph for x=size; y=computation time
+# Trace 2D graph for x=size; y=number of threads
 
 # This file is not supposed to be used standalone.
 
@@ -37,6 +37,7 @@ stats benchfile using 2 name "PARAMS" nooutput
 lat0      = LATREF_min_y
 max_size  = LATREF_max_x
 max_param = PARAMS_max
+max_ratio = 10000
 
 print "# lat0:      " . sprintf("%g", lat0)
 print "# max_size:  " . sprintf("%d", max_size)
@@ -48,23 +49,22 @@ set key bmargin box
 set key off
 set title filename." / ".bench
 set xlabel "Message size (bytes)" 
-set ylabel "Computation time (usec.)" 
-set cblabel "Overlap overhead (overhead ratio)"
+set ylabel "Threads number" 
+set cblabel "Overhead (ratio)"
 
 
 set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 MB" 4*1024*1024, "32 MB" 32*1024*1024 )
 set xrange [2048:max_size]
-set yrange [20:max_param]
-set cbrange [0:2]
+set yrange [0:max_param]
+set cbrange [0.1:max_ratio]
 set logscale x 2
-set logscale y 10
+set nologscale y
+set logscale cb
 
 set output bench.".".OUT_EXT
 
-lat(rtt, l0) = (rtt > l0) ? (rtt - l0) : 0
-ov(l, c, latref) = ( (c < latref) ? ((l - latref) / c) : ((l - c) / latref))
+ov(l, latref) = ( (l > latref) ? ((l-latref)/latref) : 0 )
 min(a, b) = (a < b) ? a : b
 
-splot benchfile using 1:2:(min(2, ov(lat($3, lat0), $2, $4))) with pm3d, \
-      ref_file using 1:2:(1) with linespoints lc 2
+splot benchfile using 1:2:(min(max_ratio,(($3-$4)/$4))) with pm3d
 

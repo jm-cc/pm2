@@ -27,6 +27,7 @@
 
 const extern struct mpi_bench_s mpi_bench_sendrecv;
 const extern struct mpi_bench_s mpi_bench_noncontig;
+const extern struct mpi_bench_s mpi_bench_send_overhead;
 const extern struct mpi_bench_s mpi_bench_overlap_sender;
 const extern struct mpi_bench_s mpi_bench_overlap_recv;
 const extern struct mpi_bench_s mpi_bench_overlap_bidir;
@@ -49,6 +50,7 @@ int main(int argc, char	**argv)
   params.iterations = LOOPS_REFERENCE;
   mpi_bench_run(&mpi_bench_sendrecv, &params);
   mpi_bench_run(&mpi_bench_noncontig, &params);
+  mpi_bench_run(&mpi_bench_send_overhead, &params);
   params.iterations = LOOPS_DEFAULT;
   mpi_bench_run(&mpi_bench_overlap_sender, &params);
   mpi_bench_run(&mpi_bench_overlap_recv, &params);

@@ -116,10 +116,13 @@ mpi_bench_extract_sizes() {
 size_list=$( mpi_bench_extract_sizes  )
 echo "# sizes: ${size_list}"
 
-bench_list="mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_Nload"
+bench_list="mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_Nload mpi_bench_overlap_send_overhead"
 
 for b in ${bench_list}; do
     case ${b} in
+	mpi_bench_overlap_send_overhead)
+	    benchref=mpi_bench_send_overhead
+	    ;;
 	*noncontig*)
 	    benchref=mpi_bench_noncontig
 	    ;;

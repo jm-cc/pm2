@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = mpi_overlap mpi_1toN mpi_Nload
+TARGET_BIN = mpi_overlap mpi_Nload
 TARGET_LIB =
 SUBDIRS =
 

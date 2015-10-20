@@ -113,17 +113,15 @@ int mpi_init(int*argc, char***argv)
   return MPI_SUCCESS;
 }
 
-int mpi_init_thread(int *argc, char ***argv, int required TBX_UNUSED, int *provided)
+int mpi_init_thread(int*argc, char***argv, int required, int*provided)
 {
   int err;
-  MPI_NMAD_LOG_IN();
   err = mpi_init(argc, argv);
 #ifndef PIOMAN
-  *provided = MPI_THREAD_SINGLE;
-#else
+  *provided = (required == MPI_THREAD_MULTIPLE) ? MPI_THREAD_FUNNELED : required;
+#else /* PIOMAN */
   *provided = required;
-#endif
-  MPI_NMAD_LOG_OUT();
+#endif /* PIOMAN */
   return err;
 }
 

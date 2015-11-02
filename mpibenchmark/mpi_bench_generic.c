@@ -186,6 +186,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	{
 	  if(!mpi_bench_common.is_server)
 	    printf("# bench: %s/%d begin\n", mpi_bench->label, p);
+	  fflush(stdout);
 	  (*mpi_bench->setparam)(p);
 	}
       if(mpi_bench_common.is_server)

@@ -10,7 +10,7 @@ BENCH_THREAD   := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_th
 
 BENCH_ALL      := $(BENCH_BASE) $(BENCH_OVERLAP) $(BENCH_DATATYPE) $(BENCH_THREAD)
 
-TARGET_BIN = $(BENCH_ALL) mpi_bench_overlap 
+TARGET_BIN = $(BENCH_ALL) mpi_bench_overlap mpi_bench_thread
 TARGET_LIB =
 SUBDIRS =
 
@@ -44,5 +44,7 @@ stub_%.c:
 $(BENCH_ALL): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o mpi_bench_single.pic.o stub_%.pic.o
 
 mpi_bench_overlap: $(patsubst %, %.pic.o, mpi_bench_overlap mpi_bench_generic $(BENCH_BASE) $(BENCH_OVERLAP))
+
+mpi_bench_thread: $(patsubst %, %.pic.o, mpi_bench_thread mpi_bench_generic $(BENCH_BASE) $(BENCH_THREAD))
 
 docs: doxygen

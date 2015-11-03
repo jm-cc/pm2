@@ -22,7 +22,7 @@ TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 MPICC     = @MPICC@
 CC       := $(MPICC)
-CFLAGS   += -I. @hwloc_CFLAGS@ @DEFS@
+CFLAGS   += -Wall -I. @hwloc_CFLAGS@ @DEFS@
 LD       := $(CC)
 LDFLAGS  +=
 LIBS     += @hwloc_LIBS@
@@ -31,8 +31,6 @@ CC_DEP   := $(MPICC) @CDEPFLAGS@
 CLEAN_MORE += $(wildcard stub_*.c)
 
 include @abs_top_builddir@/common_rules.mk
-
-#$(TARGET_BIN): %: %.pic.o
 
 stub_%.c:
 	@echo "  [GEN]    $@"

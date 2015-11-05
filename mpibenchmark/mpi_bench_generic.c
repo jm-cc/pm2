@@ -113,6 +113,29 @@ int mpi_bench_get_threads(void)
   return n;
 }
 
+/* ** Barrier ********************************************** */
+
+/** barrier that ensures that server will be ready first
+ * (when _client_ starts the clock, server is assumed to be ready)
+ */
+static void mpi_bench_barrier(void)
+{
+  static const int tag_barrier = 0x1234;
+  char dummy = 0;
+  if(mpi_bench_common.is_server)
+    {
+      /* server */
+      MPI_Recv(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Send(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
+    }
+  else
+    {
+      /* client */
+      MPI_Send(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
+      MPI_Recv(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+}
+
 /* ** Benchmark ******************************************** */
 
 static int comp_double(const void*_a, const void*_b)
@@ -202,11 +225,10 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      iterations = _iterations(iterations, len);
 	      if(mpi_bench->init != NULL)
 		(*mpi_bench->init)(buf, len, iterations);
-	      MPI_Barrier(mpi_bench_common.comm);
 	      for(k = 0; k < iterations; k++)
 		{
+		  mpi_bench_barrier();
 		  (*mpi_bench->server)(buf, len);
-		  MPI_Barrier(mpi_bench_common.comm);
 		}
 	      if(mpi_bench->finalize != NULL)
 		(*mpi_bench->finalize)();
@@ -235,16 +257,15 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      int k;
 	      if(mpi_bench->init != NULL)
 		(*mpi_bench->init)(buf, len, iterations);
-	      MPI_Barrier(mpi_bench_common.comm);
 	      for(k = 0; k < iterations; k++)
 		{
+		  mpi_bench_barrier();
 		  mpi_bench_get_tick(&t1);
 		  (*mpi_bench->client)(buf, len);
 		  mpi_bench_get_tick(&t2);
 		  const double delay = mpi_bench_timing_delay(&t1, &t2);
 		  const double t = mpi_bench->rtt ? delay : (delay / 2);
 		  lats[k] = t;
-		  MPI_Barrier(mpi_bench_common.comm);
 		}
 	      if(mpi_bench->finalize != NULL)
 		(*mpi_bench->finalize)();

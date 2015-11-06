@@ -180,6 +180,6 @@ done
 
 if [ ${out} = png ]; then
     echo "# ## generating global plot..."
-    gm convert $( for b in ${bench_list}; do if [ -s ${outdir}/${b}.png ]; then echo ${outdir}/${b}.png; else echo "-size 1024x768 label:${b}"; fi; done ) +append ${outdir}/all.png
+    gm convert -size 800x768 label:"${file}" $( for b in ${bench_list}; do if [ -s ${outdir}/${b}.png ]; then echo ${outdir}/${b}.png; else echo "-size 1024x768 label:${b}"; fi; done ) +append ${outdir}/all.png
 fi
     

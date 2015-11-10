@@ -199,7 +199,19 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
   const struct mpi_bench_param_bounds_s*param_bounds = NULL;
   if(mpi_bench->setparam != NULL && mpi_bench->getparams != NULL)
     {
-      param_bounds = (*mpi_bench->getparams)();
+      if(params->param == -1)
+	{
+	  param_bounds = (*mpi_bench->getparams)();
+	}
+      else
+	{
+	  struct mpi_bench_param_bounds_s*b = malloc(sizeof(struct mpi_bench_param_bounds_s));
+	  b->min  = params->param;
+	  b->max  = params->param;
+	  b->mult = 1.0;
+	  b->incr = 1;
+	  param_bounds = b;
+	}
     }
   int p = (param_bounds != NULL) ? param_bounds->min : 0;
   do

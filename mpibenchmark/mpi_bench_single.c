@@ -29,6 +29,7 @@
 #define MULT_DEFAULT    2
 #define INCR_DEFAULT    0
 #define LOOPS_DEFAULT   1000
+#define PARAM_DEFAULT   -1
 
 static void usage_ping(void)
 {
@@ -39,6 +40,7 @@ static void usage_ping(void)
   fprintf(stderr, "\tNext(0)      = 1+increment\n");
   fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
+  fprintf(stderr, "-P param - fixed parameter\n");
 }
 
 /* variable defined in stub */
@@ -52,7 +54,8 @@ int main(int argc, char	**argv)
       .end_len     = MAX_DEFAULT,
       .multiplier  = MULT_DEFAULT,
       .increment   = INCR_DEFAULT,
-      .iterations  = LOOPS_DEFAULT
+      .iterations  = LOOPS_DEFAULT,
+      .param       = PARAM_DEFAULT
     };
 
   mpi_bench_init(argc, argv, mpi_bench_default->threads);
@@ -85,6 +88,10 @@ int main(int argc, char	**argv)
       else if(strcmp(argv[i], "-N") == 0)
 	{
 	  params.iterations = atoi(argv[i+1]);
+	}
+      else if(strcmp(argv[i], "-P") == 0)
+	{
+	  params.param = atoi(argv[i+1]);
 	}
       else
 	{

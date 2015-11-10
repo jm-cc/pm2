@@ -38,6 +38,7 @@ struct mpi_bench_param_s
   double multiplier;
   size_t increment;
   int    iterations;
+  int    param;        /**< fixed parameter; -1 to use bounds */
 };
 
 /** bounds for parameterized benchmarks */

@@ -24,6 +24,7 @@
 #define INCR_DEFAULT    0
 #define LOOPS_DEFAULT   50
 #define LOOPS_REFERENCE 1000
+#define PARAM_DEFAULT   -1
 
 const extern struct mpi_bench_s mpi_bench_sendrecv;
 const extern struct mpi_bench_s mpi_bench_noncontig;
@@ -43,7 +44,8 @@ int main(int argc, char	**argv)
       .end_len     = MAX_DEFAULT,
       .multiplier  = MULT_DEFAULT,
       .increment   = INCR_DEFAULT,
-      .iterations  = LOOPS_DEFAULT
+      .iterations  = LOOPS_DEFAULT,
+      .param       = PARAM_DEFAULT
     };
 
   mpi_bench_init(argc, argv, 0);

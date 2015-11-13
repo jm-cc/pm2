@@ -15,8 +15,9 @@ INSTALL_LIB = $(TARGET_LIB)
 INSTALL_INCLUDE = 
 INSTALL_INIT =
 
-CFLAGS :=  @NMAD_CORE_CFLAGS@ @ibverbs_CFLAGS@ 
-MODLIBS += @ibverbs_LIBS@ --requires NewMad_Connector
+CPPFLAGS += @NMAD_CORE_CPPFLAGS@
+CFLAGS   += @NMAD_CORE_CFLAGS@
+MODLIBS  += @ibverbs_LIBS@ --requires NewMad_Connector
 
 include @abs_top_builddir@/common_rules.mk
 

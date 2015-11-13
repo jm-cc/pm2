@@ -1,5 +1,5 @@
+dnl -*- mode: Autoconf;-*-
 dnl -- configure.ac for nmad
-dnl -- contains excerpts from PadicoTM configure.ac
 
 
 AC_PREREQ(2.50)
@@ -60,6 +60,9 @@ AC_PADICO_DYNLD
 dnl -- options
 dnl --------------------------------------------------------
 
+AC_PADICO_DEBUG
+AC_PADICO_OPTIMIZE
+
 dnl -- tag container
 dnl --
 AC_MSG_CHECKING([for tag container])
@@ -106,26 +109,6 @@ AC_ARG_ENABLE(trace,
 	      ],
 	      [])
 
-dnl -- DEBUG
-AC_ARG_ENABLE(debug,
-	      [  --enable-debug     Enable debugging symbols],
-	      [ if test $enableval = yes; then
-	      	    NMAD_ENABLE_DEBUG=yes
-		    AC_SUBST(NMAD_ENABLE_DEBUG)
-	        fi
-	      ],
-	      [])
-
-
-dnl -- OPTIMIZE
-AC_ARG_ENABLE(optimize,
-	      [  --enable-optimize  Enable compiler optimization flags],
-	      [ if test $enableval = yes; then
-	      	    NMAD_ENABLE_OPTIMIZE=yes
-		    AC_SUBST(NMAD_ENABLE_OPTIMIZE)
-	        fi
-	      ],
-	      [])
 dnl -- TODO: fine_grain_lock
 
 
@@ -410,25 +393,16 @@ AC_SUBST(NMAD_LIBS)
 dnl -- flags to build nmad
 dnl --
 
-NMAD_LDFLAGS="${NMAD_CORE_LDFLAGS} -Wl,--export-dynamic"
-
-NMAD_CORE_CFLAGS="\$(BASE_CFLAGS) -DNMAD -DNMAD_BUILD -I${nmad_srcdir}/include -I${nmad_builddir}/include"
-if test "x${NMAD_ENABLE_OPTIMIZE}" = "xyes"; then
-   NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} \$(OPT_CFLAGS)"
-   NMAD_CORE_LDFLAGS="${NMAD_CORE_LDFLAGS} \$(OPT_LDFLAGS)"
-fi
-if test "x${NMAD_ENABLE_DEBUG}" = "xyes"; then
-   NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} \$(DEBUG_CFLAGS)"
-fi
+NMAD_CORE_CPPFLAGS="-DNMAD -DNMAD_BUILD -I${nmad_srcdir}/include -I${nmad_builddir}/include"
 for d in ${nmad_alldirs}; do
     if test -r ${nmad_srcdir}/${d}/include; then
-       NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} -I${nmad_srcdir}/${d}/include"
+       NMAD_CORE_CPPFLAGS="${NMAD_CORE_CPPFLAGS} -I${nmad_srcdir}/${d}/include"
     fi
 done
-NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} ${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS} ${gtg_CFLAGS}"
-
+NMAD_CORE_CFLAGS="${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS} ${gtg_CFLAGS}"
 NMAD_CORE_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${numa_LIBS} ${gtg_LIBS} -lrt"
 
+AC_SUBST(NMAD_CORE_CPPFLAGS)
 AC_SUBST(NMAD_CORE_CFLAGS)
 AC_SUBST(NMAD_CORE_LDFLAGS)
 AC_SUBST(NMAD_CORE_LIBS)

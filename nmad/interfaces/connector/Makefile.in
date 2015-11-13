@@ -15,9 +15,10 @@ INSTALL_LIB = $(TARGET_LIB)
 INSTALL_INCLUDE = include/nm_connector.h
 INSTALL_INIT =
 
-CFLAGS  := @NMAD_CORE_CFLAGS@
-LDFLAGS := @NMAD_CORE_LDFLAGS@
-LIBS    := -L@nmad_builddir@ @NMAD_LIBS@
+CPPFLAGS += @NMAD_CORE_CPPFLAGS@
+CFLAGS   += @NMAD_CORE_CFLAGS@
+LDFLAGS  += @NMAD_CORE_LDFLAGS@
+LIBS     += -L@nmad_builddir@ @NMAD_LIBS@
 
 CLEAN_MORE += src/nm_connector.pic.o
 

@@ -31,9 +31,10 @@ TARGET_DEP += $(DEP_FILES)
 INSTALL_INCLUDE += $(foreach d, $(DIRS_NOMK), $(wildcard $(srcdir)/$(d)/include/*.h))
 
 # set compilers and flags
-CFLAGS  := @NMAD_CORE_CFLAGS@
-LDFLAGS := @NMAD_CORE_LDFLAGS@
-LIBS    := @NMAD_CORE_LIBS@
+CPPFLAGS += @NMAD_CORE_CPPFLAGS@
+CFLAGS   += @NMAD_CORE_CFLAGS@
+LDFLAGS  += @NMAD_CORE_LDFLAGS@
+LIBS     += @NMAD_CORE_LIBS@
 
 TARGET_CLEAN += clean-examples
 

@@ -1,5 +1,5 @@
 
-prefix=@pioman_root@
+prefix=@prefix@
 
 Name: pioman
 Description: PIOMan

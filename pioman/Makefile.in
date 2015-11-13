@@ -1,60 +1,9 @@
 # autoconf-based makefile for pioman
-# copy/pasted from PadicoTM common makefiles
 
 srcdir := @srcdir@
 VPATH  := $(srcdir)/source
 
-INSTALL_BIN_PATH       = $(INSTALL_PREFIX)/bin
-INSTALL_LIB_PATH       = $(INSTALL_PREFIX)/lib
-INSTALL_INCLUDE_PATH   = $(INSTALL_PREFIX)/include
-INSTALL_PKGCONFIG_PATH = $(INSTALL_LIB_PATH)/pkgconfig
-INSTALL_PREFIX         = @pioman_root@
-
-# ## Various flags
-# preprocessor options - usually "-D_REENTRANT"
-CPPFLAGS        = -D_GNU_SOURCE @CPPFLAGS@
-# common flags for C code - usually "-Wall"
-BASE_CFLAGS    := @BASE_CFLAGS@
-# flags for producing Position Independent Code
-CPICFLAGS      := @CPICFLAGS@
-
-CFLAGS   = $(CPPFLAGS) $(BASE_CFLAGS) -I$(srcdir)/include -I@pioman_root@/include
-
-# basic shell commands
-ECHO    = echo
-RM      = rm -rf
-CP      = cp -f
-LN      = ln -fs
-MKDIR   = mkdir -p
-INSTALL = install -p
-SHELL   = /bin/sh
-TOUCH   = touch
-IGNORE  = @BIN_TRUE@
-
-# build & link
-LDFLAGS    = @LDFLAGS@
-LIBS       = @LIBS@
-CC         = @CC@
-LD         = @LD@
-CC_DEP     = @CC_DEP@
-DYNLIB_LD  = @DYNLIB_LD@
-
-# control verbosity
-ifeq ($(VERBOSE),yes)
-# verbose
-Q         := 
-SHOWMK    := @$(IGNORE)
-INSTALL   := $(INSTALL) -v
-else
-# quiet
-Q         := @
-SHOWMK    := @$(ECHO)
-MAKEFLAGS += --no-print-directory
-endif
-
-
-# local configuration begin
-# ##
+include @abs_top_builddir@/common_vars.mk
 
 TARGET_BIN = 
 TARGET_LIB = libpioman.so
@@ -64,96 +13,19 @@ INSTALL_BIN       = $(TARGET_BIN)
 INSTALL_LIB       = $(TARGET_LIB)
 INSTALL_INCLUDE  += $(wildcard $(srcdir)/include/*.h)
 INSTALL_PKGCONFIG = pioman.pc
+INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
-
-CFLAGS  += @PIOMAN_CFLAGS@ @PIOMAN_EXT_CFLAGS@
-LIBS    += @PIOMAN_EXT_LIBS@
+CPPFLAGS += -I@srcdir@/include
+CFLAGS   += @PIOMAN_CFLAGS@ @PIOMAN_EXT_CFLAGS@
+LIBS     += @PIOMAN_EXT_LIBS@
 
 SRC_FILES := $(wildcard $(srcdir)/source/*.c )
 OBJ_FILES := $(patsubst $(srcdir)/source/%.c, ./%.pic.o, $(SRC_FILES))
 
+include @abs_top_builddir@/common_rules.mk
 
-# local configuration end
-# ##
+libpioman.so: $(OBJ_FILES)
 
-
-.PHONY: all install install-lib install-bin install-include clean clean-obj distclean dep 
-
-all: $(TARGETS)
-
-clean:
-	$(SHOWMK) "  [CLEAN]  $(notdir $(CURDIR))/"
-	$(Q)$(RM) *.o *.pic.o *.fut *.i *.so *.dylib *.d .*.d .*.stamp $(TARGET_BIN) $(TARGET_LIB) $(CLEAN_MORE)
-
-install: install-lib install-bin install-include install-pkgconfig
-
-install-lib: $(INSTALL_LIB)
-	@$(if $^,,$(IGNORE)) $(SHOWMK) "  [INST]   in lib/:     $(^F)"
-	@$(if $^,,$(IGNORE)) $(Q)$(INSTALL) -d $(INSTALL_LIB_PATH)
-	@$(if $^,,$(IGNORE)) $(Q)$(INSTALL) $^ $(INSTALL_LIB_PATH)
-
-install-bin: $(INSTALL_BIN)
-	@$(if $^,,$(IGNORE)) $(SHOWMK) "  [INST]   in bin/:     $(^F)"
-	@$(if $^,,$(IGNORE)) $(Q)$(INSTALL) -d $(INSTALL_BIN_PATH)
-	@$(if $^,,$(IGNORE)) $(Q)$(INSTALL) $^ $(INSTALL_BIN_PATH)
-
-install-include: $(INSTALL_INCLUDE)
-	@$(if $^,,$(IGNORE)) $(SHOWMK) "  [INST]   in include/: $(^F)"
-	@$(if $^,,$(IGNORE)) $(Q)$(INSTALL) -d $(INSTALL_INCLUDE_PATH)
-	@$(if $^,,$(IGNORE)) $(Q)$(INSTALL) $^ $(INSTALL_INCLUDE_PATH)
-
-install-pkgconfig: $(INSTALL_PKGCONFIG)
-	@$(if $^,,$(IGNORE)) $(SHOWMK) "  [INST]   in lib/pkgconfig/: $(^F)"
-	@$(if $^,,$(IGNORE)) $(Q)$(INSTALL) -d $(INSTALL_PKGCONFIG_PATH)
-	@$(if $^,,$(IGNORE)) $(Q)$(INSTALL) $^ $(INSTALL_PKGCONFIG_PATH)
-
-ifeq ($(MAKECMDGOALS),clean)
-  USE_MKDEPEND = no
-else
-  USE_MKDEPEND = yes
-endif
-
-ifeq ($(USE_MKDEPEND),yes)
-%.pic.o: %.c %.d
-	@$(SHOWMK) "  [CC]     $@"
-	$(Q)$(CC) $(CFLAGS) $(CPICFLAGS) -c -o $@ $<
-
-%.d: %.c
-	@$(SHOWMK) "  [CDEP]   $@"
-	$(Q)$(MKDIR) $(dir $@)
-	$(Q)$(CC_DEP) $(CFLAGS) -DMKDEPEND $< > $@
-	$(Q)$(ECHO) >> $@
-	$(Q)$(CC_DEP) -MT $*.pic.o $(CFLAGS) -DMKDEPEND $< >> $@
-
-TARGET_DEP += $(patsubst $(srcdir)/source/%.c, ./%.d, $(SRC_FILES))
-
-dep: $(TARGET_DEP)
-
-CLEAN_MORE += $(TARGET_DEP)
-
-_DEP_FILES = $(wildcard *.d)
-
-ifneq ($(strip $(_DEP_FILES)),)
--include $(_DEP_FILES)
-endif
-
-endif # USE_MKDEPEND
-
-
-$(TARGET_LIB): $(OBJ_FILES)
-	@$(SHOWMK) "  [LIB-LD] $@"
-	$(Q)$(DYNLIB_LD) $(LDFLAGS) -o $@ $+ $(LIBS)
-
-
-# ## Doxygen
-#
 docs: doxygen
 
-doxygen: @abs_top_builddir@/doc/Doxyfile $(SRC_FILES)
-	doxygen doc/Doxyfile
-	@echo
-	@echo "# documentation generated in: @pioman_builddir@/doc/html/index.html"
-	@echo
-
-upload-doc: doxygen
-	rsync -avz @pioman_builddir@/doc/html/ scm.gforge.inria.fr:/home/groups/pm2/htdocs/pioman/doc/
+doxygen: $(SRC_FILES)

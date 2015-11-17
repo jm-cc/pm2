@@ -53,9 +53,7 @@ static int comp_double(const void*_a, const void*_b)
 
 static void*ping_thread(void*_tag)
 {
-  const int iterations = MAX_THREADS * COUNT;
   int tag = *(int*)_tag;
-  int k;
   int small = 0;
   while(small != 0xFF)
     {

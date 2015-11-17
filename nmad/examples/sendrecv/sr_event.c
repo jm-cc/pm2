@@ -44,7 +44,7 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
       nm_sr_get_size(p_session, p_request, &size);
       nm_sr_get_ref(p_session, p_request, &ref);
       printf(":: event NM_SR_EVENT_RECV_COMPLETED- tag = %d; size = %d; ref = %p; from gate = %s\n",
-	     tag, size, ref, from?(from == p_gate ? "peer":"unknown"):"(nil)");
+	     (int)tag, (int)size, ref, from?(from == p_gate ? "peer":"unknown"):"(nil)");
       if(size < 1024)
 	printf("   buffer contents: %s\n", buf);
     }
@@ -54,10 +54,10 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
       const nm_tag_t tag = info->recv_unexpected.tag;
       const size_t len = info->recv_unexpected.len;
       printf(":: event NM_SR_EVENT_RECV_UNEXPECTED- tag = %d; len = %d; from gate = %s\n",
-	     tag, len, from?(from == p_gate ? "peer":"unknown"):"(nil)");
+	     (int)tag, (int)len, from?(from == p_gate ? "peer":"unknown"):"(nil)");
       if(tag == 1)
 	{
-	  printf("   receiving tag = %d in event handler...\n", tag);
+	  printf("   receiving tag = %d in event handler...\n", (int)tag);
 	  nm_sr_request_t*request = &unexpected_requests[n_unexpected++];
 	  nm_sr_irecv(p_session, from, tag, buf, len, request);
 	}

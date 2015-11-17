@@ -26,6 +26,7 @@
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
 #include <nm_launcher.h>
+#include <nm_sendrecv_interface.h>
 
 const int roundtrips = 50000;
 
@@ -40,7 +41,6 @@ int main(int argc, char **argv)
   peer = 1 - rank;
   nm_gate_t p_gate = NULL;
   nm_launcher_get_gate(peer, &p_gate);
-  struct nm_drv*p_drv = nm_drv_default(p_gate);
   assert(p_gate != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 

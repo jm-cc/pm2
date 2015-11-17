@@ -58,12 +58,12 @@ static void nm_examples_init_topo(int*argc, char*argv[], enum nm_example_topo_e 
   nm_launcher_get_gate(peer, &p_gate);
 }
 
-static void nm_examples_init(int*argc, char*argv[])
+static inline void nm_examples_init(int*argc, char*argv[])
 {
   nm_examples_init_topo(argc, argv, NM_EXAMPLES_TOPO_RING);
 }
 
-static void nm_examples_exit(void)
+static inline void nm_examples_exit(void)
 {
   nm_launcher_exit();
 }
@@ -71,7 +71,7 @@ static void nm_examples_exit(void)
 /* ********************************************************* */
 
 /* barrier accross all nodes */
-static void nm_examples_barrier(nm_tag_t tag)
+static inline void nm_examples_barrier(nm_tag_t tag)
 {
   if(p_comm == NULL)
     {
@@ -129,7 +129,7 @@ static void control_buffer(const char*msg, const char*buffer, nm_len_t len)
   printf("Controle de %s - ", msg);
 
   if (!ok) {
-    printf("%d bytes reception failed\n", len);
+    printf("%d bytes reception failed\n", (int)len);
 
     TBX_FAILURE("data corruption");
   } else {

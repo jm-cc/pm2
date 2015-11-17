@@ -23,6 +23,7 @@ static void nm_bench_dataprop(void*buf, nm_len_t len)
   struct nm_data_s data;
   nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = buf, .len = len });
   const struct nm_data_properties_s*p_props = nm_data_properties_get(&data);
+  (void)p_props; /* fake variable use to have it really computed */
 }
 
 const struct nm_bench_s nm_bench =

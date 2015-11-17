@@ -456,8 +456,7 @@ void piom_init_ltasks(void)
 		    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
 		    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof (piom_ltask_queue_t));
 		    piom_ltask_queue_init(queue, l);
-		    queue->parent = (l->father != NULL) ? l->father->ltask_data : NULL;
-		    queue->skip_factor = 1;
+		    /*		    queue->parent = (l->father != NULL) ? l->father->ltask_data : NULL; */
 		    l->ltask_data = queue;
 		}
 	}
@@ -722,10 +721,6 @@ void piom_ltask_schedule(int point)
 				}
 			    else
 				{
-				    /*
-				    queue->skip++;
-				    if(queue->skip % queue->skip_factor == 0)
-				    */
 				    piom_ltask_queue_schedule(queue, 0);
 				}
 			}

@@ -179,12 +179,12 @@ with_ibverbs=check
 AC_ARG_WITH([ibverbs],
 	    [AS_HELP_STRING([--with-ibverbs], [use Infiniband ibverbs @<:@default=check@:>@] )])
 if test "x${with_ibverbs}" != "xno" ; then
-    save_CFLAGS="${CFLAGS}"
-    CFLAGS="${CFLAGS} -I${IBHOME}/include"
+    save_CPPFLAGS="${CPPFLAGS}"
+    CPPFLAGS="${CPPFLAGS} -I${IBHOME}/include"
     AC_CHECK_HEADER(infiniband/verbs.h, 
                     [ HAVE_INFINIBAND=yes ],
                     [ HAVE_INFINIBAND=no  ])
-    CFLAGS="${save_CFLAGS}"
+    CPPFLAGS="${save_CPPFLAGS}"
     AC_SUBST(HAVE_INFINIBAND)
     if test ${HAVE_INFINIBAND} = yes; then
         nmad_drivers="${nmad_drivers} ibverbs"
@@ -192,11 +192,11 @@ if test "x${with_ibverbs}" != "xno" ; then
       	   if test "x${IBLIBPATH}" = "x" ; then
       	      IBLIBPATH=${IBHOME}/lib
            fi
-      	   ibverbs_CLAGS="-I$IBHOME/include"
+      	   ibverbs_CPPLAGS="-I$IBHOME/include"
       	   ibverbs_LIBS="-Wl,-rpath,${IBLIBPATH} -L${IBLIBPATH}"
         fi
 	ibverbs_LIBS="${ibverbs_LIBS} -libverbs"
-	AC_SUBST([ibverbs_CFLAGS])
+	AC_SUBST([ibverbs_CPPFLAGS])
 	AC_SUBST([ibverbs_LIBS])
     elif test "x${with_ibverbs}" != "xcheck"; then
         AC_MSG_FAILURE([--with-ibverbs was given, but infiniband/verbs.h is not found])
@@ -222,11 +222,11 @@ if test "x${with_dcfa}" != "xno" ; then
     if test ${HAVE_DCFA} = yes; then
         nmad_drivers="${nmad_drivers} dcfa"
         if test "x${DCFA_DIR}" != "x" -a "x${DCFA_DIR}" != "x/usr"; then
-      	   dcfa_CFLAGS="-I${DCFA_DIR}/include"
+      	   dcfa_CPPFLAGS="-I${DCFA_DIR}/include"
       	   dcfa_LIBS="-Wl,-rpath,${DCFA_DIR}/lib -L${DCFA_DIR}/lib"
         fi
 	dcfa_LIBS="${dcfa_LIBS} -ldcfa"
-	AC_SUBST([dcfa_CFLAGS])
+	AC_SUBST([dcfa_CPPFLAGS])
 	AC_SUBST([dcfa_LIBS])
     elif test "x${with_dcfa}" != "xcheck"; then
         AC_MSG_FAILURE([--with-dcfa was given, but dcfa.h is not found])
@@ -248,21 +248,21 @@ with_mx=check
 AC_ARG_WITH([mx],
 	    [AS_HELP_STRING([--with-mx], [use Myrinet MX @<:@default=check@:>@] )])
 if test "x${with_mx}" != "xno" ; then
-    save_CFLAGS="${CFLAGS}"
-    CFLAGS="${CFLAGS} -I${MX_DIR}/include"
+    save_CPPFLAGS="${CPPFLAGS}"
+    CPPFLAGS="${CPPFLAGS} -I${MX_DIR}/include"
     AC_CHECK_HEADER(myriexpress.h, 
                     [ HAVE_MX=yes ],
                     [ HAVE_MX=no  ])
-    CFLAGS="${save_CFLAGS}"
+    CPPFLAGS="${save_CPPFLAGS}"
     AC_SUBST(HAVE_MX)
     if test ${HAVE_MX} = yes; then
         nmad_drivers="${nmad_drivers} mx"
         if test "x${MX_DIR}" != "x" -a "x${MX_DIR}" != "x/usr"; then
-      	   mx_CFLAGS="-I${MX_DIR}/include"
+      	   mx_CPPFLAGS="-I${MX_DIR}/include"
       	   mx_LIBS="-Wl,-rpath,${MX_DIR}/lib -L${MX_DIR}/lib"
         fi
 	mx_LIBS="${mx_LIBS} -lmyriexpress"
-	AC_SUBST([mx_CFLAGS])
+	AC_SUBST([mx_CPPFLAGS])
 	AC_SUBST([mx_LIBS])
     elif test "x${with_mx}" != "xcheck"; then
         AC_MSG_FAILURE([--with-mx was given, but myrinetexpress.h is not found])
@@ -288,11 +288,11 @@ if test "x${with_cci}" != "xno" ; then
     if test ${HAVE_CCI} = yes; then
         nmad_drivers="${nmad_drivers} cci"
         if test "x${CCI_DIR}" != "x" -a "x${CCI_DIR}" != "x/usr"; then
-      	   cci_CFLAGS="-I${CCI_DIR}/include"
+      	   cci_CPPFLAGS="-I${CCI_DIR}/include"
       	   cci_LIBS="-Wl,-rpath,${CCI_DIR}/lib -L${CCI_DIR}/lib"
         fi
 	cci_LIBS="${cci_LIBS} -lcci"
-	AC_SUBST([cci_CFLAGS])
+	AC_SUBST([cci_CPPFLAGS])
 	AC_SUBST([cci_LIBS])
     elif test "x${with_cci}" != "xcheck"; then
         AC_MSG_FAILURE([--with-cci was given, but cci.h is not found])

@@ -138,6 +138,16 @@ while [ "x$1" != "x" ]; do
 	    flavor="$1"
 	    ;;
     esac
+    case "$1" in
+	-*)
+	    global_options="${global_options} $1"
+	    ;;
+	*=*)
+	    global_options="${global_options} $1"
+	    ;;
+	*)
+	    ;;
+    esac
     shift
 done
 
@@ -395,6 +405,17 @@ while true; do
 	  echo "#    with options: ${options}"
 	  echo
 	  build_package ${package} ${options}
+	  ;;
+      sub)
+	  package=${content}
+	  echo "# build sub-package: ${package}" 1>&2
+	  (
+	      cd ${self_path}
+	      ${self} ${global_options} ${package}
+	      rc=$?
+	      if [ $rc != 0 ]; then exit 1; fi
+	  )
+	  echo "# done: ${package}" 1>&2
 	  ;;
   esac
 done

@@ -64,7 +64,7 @@ static inline int piom_spin_trylock(piom_spinlock_t*lock)
     int rc = (pthread_spin_trylock(lock) == 0);
     return rc;
 }
-#else /* PIOMAN_PTHREAD_SPINLOCK */
+#elif defined(PIOMAN_MUTEX_SPINLOCK)
 
 typedef pthread_mutex_t piom_spinlock_t;
 
@@ -91,7 +91,47 @@ static inline int piom_spin_trylock(piom_spinlock_t*lock)
     int rc = (pthread_mutex_trylock(lock) == 0);
     return rc;
 }
+#elif defined (PIOMAN_MINI_SPINLOCK)
 
+/* ** minimalistic spinlocks */
+
+typedef volatile int piom_spinlock_t;
+
+static inline void piom_spin_init(piom_spinlock_t*lock)
+{
+    *lock = 0;
+}
+static inline int piom_spin_lock(piom_spinlock_t*lock)
+{
+    int k = 0;
+    while(__sync_fetch_and_add(lock, 1) != 0)
+	{
+	    __sync_fetch_and_sub(lock, 1);
+	    k++;
+	    if(k > 100)
+		{
+		    sched_yield();
+		}
+	}
+    return 0;
+}
+static inline int piom_spin_unlock(piom_spinlock_t*lock)
+{
+    __sync_fetch_and_sub(lock, 1);
+    return 0;
+}
+static inline int piom_spin_trylock(piom_spinlock_t*lock)
+{
+    if(__sync_fetch_and_add(lock, 1) != 0)
+	{
+	    __sync_fetch_and_sub(lock, 1);
+	    return 0;
+	}
+    return 1;
+}
+
+#else
+#error "PIOMan: no spinlock scheme defined."
 #endif /* PIOMAN_PTHREAD_SPINLOCK */
 
 #define piom_thread_t pthread_t
@@ -100,17 +140,42 @@ static inline int piom_spin_trylock(piom_spinlock_t*lock)
 
 #elif defined(PIOMAN_LOCK_NONE)
 
-/* ** no locks ********************************************* */
+/* ** no threads ******************************************* */
 
-#define piom_spinlock_t		       int
-#define piom_spin_init(lock)           (void) 0
-#define piom_spin_lock(lock) 	       (void) 0
-#define piom_spin_trylock(lock)        1
-#define piom_spin_unlock(lock) 	       (void) 0
+typedef int piom_spinlock_t;
+
+static inline void piom_spin_init(piom_spinlock_t*lock)
+{
+    *lock = 0;
+}
+static inline int piom_spin_lock(piom_spinlock_t*lock)
+{
+    assert(*lock == 0);
+    *lock = 1;
+    return 0;
+}
+static inline int piom_spin_unlock(piom_spinlock_t*lock)
+{
+    assert(*lock == 1);
+    *lock = 0;
+    return 0;
+}
+static inline int piom_spin_trylock(piom_spinlock_t*lock)
+{
+    if(*lock == 0)
+	{
+	    *lock = 1;
+	    return 1;
+	}
+    else
+	{
+	    return 0;
+	}
+}
 
 #define piom_thread_t     int
-#define PIOM_THREAD_NULL 0
-#define PIOM_SELF       1
+#define PIOM_THREAD_NULL  0
+#define PIOM_SELF         1
 
 #else
 #  error "PIOMan: no lock scheme defined."

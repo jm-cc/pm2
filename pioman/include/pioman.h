@@ -38,6 +38,7 @@
 #  endif /* MCKERNEL */
 // #define PIOMAN_SEM_COND 1
 #  define PIOMAN_PTHREAD_SPINLOCK
+//#  define PIOMAN_MINI_SPINLOCK
 #elif defined(PIOMAN_MARCEL)
 #  include <marcel.h>
 #  define PIOMAN_MULTITHREAD

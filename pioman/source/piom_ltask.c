@@ -21,6 +21,8 @@
 #include "piom_private.h"
 #include <tbx_topology.h>
 
+//#define UNLOCK_QUEUES
+
 /** Maximum number of ltasks in a queue. 
  * Should be large enough to avoid overflow, but small enough to fit the cache.
  */
@@ -50,8 +52,8 @@ typedef struct piom_ltask_queue
     struct piom_ltask_lfqueue_s       ltask_queue;
     /** separate queue for task submission, to reduce contention */
     struct piom_ltask_lfqueue_s       submit_queue;
-    /** flag whether scheduling is disabled for the queue */
-    volatile int                      masked;
+    /** lock scheduling for the queue */
+    piom_spinlock_t                   lock;
     /** state to control queue lifecycle */
     volatile piom_ltask_queue_state_t state;
     /** where this queue is located */
@@ -176,7 +178,7 @@ static void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t bind
     queue->state = PIOM_LTASK_QUEUE_STATE_NONE;
     piom_ltask_lfqueue_init(&queue->ltask_queue);
     piom_ltask_lfqueue_init(&queue->submit_queue);
-    queue->masked = 0;
+    piom_spin_init(&queue->lock);
     queue->binding = binding;
     __piom_ltask.all_queues = realloc(__piom_ltask.all_queues, sizeof(struct piom_ltask_queue*)*(__piom_ltask.n_queues + 1));
     __piom_ltask.all_queues[__piom_ltask.n_queues] = queue;
@@ -195,17 +197,8 @@ static void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t bind
  */
 static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 {
-#ifdef PIOMAN_MULTITHREAD
-    if(__sync_fetch_and_add(&queue->masked, 1) != 0)
-	{
-	    __sync_fetch_and_sub(&queue->masked, 1);
-	    return;
-	}
-#else /* PIOMAN_MULTITHREAD */
-    if(queue->masked > 0)
+    if(piom_spin_trylock(&queue->lock) != 1)
 	return;
-    queue->masked++;
-#endif /* PIOMAN_MULTITHREAD */
     const int hint1 = (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK;
     const int hint2 = (PIOM_MAX_LTASK + queue->submit_queue._head - queue->submit_queue._tail) % PIOM_MAX_LTASK;
     const int hint = ((hint1 > 0)?hint1:1) + ((hint2 > 0)?hint2:1);
@@ -217,8 +210,18 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue_single_reader(&queue->submit_queue);
 	    if(task == NULL)
 		task = piom_ltask_lfqueue_dequeue_single_reader(&queue->ltask_queue);
-	    piom_trace_remote_var(queue->binding, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
-	    if(task)
+	    piom_trace_remote_var(queue->binding, PIOM_TRACE_VAR_LTASKS,
+				  (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
+	    if(task == NULL)
+		{
+		    if(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING) 
+			{
+			    /* no more task to run, set the queue as stopped */
+			    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
+			    return; /* purposely return while holding the lock */
+			}
+		}
+	    else
 		{
 		    piom_trace_local_state(PIOM_TRACE_STATE_INIT);
 		    const int prestate = piom_ltask_state_set(task, PIOM_LTASK_STATE_SCHEDULED);
@@ -228,6 +231,9 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 			    piom_trace_local_state(PIOM_TRACE_STATE_POLL);
 			    piom_tasklet_mask();
 			    const int options = task->options;
+#ifdef UNLOCK_QUEUES
+			    piom_spin_unlock(&queue->lock); /* unlock queue to schedule- will be re-acquired later */
+#endif /* UNLOCK_QUEUES */
 			    (*task->func_ptr)(task->data_ptr);
 			    if(options & PIOM_LTASK_OPTION_DESTROY)
 				{
@@ -250,7 +256,8 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 						{
 						    struct timespec t;
 						    clock_gettime(CLOCK_MONOTONIC, &t);
-						    const long d_usec = (t.tv_sec - task->origin.tv_sec) * 1000000 + (t.tv_nsec - task->origin.tv_nsec) / 1000;
+						    const long d_usec = (t.tv_sec - task->origin.tv_sec) * 1000000 +
+							(t.tv_nsec - task->origin.tv_nsec) / 1000;
 						    if(d_usec > task->blocking_delay)
 							{
 							    if(__piom_ltask_submit_in_lwp(task) == 0)
@@ -275,6 +282,25 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 				    piom_tasklet_unmask();
 				    success = 1;
 				}
+#ifdef UNLOCK_QUEUES
+			    const int relock = piom_spin_trylock(&queue->lock);
+			    static int failed = 0;
+			    static int total = 0;
+			    total++;
+			    if(relock == 0)
+				{
+				    /* didn't get the lock again- enqueue as new, and abort loop */
+				    if(again)
+					{
+					    failed++;
+					    if(failed % 1000 == 0)
+						fprintf(stderr, "# ## enqueue as new- %d / %d (%g).\n", failed, total,
+							100.0 * ((double)failed/(double)total));
+					    piom_ltask_lfqueue_enqueue(&queue->submit_queue, task);
+					}
+				    return;
+				}
+#endif /* UNLOCK_QUEUES */
 			} 
 		    else if((prestate & PIOM_LTASK_STATE_SUCCESS) ||
 			    (prestate & PIOM_LTASK_STATE_CANCELLED))
@@ -288,6 +314,10 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 			    PIOM_FATAL("wrong state 0x%x for scheduled ltask.\n", prestate);
 			}
 		    piom_trace_local_state(PIOM_TRACE_STATE_NONE);
+		    if(success)
+			{
+			    piom_trace_local_event(PIOM_TRACE_EVENT_SUCCESS, task);
+			}
 		    if(again)
 			{
 			    int rc = -1;
@@ -299,23 +329,8 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 				}
 			}
 		}
-	    /* no more task to run, set the queue as stopped */
-	    if( (task == NULL) && 
-		(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING) )
-		{
-		    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
-		    return; /* purposely return while holding the lock */
-		}
-	    if(success)
-		{
-		    piom_trace_local_event(PIOM_TRACE_EVENT_SUCCESS, task);
-		}
 	}
-#ifdef PIOMAN_MULTITHREAD
-    __sync_fetch_and_sub(&queue->masked, 1);
-#else
-    queue->masked--;
-#endif /* PIOMAN_MULTITHREAD */
+    piom_spin_unlock(&queue->lock);
 }
 
 

@@ -26,6 +26,64 @@
  * @{
  */
 
+/* ** mask ************************************************* */
+
+#ifdef PIOMAN_MULTITHREAD
+
+typedef volatile int piom_mask_t;
+
+static inline void piom_mask_init(piom_mask_t*mask)
+{
+    *mask = 0;
+}
+static inline int piom_mask_release(piom_mask_t*mask)
+{
+    __sync_fetch_and_sub(mask, 1);
+    return 0;
+}
+/** @return 0 for success, 1 else */
+static inline int piom_mask_acquire(piom_mask_t*mask)
+{
+    if(*mask != 0)
+	return 1;
+    if(__sync_fetch_and_add(mask, 1) != 0)
+	{
+	    __sync_fetch_and_sub(mask, 1);
+	    return 1;
+	}
+    return 0;
+}
+
+#else /* PIOMAN_MULTITHREAD */
+
+typedef int piom_mask_t;
+
+static inline void piom_mask_init(piom_mask_t*mask)
+{
+    *mask = 0;
+}
+static inline int piom_mask_release(piom_mask_t*mask)
+{
+    assert(*mask == 1);
+    *mask = 0;
+    return 0;
+}
+/** @return 0 for success, 1 else */
+static inline int piom_mask_acquire(piom_mask_t*mask)
+{
+    if(*mask != 0)
+	{
+	    return 1;
+	}
+    else
+	{
+	    *mask = 1;
+	    return 0;
+	}
+}
+
+#endif /* PIOMAN_MULTITHREAD */
+
 #ifdef PIOMAN_LOCK_MARCEL
 
 /* ** locks for Marcel ************************************* */
@@ -122,6 +180,8 @@ static inline int piom_spin_unlock(piom_spinlock_t*lock)
 }
 static inline int piom_spin_trylock(piom_spinlock_t*lock)
 {
+    if(*lock != 0)
+	return 0;
     if(__sync_fetch_and_add(lock, 1) != 0)
 	{
 	    __sync_fetch_and_sub(lock, 1);

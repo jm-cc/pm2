@@ -52,8 +52,8 @@ typedef struct piom_ltask_queue
     struct piom_ltask_lfqueue_s       ltask_queue;
     /** separate queue for task submission, to reduce contention */
     struct piom_ltask_lfqueue_s       submit_queue;
-    /** lock scheduling for the queue */
-    piom_spinlock_t                   lock;
+    /** whether scheduling for the queue is masked */
+    piom_mask_t                       mask;
     /** state to control queue lifecycle */
     volatile piom_ltask_queue_state_t state;
     /** where this queue is located */
@@ -178,7 +178,7 @@ static void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t bind
     queue->state = PIOM_LTASK_QUEUE_STATE_NONE;
     piom_ltask_lfqueue_init(&queue->ltask_queue);
     piom_ltask_lfqueue_init(&queue->submit_queue);
-    piom_spin_init(&queue->lock);
+    piom_mask_init(&queue->mask);
     queue->binding = binding;
     __piom_ltask.all_queues = realloc(__piom_ltask.all_queues, sizeof(struct piom_ltask_queue*)*(__piom_ltask.n_queues + 1));
     __piom_ltask.all_queues[__piom_ltask.n_queues] = queue;
@@ -197,7 +197,7 @@ static void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t bind
  */
 static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 {
-    if(piom_spin_trylock(&queue->lock) != 1)
+    if(piom_mask_acquire(&queue->mask))
 	return;
     const int hint1 = (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK;
     const int hint2 = (PIOM_MAX_LTASK + queue->submit_queue._head - queue->submit_queue._tail) % PIOM_MAX_LTASK;
@@ -232,7 +232,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 			    piom_tasklet_mask();
 			    const int options = task->options;
 #ifdef UNLOCK_QUEUES
-			    piom_spin_unlock(&queue->lock); /* unlock queue to schedule- will be re-acquired later */
+			    piom_mask_release(&queue->mask); /* unlock queue to schedule- will be re-acquired later */
 #endif /* UNLOCK_QUEUES */
 			    (*task->func_ptr)(task->data_ptr);
 			    if(options & PIOM_LTASK_OPTION_DESTROY)
@@ -283,11 +283,11 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 				    success = 1;
 				}
 #ifdef UNLOCK_QUEUES
-			    const int relock = piom_spin_trylock(&queue->lock);
+			    const int relock = piom_mask_acquire(&queue->mask);
 			    static int failed = 0;
 			    static int total = 0;
 			    total++;
-			    if(relock == 0)
+			    if(relock != 0)
 				{
 				    /* didn't get the lock again- enqueue as new, and abort loop */
 				    if(again)
@@ -330,7 +330,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 			}
 		}
 	}
-    piom_spin_unlock(&queue->lock);
+    piom_mask_release(&queue->mask);
 }
 
 

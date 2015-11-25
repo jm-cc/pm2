@@ -5,8 +5,6 @@ NMAD_DRIVER = tcp
 NMAD_NODES = 2
 NMAD_HOSTS = localhost
 
-TEST_FILTER = cat
-
 TEST_TIMEOUT = 60
 BENCH_TIMEOUT = 180
 
@@ -47,7 +45,7 @@ $(TARGET_TESTS): test-%: %
              echo "# running test $* in $(srcdir)" >> "$(TESTS_RESULTS)" ; \
           fi ; \
           if [ -r $(srcdir)/$*.out ]; then \
-            padico-launch $(NMAD_EXTRA_ARGS) -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) $(CURDIR)/$$t | $(TEST_FILTER) > /tmp/result-$${testid} ; \
+            padico-launch $(NMAD_EXTRA_ARGS) -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) $(CURDIR)/$$t | grep -v '^#'  > /tmp/result-$${testid} ; \
             rc=$$? ; \
           else \
             padico-launch $(NMAD_EXTRA_ARGS) -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) $(CURDIR)/$$t ; \

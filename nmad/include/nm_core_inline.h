@@ -157,7 +157,11 @@ static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
   err = NM_EINPROGRESS;
  out:
 #else
-  err = r->driver->try_and_commit(r->_status, p_gate);
+  if((r->driver->todo == NULL) ||
+     (r->driver->todo && r->driver->todo(r->_status, p_gate)))
+    {
+      err = r->driver->try_and_commit(r->_status, p_gate);
+    }
 #endif
   return err;
 }

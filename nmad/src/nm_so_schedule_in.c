@@ -757,9 +757,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
  */
 int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw)
 {
-  struct nm_gate *p_gate = p_pw->p_gate;
-  int err;
-
+  struct nm_gate*const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);
 
   nm_lock_interface(p_core);
@@ -787,8 +785,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
   if(p_pw->trk_id == NM_TRK_SMALL)
     {
       /* ** Small packets - track #0 *********************** */
-      struct nm_gate*const p_gate = p_pw->p_gate;
-      struct nm_core*const p_core = p_gate->p_core;
       struct iovec*const v0 = p_pw->v;
       const void*ptr = v0->iov_base + sizeof(struct nm_header_global_s);
       nm_len_t done = 0;
@@ -812,8 +808,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
   nm_pw_ref_dec(p_pw);
 
   /* Hum... Well... We're done guys! */
-  err = NM_ESUCCESS;
-  return err;
+  return NM_ESUCCESS;
 }
 
 

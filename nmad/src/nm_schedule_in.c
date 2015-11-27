@@ -25,7 +25,7 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 /** Poll active incoming requests 
  */
-__inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
+int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
 {
   int err;
 
@@ -54,15 +54,16 @@ __inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
 	  t.tv_sec += 1;
 	}
       next_poll = t;
+      NM_WARN("nm_pw_poll_recv()- non-zero min_period.\n");
     }
   if(p_pw->p_gate)
     {
-      struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-      err = r->driver->poll_recv_iov(r->_status, p_pw);
+      const struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+      err = (*r->driver->poll_recv_iov)(r->_status, p_pw);
     }
   else
     {
-      err = p_pw->p_drv->driver->poll_recv_iov(NULL, p_pw);
+      err = (*p_pw->p_drv->driver->poll_recv_iov)(NULL, p_pw);
     }
    
   if(err == NM_ESUCCESS)

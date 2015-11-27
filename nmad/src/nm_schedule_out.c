@@ -79,7 +79,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
  */
 int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw)
 {
-  struct nm_gate *p_gate = p_pw->p_gate;
+  struct nm_gate*const p_gate = p_pw->p_gate;
   nmad_lock_assert();
   NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);

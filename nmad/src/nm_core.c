@@ -59,11 +59,7 @@ void nm_strat_apply(struct nm_core*p_core)
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
 	  /* schedule new requests on all gates */
-	  int err = nm_strat_try_and_commit(p_gate);
-	  if (err < 0)
-	    {
-	      NM_WARN("sched.schedule_out returned %d", err);
-	    }
+	  nm_strat_try_and_commit(p_gate);
 	  /* process postponed recv requests */
 	  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
 	    {

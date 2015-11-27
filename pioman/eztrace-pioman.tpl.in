@@ -1,0 +1,34 @@
+BEGIN_MODULE
+NAME pioman
+DESC "pioman ltasks"
+LANGUAGE C
+
+BEGIN_INCLUDE
+#include "pioman.h"
+END_INCLUDE
+
+BEGIN_CFLAGS
+  @PIOMAN_CFLAGS@
+END_CFLAGS
+
+void piom_init_ltasks(void)
+BEGIN
+  CALL_FUNC
+  EVENT("pioman init")
+END
+
+void piom_ltask_submit(struct piom_ltask *task)
+BEGIN
+  PUSH_STATE("piom_ltask_submit")
+  CALL_FUNC
+  POP_STATE()
+END
+
+void piom_ltask_schedule(int point)
+BEGIN
+  PUSH_STATE("piom_ltask_schedule")
+  CALL_FUNC
+  POP_STATE()
+END
+
+END_MODULE

@@ -95,6 +95,7 @@ AC_SUBST(PIOMAN_LIBS)
 
 dnl -- output 
 
+out_mk="${out_mk} eztrace-pioman.tpl"
 AC_PADICO_OUT_COMMON_MK
 AC_PADICO_OUT_ROOT
 AC_PADICO_OUTPUT

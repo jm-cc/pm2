@@ -30,11 +30,17 @@ docs: doxygen
 
 doxygen: $(SRC_FILES)
 
-eztrace: eztrace-gen | eztrace-build
+eztrace: eztrace-install
 
 eztrace-gen:
 	$(Q)eztrace_create_plugin -o eztrace_pioman -I $(srcdir)/include -I @abs_top_builddir@/include ./eztrace-pioman.tpl
 
-eztrace-build:
+eztrace-build: eztrace-gen
 	$(Q)$(MAKE) -C eztrace_pioman CC=$(CC) CFLAGS="$(CFLAGS)"
 
+
+eztrace-install: EZTRACE_LIBS = $(wildcard @abs_top_builddir@/eztrace_pioman/lib*.so )
+eztrace-install: eztrace-build
+	$(SHOWMK) "  [INST]   in lib/:      $(EZTRACE_LIBS)"
+	$(Q)$(INSTALL) -d $(INSTALL_LIB_PATH)
+	$(Q)$(INSTALL) $(EZTRACE_LIBS)  $(INSTALL_LIB_PATH)

@@ -31,10 +31,10 @@
 
 /** Schedule tasks from local or all queues (depending on 'point')
  */
-TBX_INTERNAL void piom_ltask_schedule(int point);
+extern void piom_ltask_schedule(int point);
 
 /** initialize ltask system */
-TBX_INTERNAL void piom_init_ltasks(void);
+extern void piom_init_ltasks(void);
 
 /** destroy internal structures, stop task execution, etc. */
 TBX_INTERNAL void piom_exit_ltasks(void);

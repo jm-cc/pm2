@@ -13,12 +13,13 @@ END_CFLAGS
 
 void piom_init_ltasks(void)
 BEGIN
+  EVENT("pioman_init")
   CALL_FUNC
-  EVENT("pioman init")
 END
 
 void piom_ltask_submit(struct piom_ltask *task)
 BEGIN
+  EVENT("pioman_submit")
   PUSH_STATE("piom_ltask_submit")
   CALL_FUNC
   POP_STATE()
@@ -26,6 +27,7 @@ END
 
 void piom_ltask_schedule(int point)
 BEGIN
+  EVENT("pioman_schedule")
   PUSH_STATE("piom_ltask_schedule")
   CALL_FUNC
   POP_STATE()

@@ -18,12 +18,14 @@ A quick cheat sheet for the impatient:
     make
     mpiexec -n 2 -host host1,host2 ./mpi_bench_overlap | tee out.dat
 
-It runs from 10 minutes through 1h, depanding on network speed. Then build the
+It runs from 10 minutes through 2h, depanding on network speed. Then build the
 **performance report** using:
 
     ./mpi_bench_extract out.dat
 
-It outputs data in `out.dat.d/`
+It outputs data in `out.dat.d/`. It is possible to transfer data to another host
+and extract the performance report with another installation of MadMPI benchmark
+so as to not have to install `gnuplot` on the computing nodes.
 
 Please send the `out.dat` to <Alexandre.Denis@inria.fr> to have it integrated on
 the MadMPI benchmark web site.
@@ -34,7 +36,7 @@ Requirements
   - MPI library
   - autoconf (v 2.50 or later, for svn users)
   - hwloc (optional)
-  - gnuplot (optional)
+  - gnuplot (optional, v5.0 or later)
   - doxygen (optional, for doc generation)
   
 

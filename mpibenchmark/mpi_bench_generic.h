@@ -110,7 +110,7 @@ static inline double mpi_bench_timing_delay(const mpi_bench_tick_t*const t1, con
 
 #define MIN_COMPUTE 0
 #define MAX_COMPUTE 20000
-#define MULT_COMPUTE 1.5
+#define MULT_COMPUTE 1.4
 
 static volatile double r = 1.0;
 

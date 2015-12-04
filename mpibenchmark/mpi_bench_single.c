@@ -26,7 +26,7 @@
 
 #define MIN_DEFAULT     0
 #define MAX_DEFAULT     (512 * 1024 * 1024)
-#define MULT_DEFAULT    2
+#define MULT_DEFAULT    1.4
 #define INCR_DEFAULT    0
 #define LOOPS_DEFAULT   1000
 #define PARAM_DEFAULT   -1

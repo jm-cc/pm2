@@ -17,70 +17,59 @@
 #include "piom_private.h"
 
 
-__tbx_inline__ void piom_sem_P(piom_sem_t *sem)
-{
-#if defined (PIOMAN_LOCK_MARCEL)
-  marcel_sem_P(sem);
-#elif defined (PIOMAN_LOCK_PTHREAD)
-#ifdef PIOMAN_SEM_COND
-  pthread_mutex_lock(&sem->mutex);
-  sem->n--;
-  while(sem->n < 0)
-    {
-      pthread_cond_wait(&sem->cond, &sem->mutex);
-    }
-  pthread_mutex_unlock(&sem->mutex);
-#else
-  while(sem_wait(sem) == -1)
-    ;
-#endif
-#else /* PIOMAN_LOCK_NONE */
-  (*sem)--;
-  while((*sem) < 0)
-    {
-      piom_ltask_schedule(PIOM_POLL_POINT_BUSY);
-    }
-#endif /* PIOMAN_LOCK_* */
-}
-
-__tbx_inline__ void piom_sem_V(piom_sem_t *sem)
-{
-#if defined (PIOMAN_LOCK_MARCEL)
-  marcel_sem_V(sem);
-#elif defined (PIOMAN_LOCK_PTHREAD)
-#ifdef PIOMAN_SEM_COND
-  pthread_mutex_lock(&sem->mutex);
-  sem->n++;
-  pthread_cond_signal(&sem->cond);
-  pthread_mutex_unlock(&sem->mutex);
-#else
-  sem_post(sem);
-#endif
-#else /* PIOMAN_LOCK_NONE */
-  (*sem)++;
-#endif /* PIOMAN_LOCK_* */
-}
-
-__tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
-{
-#if defined (PIOMAN_LOCK_MARCEL)
-  marcel_sem_init(sem, initial);
-#elif defined (PIOMAN_LOCK_PTHREAD)
-#ifdef PIOMAN_SEM_COND
-  pthread_mutex_init(&sem->mutex, NULL);
-  pthread_cond_init(&sem->cond, NULL);
-  sem->n = initial;
-#else
-  sem_init(sem, 0, initial);
-#endif
-#else /* PIOMAN_LOCK_NONE */
-  (*sem) = initial;
-#endif /* PIOMAN_LOCK_* */
-}
-
 #if defined(PIOMAN_MULTITHREAD)
 
-__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
+#ifdef PIOMAN_MARCEL
+
+/* ** blocking cond wait for marcel ************************ */
+static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t mask)
+{
+  /* set highest priority so that the thread 
+     is scheduled (almost) immediatly when done */
+  struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
+  struct marcel_sched_param old_param;
+  marcel_sched_getparam(PIOM_SELF, &old_param);
+  marcel_sched_setparam(PIOM_SELF, &sched_param);
+  if(ma_in_atomic())
+    {
+      PIOM_FATAL("trying to wait while in scheduling hook.\n");
+    }
+
+  while(!(piom_cond_test(cond, mask)))
+    {
+      piom_sem_P(&cond->sem);
+    }
+
+  marcel_sched_setparam(PIOM_SELF, &old_param);
+}
+#endif /* PIOMAN_MARCEL */
+
+#ifdef PIOMAN_PTHREAD
+/* ** blocking cond wait *********************************** */
+
+static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t mask)
+{
+  struct sched_param old_param;
+  int policy = -1;
+  pthread_getschedparam(pthread_self(), &policy, &old_param);
+  const int prio = sched_get_priority_max(policy);
+  int rc = pthread_setschedprio(pthread_self(), prio);
+  if(rc != 0)
+    {
+      PIOM_FATAL("cannot set sched prio %d.\n", prio);
+    }
+
+  while(!(piom_cond_test(cond, mask)))
+    {
+      piom_sem_P(&cond->sem);
+    }
+
+  pthread_setschedprio(pthread_self(), old_param.sched_priority);
+}
+#endif /* PIOMAN_PTHREAD */
+
+/** adaptive wait on piom cond */
+void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 {
   /* First, let's poll for a while before blocking */
   tbx_tick_t t1;
@@ -113,90 +102,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 	}
     }
   while(busy_wait);
-#if defined (PIOMAN_MARCEL)
-  /* set highest priority so that the thread 
-     is scheduled (almost) immediatly when done */
-  struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
-  struct marcel_sched_param old_param;
-  marcel_sched_getparam(PIOM_SELF, &old_param);
-  marcel_sched_setparam(PIOM_SELF, &sched_param);
-  if(ma_in_atomic())
-    {
-      PIOM_FATAL("trying to wait while in scheduling hook.\n");
-    }
-#elif defined (PIOMAN_PTHREAD)
-  struct sched_param old_param;
-  int policy = -1;
-  pthread_getschedparam(pthread_self(), &policy, &old_param);
-  const int prio = sched_get_priority_max(policy);
-  int rc = pthread_setschedprio(pthread_self(), prio);
-  if(rc != 0)
-    {
-      PIOM_FATAL("cannot set sched prio %d.\n", prio);
-    }
-#endif /* PIOMAN_MARCEL */
-
-  while(!(piom_cond_test(cond, mask)))
-    {
-      piom_sem_P(&cond->sem);
-    }
-
-#if defined (PIOMAN_MARCEL)
-  marcel_sched_setparam(PIOM_SELF, &old_param);
-#elif defined (PIOMAN_PTHREAD)
-  pthread_setschedprio(pthread_self(), old_param.sched_priority);
-#endif /* PIOMAN_MARCEL */
-}
-
-__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
-{
-  __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
-  piom_sem_V(&cond->sem);
-}
-
-__tbx_inline__ int piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask)
-{
-  return cond->value & mask;
-}
-
-__tbx_inline__ void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial)
-{
-  cond->value = initial;
-  piom_sem_init(&cond->sem, 0);
-}
-
-__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
-{
-  __sync_fetch_and_and(&cond->value, mask); /* cond->value &= mask; */
-}
-
-#else  /* PIOMAN_MULTITHREADED */
-
-/* Warning: we assume that Marcel is not running and there is no thread here
- * these functions are not reentrant
- */
-
-__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
-{
-  while(! (*cond & mask))
-    piom_ltask_schedule(PIOM_POLL_POINT_BUSY);		
-}
-__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
-{
-  *cond |= mask;
-}
-__tbx_inline__ int piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask)
-{
-  return *cond & mask;
-}
-__tbx_inline__ void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial)
-{
-  *cond = initial;
-}
-
-__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
-{
-  *cond &= mask;
+  piom_cond_wait_blocking(cond, mask);
 }
 
 #endif /* PIOMAN_MULTITHREAD */

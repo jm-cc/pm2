@@ -29,10 +29,6 @@
 #include "piom_log.h"
 #include "pioman.h"
 
-/** Schedule tasks from local or all queues (depending on 'point')
- */
-extern void piom_ltask_schedule(int point);
-
 /** initialize ltask system */
 extern void piom_init_ltasks(void);
 

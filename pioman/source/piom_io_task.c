@@ -30,6 +30,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <sys/uio.h>
 
 typedef enum {
 	PIOM_POLL_READ,

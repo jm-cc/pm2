@@ -1,4 +1,3 @@
-/* -*- Mode: C; c-basic-offset:4 ; -*- */
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -26,6 +25,30 @@
  * @{
  */
 
+#if defined(PIOMAN_MARCEL)
+#  include "piom_marcel.h"
+#elif defined(PIOMAN_PTHREAD)
+#  include "piom_pthread.h"
+#elif defined(PIOMAN_ABT)
+#  include "piom_abt.h"
+#else
+#  include "piom_nothread.h"
+#endif
+
+/* ** cond ************************************************* */
+
+typedef uint8_t piom_cond_value_t;
+
+#if defined(PIOMAN_MULTITHREAD)
+typedef struct
+{
+    volatile piom_cond_value_t value;
+    piom_sem_t sem;
+} piom_cond_t;
+#else /* PIOMAN_MULTITHREAD */
+typedef piom_cond_value_t piom_cond_t;
+#endif	/* PIOMAN_MULTITHREAD */
+
 /* ** mask ************************************************* */
 
 #ifdef PIOMAN_MULTITHREAD
@@ -34,25 +57,49 @@ typedef volatile int piom_mask_t;
 
 static inline void piom_mask_init(piom_mask_t*mask)
 {
-    *mask = 0;
+  *mask = 0;
 }
 static inline int piom_mask_release(piom_mask_t*mask)
 {
-    __sync_fetch_and_sub(mask, 1);
-    return 0;
+  __sync_fetch_and_sub(mask, 1);
+  return 0;
 }
 /** @return 0 for success, 1 else */
 static inline int piom_mask_acquire(piom_mask_t*mask)
 {
-    if(*mask != 0)
-	return 1;
-    if(__sync_fetch_and_add(mask, 1) != 0)
-	{
-	    __sync_fetch_and_sub(mask, 1);
-	    return 1;
-	}
-    return 0;
+  if(*mask != 0)
+    return 1;
+  if(__sync_fetch_and_add(mask, 1) != 0)
+    {
+      __sync_fetch_and_sub(mask, 1);
+      return 1;
+    }
+  return 0;
 }
+
+static inline void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
+{
+  __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
+  piom_sem_V(&cond->sem);
+}
+
+static inline int piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask)
+{
+  return cond->value & mask;
+}
+
+static inline void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial)
+{
+  cond->value = initial;
+  piom_sem_init(&cond->sem, 0);
+}
+
+static inline void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
+{
+  __sync_fetch_and_and(&cond->value, mask); /* cond->value &= mask; */
+}
+
+extern void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask);
 
 #else /* PIOMAN_MULTITHREAD */
 
@@ -60,186 +107,53 @@ typedef int piom_mask_t;
 
 static inline void piom_mask_init(piom_mask_t*mask)
 {
-    *mask = 0;
+  *mask = 0;
 }
 static inline int piom_mask_release(piom_mask_t*mask)
 {
-    assert(*mask == 1);
-    *mask = 0;
-    return 0;
+  assert(*mask == 1);
+  *mask = 0;
+  return 0;
 }
 /** @return 0 for success, 1 else */
 static inline int piom_mask_acquire(piom_mask_t*mask)
 {
-    if(*mask != 0)
-	{
-	    return 1;
-	}
-    else
-	{
-	    *mask = 1;
-	    return 0;
-	}
+  if(*mask != 0)
+    {
+      return 1;
+    }
+  else
+    {
+      *mask = 1;
+      return 0;
+    }
+}
+
+static inline void piom_cond_wait(piom_cond_t*cond, piom_cond_value_t mask)
+{
+  while(!(*cond & mask))
+    piom_ltask_schedule(PIOM_POLL_POINT_BUSY);		
+}
+static inline void piom_cond_signal(piom_cond_t*cond, piom_cond_value_t mask)
+{
+  *cond |= mask;
+}
+static inline int piom_cond_test(piom_cond_t*cond, piom_cond_value_t mask)
+{
+  return *cond & mask;
+}
+static inline void piom_cond_init(piom_cond_t*cond, piom_cond_value_t initial)
+{
+  *cond = initial;
+}
+
+static inline void piom_cond_mask(piom_cond_t*cond, piom_cond_value_t mask)
+{
+  *cond &= mask;
 }
 
 #endif /* PIOMAN_MULTITHREAD */
 
-#ifdef PIOMAN_LOCK_MARCEL
-
-/* ** locks for Marcel ************************************* */
-
-#define piom_spinlock_t marcel_spinlock_t
-
-#define piom_spin_init(lock)           marcel_spin_init(lock, 1)
-#define piom_spin_lock(lock) 	       marcel_spin_lock_tasklet_disable(lock)
-#define piom_spin_unlock(lock) 	       marcel_spin_unlock_tasklet_enable(lock)
-#define piom_spin_trylock(lock)	       marcel_spin_trylock_tasklet_disable(lock)
-
-#define piom_thread_t     marcel_t
-#define PIOM_THREAD_NULL NULL
-#define PIOM_SELF       marcel_self()
-
-#elif defined(PIOMAN_LOCK_PTHREAD)
-
-/* ** locks for pthread ************************************ */
-
-#ifdef PIOMAN_PTHREAD_SPINLOCK
-
-#define piom_spinlock_t           pthread_spinlock_t
-#define piom_spin_init(lock)      pthread_spin_init(lock, 0)
-
-static inline int piom_spin_lock(piom_spinlock_t*lock)
-{
-    return pthread_spin_lock(lock);
-}
-static inline int piom_spin_unlock(piom_spinlock_t*lock)
-{
-    int rc = pthread_spin_unlock(lock);
-    return rc;
-}
-static inline int piom_spin_trylock(piom_spinlock_t*lock)
-{
-    int rc = (pthread_spin_trylock(lock) == 0);
-    return rc;
-}
-#elif defined(PIOMAN_MUTEX_SPINLOCK)
-
-typedef pthread_mutex_t piom_spinlock_t;
-
-static inline void piom_spin_init(piom_spinlock_t*lock)
-{
-    pthread_mutexattr_t attr;
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_PRIVATE);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ADAPTIVE_NP);
-    pthread_mutex_init(lock, &attr);
-}
-static inline int piom_spin_lock(piom_spinlock_t*lock)
-{
-    int rc = pthread_mutex_lock(lock);
-    return rc;
-}
-static inline int piom_spin_unlock(piom_spinlock_t*lock)
-{
-    int rc = pthread_mutex_unlock(lock);
-    return rc;
-}
-static inline int piom_spin_trylock(piom_spinlock_t*lock)
-{
-    int rc = (pthread_mutex_trylock(lock) == 0);
-    return rc;
-}
-#elif defined (PIOMAN_MINI_SPINLOCK)
-
-/* ** minimalistic spinlocks */
-
-typedef volatile int piom_spinlock_t;
-
-static inline void piom_spin_init(piom_spinlock_t*lock)
-{
-    *lock = 0;
-}
-static inline int piom_spin_lock(piom_spinlock_t*lock)
-{
-    int k = 0;
-    while(__sync_fetch_and_add(lock, 1) != 0)
-	{
-	    __sync_fetch_and_sub(lock, 1);
-	    k++;
-	    if(k > 100)
-		{
-		    sched_yield();
-		}
-	}
-    return 0;
-}
-static inline int piom_spin_unlock(piom_spinlock_t*lock)
-{
-    __sync_fetch_and_sub(lock, 1);
-    return 0;
-}
-static inline int piom_spin_trylock(piom_spinlock_t*lock)
-{
-    if(*lock != 0)
-	return 0;
-    if(__sync_fetch_and_add(lock, 1) != 0)
-	{
-	    __sync_fetch_and_sub(lock, 1);
-	    return 0;
-	}
-    return 1;
-}
-
-#else
-#error "PIOMan: no spinlock scheme defined."
-#endif /* PIOMAN_PTHREAD_SPINLOCK */
-
-#define piom_thread_t pthread_t
-#define PIOM_THREAD_NULL ((pthread_t)(-1))
-#define PIOM_SELF pthread_self()
-
-#elif defined(PIOMAN_LOCK_NONE)
-
-/* ** no threads ******************************************* */
-
-typedef int piom_spinlock_t;
-
-static inline void piom_spin_init(piom_spinlock_t*lock)
-{
-    *lock = 0;
-}
-static inline int piom_spin_lock(piom_spinlock_t*lock)
-{
-    assert(*lock == 0);
-    *lock = 1;
-    return 0;
-}
-static inline int piom_spin_unlock(piom_spinlock_t*lock)
-{
-    assert(*lock == 1);
-    *lock = 0;
-    return 0;
-}
-static inline int piom_spin_trylock(piom_spinlock_t*lock)
-{
-    if(*lock == 0)
-	{
-	    *lock = 1;
-	    return 1;
-	}
-    else
-	{
-	    return 0;
-	}
-}
-
-#define piom_thread_t     int
-#define PIOM_THREAD_NULL  0
-#define PIOM_SELF         1
-
-#else
-#  error "PIOMan: no lock scheme defined."
-#endif
 
 /** @} */
 

@@ -4,6 +4,6 @@ prefix=@prefix@
 Name: pioman
 Description: PIOMan
 Version: $Rev$
-Requires: tbx @requires_marcel@
+Requires: tbx @pioman_pkg_requires@
 Libs: @PIOMAN_LIBS@
 Cflags: @PIOMAN_CFLAGS@

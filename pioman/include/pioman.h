@@ -26,7 +26,6 @@
 #  include <semaphore.h>
 #  include <sched.h>
 #  define PIOMAN_MULTITHREAD
-#  define PIOMAN_LOCK_PTHREAD
 #  ifndef PM2_TOPOLOGY
 #    define PIOMAN_TOPOLOGY_NONE 1
 #  else
@@ -42,16 +41,19 @@
 #elif defined(PIOMAN_MARCEL)
 #  include <marcel.h>
 #  define PIOMAN_MULTITHREAD
-#  define PIOMAN_LOCK_MARCEL
 #  ifndef MA__NUMA
 #    define PIOMAN_TOPOLOGY_NONE 1
 #  else
 #    define PIOMAN_TOPOLOGY_MARCEL
 #  endif
-#else
-#  undef  PIOMAN_MULTITHREAD
-#  define PIOMAN_LOCK_NONE
+#elif defined(PIOMAN_ABT)
+#  include <abt.h>
 #  define PIOMAN_TOPOLOGY_NONE 1
+#elif defined(PIOMAN)
+#  undef  PIOMAN_MULTITHREAD
+#  define PIOMAN_TOPOLOGY_NONE 1
+#else
+#  error "PIOMan: PIOMAN flags are not defined."
 #endif
 
 extern void pioman_init(int*argc, char**argv);
@@ -77,8 +79,12 @@ extern void pioman_exit(void);
  */
 extern void piom_polling_force(void);
 
+/** Schedule tasks from local or all queues (depending on 'point')
+ * @internal function exported for inlining
+ */
+extern void piom_ltask_schedule(int point);
+
 #include "piom_lock.h"
-#include "piom_sem.h"
 #include "piom_ltask.h"
 #include "piom_io_task.h"
 

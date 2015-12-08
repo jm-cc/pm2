@@ -57,12 +57,18 @@ AC_ARG_WITH([marcel],
 	    [AS_HELP_STRING([--with-marcel], [use marcel threads @<:@default=no@:>@] )])
 if test "x${with_marcel}" = "xyes"; then
   PKG_CHECK_MODULES([marcel], [ marcel ])
-  requires_marcel="marcel"
+  pioman_pkg_requires="${pioman_pkg_requires} marcel"
   PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_MARCEL"
-else
-  requires_marcel=
 fi
-AC_SUBST([requires_marcel])
+
+dnl -- argobots
+AC_ARG_WITH([argobots],
+	    [AS_HELP_STRING([--with-argobots], [use argobots threads @<:@default=no@:>@] )])
+if test "x${with_argobots}" = "xyes"; then
+  PKG_CHECK_MODULES([argobots], [ argobots ])
+  pioman_pkg_requires="${pioman_pkg_requires} argobots"
+  PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_ABT"
+fi
 
 dnl -- pthread
 AC_ARG_WITH([pthread],
@@ -90,6 +96,7 @@ PIOMAN_EXT_LIBS="${tbx_LIBS} ${marcel_LIBS} ${pioman_LIBS}"
 AC_SUBST(PIOMAN_EXT_LIBS)
 
 
+AC_SUBST(pioman_pkg_requires)
 AC_SUBST(PIOMAN_CFLAGS)
 AC_SUBST(PIOMAN_LIBS)
 

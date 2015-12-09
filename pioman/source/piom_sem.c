@@ -19,10 +19,18 @@
 
 #if defined(PIOMAN_MULTITHREAD)
 
-#ifdef PIOMAN_MARCEL
-
-/* ** blocking cond wait for marcel ************************ */
 static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t mask)
+{
+  while(!(piom_cond_test(cond, mask)))
+    {
+      piom_sem_P(&cond->sem);
+    }
+}
+
+#ifdef PIOMAN_MARCEL
+#define PIOM_BLOCKING_PRIO
+/* ** blocking cond wait for marcel ************************ */
+static inline void piom_cond_wait_blocking_prio(piom_cond_t*cond, piom_cond_value_t mask)
 {
   /* set highest priority so that the thread 
      is scheduled (almost) immediatly when done */
@@ -34,20 +42,15 @@ static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t m
     {
       PIOM_FATAL("trying to wait while in scheduling hook.\n");
     }
-
-  while(!(piom_cond_test(cond, mask)))
-    {
-      piom_sem_P(&cond->sem);
-    }
-
+  piom_cond_wait_blocking(cond, mask);
   marcel_sched_setparam(PIOM_SELF, &old_param);
 }
 #endif /* PIOMAN_MARCEL */
 
 #ifdef PIOMAN_PTHREAD
+#define PIOM_BLOCKING_PRIO
 /* ** blocking cond wait *********************************** */
-
-static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t mask)
+static inline void piom_cond_wait_blocking_prio(piom_cond_t*cond, piom_cond_value_t mask)
 {
   struct sched_param old_param;
   int policy = -1;
@@ -58,12 +61,7 @@ static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t m
     {
       PIOM_FATAL("cannot set sched prio %d.\n", prio);
     }
-
-  while(!(piom_cond_test(cond, mask)))
-    {
-      piom_sem_P(&cond->sem);
-    }
-
+  piom_cond_wait_blocking(cond, mask);
   pthread_setschedprio(pthread_self(), old_param.sched_priority);
 }
 #endif /* PIOMAN_PTHREAD */
@@ -102,7 +100,11 @@ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 	}
     }
   while(busy_wait);
+#ifdef PIOM_BLOCKING_PRIO
+  piom_cond_wait_blocking_prio(cond, mask);
+#else
   piom_cond_wait_blocking(cond, mask);
+#endif
 }
 
 #endif /* PIOMAN_MULTITHREAD */

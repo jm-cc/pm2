@@ -49,6 +49,7 @@
 #elif defined(PIOMAN_ABT)
 #  include <abt.h>
 #  define PIOMAN_TOPOLOGY_NONE 1
+#  define PIOMAN_MULTITHREAD
 #elif defined(PIOMAN)
 #  undef  PIOMAN_MULTITHREAD
 #  define PIOMAN_TOPOLOGY_NONE 1

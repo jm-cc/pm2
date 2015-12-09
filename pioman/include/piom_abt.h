@@ -22,9 +22,9 @@
 
 /* ** base ABT types *************************************** */
 
-#define piom_thread_t                  ABT_thread
-#define PIOM_THREAD_NULL               ABT_THREAD_NULL
-#define PIOM_SELF                      piom_self()
+typedef ABT_thread piom_thread_t;
+#define PIOM_THREAD_NULL  ABT_THREAD_NULL
+#define PIOM_SELF         piom_self()
 
 static inline ABT_thread piom_self(void)
 {
@@ -36,11 +36,11 @@ static inline ABT_thread piom_self(void)
 
 /* ** locks for ABT **************************************** */
 
-#define piom_spinlock_t                ABT_mutex
+typedef ABT_mutex piom_spinlock_t;
 #define piom_spin_init(lock)           ABT_mutex_create(lock)
-#define piom_spin_lock(lock) 	       ABT_mutex_lock(lock)
-#define piom_spin_unlock(lock) 	       ABT_mutex_unlock(lock)
-#define piom_spin_trylock(lock)	       (!ABT_mutex_trylock(lock))
+#define piom_spin_lock(lock) 	       ABT_mutex_lock(*(lock))
+#define piom_spin_unlock(lock) 	       ABT_mutex_unlock(*(lock))
+#define piom_spin_trylock(lock)	       (!ABT_mutex_trylock(*(lock)))
 
 /* ** semaphores ******************************************* */
 
@@ -53,21 +53,21 @@ typedef struct
 
 static inline void piom_sem_P(piom_sem_t *sem)
 {
-  ABT_mutex_lock(&sem->mutex);
+  ABT_mutex_lock(sem->mutex);
   sem->n--;
   while(sem->n < 0)
     {
-      ABT_cond_wait(&sem->cond, &sem->mutex);
+      ABT_cond_wait(sem->cond, sem->mutex);
     }
-  ABT_mutex_unlock(&sem->mutex);
+  ABT_mutex_unlock(sem->mutex);
 }
 
 static inline void piom_sem_V(piom_sem_t *sem)
 {
-  ABT_mutex_lock(&sem->mutex);
+  ABT_mutex_lock(sem->mutex);
   sem->n++;
-  ABT_cond_signal(&sem->cond);
-  ABT_mutex_unlock(&sem->mutex);
+  ABT_cond_signal(sem->cond);
+  ABT_mutex_unlock(sem->mutex);
 }
 
 static inline void piom_sem_init(piom_sem_t *sem, int initial)

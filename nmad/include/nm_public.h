@@ -34,6 +34,10 @@
 #include <nm_errno.h>
 #include <nm_config.h>
 
+#ifdef PIOMAN_ABT
+#define main __abt_app_main
+#endif /* PIOMAN_ABT */
+
 /* ** Gates ************************************************ */
 
 typedef struct nm_gate*nm_gate_t;

@@ -32,3 +32,4 @@
 /* include ROMIO in mpi.h */
 #undef NMAD_MPI_ENABLE_ROMIO
 
+#undef NMAD_ABT

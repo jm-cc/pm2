@@ -166,6 +166,14 @@ if test "x${with_pioman}" = "xyes"; then
   else
      AC_MSG_RESULT([no])
   fi
+  AC_MSG_CHECKING([whether PIOMan is linked against ABT.])
+  has_abt="`pkg-config --cflags pioman | grep -i PIOMAN_ABT`"
+  if test "x${has_abt}" != "x" ; then
+     AC_MSG_RESULT([yes])
+     AC_DEFINE([NMAD_ABT], [1], [use ABT multithreading])
+  else
+     AC_MSG_RESULT([no])
+  fi
 else
   AC_MSG_RESULT([no])
   requires_pioman=
@@ -380,16 +388,6 @@ for i in ${nmad_interfaces}; do
 done
 AC_SUBST(nmad_alldirs)
 
-dnl -- flags to use an installed nmad
-dnl --
-
-NMAD_CFLAGS="-DNMAD -I${nmad_root}/include"
-
-NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad"
-
-AC_SUBST(NMAD_CFLAGS)
-AC_SUBST(NMAD_LIBS)
-
 dnl -- flags to build nmad
 dnl --
 
@@ -407,6 +405,14 @@ AC_SUBST(NMAD_CORE_CFLAGS)
 AC_SUBST(NMAD_CORE_LDFLAGS)
 AC_SUBST(NMAD_CORE_LIBS)
 
+dnl -- flags to use an installed nmad
+dnl --
+
+NMAD_CFLAGS="-DNMAD -I${nmad_root}/include"
+NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad ${NMAD_CORE_LIBS}"
+
+AC_SUBST(NMAD_CFLAGS)
+AC_SUBST(NMAD_LIBS)
 
 dnl -- output 
 dnl --

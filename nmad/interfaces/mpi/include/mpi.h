@@ -60,6 +60,10 @@ extern "C"
 #include "mpio.h"
 #endif /* NMAD_MPI_ENABLE_ROMIO && !NMAD_BUILD */
 
+#ifdef NMAD_ABT
+#define main __abt_app_main
+#endif /* PIOMAN_ABT */
+
 #ifdef __cplusplus
 }
 #endif

@@ -34,7 +34,7 @@
 #include <nm_errno.h>
 #include <nm_config.h>
 
-#ifdef PIOMAN_ABT
+#ifdef NMAD_ABT
 #define main __abt_app_main
 #endif /* PIOMAN_ABT */
 

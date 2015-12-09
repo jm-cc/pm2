@@ -359,6 +359,12 @@ static void __piom_abt_main(void*dummy)
 
 extern int main(int argc, char**argv)
 {
+    fprintf(stderr, "# pioman: ABT main- starting.\n");
+    if(!tbx_initialized())
+	{
+	    fprintf(stderr, "# pioman: ABT main- init tbx.\n");
+	    tbx_init(&argc, &argv);
+	}
     fprintf(stderr, "# pioman: ABT main- init.\n");
     ABT_init(argc, argv);
     ABT_xstream main_xstream;

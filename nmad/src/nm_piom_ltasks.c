@@ -199,10 +199,12 @@ static int nm_task_post_on_drv(void*_drv)
 {
   struct nm_drv*p_drv = _drv;
   int ret = NM_ESUCCESS;
-  nmad_lock();
-  nm_strat_apply(p_drv->p_core);
-  nm_drv_post_all(p_drv);
-  nmad_unlock();
+  if(nmad_trylock())
+    {
+      nm_strat_apply(p_drv->p_core);
+      nm_drv_post_all(p_drv);
+      nmad_unlock();
+    }
   return ret;
 }
 

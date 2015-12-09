@@ -150,11 +150,11 @@ static int comp_double(const void*_a, const void*_b)
     return 0;
 }
 
-void mpi_bench_init(int argc, char**argv, int threads)
+void mpi_bench_init(int*argc, char***argv, int threads)
 {
   const int requested = threads ? MPI_THREAD_MULTIPLE : MPI_THREAD_FUNNELED;
   int provided = requested;
-  int rc = MPI_Init_thread(&argc, &argv, requested, &provided);
+  int rc = MPI_Init_thread(argc, argv, requested, &provided);
   if(rc != 0)
     {
       fprintf(stderr, "# MadMPI benchmark: MPI_Init_thread()- rc = %d\n", rc);

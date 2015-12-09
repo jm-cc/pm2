@@ -64,7 +64,7 @@ struct mpi_bench_s
   const struct mpi_bench_param_bounds_s*(*getparams)(void);
 };
 
-void mpi_bench_init(int argc, char**argv, int threads);
+void mpi_bench_init(int*argc, char***argv, int threads);
 void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_param_s*params);
 void mpi_bench_finalize(void);
 

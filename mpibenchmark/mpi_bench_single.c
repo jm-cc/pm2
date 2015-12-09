@@ -36,7 +36,7 @@ static void usage_ping(void)
   fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
   fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
   fprintf(stderr, "-I incr - length increment [%d]\n", INCR_DEFAULT);
-  fprintf(stderr, "-M mult - length multiplier [%d]\n", MULT_DEFAULT);
+  fprintf(stderr, "-M mult - length multiplier [%g]\n", MULT_DEFAULT);
   fprintf(stderr, "\tNext(0)      = 1+increment\n");
   fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
@@ -46,7 +46,7 @@ static void usage_ping(void)
 /* variable defined in stub */
 const extern struct mpi_bench_s*mpi_bench_default;
 
-int main(int argc, char	**argv)
+int main(int argc, char**argv)
 {
   struct mpi_bench_param_s params =
     {
@@ -58,7 +58,7 @@ int main(int argc, char	**argv)
       .param       = PARAM_DEFAULT
     };
 
-  mpi_bench_init(argc, argv, mpi_bench_default->threads);
+  mpi_bench_init(&argc, &argv, mpi_bench_default->threads);
   
   if (argc > 1 && strcmp(argv[1], "--help") == 0)
     {

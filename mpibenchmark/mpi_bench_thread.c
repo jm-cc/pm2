@@ -30,7 +30,7 @@ const extern struct mpi_bench_s mpi_bench_sendrecv;
 const extern struct mpi_bench_s mpi_bench_thread_1toN_rr;
 const extern struct mpi_bench_s mpi_bench_thread_1toN_single;
 
-int main(int argc, char	**argv)
+int main(int argc, char**argv)
 {
   struct mpi_bench_param_s params =
     {
@@ -42,7 +42,7 @@ int main(int argc, char	**argv)
       .param       = PARAM_DEFAULT
     };
 
-  mpi_bench_init(argc, argv, 1);
+  mpi_bench_init(&argc, &argv, 1);
   params.iterations = LOOPS_REFERENCE;
   mpi_bench_run(&mpi_bench_sendrecv, &params);
   params.iterations = LOOPS_DEFAULT;

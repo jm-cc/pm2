@@ -257,7 +257,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	   */
 	  mpi_bench_tick_t t1, t2;
 	  double*lats = malloc(sizeof(double) * params->iterations);
-	  printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max");
+	  printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| q1     \t| q3     \t| d1     \t| d9     \t| avg    \t| max");
 	  if(mpi_bench->setparam)
 	    {
 	      printf("   \t| param");
@@ -291,6 +291,10 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      const double min_lat = lats[0];
 	      const double max_lat = lats[iterations - 1];
 	      const double med_lat = lats[(iterations - 1) / 2];
+	      const double q1_lat  = lats[(iterations - 1) / 4];
+	      const double q3_lat  = lats[ 3 *(iterations - 1) / 4];
+	      const double d1_lat  = lats[(iterations - 1) / 10];
+	      const double d9_lat  = lats[ 9 *(iterations - 1) / 10];
 	      double avg_lat = 0.0;
 	      for(k = 0; k < iterations; k++)
 		{
@@ -300,8 +304,10 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      const double bw_million_byte = len / min_lat;
 	      const double bw_mbyte        = bw_million_byte / 1.048576;
 
-	      printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf",
-		     (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
+	      printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf",
+		     (long long)len, min_lat, bw_million_byte, bw_mbyte,
+		     med_lat, q1_lat, q3_lat, d1_lat, d9_lat,
+		     avg_lat, max_lat);
 	      if(mpi_bench->setparam)
 		{
 		  printf("\t%d", p);

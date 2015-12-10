@@ -7,8 +7,9 @@ BENCH_BASE     := mpi_bench_sendrecv mpi_bench_bidir mpi_bench_send_overhead mpi
 BENCH_OVERLAP  := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_overlap_*.c))
 BENCH_DATATYPE := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_sparse_*.c))
 BENCH_THREAD   := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_thread_*.c))
+BENCH_NOISE    := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_noise_*.c))
 
-BENCH_ALL      := $(BENCH_BASE) $(BENCH_OVERLAP) $(BENCH_DATATYPE) $(BENCH_THREAD)
+BENCH_ALL      := $(BENCH_BASE) $(BENCH_OVERLAP) $(BENCH_DATATYPE) $(BENCH_THREAD) $(BENCH_NOISE)
 
 TARGET_BIN = $(BENCH_ALL) mpi_bench_base mpi_bench_overlap mpi_bench_thread
 TARGET_LIB =

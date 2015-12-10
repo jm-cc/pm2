@@ -237,6 +237,9 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      iterations = _iterations(iterations, len);
 	      if(mpi_bench->init != NULL)
 		(*mpi_bench->init)(buf, len, iterations);
+	      /* warmup */
+	      mpi_bench_barrier();
+	      (*mpi_bench->server)(buf, len);
 	      for(k = 0; k < iterations; k++)
 		{
 		  mpi_bench_barrier();
@@ -269,6 +272,9 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      int k;
 	      if(mpi_bench->init != NULL)
 		(*mpi_bench->init)(buf, len, iterations);
+	      /* warmup */
+	      mpi_bench_barrier();
+	      (*mpi_bench->client)(buf, len);
 	      for(k = 0; k < iterations; k++)
 		{
 		  mpi_bench_barrier();

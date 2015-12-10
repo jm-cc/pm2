@@ -15,26 +15,14 @@
 
 #include "mpi_bench_generic.h"
 
-static void vector_square(void*buf, size_t len)
-{
-  unsigned char*m = buf;
-  size_t i;
-  for(i = 0; i < len; i++)
-    {
-      const double v = (double)m[i];
-      const double s = v * v;
-      m[i] = (unsigned char)s;
-    }
-}
-
 static void mpi_bench_noise_nocomm_server(void*buf, size_t len)
 {
-  vector_square(buf, len);
+  mpi_bench_compute_vector_square(buf, len);
 }
 
 static void mpi_bench_noise_nocomm_client(void*buf, size_t len)
 {
-  vector_square(buf, len);
+  mpi_bench_compute_vector_square(buf, len);
 }
 
 const struct mpi_bench_s mpi_bench_noise_nocomm =

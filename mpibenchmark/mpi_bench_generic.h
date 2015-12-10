@@ -114,6 +114,7 @@ static inline double mpi_bench_timing_delay(const mpi_bench_tick_t*const t1, con
 
 static volatile double r = 1.0;
 
+/** dummy computation of a given time */
 static void mpi_bench_do_compute(int usec) __attribute__((unused));
 static void mpi_bench_do_compute(int usec)
 {
@@ -129,6 +130,20 @@ static void mpi_bench_do_compute(int usec)
 	}
       mpi_bench_get_tick(&t2);
       delay = mpi_bench_timing_delay(&t1, &t2);
+    }
+}
+
+/** computation on variable-size vector (square values of a vector) */
+static void mpi_bench_compute_vector_square(void*buf, size_t len) __attribute__((unused));
+static void mpi_bench_compute_vector_square(void*buf, size_t len)
+{
+  unsigned char*m = buf;
+  size_t i;
+  for(i = 0; i < len; i++)
+    {
+      const double v = (double)m[i];
+      const double s = v * v;
+      m[i] = (unsigned char)s;
     }
 }
 

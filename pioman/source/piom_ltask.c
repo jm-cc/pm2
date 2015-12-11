@@ -448,6 +448,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
     __piom_pthread_setname("_pioman_idle");
     int rc = pthread_setschedprio(pthread_self(), min_prio);
     const int prio_enable = ((rc == 0) && (min_prio != old_prio));
+    const int granularity0 = piom_parameters.idle_granularity;
     if(rc != 0)
 	{
 	    PIOM_WARN("idle thread could not get priority %d.\n", min_prio);
@@ -455,6 +456,8 @@ static void*__piom_ltask_idle_worker(void*_dummy)
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    tbx_tick_t s1, s2;
+	    const int hint1 = (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK;
+	    const int granularity = (hint1 > 0) ? granularity0 : 100 * (granularity0 + 1);
 	    TBX_GET_TICK(s1);
 	    piom_trace_local_event(PIOM_TRACE_EVENT_IDLE_POLL, NULL);
 	    if(prio_enable)
@@ -462,7 +465,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 	    piom_ltask_schedule(PIOM_POLL_POINT_IDLE);
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), min_prio);
-	    if(piom_parameters.idle_granularity > 0 && piom_parameters.idle_granularity < 10)
+	    if(granularity > 0 && granularity < 10)
 		{
 		    double d = 0.0;
 		    do
@@ -471,11 +474,11 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 			    TBX_GET_TICK(s2);
 			    d = TBX_TIMING_DELAY(s1, s2);
 			}
-		    while(d < piom_parameters.idle_granularity);
+		    while(d < granularity);
 		}
-	    else if(piom_parameters.idle_granularity > 0)
+	    else if(granularity > 0)
 		{
-		    usleep(piom_parameters.idle_granularity);
+		    usleep(granularity);
 		}
 	    else
 		{

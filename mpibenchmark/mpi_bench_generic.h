@@ -37,7 +37,7 @@ struct mpi_bench_param_s
   size_t end_len;
   double multiplier;
   size_t increment;
-  int    iterations;
+  long long iterations;
   int    param;        /**< fixed parameter; -1 to use bounds */
 };
 

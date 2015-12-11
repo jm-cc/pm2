@@ -33,7 +33,7 @@ struct mpi_bench_common_s mpi_bench_common =
 
 /* ** Iterations ******************************************* */
 
-static inline size_t _iterations(int iterations, size_t len)
+static inline long long _iterations(long long iterations, size_t len)
 {
   const uint64_t max_data = 512 * 1024 * 1024;
   if(len <= 0)

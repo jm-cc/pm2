@@ -87,7 +87,7 @@ int main(int argc, char**argv)
 	}
       else if(strcmp(argv[i], "-N") == 0)
 	{
-	  params.iterations = atoi(argv[i+1]);
+	  params.iterations = atoll(argv[i+1]);
 	}
       else if(strcmp(argv[i], "-P") == 0)
 	{

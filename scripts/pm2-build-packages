@@ -274,11 +274,18 @@ build_package() {
     mkdir -p ${prefix}/build/${package_name}
     shift
     # autogen
-    if [ "x${build_option_nogen}" = "x" -a -x ${package_srcdir}/autogen.sh ]; then
-	echo "# autogen: ${package_name}" 1>&2
-	cd ${package_srcdir}
-	./autogen.sh
-	rc=$?
+    if [ "x${build_option_nogen}" = "x" ]; then
+	if [ -x ${package_srcdir}/autogen.sh ]; then
+	    echo "# autogen: ${package_name}" 1>&2
+	    cd ${package_srcdir}
+	    ./autogen.sh
+	    rc=$?
+	elif [ -x ${package_srcdir}/bootstrap ]; then
+	    echo "# bootstrap: ${package_name}" 1>&2
+	    cd ${package_srcdir}
+	    ./bootstrap
+	    rc=$?
+	fi
 	if [ $rc != 0 ]; then exit 1; fi
     fi
     # configure

@@ -284,18 +284,11 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 				}
 #ifdef UNLOCK_QUEUES
 			    const int relock = piom_mask_acquire(&queue->mask);
-			    static int failed = 0;
-			    static int total = 0;
-			    total++;
 			    if(relock != 0)
 				{
 				    /* didn't get the lock again- enqueue as new, and abort loop */
 				    if(again)
 					{
-					    failed++;
-					    if(failed % 1000 == 0)
-						fprintf(stderr, "# ## enqueue as new- %d / %d (%g).\n", failed, total,
-							100.0 * ((double)failed/(double)total));
 					    piom_ltask_lfqueue_enqueue(&queue->submit_queue, task);
 					}
 				    return;

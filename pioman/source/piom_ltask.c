@@ -34,15 +34,10 @@ PIOM_LFQUEUE_TYPE(piom_ltask, struct piom_ltask*, NULL, PIOM_MAX_LTASK);
 /** state for a queue of tasks */
 typedef enum
     {
-	/* not yet initialized */
-	PIOM_LTASK_QUEUE_STATE_NONE = 0,
-	/* running */
-	PIOM_LTASK_QUEUE_STATE_RUNNING,
-	/* being stopped */
-	PIOM_LTASK_QUEUE_STATE_STOPPING,
-	/* stopped: no more request in the queue, 
-	   no more task from this queue being executed */
-	PIOM_LTASK_QUEUE_STATE_STOPPED
+	PIOM_LTASK_QUEUE_STATE_NONE = 0, /**< not initialized yet */
+	PIOM_LTASK_QUEUE_STATE_RUNNING,	 /**< running */
+	PIOM_LTASK_QUEUE_STATE_STOPPING, /**< stop requested (not stopped yet) */
+	PIOM_LTASK_QUEUE_STATE_STOPPED   /**< stopped- empty, not scheduling, not accepting requests anymore */
     } piom_ltask_queue_state_t;
 
 /** an ltask queue- one queue instanciated per hwloc object */

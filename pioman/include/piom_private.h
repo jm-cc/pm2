@@ -74,6 +74,10 @@ TBX_INTERNAL void piom_io_task_stop(void);
 TBX_INTERNAL void piom_pthread_init_ltasks(void);
 #endif /* PIOMAN_PTHREAD */
 
+#ifdef PIOMAN_ABT
+TBX_INTERNAL void piom_abt_init_ltasks(void);
+#endif /* PIOMAN_ABT */
+
 TBX_INTERNAL void piom_topo_init_ltasks(void);
 TBX_INTERNAL void piom_topo_exit_ltasks(void);
 TBX_INTERNAL piom_ltask_queue_t*piom_topo_get_queue(piom_topo_obj_t obj);

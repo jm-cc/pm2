@@ -29,6 +29,38 @@
 #include "piom_log.h"
 #include "pioman.h"
 
+/** Maximum number of ltasks in a queue. 
+ * Should be large enough to avoid overflow, but small enough to fit the cache.
+ */
+#define PIOM_MAX_LTASK 256
+
+/** type for lock-free queue of ltasks */
+PIOM_LFQUEUE_TYPE(piom_ltask, struct piom_ltask*, NULL, PIOM_MAX_LTASK);
+
+/** state for a queue of tasks */
+typedef enum
+    {
+	PIOM_LTASK_QUEUE_STATE_NONE = 0, /**< not initialized yet */
+	PIOM_LTASK_QUEUE_STATE_RUNNING,	 /**< running */
+	PIOM_LTASK_QUEUE_STATE_STOPPING, /**< stop requested (not stopped yet) */
+	PIOM_LTASK_QUEUE_STATE_STOPPED   /**< stopped- empty, not scheduling, not accepting requests anymore */
+    } piom_ltask_queue_state_t;
+
+/** an ltask queue- one queue instanciated per hwloc object */
+typedef struct piom_ltask_queue
+{
+    /** the queue of tasks ready to be scheduled */
+    struct piom_ltask_lfqueue_s       ltask_queue;
+    /** separate queue for task submission, to reduce contention */
+    struct piom_ltask_lfqueue_s       submit_queue;
+    /** whether scheduling for the queue is masked */
+    piom_mask_t                       mask;
+    /** state to control queue lifecycle */
+    volatile piom_ltask_queue_state_t state;
+    /** where this queue is located */
+    piom_topo_obj_t                   binding;
+} piom_ltask_queue_t;
+
 /** initialize ltask system */
 extern void piom_init_ltasks(void);
 
@@ -37,6 +69,18 @@ TBX_INTERNAL void piom_exit_ltasks(void);
 
 TBX_INTERNAL void piom_io_task_init(void);
 TBX_INTERNAL void piom_io_task_stop(void);
+
+#ifdef PIOMAN_PTHREAD
+TBX_INTERNAL void piom_pthread_init_ltasks(void);
+#endif /* PIOMAN_PTHREAD */
+
+TBX_INTERNAL void piom_topo_init_ltasks(void);
+TBX_INTERNAL void piom_topo_exit_ltasks(void);
+TBX_INTERNAL piom_ltask_queue_t*piom_topo_get_queue(piom_topo_obj_t obj);
+
+TBX_INTERNAL void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t binding);
+TBX_INTERNAL void piom_ltask_queue_exit(piom_ltask_queue_t*queue);
+TBX_INTERNAL int piom_ltask_submit_in_lwp(struct piom_ltask*task);
 
 /* todo: get a dynamic value here !
  * it could be based on:
@@ -48,11 +92,11 @@ TBX_INTERNAL void piom_io_task_stop(void);
 /** pioman internal parameters, tuned through env variables */
 TBX_INTERNAL struct piom_parameters_s
 {
-    int busy_wait_usec;     /**< time to do a busy wait before blocking, in usec; default: 5 */
+    int busy_wait_usec;        /**< time to do a busy wait before blocking, in usec; default: 5 */
     int busy_wait_granularity; /**< number of busy wait loops between timestamps to amortize clock_gettime() */
-    int enable_progression; /**< whether to enable background progression (idle thread and sighandler); default 1 */
+    int enable_progression;    /**< whether to enable background progression (idle thread and sighandler); default 1 */
     enum piom_topo_level_e binding_level; /**< hierarchy level where to bind queues; default: socket */
-    int idle_granularity;   /**< time granularity for polling on idle, in usec. */
+    int idle_granularity;      /**< time granularity for polling on idle, in usec. */
     enum piom_bind_distrib_e
 	{
 	    PIOM_BIND_DISTRIB_NONE = 0, /**< no value given */

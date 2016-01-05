@@ -74,7 +74,7 @@ void piom_trace_remote_event(piom_topo_obj_t obj, enum piom_trace_event_e _event
 
 void piom_trace_local_event(enum piom_trace_event_e _event, void*_value)
 {
-    piom_topo_obj_t obj = piom_ltask_current_obj();
+    piom_topo_obj_t obj = piom_topo_current_obj();
     piom_trace_remote_event(obj, _event, _value);
 }
 

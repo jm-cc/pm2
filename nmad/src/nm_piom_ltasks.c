@@ -66,24 +66,24 @@ void nm_ltask_set_policy(void)
 static piom_topo_obj_t nm_piom_driver_binding(struct nm_drv*p_drv)
 {
   piom_topo_obj_t binding = NULL;
-#if defined(PM2_TOPOLOGY) && defined(PIOMAN_TOPOLOGY_HWLOC)
+#if defined(PIOMAN_TOPOLOGY_HWLOC)
   hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
   if(cpuset != NULL)
     {
       char s_binding[64];
-      hwloc_obj_t o = hwloc_get_obj_covering_cpuset(piom_ltask_topology(), cpuset);
+      hwloc_obj_t o = hwloc_get_obj_covering_cpuset(piom_topo_get(), cpuset);
       assert(o != NULL);
       binding = o;
-      hwloc_obj_snprintf(s_binding, sizeof(s_binding), piom_ltask_topology(), binding, "#", 0);
+      hwloc_obj_snprintf(s_binding, sizeof(s_binding), piom_topo_get(), binding, "#", 0);
       NM_DISPF("# nmad: network %s binding: %s.\n", p_drv->assembly->name, s_binding);
     }
   if(binding == NULL)
     {
       binding = NULL;
     }
-#else
+#else /* PIOMAN_TOPOLOGY_HWLOC */
   binding = piom_topo_full;
-#endif /* PM2_TOPOLOGY */
+#endif /* PIOMAN_TOPOLOGY_HWLOC */
   return binding;
 }
 
@@ -95,7 +95,7 @@ static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
       switch(ltask_policy.location)
 	{
 	case NM_POLICY_APP:
-	  p_drv->ltask_binding = piom_ltask_current_obj();
+	  p_drv->ltask_binding = piom_topo_current_obj();
 	  break;
 	  
 	case NM_POLICY_DEV:

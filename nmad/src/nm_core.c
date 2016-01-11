@@ -262,7 +262,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
     {
       tbx_init(argc, &argv);
     }
-#ifdef PM2_TOPOLOGY
+#if defined(PM2_TOPOLOGY) && !defined(PIOMAN_ABT)
   if(topology == NULL)
     {
       tbx_topology_init(*argc, argv);

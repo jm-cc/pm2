@@ -50,7 +50,9 @@ mpi_bench_overlap: $(patsubst %, %.pic.o, mpi_bench_overlap mpi_bench_generic $(
 
 mpi_bench_thread: $(patsubst %, %.pic.o, mpi_bench_thread mpi_bench_generic $(BENCH_BASE) $(BENCH_THREAD))
 
-mpi_bench_noise_omp_nocomm: CFLAGS  += -fopenmp
-mpi_bench_noise_omp_nocomm: LDFLAGS += -fopenmp
+ifeq (@HAVE_OPENMP@,yes)
+mpi_bench_noise_omp_nocomm: CFLAGS  += @OPENMP_CFLAGS@
+mpi_bench_noise_omp_nocomm: LDFLAGS += @OPENMP_CFLAGS@
+endif
 
 docs: doxygen

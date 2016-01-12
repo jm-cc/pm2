@@ -11,6 +11,7 @@ m4_include([features.m4])
 m4_include([out.m4])
 m4_include([pkg.m4])
 m4_include([ax_mpi.m4])
+m4_include([ax_openmp.m4])
 
 dnl --- Directories and version
 dnl --------------------------------------------------------
@@ -25,6 +26,9 @@ AC_PADICO_COMPILER
 AC_PADICO_DEP
 AC_PADICO_LINKER
 AX_MPI
+AX_OPENMP([HAVE_OPENMP=yes], [HAVE_OPENMP=no])
+AC_SUBST([HAVE_OPENMP])
+AC_SUBST([OPENMP_CFLAGS])
 
 AC_SEARCH_LIBS(pthread_create,  [pthread c], [], [ AC_MSG_ERROR([Cannot find pthread_create() ]) ])
 AC_SEARCH_LIBS(clock_gettime,  [rt c], [], [ AC_MSG_ERROR([Cannot find clock_gettime() ]) ])

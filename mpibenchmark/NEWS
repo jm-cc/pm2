@@ -1,0 +1,8 @@
+0.2  2016-01-12
+ * add system noise benchmarks
+ * add N-to-N multithreadeded benchmark
+ * display detailed stats for box-and-whiskers
+ * fix default parameters to have unit tests consistent with full series
+
+0.1  2015-12-02
+ * Initial release

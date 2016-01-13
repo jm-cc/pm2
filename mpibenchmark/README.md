@@ -16,7 +16,7 @@ A quick cheat sheet for the impatient:
 
     ./configure
     make
-    mpiexec -n 2 -host host1,host2 ./mpi_bench_overlap | tee out.dat
+    mpiexec -n 2 -host host1,host2 ./mpi_bench_suite_overlap | tee out.dat
 
 It runs from 10 minutes through 2h, depanding on network speed. Then build the
 **performance report** using:
@@ -38,7 +38,8 @@ Requirements
   - hwloc (optional)
   - gnuplot (optional, v5.0 or later)
   - doxygen (optional, for doc generation)
-  
+  - OpenMP compiler (optional, for OpenMP+MPI benchmarks)
+
 
 Installation
 ------------
@@ -59,8 +60,8 @@ Documentation
 - Benchmarks may be run separetely (single benchmark per binary), or as
   a binary running a full series.
 
-- For overlap benchmarks, run `mpi_bench_overlap` on 2 nodes, capture its
-  standard output in a file, and pass this file to `mpi_bench_extract`.
+- For overlap benchmarks, run `mpi_bench_suite_overlap` on 2 nodes, capture
+  its standard output in a file, and pass this file to `mpi_bench_extract`.
   The processed data is outputed to a `${file}.d/` directory containing:
 
     + raw series for each packet size (files `${bench}-series/${bench}-s${size}.dat`)

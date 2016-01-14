@@ -86,6 +86,7 @@ NM_MPI_ALIAS(MPI_Group_translate_ranks, mpi_group_translate_ranks);
 NM_MPI_ALIAS(MPI_Comm_remote_size,      mpi_comm_remote_size);
 NM_MPI_ALIAS(MPI_Comm_remote_group,     mpi_comm_remote_group);
 NM_MPI_ALIAS(MPI_Intercomm_create,      mpi_intercomm_create);
+NM_MPI_ALIAS(MPI_Intercomm_merge,       mpi_intercomm_merge);
 
 /* ********************************************************* */
 
@@ -999,14 +1000,34 @@ int mpi_intercomm_create(MPI_Comm local_comm, int local_leader,
 {
   nm_mpi_communicator_t*p_local_comm = nm_mpi_communicator_get(local_comm);
   nm_mpi_communicator_t*p_remote_comm = nm_mpi_communicator_get(remote_comm);
-  nm_group_t p_group = nm_group_union(nm_comm_group(p_local_comm->p_nm_comm), nm_comm_group(p_remote_comm->p_nm_comm));
+  int local_leader_world = nm_comm_get_dest(nm_comm_world(), nm_comm_get_gate(p_local_comm->p_nm_comm, local_leader));
+  int remote_leader_world = nm_comm_get_dest(nm_comm_world(), nm_comm_get_gate(p_remote_comm->p_nm_comm, remote_leader));
+  nm_group_t p_group = (local_leader_world > remote_leader_world) ?
+    nm_group_union(nm_comm_group(p_remote_comm->p_nm_comm), nm_comm_group(p_local_comm->p_nm_comm)) :
+    nm_group_union(nm_comm_group(p_local_comm->p_nm_comm), nm_comm_group(p_remote_comm->p_nm_comm));
   nm_comm_t p_nm_comm = nm_comm_create(nm_comm_world(), p_group);
   nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL),
 							       NM_MPI_COMMUNICATOR_INTER);
   p_new_comm->intercomm.p_local_comm = p_local_comm->p_nm_comm;
   p_new_comm->intercomm.p_remote_comm = p_remote_comm->p_nm_comm;
   p_new_comm->intercomm.tag = tag;
+  p_new_comm->intercomm.local_leader = local_leader;
+  p_new_comm->intercomm.remote_leader = remote_leader;
   *newintercomm = p_new_comm->id;
   return MPI_SUCCESS;
 }
 
+int mpi_intercomm_merge(MPI_Comm intercomm, int high, MPI_Comm*newcomm)
+{
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(intercomm);
+  if(p_comm == NULL)
+    return MPI_ERR_COMM;
+  if(p_comm->kind != NM_MPI_COMMUNICATOR_INTER)
+    {
+      return MPI_ERR_COMM;
+    }
+  nm_comm_t p_nm_comm = nm_comm_create(nm_comm_world(), nm_comm_group(p_comm->p_nm_comm));
+  nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, p_comm->p_errhandler, NM_MPI_COMMUNICATOR_INTRA);
+  *newcomm = p_new_comm->id;
+  return MPI_SUCCESS;
+}

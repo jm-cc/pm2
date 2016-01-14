@@ -134,6 +134,7 @@ typedef struct nm_mpi_communicator_s
   {
     struct nm_comm_s*p_local_comm;
     struct nm_comm_s*p_remote_comm;
+    int local_leader, remote_leader;
     nm_tag_t tag;
   } intercomm;
 } nm_mpi_communicator_t;

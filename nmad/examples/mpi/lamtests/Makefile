@@ -6,7 +6,7 @@ TIMEOUT = 15
 TESTS := \
   info/00_create info/10_set info/20_delete info/30_get info/40_getvaluelen info/50_getnkeys \
   ccl/allgather ccl/allgatherv ccl/allreduce ccl/alltoall ccl/barrier ccl/bcast ccl/bcast_struct ccl/gather ccl/op ccl/reduce ccl/reduce_scatter ccl/scatter ccl/struct_gatherv \
-  comm/attr comm/commdup comm/commfree  comm/compare comm/mpisplit \
+  comm/attr comm/commdup comm/commfree  comm/compare comm/mpisplit comm/intercomm \
   dtyp/bottom dtyp/fint2_f dtyp/fint4_f dtyp/fint8_f dtyp/freal16_f dtyp/freal4_f dtyp/freal8_f dtyp/loop dtyp/paktest dtyp/strangest1 dtyp/structsr dtyp/structsr2 dtyp/transp dtyp/transp2 dtyp/transp3 dtyp/transpa \
   env/abort env/err env/final env/initialized env/init_thread env/pcontrol env/procname env/wtime \
   group/group group/groupfree group/range \

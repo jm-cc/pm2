@@ -320,15 +320,15 @@ typedef void (MPI_Comm_errhandler_fn)(MPI_Comm *, int *, ...);
 /* MPI-1 */
 typedef int (MPI_Copy_function)(MPI_Comm oldcomm, int keyval, void*extra_state, void*attribute_val_in, void*attribute_val_out, int*flag);
 typedef int (MPI_Delete_function)(MPI_Comm comm, int keyval, void*attribute_val, void*extra_state);
-#define MPI_NULL_COPY_FN   ((MPI_Copy_function*)NULL)
-#define MPI_NULL_DELETE_FN ((MPI_Delete_function*)NULL)
+#define MPI_NULL_COPY_FN   ((MPI_Copy_function*)0)
+#define MPI_NULL_DELETE_FN ((MPI_Delete_function*)0)
 /* MPI-2 */
 typedef int (MPI_Comm_copy_attr_function)(MPI_Comm oldcomm, int comm_keyval, void*extra_state, void*attribute_val_in, void*attribute_val_out, int*flag);
 typedef int (MPI_Comm_delete_attr_function)(MPI_Comm comm, int comm_keyval, void*attribute_val, void*extra_state); 
 /** empty copy function */
-#define MPI_COMM_NULL_COPY_FN ((MPI_Comm_copy_attr_function*)NULL)
+#define MPI_COMM_NULL_COPY_FN ((MPI_Comm_copy_attr_function*)0)
 /** empty delete function */
-#define MPI_COMM_NULL_DELETE_FN ((MPI_Comm_delete_attr_function*)NULL)
+#define MPI_COMM_NULL_DELETE_FN ((MPI_Comm_delete_attr_function*)0)
 /** simple dup function */
 #define MPI_COMM_DUP_FN ((MPI_Comm_copy_attr_function*)-1)
 

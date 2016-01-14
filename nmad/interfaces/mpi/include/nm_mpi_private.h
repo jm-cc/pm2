@@ -113,7 +113,7 @@ typedef struct nm_mpi_group_s
 typedef struct nm_mpi_communicator_s
 {
   int id;                            /**< id of the communicator */
-  nm_comm_t p_comm;                  /**< underlying nmad communicator */
+  nm_comm_t p_nm_comm;               /**< underlying nmad intra-communicator (or overlay for inter-communicator) */
   puk_hashtable_t attrs;             /**< communicator attributes, hashed by keyval descriptor */
   nm_mpi_errhandler_t*p_errhandler;  /**< error handler attached to communicator */
   char*name;                         /**< communicator name */
@@ -130,6 +130,12 @@ typedef struct nm_mpi_communicator_s
     int*periods;  /**< whether each dim. is periodic */
     int size;     /**< pre-computed size of cartesian topology */
   } cart_topology;
+  struct nm_mpi_intercomm_s
+  {
+    struct nm_comm_s*p_local_comm;
+    struct nm_comm_s*p_remote_comm;
+    nm_tag_t tag;
+  } intercomm;
 } nm_mpi_communicator_t;
 /* @} */
 
@@ -447,15 +453,29 @@ void nm_mpi_io_exit(void);
 
 /* Accessor functions */
 
-/**
- * Gets the in/out gate for the given node
- */
-nm_gate_t nm_mpi_communicator_get_gate(nm_mpi_communicator_t*p_comm, int node);
+/** Gets the in/out gate for the given node */
+static inline nm_gate_t nm_mpi_communicator_get_gate(nm_mpi_communicator_t*p_comm, int node)
+{
+  assert(p_comm->kind != NM_MPI_COMMUNICATOR_UNSPEC);
+  if(p_comm->kind == NM_MPI_COMMUNICATOR_INTRA)
+    return nm_comm_get_gate(p_comm->p_nm_comm, node);
+  else if(p_comm->kind == NM_MPI_COMMUNICATOR_INTER)
+    return nm_comm_get_gate(p_comm->intercomm.p_remote_comm, node);
+  else
+    padico_fatal("# madmpi: wrong kind %d for communicator %d.\n", p_comm->kind, p_comm->id);
+  return NULL;
+}
 
-/**
- * Gets the node associated to the given gate
- */
-int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t gate);
+/** Gets the node associated to the given gate */
+static inline int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t p_gate)
+{
+  return nm_comm_get_dest(p_comm->p_nm_comm, p_gate);
+}
+
+static inline nm_session_t nm_mpi_communicator_get_session(nm_mpi_communicator_t*p_comm)
+{
+  return nm_comm_get_session(p_comm->p_nm_comm);
+}
 
 struct nm_mpi_errhandler_s*nm_mpi_errhandler_get(int errhandler);
 

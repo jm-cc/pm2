@@ -88,7 +88,7 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
   nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->refcount++;
-  nm_session_t p_session = nm_comm_get_session(p_req->p_comm->p_comm);
+  nm_session_t p_session = nm_mpi_communicator_get_session(p_req->p_comm);
   struct nm_data_s data;
   nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = (void*)p_req->sbuf, .p_datatype = p_req->p_datatype, .count = p_req->count });
   nm_sr_send_init(p_session, &(p_req->request_nmad));
@@ -157,7 +157,7 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
   nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
   nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
   p_datatype->refcount++;
-  nm_session_t p_session = nm_comm_get_session(p_req->p_comm->p_comm);
+  nm_session_t p_session = nm_mpi_communicator_get_session(p_req->p_comm);
   struct nm_data_s data;
   nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = p_req->rbuf, .p_datatype = p_req->p_datatype, .count = p_req->count });
   nm_sr_recv_init(p_session, &(p_req->request_nmad));

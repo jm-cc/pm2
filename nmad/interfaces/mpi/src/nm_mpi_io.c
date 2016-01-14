@@ -87,7 +87,7 @@ int mpi_file_open(MPI_Comm comm, char*filename, int amode, MPI_Info info, MPI_Fi
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   if(p_comm == NULL)
     return MPI_ERR_COMM;
-  if(nm_comm_rank(p_comm->p_comm) < 0)
+  if(nm_comm_rank(p_comm->p_nm_comm) < 0)
     return MPI_SUCCESS;
   p_file->amode = amode;
   p_file->p_comm = p_comm;

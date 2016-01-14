@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2014 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -266,6 +266,14 @@ int MPI_Comm_set_name(MPI_Comm comm, char *comm_name);
 int MPI_Comm_get_name(MPI_Comm comm, char *comm_name, int *resultlen);
 
 int MPI_Comm_get_parent(MPI_Comm*parent);
+
+int MPI_Comm_remote_group(MPI_Comm comm, MPI_Group*group);
+
+int MPI_Comm_remote_size(MPI_Comm comm, int*size);
+
+int MPI_Intercomm_create(MPI_Comm local_comm, int local_leader,
+			 MPI_Comm peer_comm, int remote_leader,
+			 int tag, MPI_Comm*newintercomm);
 
 /**
  * Compares two communicators

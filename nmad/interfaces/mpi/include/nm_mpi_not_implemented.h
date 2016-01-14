@@ -27,14 +27,6 @@
 
 #define MPI_ARGV_NULL (NULL)
 
-int MPI_Intercomm_create(MPI_Comm local_comm,
-			 int local_leader,
-			 MPI_Comm peer_comm,
-			 int remote_leader,
-			 int tag,
-			 MPI_Comm *newintercomm);
-
-int MPI_Comm_remote_size(MPI_Comm comm, int *size);
 
 
 /* @}*/

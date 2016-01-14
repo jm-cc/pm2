@@ -96,7 +96,7 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
       if(p_req->request_source == MPI_ANY_SOURCE)
 	{
 	  nm_gate_t p_gate;
-	  err = nm_sr_recv_source(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad, &p_gate);
+	  err = nm_sr_recv_source(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad, &p_gate);
 	  status->MPI_SOURCE = nm_mpi_communicator_get_dest(p_req->p_comm, p_gate);
 	}
       else 
@@ -106,12 +106,12 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
       if(p_req->user_tag == MPI_ANY_TAG)
 	{
 	  nm_tag_t nm_tag;
-	  nm_sr_get_rtag(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad, &nm_tag);
+	  nm_sr_get_rtag(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad, &nm_tag);
 	  status->MPI_TAG = (int)nm_tag;
 	}
     }
   size_t _size = 0;
-  nm_sr_get_size(nm_comm_get_session(p_req->p_comm->p_comm), &(p_req->request_nmad), &_size);
+  nm_sr_get_size(nm_mpi_communicator_get_session(p_req->p_comm), &(p_req->request_nmad), &_size);
   status->size = _size;
   MPI_NMAD_TRACE("Size %d Size datatype %lu\n", status->size, (unsigned long)nm_mpi_datatype_size(p_req->p_datatype));
   return err;
@@ -385,7 +385,7 @@ int mpi_cancel(MPI_Request *request)
   int err = MPI_SUCCESS;
   if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
-      err = nm_sr_rcancel(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
+      err = nm_sr_rcancel(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
     }
   else if(p_req->request_type == NM_MPI_REQUEST_SEND)
     {
@@ -475,11 +475,11 @@ int nm_mpi_request_test(nm_mpi_request_t*p_req)
   int err = NM_ESUCCESS;
   if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
-      err = nm_sr_rtest(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
+      err = nm_sr_rtest(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
     }
   else if(p_req->request_type == NM_MPI_REQUEST_SEND)
     {
-      err = nm_sr_stest(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
+      err = nm_sr_stest(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
     }
   else
     {
@@ -494,11 +494,11 @@ int nm_mpi_request_wait(nm_mpi_request_t*p_req)
   int err = MPI_SUCCESS;
   if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
-      err = nm_sr_rwait(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
+      err = nm_sr_rwait(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
     }
   else if(p_req->request_type == NM_MPI_REQUEST_SEND) 
     {
-      err = nm_sr_swait(nm_comm_get_session(p_req->p_comm->p_comm), &p_req->request_nmad);
+      err = nm_sr_swait(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
     }
   else
     {

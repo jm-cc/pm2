@@ -197,15 +197,3 @@ void nm_comm_destroy(nm_comm_t p_comm)
       free(p_comm);
     }
 }
-
-nm_intercomm_t nm_intercomm_create(nm_comm_t p_local_comm, nm_comm_t p_remote_comm, nm_tag_t tag)
-{
-  nm_intercomm_t p_newintercomm = malloc(sizeof(struct nm_intercomm_s));
-  nm_group_t p_group = nm_group_union(nm_comm_group(p_local_comm), nm_comm_group(p_remote_comm));
-  p_newintercomm->p_overlay_comm = nm_comm_create(nm_comm_world(), p_group);
-  p_newintercomm->p_local_comm = p_local_comm;
-  p_newintercomm->p_remote_comm = p_remote_comm;
-  p_newintercomm->tag = tag;
-  return p_newintercomm;
-}
-

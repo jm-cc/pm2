@@ -65,19 +65,3 @@ static inline nm_group_t nm_comm_group(nm_comm_t p_comm)
   return p_comm->group;
 }
 
-static inline nm_gate_t nm_intercomm_get_gate(nm_intercomm_t p_intercomm, int rank)
-{
-  nm_gate_t p_gate = nm_comm_get_gate(p_intercomm->p_remote_comm, rank);
-  return p_gate;
-}
-
-static inline int nm_intercomm_get_dest(nm_intercomm_t p_intercomm, nm_gate_t p_gate)
-{
-  int rank = nm_comm_get_dest(p_intercomm->p_remote_comm, p_gate);
-  return rank;
-}
-
-static inline nm_session_t nm_intercomm_get_session(nm_intercomm_t p_intercomm)
-{
-  return nm_comm_get_session(p_intercomm->p_overlay_comm);
-}

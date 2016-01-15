@@ -417,8 +417,10 @@ int mpi_comm_get_name(MPI_Comm comm, char*comm_name, int*resultlen)
 
 int mpi_comm_test_inter(MPI_Comm comm, int*flag)
 {
-  /* intercommunicator not supported yet. */
-  *flag = 0;
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL)
+    return MPI_ERR_COMM;
+  *flag = (p_comm->kind == NM_MPI_COMMUNICATOR_INTER);
   return MPI_SUCCESS;
 }
 

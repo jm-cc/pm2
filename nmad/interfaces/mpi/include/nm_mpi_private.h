@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2014 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -132,8 +132,8 @@ typedef struct nm_mpi_communicator_s
   } cart_topology;
   struct nm_mpi_intercomm_s
   {
-    struct nm_comm_s*p_local_comm;
-    struct nm_comm_s*p_remote_comm;
+    nm_group_t p_local_group;
+    nm_group_t p_remote_group;
     int local_leader, remote_leader;
     nm_tag_t tag;
   } intercomm;
@@ -461,7 +461,7 @@ static inline nm_gate_t nm_mpi_communicator_get_gate(nm_mpi_communicator_t*p_com
   if(p_comm->kind == NM_MPI_COMMUNICATOR_INTRA)
     return nm_comm_get_gate(p_comm->p_nm_comm, node);
   else if(p_comm->kind == NM_MPI_COMMUNICATOR_INTER)
-    return nm_comm_get_gate(p_comm->intercomm.p_remote_comm, node);
+    return nm_group_get_gate(p_comm->intercomm.p_remote_group, node);
   else
     padico_fatal("# madmpi: wrong kind %d for communicator %d.\n", p_comm->kind, p_comm->id);
   return NULL;
@@ -470,6 +470,7 @@ static inline nm_gate_t nm_mpi_communicator_get_gate(nm_mpi_communicator_t*p_com
 /** Gets the node associated to the given gate */
 static inline int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t p_gate)
 {
+#warning intercomm- translate rank
   return nm_comm_get_dest(p_comm->p_nm_comm, p_gate);
 }
 

@@ -51,6 +51,8 @@ endif
 
 include @abs_top_builddir@/common_rules.mk
 
+-include $(DEP_FILES)
+
 $(TARGET_LIB): $(OBJ_FILES)
 
 

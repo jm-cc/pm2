@@ -178,6 +178,9 @@ int MPI_Sendrecv(const void *sendbuf,
                  MPI_Comm comm,
                  MPI_Status *status);
 
+int MPI_Sendrecv_replace(void*buf, int count, MPI_Datatype datatype, int dest, int sendtag, int source, int recvtag,
+			 MPI_Comm comm, MPI_Status*status);
+
 /**
  * Returns when the operation identified by request is complete.
  * @param request request

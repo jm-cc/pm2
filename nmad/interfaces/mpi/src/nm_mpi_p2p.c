@@ -32,6 +32,7 @@ NM_MPI_ALIAS(MPI_Ssend,     mpi_ssend);
 NM_MPI_ALIAS(MPI_Recv,      mpi_recv);
 NM_MPI_ALIAS(MPI_Irecv,     mpi_irecv);
 NM_MPI_ALIAS(MPI_Sendrecv,  mpi_sendrecv);
+NM_MPI_ALIAS(MPI_Sendrecv_replace, mpi_sendrecv_replace);
 NM_MPI_ALIAS(MPI_Iprobe,    mpi_iprobe);
 NM_MPI_ALIAS(MPI_Probe,     mpi_probe);
 NM_MPI_ALIAS(MPI_Send_init, mpi_send_init);
@@ -203,6 +204,36 @@ int mpi_sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int 
   err = mpi_wait(&srequest, MPI_STATUS_IGNORE);
   err = mpi_wait(&rrequest, status);
   MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+int mpi_sendrecv_replace(void*buf, int count, MPI_Datatype datatype, int dest, int sendtag, int source, int recvtag,
+			 MPI_Comm comm, MPI_Status*status)
+{
+  int err;
+  MPI_Request srequest;
+  err = mpi_isend(buf, count, datatype, dest, sendtag, comm, &srequest);
+  int flag = 0;
+  err = mpi_test(&srequest, &flag, MPI_STATUS_IGNORE);
+  if(flag)
+    {
+      /* send completed immediately- reuse buffer */
+      err = mpi_recv(buf, count, datatype, source, recvtag, comm, status);
+    }
+  else
+    {
+      /* send is pending- use tmp buffer */
+      MPI_Request rrequest;
+      int size = 0;
+      mpi_pack_size(count, datatype, comm, &size);
+      void*tmpbuf = malloc(size);
+      err = mpi_irecv(tmpbuf, size, MPI_PACKED, source, recvtag, comm, &rrequest);
+      err = mpi_wait(&srequest, MPI_STATUS_IGNORE);
+      err = mpi_wait(&rrequest, status);
+      int position = 0;
+      mpi_unpack(tmpbuf, size, &position, buf, count, datatype, comm);
+      free(tmpbuf);
+    }
   return err;
 }
 

@@ -698,6 +698,8 @@ int mpi_pack(void* inbuf,
              int *position,
              MPI_Comm comm);
 
+int mpi_pack_size(int incount, MPI_Datatype datatype, MPI_Comm comm, int*size);
+
 int mpi_recv(void *buffer,
              int count,
              MPI_Datatype datatype,

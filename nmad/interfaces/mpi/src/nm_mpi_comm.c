@@ -563,21 +563,28 @@ int mpi_comm_dup(MPI_Comm oldcomm, MPI_Comm *newcomm)
 {
   nm_mpi_communicator_t*p_old_comm = nm_mpi_communicator_get(oldcomm);
   if(p_old_comm == NULL)
+    return MPI_ERR_COMM;
+  nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_dup(p_old_comm->p_nm_comm),
+							       p_old_comm->p_errhandler, p_old_comm->kind);
+  int err = nm_mpi_comm_attrs_copy(p_old_comm, &p_new_comm->attrs);
+  if(err)
     {
-      ERROR("Communicator %d is not valid", oldcomm);
-      return MPI_ERR_OTHER;
+      *newcomm = MPI_COMM_NULL;
+      return err;
     }
-  else
+  if(p_old_comm->kind == NM_MPI_COMMUNICATOR_INTER)
     {
-      nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_dup(p_old_comm->p_nm_comm), p_old_comm->p_errhandler, p_old_comm->kind);
-      int err = nm_mpi_comm_attrs_copy(p_old_comm, &p_new_comm->attrs);
-      if(err)
-	{
-	  *newcomm = MPI_COMM_NULL;
-	  return err;
-	}
-      *newcomm = p_new_comm->id;
+      p_new_comm->intercomm.p_local_group = nm_group_dup(p_old_comm->intercomm.p_local_group);
+      p_new_comm->intercomm.p_remote_group = nm_group_dup(p_old_comm->intercomm.p_remote_group);
+      p_new_comm->intercomm.local_leader = p_old_comm->intercomm.local_leader;
+      p_new_comm->intercomm.remote_leader = p_old_comm->intercomm.remote_leader;
+      p_new_comm->intercomm.tag = p_old_comm->intercomm.tag;
     }
+  if(p_old_comm->name != NULL)
+    {
+      p_new_comm->name = strndup(p_old_comm->name, MPI_MAX_OBJECT_NAME);
+    }
+  *newcomm = p_new_comm->id;
   return MPI_SUCCESS;
 }
 

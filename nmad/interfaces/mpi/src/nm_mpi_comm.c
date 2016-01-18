@@ -1017,9 +1017,6 @@ int mpi_intercomm_create(MPI_Comm local_comm, int local_leader,
   int local_leader_world = nm_comm_get_dest(nm_comm_world(), nm_comm_get_gate(p_local_comm->p_nm_comm, local_leader));
   int remote_leader_world = nm_comm_get_dest(nm_comm_world(), nm_comm_get_gate(p_remote_comm->p_nm_comm, remote_leader));
   nm_group_t p_remote_group2 = nm_group_difference(p_remote_group, p_local_group);
-
-  fprintf(stderr, "# intercomm_create: local = %d; remote = %d; remote2 = %d\n",
-	  nm_comm_size(p_local_comm->p_nm_comm), nm_comm_size(p_remote_comm->p_nm_comm), nm_group_size(p_remote_group2));
   nm_group_t p_group = NM_GROUP_NULL;
   if(local_leader_world > remote_leader_world)
     {
@@ -1032,6 +1029,7 @@ int mpi_intercomm_create(MPI_Comm local_comm, int local_leader,
   nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_create(nm_comm_world(), p_group),
 							       nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL),
 							       NM_MPI_COMMUNICATOR_INTER);
+  p_new_comm->intercomm.remote_offset = (local_leader_world > remote_leader_world) ? 0 : nm_group_size(p_local_group);
   p_new_comm->intercomm.p_remote_group = p_remote_group2;
   p_new_comm->intercomm.p_local_group = p_local_group;
   p_new_comm->intercomm.tag = tag;

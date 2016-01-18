@@ -136,6 +136,7 @@ typedef struct nm_mpi_communicator_s
     nm_group_t p_remote_group;
     int local_leader, remote_leader;
     nm_tag_t tag;
+    int remote_offset; /**< offset of remote group in global nm_comm */
   } intercomm;
 } nm_mpi_communicator_t;
 /* @} */
@@ -470,8 +471,14 @@ static inline nm_gate_t nm_mpi_communicator_get_gate(nm_mpi_communicator_t*p_com
 /** Gets the node associated to the given gate */
 static inline int nm_mpi_communicator_get_dest(nm_mpi_communicator_t*p_comm, nm_gate_t p_gate)
 {
-#warning intercomm- translate rank
-  return nm_comm_get_dest(p_comm->p_nm_comm, p_gate);
+  int rank = nm_comm_get_dest(p_comm->p_nm_comm, p_gate);
+  if(p_comm->kind == NM_MPI_COMMUNICATOR_INTER)
+    {
+      rank -= p_comm->intercomm.remote_offset;
+      assert(rank < nm_group_size(p_comm->intercomm.p_remote_group));
+      assert(rank >= 0);
+    }
+  return rank;
 }
 
 static inline nm_session_t nm_mpi_communicator_get_session(nm_mpi_communicator_t*p_comm)

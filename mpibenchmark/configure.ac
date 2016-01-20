@@ -4,6 +4,8 @@ AC_PREREQ(2.50)
 
 AC_INIT(mpi_bench_sendrecv.c)
 
+AC_LANG([C])
+
 m4_include([misc.m4])
 m4_include([compiler.m4])
 m4_include([tools.m4])

@@ -51,7 +51,13 @@ MadMPI benchmark follows usual autoconf procedure:
     make install
 
 The `make install` step is optional. The benchmark may be run from its
-build directory.
+build directory. To get help on supported flags for configure, run:
+
+    ./configure --help
+
+Flags that may be of interest are MPICC= to give the name of the
+command to build MPI applications, and --prefix= to give installation
+path.
 
 
 Documentation

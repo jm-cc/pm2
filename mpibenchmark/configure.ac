@@ -1,3 +1,4 @@
+dnl -*- mode: Autoconf;-*-
 dnl ----- configure.ac for mpibench -----
 
 AC_PREREQ(2.50)
@@ -25,7 +26,7 @@ dnl --------------------------------------------------------
 
 AC_PADICO_GNU_MAKE
 AC_PADICO_COMPILER
-AC_PADICO_DEP
+AC_PADICO_CDEP
 AC_PADICO_LINKER
 AX_MPI
 AX_OPENMP([HAVE_OPENMP=yes], [HAVE_OPENMP=no])

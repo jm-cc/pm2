@@ -53,7 +53,7 @@ dnl --------------------------------------------------------
 
 AC_PADICO_BASE_TOOLS
 AC_PADICO_GNU_MAKE
-AC_PADICO_DEP
+AC_PADICO_CDEP
 AC_PADICO_LINKER
 AC_PADICO_DYNLD
 

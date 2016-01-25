@@ -42,15 +42,15 @@ stub_%.c:
 	$(Q)echo "extern const struct mpi_bench_s mpi_bench_$*;" >> $@
 	$(Q)echo "const struct mpi_bench_s*mpi_bench_default = &mpi_bench_$*;" >> $@
 
-stub_%.pic.o: stub_%.c
+stub_%.o: stub_%.c
 
-$(BENCH_ALL): mpi_bench_%: mpi_bench_%.pic.o mpi_bench_generic.pic.o mpi_bench_single.pic.o stub_%.pic.o
+$(BENCH_ALL): mpi_bench_%: mpi_bench_%.o mpi_bench_generic.o mpi_bench_single.o stub_%.o
 
-mpi_bench_suite_base: $(patsubst %, %.pic.o, mpi_bench_suite_base mpi_bench_generic $(BENCH_BASE))
+mpi_bench_suite_base: $(patsubst %, %.o, mpi_bench_suite_base mpi_bench_generic $(BENCH_BASE))
 
-mpi_bench_suite_overlap: $(patsubst %, %.pic.o, mpi_bench_suite_overlap mpi_bench_generic $(BENCH_BASE) $(BENCH_OVERLAP))
+mpi_bench_suite_overlap: $(patsubst %, %.o, mpi_bench_suite_overlap mpi_bench_generic $(BENCH_BASE) $(BENCH_OVERLAP))
 
-mpi_bench_suite_thread: $(patsubst %, %.pic.o, mpi_bench_suite_thread mpi_bench_generic $(BENCH_BASE) $(BENCH_THREAD))
+mpi_bench_suite_thread: $(patsubst %, %.o, mpi_bench_suite_thread mpi_bench_generic $(BENCH_BASE) $(BENCH_THREAD))
 
 ifeq (@HAVE_OPENMP@,yes)
 BENCH_OPENMP = mpi_bench_noise_omp_nocomm mpi_bench_thread_NtoN mpi_bench_suite_thread

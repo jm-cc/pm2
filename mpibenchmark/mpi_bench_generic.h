@@ -93,7 +93,9 @@ typedef struct timespec mpi_bench_tick_t;
 
 static inline void mpi_bench_get_tick(mpi_bench_tick_t*t)
 {
-#ifdef CLOCK_MONOTONIC_RAW
+#if defined(__bg__)
+#  define CLOCK_TYPE CLOCK_REALTIME
+#elif defined(CLOCK_MONOTONIC_RAW)
 #  define CLOCK_TYPE CLOCK_MONOTONIC_RAW
 #else
 #  define CLOCK_TYPE CLOCK_MONOTONIC

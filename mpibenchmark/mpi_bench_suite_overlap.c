@@ -17,15 +17,6 @@
 #include <stdlib.h>
 #include "mpi_bench_generic.h"
 
-
-#define MIN_DEFAULT     0
-#define MAX_DEFAULT     (128 * 1024 * 1024)
-#define MULT_DEFAULT    1.4
-#define INCR_DEFAULT    0
-#define LOOPS_DEFAULT   50
-#define LOOPS_REFERENCE 1000
-#define PARAM_DEFAULT   -1
-
 const extern struct mpi_bench_s mpi_bench_sendrecv;
 const extern struct mpi_bench_s mpi_bench_noncontig;
 const extern struct mpi_bench_s mpi_bench_send_overhead;
@@ -49,11 +40,10 @@ int main(int argc, char**argv)
     };
 
   mpi_bench_init(&argc, &argv, 0);
-  params.iterations = LOOPS_REFERENCE;
   mpi_bench_run(&mpi_bench_sendrecv, &params);
   mpi_bench_run(&mpi_bench_noncontig, &params);
   mpi_bench_run(&mpi_bench_send_overhead, &params);
-  params.iterations = LOOPS_DEFAULT;
+  params.iterations = LOOPS_DEFAULT_PARAM;
   mpi_bench_run(&mpi_bench_overlap_sender, &params);
   mpi_bench_run(&mpi_bench_overlap_recv, &params);
   mpi_bench_run(&mpi_bench_overlap_bidir, &params);

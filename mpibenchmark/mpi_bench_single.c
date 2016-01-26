@@ -24,13 +24,6 @@
 #include <mpi.h>
 #include "mpi_bench_generic.h"
 
-#define MIN_DEFAULT     0
-#define MAX_DEFAULT     (512 * 1024 * 1024)
-#define MULT_DEFAULT    1.4
-#define INCR_DEFAULT    0
-#define LOOPS_DEFAULT   1000
-#define PARAM_DEFAULT   -1
-
 static void usage_ping(void)
 {
   fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
@@ -57,6 +50,12 @@ int main(int argc, char**argv)
       .iterations  = LOOPS_DEFAULT,
       .param       = PARAM_DEFAULT
     };
+
+  if(mpi_bench_default->setparam != NULL)
+    {
+      /* shorter loop count by default for parameterized benchmarks */
+      params.iterations = LOOPS_DEFAULT_PARAM;
+    }
 
   mpi_bench_init(&argc, &argv, mpi_bench_default->threads);
   

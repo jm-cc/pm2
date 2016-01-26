@@ -17,14 +17,6 @@
 #include <stdlib.h>
 #include "mpi_bench_generic.h"
 
-
-#define MIN_DEFAULT     0
-#define MAX_DEFAULT     (128 * 1024 * 1024)
-#define MULT_DEFAULT    1.4
-#define INCR_DEFAULT    0
-#define LOOPS_DEFAULT   50
-#define PARAM_DEFAULT   -1
-
 const extern struct mpi_bench_s mpi_bench_sendrecv;
 const extern struct mpi_bench_s mpi_bench_bidir;
 const extern struct mpi_bench_s mpi_bench_send_overhead;

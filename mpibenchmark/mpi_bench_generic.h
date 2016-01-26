@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015 (see AUTHORS file)
+ * Copyright (C) 2015-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,14 @@
 #endif /* HAVE_HWLOC */
 
 #define TAG 0
+
+#define MIN_DEFAULT         0
+#define MAX_DEFAULT        (128 * 1024 * 1024)
+#define MULT_DEFAULT        1.4
+#define INCR_DEFAULT        0
+#define LOOPS_DEFAULT_PARAM 50
+#define LOOPS_DEFAULT       1000
+#define PARAM_DEFAULT       -1
 
 /* ********************************************************* */
 

@@ -50,6 +50,7 @@ set title filename." / ".bench
 set xlabel "Message size (bytes)" 
 set ylabel "Computation time (usec.)" 
 set cblabel "Overlap overhead (overhead ratio)"
+set cbtics format '%.1f'
 
 
 set xtics ( "1 KB" 1024, "8 KB" 8*1024, "64 KB" 64*1024, "512 KB" 512*1024, "4 MB" 4*1024*1024, "32 MB" 32*1024*1024 )

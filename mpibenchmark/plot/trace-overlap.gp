@@ -66,5 +66,5 @@ ov(l, c, latref) = ( (c < latref) ? ((l - latref) / c) : ((l - c) / latref))
 min(a, b) = (a < b) ? a : b
 
 splot benchfile using 1:2:(min(2, ov(lat($3, lat0), $2, $4))) with pm3d, \
-      ref_file using 1:2:(1) with linespoints lc 2
+      ref_file using 1:2:(1) with linespoints lc rgb 'white' lw 2
 

@@ -44,7 +44,7 @@ print "# max_size:  " . sprintf("%d", max_size)
 print "# max_param: " . sprintf("%d", max_param)
 
 set view map
-set pm3d interpolate 0,0
+set pm3d # interpolate 0,0
 set key bmargin box
 set key off
 set title filename." / ".bench

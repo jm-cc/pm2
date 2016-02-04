@@ -34,7 +34,6 @@ print "# ref_file:  " . ref_file
 stats ref_file using 1:2 name "LATREF" nooutput
 stats benchfile using 2 name "PARAMS" nooutput
 
-lat0      = LATREF_min_y
 max_size  = LATREF_max_x
 max_param = PARAMS_max
 

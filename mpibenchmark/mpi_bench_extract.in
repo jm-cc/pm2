@@ -122,19 +122,25 @@ for b in ${bench_list}; do
     case ${b} in
 	mpi_bench_overlap_send_overhead)
 	    benchref=mpi_bench_send_overhead
+	    lat0=0
+	    ;;
+	*bidir*)
+	    benchref=mpi_bench_sendrecv
+	    lat0=0
 	    ;;
 	*noncontig*)
 	    benchref=mpi_bench_noncontig
+	    lat0=$( mpi_bench_extract_line mpi_bench_sendrecv 0 | cut -f 2 )
 	    ;;
 	*)
 	    benchref=mpi_bench_sendrecv
+	    lat0=$( mpi_bench_extract_line mpi_bench_sendrecv 0 | cut -f 2 )
 	    ;;
     esac
     benchfile=${outdir}/${b}.dat
     echo "# file ${benchfile}"
     params=$( mpi_bench_extract_params ${b} )
     echo "# params list: ${params}"
-    latref0=$( mpi_bench_extract_line ${benchref} 0 | cut -f 2 )
     echo "# generated from ${b} and ${benchref}"       > ${outdir}/${b}-ref.dat
     echo "# size | comp.time | rtt | lat_ref"         >> ${outdir}/${b}-ref.dat
     for s in ${size_list}; do
@@ -162,6 +168,7 @@ reset
 
 load "@srcdir@/plot/term-${out}.gp"
 benchref = "${benchref}"
+lat0 = ${lat0}
 call "@srcdir@/plot/trace-$( if [ ${b} != mpi_bench_overlap_Nload ]; then echo overlap; else echo nload; fi ).gp" "${file}" "${b}"
 
 EOF

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -134,11 +134,13 @@ int nm_schedule(struct nm_core *p_core)
 /** Add an event monitor to the list */
 void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m)
 {
+  nmad_lock_assert();
   nm_core_monitor_vect_push_back(&p_core->monitors, m);
 }
 
 void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m)
 {
+  nmad_lock_assert();
   nm_core_monitor_vect_itor_t i = nm_core_monitor_vect_find(&p_core->monitors, m);
   if(i)
     {

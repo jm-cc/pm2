@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,37 +96,35 @@ static const struct nm_core_monitor_s nm_sr_monitor_unexpected =
 int nm_sr_init(nm_session_t p_session)
 {
   nm_core_t p_core = p_session->p_core;
-  NM_LOG_IN();
-
   if(!nm_sr_data.init_done)
     {
       /* Fill-in scheduler callbacks */
+      nmad_lock();
       nm_core_monitor_add(p_core, &nm_sr_monitor_unexpected);
       nm_core_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
       nm_core_monitor_add(p_core, &nm_sr_monitor_pack_completed);
       
       nm_sr_request_lfqueue_init(&nm_sr_data.completed_rreq);
       nm_sr_request_lfqueue_init(&nm_sr_data.completed_sreq);
-      
       nm_sr_event_monitor_vect_init(&nm_sr_data.monitors);
-
+      
       nm_sr_data.init_done = 1;
+      nmad_unlock();
     }
-  NM_LOG_OUT();
   return NM_ESUCCESS;
 }
 
 int nm_sr_exit(nm_session_t p_session)
 {
   nm_core_t p_core = p_session->p_core;
-  NM_LOG_IN();
   if(nm_sr_data.init_done)
     {
+      nmad_lock();
       nm_core_monitor_remove(p_core, &nm_sr_monitor_unexpected);
       nm_core_monitor_remove(p_core, &nm_sr_monitor_unpack_completed);
       nm_core_monitor_remove(p_core, &nm_sr_monitor_pack_completed);
+      nmad_unlock();
     }
-  NM_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -139,7 +137,6 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
-  NM_LOG_IN();
   assert(nm_sr_data.init_done);
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
@@ -166,7 +163,6 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_unlock_status(p_core);
   nm_unlock_interface(p_core);
   NM_TRACEF("req=%p; rc=%d\n", p_request, rc);
-  NM_LOG_OUT();
   return rc;
 }
 
@@ -189,7 +185,6 @@ extern int nm_sr_flush(struct nm_core *p_core)
 int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  NM_LOG_IN();
   assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
 #ifdef DEBUG
@@ -201,8 +196,6 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
     {
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_SEND_COMPLETED, p_core);
     }
-
-  NM_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -221,7 +214,6 @@ int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request)
 int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request) 
 {
   int rc = NM_ESUCCESS;
-  NM_LOG_IN();
   assert(nm_sr_data.init_done);
 
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
@@ -248,14 +240,12 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
     }
  exit:
   NM_TRACEF("req=%p; rc=%d\n", p_request, rc);
-  NM_LOG_OUT();
   return rc;
 }
 
 int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  NM_LOG_IN();
   assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
 #ifdef DEBUG
@@ -270,16 +260,13 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED, p_core);
     }
   NM_TRACEF("request %p completed\n", p_request);
-  NM_LOG_OUT();
   return nm_sr_rtest(p_session, p_request);
 }
 
 int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
 {
-  NM_LOG_IN();
   if(pp_gate)
     *pp_gate = p_request->req.unpack.p_gate;
-  NM_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -446,7 +433,6 @@ static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
 {
   struct nm_pack_s*p_pack = event->p_pack;
   struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req.pack);
-  NM_LOG_IN();
   const nm_status_t status = p_pack->status;
   if( (status & NM_STATUS_PACK_COMPLETED) &&
       ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_STATUS_ACK_RECEIVED)) )
@@ -455,7 +441,6 @@ static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
       nm_sr_monitor_notify(p_request, NM_SR_STATUS_SEND_COMPLETED, &info);
       nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
     }
-  NM_LOG_OUT();
 }
 
 static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
@@ -481,7 +466,6 @@ static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const even
 {
   struct nm_unpack_s*p_unpack = event->p_unpack;
   struct nm_sr_request_s*p_request = tbx_container_of(p_unpack, struct nm_sr_request_s, req.unpack);
-  NM_LOG_IN();
   nm_sr_status_t sr_event;
 
   if(event->status & NM_STATUS_UNPACK_CANCELLED)
@@ -498,8 +482,6 @@ static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const even
   };
   nm_sr_monitor_notify(p_request, sr_event, &info);
   nm_sr_request_signal(p_request, sr_event);
-
-  NM_LOG_OUT();
 }
 
 int nm_sr_progress(nm_session_t p_session)

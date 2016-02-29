@@ -36,27 +36,25 @@ static void nm_bench_flypack_generator(void*buf, nm_len_t len)
 {
   struct nm_data_generator_s generator;
   const nm_len_t todo = nm_data_size(&data);
-  (*data.ops.p_generator)(&data, &generator);
+  nm_data_generator_init(&data, &generator);
   nm_len_t done = 0;
   while(done < todo)
     {
-      struct nm_data_chunk_s chunk = (*data.ops.p_next)(&data, &generator);
+      const struct nm_data_chunk_s chunk = nm_data_generator_next(&data, &generator);
       memcpy(chunk.ptr, buf + done, chunk.len);
       done += chunk.len;
     }
-  if(data.ops.p_generator_destroy)
-    (*data.ops.p_generator_destroy)(&data, &generator);
+  nm_data_generator_destroy(&data, &generator);
 
-  (*data.ops.p_generator)(&data, &generator);
+  nm_data_generator_init(&data, &generator);
   done = 0;
   while(done < todo)
     {
-      struct nm_data_chunk_s chunk = (*data.ops.p_next)(&data, &generator);
+      const struct nm_data_chunk_s chunk = nm_data_generator_next(&data, &generator);
       memcpy(buf + done, chunk.ptr, chunk.len);
       done += chunk.len;
     }
-  if(data.ops.p_generator_destroy)
-    (*data.ops.p_generator_destroy)(&data, &generator);
+  nm_data_generator_init(&data, &generator);
 }
 
 const struct nm_bench_s nm_bench =

@@ -42,7 +42,7 @@ struct nm_data_generator_s
 };
 
 /** initializes a generator (i.e. semi-coroutine) for the given data type */
-typedef void (*nm_data_generator_init_t)(struct nm_data_s*p_data, void*_generator);
+typedef void (*nm_data_generator_init_t)(const struct nm_data_s*p_data, void*_generator);
 struct nm_data_chunk_s
 {
   void*ptr;
@@ -52,17 +52,17 @@ struct nm_data_chunk_s
  * _content and _generator must be consistent accross calls
  * no error checking is done
  */
-typedef struct nm_data_chunk_s (*nm_data_next_t)(struct nm_data_s*p_data, void*_generator);
+typedef struct nm_data_chunk_s (*nm_data_next_t)(const struct nm_data_s*p_data, void*_generator);
 
 /** destroys resources allocated by generator */
-typedef void (*nm_data_generator_destroy)(struct nm_data_s*p_data, void*_generator);
+typedef void (*nm_data_generator_destroy_t)(const struct nm_data_s*p_data, void*_generator);
 
 /* forward declarations, functions used in macro below */
-void nm_data_generic_generator(struct nm_data_s*p_data, void*_generator);
-struct nm_data_chunk_s nm_data_generic_next(struct nm_data_s*p_data, void*_generator);
-void nm_data_coroutine_generator(struct nm_data_s*p_data, void*_generator);
-struct nm_data_chunk_s nm_data_coroutine_next(struct nm_data_s*p_data, void*_generator);
-void nm_data_coroutine_generator_destroy(struct nm_data_s*p_data, void*_generator);
+void                   nm_data_generic_generator(const struct nm_data_s*p_data, void*_generator);
+struct nm_data_chunk_s nm_data_generic_next(const struct nm_data_s*p_data, void*_generator);
+void                   nm_data_coroutine_generator(const struct nm_data_s*p_data, void*_generator);
+struct nm_data_chunk_s nm_data_coroutine_next(const struct nm_data_s*p_data, void*_generator);
+void                   nm_data_coroutine_generator_destroy(const struct nm_data_s*p_data, void*_generator);
 
 #define NM_DATA_USE_COROUTINE
 #ifdef NM_DATA_USE_COROUTINE
@@ -83,7 +83,7 @@ struct nm_data_ops_s
   nm_data_traversal_t      p_traversal;
   nm_data_generator_init_t p_generator;
   nm_data_next_t           p_next;
-  nm_data_generator_destroy p_generator_destroy;
+  nm_data_generator_destroy_t p_generator_destroy;
 };
 
 /** block of static properties for a given data descriptor */
@@ -149,12 +149,36 @@ static inline void nm_data_traversal_apply(const struct nm_data_s*p_data, nm_dat
   (*p_data->ops.p_traversal)((void*)p_data->_content, apply, _context);
 }
 
+/* ** helper functions for generator */
+
+/** build a new generator for the given data type */
+static inline void nm_data_generator_init(const struct nm_data_s*p_data, struct nm_data_generator_s*p_generator)
+{
+  assert(p_data->ops.p_generator != NULL);
+  (*p_data->ops.p_generator)(p_data, p_generator);
+}
+
+/** get the next chunk of data */
+static inline struct nm_data_chunk_s nm_data_generator_next(struct nm_data_s*p_data, struct nm_data_generator_s*p_generator)
+{
+  assert(p_data->ops.p_next != NULL);
+  const struct nm_data_chunk_s chunk = (*p_data->ops.p_next)(p_data, p_generator);
+  return chunk;
+}
+
+/** destroy the generator after use */
+static inline void nm_data_generator_destroy(struct nm_data_s*p_data, struct nm_data_generator_s*p_generator)
+{
+  if(p_data->ops.p_generator_destroy)
+    (*p_data->ops.p_generator_destroy)(p_data, p_generator);
+}
+
 void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len,
 				       nm_data_apply_t apply, void*_context);
 
 void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context);
 
-const struct nm_data_properties_s*nm_data_properties_get(struct nm_data_s*p_data);
+const struct nm_data_properties_s*nm_data_properties_get(const struct nm_data_s*p_data);
 
 static inline nm_len_t nm_data_size(const struct nm_data_s*p_data)
 {

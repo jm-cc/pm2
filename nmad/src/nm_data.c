@@ -32,13 +32,13 @@ struct nm_data_contiguous_generator_s
 {
   nm_len_t done; /**< amount of data processed so far */
 };
-static void nm_data_contiguous_generator(struct nm_data_s*p_data, void*_generator)
+static void nm_data_contiguous_generator(const struct nm_data_s*p_data, void*_generator)
 {
   const struct nm_data_contiguous_s*p_contiguous = nm_data_contiguous_content(p_data);
   struct nm_data_contiguous_generator_s*p_generator = _generator;
   p_generator->done = 0;
 }
-static struct nm_data_chunk_s nm_data_contiguous_next(struct nm_data_s*p_data, void*_generator)
+static struct nm_data_chunk_s nm_data_contiguous_next(const struct nm_data_s*p_data, void*_generator)
 {
   const struct nm_data_contiguous_s*p_contiguous = nm_data_contiguous_content(p_data);
   struct nm_data_contiguous_generator_s*p_generator = _generator;
@@ -68,12 +68,12 @@ struct nm_data_iov_generator_s
 {
   int i; /**< current index in v */
 };
-static void nm_data_iov_generator(struct nm_data_s*p_data, void*_generator)
+static void nm_data_iov_generator(const struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_iov_generator_s*p_generator = _generator;
   p_generator->i = 0;
 }
-static struct nm_data_chunk_s nm_data_iov_next(struct nm_data_s*p_data, void*_generator)
+static struct nm_data_chunk_s nm_data_iov_next(const struct nm_data_s*p_data, void*_generator)
 {
   const struct nm_data_iov_s*p_iov = nm_data_iov_content(p_data);
   struct nm_data_iov_generator_s*p_generator = _generator;
@@ -232,12 +232,12 @@ struct nm_data_generic_generator_s
 {
   int i;
 };
-void nm_data_generic_generator(struct nm_data_s*p_data, void*_generator)
+void nm_data_generic_generator(const struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_generic_generator_s*p_generator = _generator;
   p_generator->i = 0;
 }
-struct nm_data_chunk_s nm_data_generic_next(struct nm_data_s*p_data, void*_generator)
+struct nm_data_chunk_s nm_data_generic_next(const struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_generic_generator_s*p_generator = _generator;
   struct nm_data_generic_traversal_s generic_traversal =
@@ -273,7 +273,7 @@ static void nm_data_coroutine_apply(void*ptr, nm_len_t len, void*_context)
     return;
   _longjmp(p_coroutine->caller_context, 1);
 }
-static void nm_data_coroutine_trampoline(struct nm_data_s*p_data, struct nm_data_coroutine_traversal_s*p_coroutine)
+static void nm_data_coroutine_trampoline(const struct nm_data_s*p_data, struct nm_data_coroutine_traversal_s*p_coroutine)
 {
   /* fprintf(stderr, "# coroutine_trampoline-\n");  */
   if(_setjmp(p_coroutine->traversal_context) == 0)
@@ -295,7 +295,7 @@ struct nm_data_coroutine_generator_s
   struct nm_data_coroutine_traversal_s*p_coroutine;
   void*stack;
 };
-void nm_data_coroutine_generator(struct nm_data_s*p_data, void*_generator)
+void nm_data_coroutine_generator(const struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_coroutine_generator_s*p_generator = _generator;
   /* fprintf(stderr, "# coroutine_generator- generator = %p; data size = %d\n", p_generator, nm_data_size(p_data)); */
@@ -316,7 +316,7 @@ void nm_data_coroutine_generator(struct nm_data_s*p_data, void*_generator)
       /* fprintf(stderr, "# coroutine_generator- generator = %p; back from longjmp\n", p_generator);  */
     }
 }
-struct nm_data_chunk_s nm_data_coroutine_next(struct nm_data_s*p_data, void*_generator)
+struct nm_data_chunk_s nm_data_coroutine_next(const struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_coroutine_generator_s*p_generator = _generator;
   /*  fprintf(stderr, "# coroutine_next- generator = %p\n", p_generator); */
@@ -328,7 +328,7 @@ struct nm_data_chunk_s nm_data_coroutine_next(struct nm_data_s*p_data, void*_gen
   return p_generator->p_coroutine->chunk;
 }
 
-void nm_data_coroutine_generator_destroy(struct nm_data_s*p_data, void*_generator)
+void nm_data_coroutine_generator_destroy(const struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_coroutine_generator_s*p_generator = _generator;
   free(p_generator->stack);
@@ -578,14 +578,14 @@ static void nm_data_properties_apply(void*ptr, nm_len_t len, void*_context)
     }
 }
 
-const struct nm_data_properties_s*nm_data_properties_get(struct nm_data_s*p_data)
+const struct nm_data_properties_s*nm_data_properties_get(const struct nm_data_s*p_data)
 {
   if(p_data->props.blocks == -1)
     {
       struct nm_data_properties_context_s context = { .blockend = NULL,
 						      .props = { .size = 0, .blocks = 0, .is_contig = 1, .base_ptr = NULL }  };
       nm_data_traversal_apply(p_data, &nm_data_properties_apply, &context);
-      p_data->props = context.props;
+      memcpy((void*)&p_data->props, &context.props, sizeof(context.props)); /* write in a 'const' variable... */
     }
   return &p_data->props;
 }

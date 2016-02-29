@@ -43,11 +43,18 @@ struct nm_data_generator_s
 
 /** initializes a generator (i.e. semi-coroutine) for the given data type */
 typedef void (*nm_data_generator_init_t)(const struct nm_data_s*p_data, void*_generator);
+/** chunk of data returned by generators */
 struct nm_data_chunk_s
 {
   void*ptr;
   nm_len_t len;
 };
+#define NM_DATA_CHUNK_NULL ((struct nm_data_chunk_s){ .ptr = NULL, .len = 0 })
+static inline int nm_data_chunk_isnull(const struct nm_data_chunk_s*p_chunk)
+{
+  return (p_chunk->ptr == NULL);
+}
+
 /** returns next data chunk for the given generator.
  * _content and _generator must be consistent accross calls
  * no error checking is done
@@ -81,7 +88,7 @@ void                   nm_data_coroutine_generator_destroy(const struct nm_data_
 #endif
 
 /** set of operations available on data type.
- * May be NULL except p_traversal
+ * either p_traversal or p_generator may be NULL (not both)
  */
 struct nm_data_ops_s
 {
@@ -103,11 +110,11 @@ struct nm_data_properties_s
 /** a data descriptor, used to pack/unpack data from app layout to/from contiguous buffers */
 struct nm_data_s
 {
-  struct nm_data_ops_s ops;
-  struct nm_data_properties_s props;
-  /** placeholder for type-dependant content */
-  char _content[_NM_DATA_CONTENT_SIZE];
+  struct nm_data_ops_s ops;              /**< collection of iterators */
+  struct nm_data_properties_s props;     /**< cache for properties */
+  char _content[_NM_DATA_CONTENT_SIZE];  /**< placeholder for type-dependant content */
 };
+/** macro to generate typed functions to init/access data fields */
 #define NM_DATA_TYPE(ENAME, CONTENT_TYPE, OPS)				\
   static inline void nm_data_##ENAME##_set(struct nm_data_s*p_data, CONTENT_TYPE value) \
   {									\
@@ -123,7 +130,7 @@ struct nm_data_s
     CONTENT_TYPE*p_content = (CONTENT_TYPE*)&p_data->_content[0];	\
     *p_content = value;							\
   }									\
-  static inline CONTENT_TYPE*nm_data_##ENAME##_content(const struct nm_data_s*p_data)	\
+  static inline CONTENT_TYPE*nm_data_##ENAME##_content(const struct nm_data_s*p_data) \
   {									\
     return (CONTENT_TYPE*)p_data->_content;				\
   }
@@ -164,7 +171,7 @@ static inline void nm_data_generator_init(const struct nm_data_s*p_data, struct 
 }
 
 /** get the next chunk of data */
-static inline struct nm_data_chunk_s nm_data_generator_next(struct nm_data_s*p_data, struct nm_data_generator_s*p_generator)
+static inline struct nm_data_chunk_s nm_data_generator_next(const struct nm_data_s*p_data, struct nm_data_generator_s*p_generator)
 {
   assert(p_data->ops.p_next != NULL);
   const struct nm_data_chunk_s chunk = (*p_data->ops.p_next)(p_data, p_generator);
@@ -172,7 +179,7 @@ static inline struct nm_data_chunk_s nm_data_generator_next(struct nm_data_s*p_d
 }
 
 /** destroy the generator after use */
-static inline void nm_data_generator_destroy(struct nm_data_s*p_data, struct nm_data_generator_s*p_generator)
+static inline void nm_data_generator_destroy(const struct nm_data_s*p_data, struct nm_data_generator_s*p_generator)
 {
   if(p_data->ops.p_generator_destroy)
     (*p_data->ops.p_generator_destroy)(p_data, p_generator);
@@ -183,6 +190,7 @@ void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t c
 
 void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context);
 
+/** returns the properties for the data */
 const struct nm_data_properties_s*nm_data_properties_get(const struct nm_data_s*p_data);
 
 static inline nm_len_t nm_data_size(const struct nm_data_s*p_data)

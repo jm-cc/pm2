@@ -30,11 +30,10 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 struct nm_data_contiguous_generator_s
 {
-  nm_len_t done; /**< amount of data processed so far */
+  int done; /**< whether block is processed (boolean) */
 };
 static void nm_data_contiguous_generator(const struct nm_data_s*p_data, void*_generator)
 {
-  const struct nm_data_contiguous_s*p_contiguous = nm_data_contiguous_content(p_data);
   struct nm_data_contiguous_generator_s*p_generator = _generator;
   p_generator->done = 0;
 }
@@ -42,10 +41,16 @@ static struct nm_data_chunk_s nm_data_contiguous_next(const struct nm_data_s*p_d
 {
   const struct nm_data_contiguous_s*p_contiguous = nm_data_contiguous_content(p_data);
   struct nm_data_contiguous_generator_s*p_generator = _generator;
-  struct nm_data_chunk_s chunk = { .ptr = p_contiguous->ptr + p_generator->done, .len = p_contiguous->len - p_generator->done };
-  p_generator->done += chunk.len;
-  assert(p_generator->done <= p_contiguous->len);
-  return chunk;
+  if(p_generator->done)
+    {
+      return NM_DATA_CHUNK_NULL;
+    }
+  else
+    {
+      const struct nm_data_chunk_s chunk = { .ptr = p_contiguous->ptr, .len = p_contiguous->len };
+      p_generator->done = 1;
+      return chunk;
+    }
 }
 static void nm_data_contiguous_traversal(const void*_content, nm_data_apply_t apply, void*_context)
 {
@@ -78,10 +83,17 @@ static struct nm_data_chunk_s nm_data_iov_next(const struct nm_data_s*p_data, vo
   const struct nm_data_iov_s*p_iov = nm_data_iov_content(p_data);
   struct nm_data_iov_generator_s*p_generator = _generator;
   const struct iovec*v = &p_iov->v[p_generator->i];
-  struct nm_data_chunk_s chunk = { .ptr = v->iov_base, .len = v->iov_len };
-  assert(p_generator->i < p_iov->n);
-  p_generator->i++;
-  return chunk;
+  const int n = p_iov->n;
+  if(p_generator->i >= n)
+    {
+      return NM_DATA_CHUNK_NULL;
+    }
+  else
+    {
+      const struct nm_data_chunk_s chunk = { .ptr = v->iov_base, .len = v->iov_len };
+      p_generator->i++;
+      return chunk;
+    }
 }
 static void nm_data_iov_traversal(const void*_content, nm_data_apply_t apply, void*_context)
 {
@@ -346,17 +358,17 @@ void nm_data_slicer_generator_init(nm_data_slicer_t*p_slicer, const struct nm_da
 #endif /* DEBUG */
   p_slicer->p_data = p_data;
   p_slicer->pending_chunk = (struct nm_data_chunk_s){ .ptr = NULL, .len = 0 };
-  (*p_data->ops.p_generator)(p_data, &p_slicer->generator);
+  nm_data_generator_init(p_data, &p_slicer->generator);
 }
 
 void nm_data_slicer_generator_forward(nm_data_slicer_t*p_slicer, nm_len_t offset)
 {
   struct nm_data_chunk_s chunk = p_slicer->pending_chunk;
-  const struct nm_data_s*const p_data = p_slicer->p_data;
+  const struct nm_data_s*p_data = p_slicer->p_data;
   while(offset > 0)
     {
       if(chunk.len == 0)
-	chunk = (*p_data->ops.p_next)(p_data, &p_slicer->generator);
+	chunk = nm_data_generator_next(p_data, &p_slicer->generator);
       const nm_len_t chunk_len = (chunk.len > offset) ? offset : chunk.len;
       chunk.ptr += chunk_len;
       chunk.len -= chunk_len;
@@ -376,7 +388,7 @@ void nm_data_slicer_generator_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr
   while(slice_len > 0)
     {
       if(chunk.len == 0)
-	chunk = (*p_data->ops.p_next)(p_data, &p_slicer->generator);
+	chunk = nm_data_generator_next(p_data, &p_slicer->generator);
       const nm_len_t chunk_len = (chunk.len > slice_len) ? slice_len : chunk.len;
       memcpy(dest_ptr, chunk.ptr, chunk_len);
       dest_ptr += chunk_len;
@@ -398,7 +410,7 @@ void nm_data_slicer_generator_copy_to(nm_data_slicer_t*p_slicer, const void*src_
   while(slice_len > 0)
     {
       if(chunk.len == 0)
-	chunk = (*p_data->ops.p_next)(p_data, &p_slicer->generator);
+	chunk = nm_data_generator_next(p_data, &p_slicer->generator);
       const nm_len_t chunk_len = (chunk.len > slice_len) ? slice_len : chunk.len;
       memcpy(chunk.ptr, src_ptr, chunk_len);
       src_ptr   += chunk_len;
@@ -415,12 +427,9 @@ void nm_data_slicer_generator_copy_to(nm_data_slicer_t*p_slicer, const void*src_
 
 void nm_data_slicer_generator_destroy(nm_data_slicer_t*p_slicer)
 {
-  const struct nm_data_s*const p_data = p_slicer->p_data;
-  if(p_data->ops.p_generator_destroy)
-    {
-      (*p_data->ops.p_generator_destroy)(p_data, &p_slicer->generator);
-    }
- }
+  const struct nm_data_s*p_data = p_slicer->p_data;
+  nm_data_generator_destroy(p_data, &p_slicer->generator);
+}
 
 /* ********************************************************* */
 /* ** alternate coroutine-based slicer */

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2015 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -94,7 +94,7 @@ struct nm_pkt_wrap
 
   nm_pw_flag_t flags;        /**< packet flags. */
   nm_len_t length;           /**< cumulated amount of data (everything included) referenced by this wrap. */
-  struct nm_data_s*p_data;   /**< data represented as datatype (if non-NULL, v must be empty) */
+  const struct nm_data_s*p_data; /**< data represented as datatype (if non-NULL, v must be empty) */
   struct iovec*v;            /**< IO vector. */
   int v_size;                /**< number of allocated entries in the iovec. */
   int v_nb;                  /**< number of used entries in the iovec */

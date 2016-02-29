@@ -339,7 +339,7 @@ void nm_data_coroutine_generator_destroy(const struct nm_data_s*p_data, void*_ge
 /* ********************************************************* */
 /* ** sliced generator */
 
-void nm_data_slicer_generator_init(nm_data_slicer_t*p_slicer, struct nm_data_s*p_data)
+void nm_data_slicer_generator_init(nm_data_slicer_t*p_slicer, const struct nm_data_s*p_data)
 {
 #ifdef DEBUG
   p_slicer->done = 0;
@@ -352,7 +352,7 @@ void nm_data_slicer_generator_init(nm_data_slicer_t*p_slicer, struct nm_data_s*p
 void nm_data_slicer_generator_forward(nm_data_slicer_t*p_slicer, nm_len_t offset)
 {
   struct nm_data_chunk_s chunk = p_slicer->pending_chunk;
-  struct nm_data_s*const p_data = p_slicer->p_data;
+  const struct nm_data_s*const p_data = p_slicer->p_data;
   while(offset > 0)
     {
       if(chunk.len == 0)
@@ -372,7 +372,7 @@ void nm_data_slicer_generator_forward(nm_data_slicer_t*p_slicer, nm_len_t offset
 void nm_data_slicer_generator_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len)
 {
   struct nm_data_chunk_s chunk = p_slicer->pending_chunk;
-  struct nm_data_s*const p_data = p_slicer->p_data;
+  const struct nm_data_s*const p_data = p_slicer->p_data;
   while(slice_len > 0)
     {
       if(chunk.len == 0)
@@ -394,7 +394,7 @@ void nm_data_slicer_generator_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr
 void nm_data_slicer_generator_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_len_t slice_len)
 {
   struct nm_data_chunk_s chunk = p_slicer->pending_chunk;
-  struct nm_data_s*const p_data = p_slicer->p_data;
+  const struct nm_data_s*const p_data = p_slicer->p_data;
   while(slice_len > 0)
     {
       if(chunk.len == 0)
@@ -415,7 +415,7 @@ void nm_data_slicer_generator_copy_to(nm_data_slicer_t*p_slicer, const void*src_
 
 void nm_data_slicer_generator_destroy(nm_data_slicer_t*p_slicer)
 {
-  struct nm_data_s*const p_data = p_slicer->p_data;
+  const struct nm_data_s*const p_data = p_slicer->p_data;
   if(p_data->ops.p_generator_destroy)
     {
       (*p_data->ops.p_generator_destroy)(p_data, &p_slicer->generator);
@@ -475,7 +475,7 @@ static void nm_data_slicer_coroutine_apply(void*ptr, nm_len_t len, void*_context
 	}
     }
 }
-static void nm_data_slicer_coroutine_trampoline(struct nm_data_s*p_data, struct nm_data_slicer_coroutine_s*p_coroutine)
+static void nm_data_slicer_coroutine_trampoline(const struct nm_data_s*p_data, struct nm_data_slicer_coroutine_s*p_coroutine)
 {
   if(_setjmp(p_coroutine->traversal_context) == 0)
     {
@@ -490,7 +490,7 @@ static void nm_data_slicer_coroutine_trampoline(struct nm_data_s*p_data, struct 
       abort();
     }
 }
-void nm_data_slicer_coroutine_init(nm_data_slicer_t*p_slicer, struct nm_data_s*p_data)
+void nm_data_slicer_coroutine_init(nm_data_slicer_t*p_slicer, const struct nm_data_s*p_data)
 {
   p_slicer->p_data = p_data;
   struct nm_data_slicer_coroutine_s*p_coroutine = malloc(sizeof(struct nm_data_slicer_coroutine_s));

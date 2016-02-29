@@ -52,16 +52,21 @@ struct nm_data_chunk_s
  * _content and _generator must be consistent accross calls
  * no error checking is done
  */
-typedef struct nm_data_chunk_s (*nm_data_next_t)(const struct nm_data_s*p_data, void*_generator);
+typedef struct nm_data_chunk_s (*nm_data_generator_next_t)(const struct nm_data_s*p_data, void*_generator);
 
 /** destroys resources allocated by generator */
 typedef void (*nm_data_generator_destroy_t)(const struct nm_data_s*p_data, void*_generator);
 
 /* forward declarations, functions used in macro below */
+/** @internal */
 void                   nm_data_generic_generator(const struct nm_data_s*p_data, void*_generator);
+/** @internal */
 struct nm_data_chunk_s nm_data_generic_next(const struct nm_data_s*p_data, void*_generator);
+/** @internal */
 void                   nm_data_coroutine_generator(const struct nm_data_s*p_data, void*_generator);
+/** @internal */
 struct nm_data_chunk_s nm_data_coroutine_next(const struct nm_data_s*p_data, void*_generator);
+/** @internal */
 void                   nm_data_coroutine_generator_destroy(const struct nm_data_s*p_data, void*_generator);
 
 #define NM_DATA_USE_COROUTINE
@@ -80,9 +85,9 @@ void                   nm_data_coroutine_generator_destroy(const struct nm_data_
  */
 struct nm_data_ops_s
 {
-  nm_data_traversal_t      p_traversal;
-  nm_data_generator_init_t p_generator;
-  nm_data_next_t           p_next;
+  nm_data_traversal_t         p_traversal;
+  nm_data_generator_init_t    p_generator;
+  nm_data_generator_next_t    p_next;
   nm_data_generator_destroy_t p_generator_destroy;
 };
 
@@ -118,7 +123,7 @@ struct nm_data_s
     CONTENT_TYPE*p_content = (CONTENT_TYPE*)&p_data->_content[0];	\
     *p_content = value;							\
   }									\
-  static inline CONTENT_TYPE*nm_data_##ENAME##_content(struct nm_data_s*p_data)	\
+  static inline CONTENT_TYPE*nm_data_##ENAME##_content(const struct nm_data_s*p_data)	\
   {									\
     return (CONTENT_TYPE*)p_data->_content;				\
   }
@@ -194,7 +199,7 @@ void nm_data_copy_to(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t le
 
 typedef struct nm_data_slicer_s
 {
-  struct nm_data_s*p_data;
+  const struct nm_data_s*p_data;
   struct nm_data_chunk_s pending_chunk;
   struct nm_data_generator_s generator;
   nm_len_t done;
@@ -224,7 +229,7 @@ static inline int nm_data_slicer_isnull(const nm_data_slicer_t*p_slicer)
 #define nm_data_slicer_destroy   nm_data_slicer_generator_destroy
 #endif
 
-void nm_data_slicer_init(nm_data_slicer_t*p_slicer, struct nm_data_s*p_data);
+void nm_data_slicer_init(nm_data_slicer_t*p_slicer, const struct nm_data_s*p_data);
 
 void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset);
 

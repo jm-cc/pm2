@@ -298,8 +298,13 @@ static void nm_data_coroutine_trampoline(const struct nm_data_s*p_data, struct n
       /* back from longjmp- perform traversal */
       /*   fprintf(stderr, "# coroutine_trampoline- back from longjmp\n"); */
       nm_data_traversal_apply(p_data, &nm_data_coroutine_apply, p_coroutine);
-      fprintf(stderr, "# coroutine_trampoline- ### after traversal ###\n");
-      abort();
+      p_coroutine->chunk = NM_DATA_CHUNK_NULL;
+      if(_setjmp(p_coroutine->traversal_context))
+	{
+	  fprintf(stderr, "# nm_data_coroutine_trampoline- ### after traversal ###\n");
+	  abort();
+	}
+      _longjmp(p_coroutine->caller_context, 1);
     }
 }
 struct nm_data_coroutine_generator_s

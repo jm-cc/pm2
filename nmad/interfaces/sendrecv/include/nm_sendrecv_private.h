@@ -46,21 +46,13 @@ extern int nm_sr_flush(struct nm_core *p_core);
 
 /* ** Events *********************************************** */
 
-typedef struct
+struct nm_sr_event_monitor_s
 {
   nm_sr_event_t mask;
   nm_sr_event_notifier_t notifier;
-} nm_sr_event_monitor_t;
+};
 
-#define NM_SR_EVENT_INIT_MONITOR_NULL(monitor)				\
-  do {									\
-    monitor.mask = (nm_sr_event_t) 0;					\
-    monitor.notifier = NULL;						\
-  } while(0);								\
-
-#define NM_SR_EVENT_MONITOR_NULL ((nm_sr_event_monitor_t){ .mask = 0, .notifier = NULL })
-
-PUK_VECT_TYPE(nm_sr_event_monitor, nm_sr_event_monitor_t)
+#define NM_SR_EVENT_MONITOR_NULL ((struct nm_sr_event_monitor_s){ .mask = 0, .notifier = NULL })
 
 /* ** Request ********************************************** */
 
@@ -74,8 +66,8 @@ struct nm_sr_request_s
   } req;
   struct nm_data_s data;
   nm_sr_cond_t status;
-  nm_sr_event_monitor_t monitor;
-  void *ref;
+  struct nm_sr_event_monitor_s monitor;
+  void*ref;
 };
 
 /* ** Locking inline *************************************** */
@@ -186,7 +178,7 @@ static inline int nm_sr_get_size(nm_session_t p_session, nm_sr_request_t *p_requ
 static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
-  NM_SR_EVENT_INIT_MONITOR_NULL(p_request->monitor);
+  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_request->ref = NULL;
 }
 static inline void nm_sr_send_pack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
@@ -246,7 +238,7 @@ static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_req
 static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request)
 { 
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
-  NM_SR_EVENT_INIT_MONITOR_NULL(p_request->monitor);
+  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_request->ref = NULL;
 }
 

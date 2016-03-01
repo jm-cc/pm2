@@ -26,6 +26,8 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 PUK_LFQUEUE_TYPE(nm_sr_request, struct nm_sr_request_s*, NULL, 1024);
 
+PUK_VECT_TYPE(nm_sr_event_monitor, struct nm_sr_event_monitor_s);
+
 /** Structure that contains all sendrecv-related static variables.
  */
 static struct
@@ -306,7 +308,7 @@ int nm_sr_probe(nm_session_t p_session,
 
 int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
-  nm_sr_event_monitor_t m = { .mask = mask, .notifier = notifier };
+  const struct nm_sr_event_monitor_s m = { .mask = mask, .notifier = notifier };
   if(mask == NM_SR_EVENT_RECV_UNEXPECTED)
     {
       if(!tbx_fast_list_empty(&p_session->p_core->gate_list))
@@ -327,8 +329,10 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
 int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
+  nmad_lock();
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
+  nmad_unlock();
   return NM_ESUCCESS;
 }
 

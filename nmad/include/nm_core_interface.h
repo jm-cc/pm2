@@ -223,8 +223,8 @@ typedef void (*nm_event_notifier_t)(const struct nm_core_event_s* const event);
 /** monitor for status transitions */
 struct nm_core_monitor_s
 {
-  nm_event_notifier_t notifier;
-  nm_status_t mask;
+  nm_event_notifier_t notifier; /**< notification function called to fire events */
+  nm_status_t mask;             /**< mask applied to status to check whether to fire events */
 };
 /** Register an event monitor. */
 void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m);

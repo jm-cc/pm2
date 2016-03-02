@@ -18,7 +18,6 @@
 #include <nm_core_interface.h>
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
-#include <nm_sendrecv_interface.h>
 #include <Padico/Puk.h>
 #include <tbx.h>
 
@@ -178,7 +177,7 @@ int nm_session_open(nm_session_t*pp_session, const char*label)
   if(p_session != NULL)
     {
       *pp_session = NULL;
-      return -NM_ENOTFOUND;
+      return -NM_EALREADY;
     }
   p_session = TBX_MALLOC(sizeof(struct nm_session_s));
   p_session->label = strdup(label);
@@ -251,7 +250,6 @@ int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_
     }
   if(nm_session.local_url == NULL)
     nm_session.local_url = padico_strdup(padico_string_get(nm_session.url_string));
-  nm_sr_init(p_session);
   *p_local_url = nm_session.local_url;
   return NM_ESUCCESS;
 }

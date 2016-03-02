@@ -82,18 +82,16 @@ typedef union
 /** notification function for sendrecv events */
 typedef void (*nm_sr_event_notifier_t)(nm_sr_event_t event, const nm_sr_event_info_t*event_info);
 
+/** open a new session ready for sendrecv */
+static inline nm_session_t nm_sr_session_open(const char*label);
 
-/** Initialize the send/receive interface.
- *
- *  @param p_session a nmad session object.
- *  @return The NM status.
- */
+/** close a sendrecv session */
+static inline void nm_sr_session_close(nm_session_t p_session);
+
+/** Initialize the sendrecv interface for the given session */
 extern int nm_sr_init(nm_session_t p_session);
 
-/** Shutdown the send/receive interface.
- *  @param p_session a pointer to a nmad session object
- *  @return The NM status.
- */
+/** Shutdown the sendrecv interface for the given session. */
 extern int nm_sr_exit(nm_session_t p_session);
 
 

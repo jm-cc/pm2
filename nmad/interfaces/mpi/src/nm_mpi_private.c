@@ -28,11 +28,6 @@ int nm_mpi_internal_init(void)
   nm_launcher_get_size(&global_size);
   nm_launcher_get_rank(&process_rank);
 
-  /** Set the NewMadeleine interfaces */
-  nm_session_t p_session = NULL;
-  nm_launcher_get_session(&p_session);
-  nm_sr_init(p_session);
-
   return MPI_SUCCESS;
 }
 

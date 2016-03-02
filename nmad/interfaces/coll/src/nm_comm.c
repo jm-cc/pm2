@@ -51,12 +51,10 @@ nm_comm_t nm_comm_world(void)
 	  assert(p_gate != NULL);
 	  nm_gate_vect_push_back(group, p_gate);
 	}
-      nm_session_t p_session = NULL;
-      nm_launcher_get_session(&p_session);
       nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
       p_comm->group = group;
       p_comm->rank = nm_group_rank(group);
-      nm_session_open(&p_comm->p_session, "nm_comm_world");
+      p_comm->p_session = nm_sr_session_open("nm_comm_world");
       nm_comm_commit(p_comm);
       void*old = __sync_val_compare_and_swap(&world, NULL, p_comm);
       if(old != NULL)
@@ -81,7 +79,7 @@ nm_comm_t nm_comm_self(void)
       nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
       p_comm->group = group;
       p_comm->rank = nm_group_rank(group);
-      nm_session_open(&p_comm->p_session, "nm_comm_self");
+      p_comm->p_session = nm_sr_session_open("nm_comm_self");
       nm_comm_commit(p_comm);
       void*old = __sync_val_compare_and_swap(&self, NULL, p_comm);
       if(old != NULL)
@@ -140,8 +138,8 @@ nm_comm_t nm_comm_create(nm_comm_t p_comm, nm_group_t group)
 	  if(newrank == newroot)
 	    {
 	      snprintf(&header.session_name[0], 32, "nm_comm-%08x", (unsigned)random());
-	      int rc = nm_session_open(&p_session, header.session_name);
-	      if(rc == NM_ESUCCESS)
+	      p_session = nm_sr_session_open(header.session_name);
+	      if(p_session != NULL)
 		{
 		  int i;
 		  header.commit = 0;
@@ -171,10 +169,10 @@ nm_comm_t nm_comm_create(nm_comm_t p_comm, nm_group_t group)
 		  if(p_session != NULL)
 		    {
 		      /* release previous round failed session creation */
-		      nm_session_destroy(p_session);
+		      nm_sr_session_close(p_session);
 		    }
-		  int rc = nm_session_open(&p_session, header.session_name);
-		  int ack = (rc == NM_ESUCCESS);
+		  p_session = nm_sr_session_open(header.session_name);
+		  int ack = (p_session != NULL);
 		  nm_coll_gather(p_comm, root, &ack, sizeof(ack), NULL, 0, tag2);
 		}
 	      else if(header.commit == 1)

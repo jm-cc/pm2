@@ -160,9 +160,9 @@ static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag,
 
 static uint32_t nm_tag_indirect_hash(const void*_tag)
 {
-  /* const nm_core_tag_t*p_tag = (const nm_core_tag_t*)_tag; */
-  const uint32_t*p_hash = (const uint32_t*)_tag;
-  return *p_hash;
+  const nm_core_tag_t*p_tag = (const nm_core_tag_t*)_tag;
+  const uint32_t hash = p_tag->tag + p_tag->hashcode;
+  return hash;
 }
 static int nm_tag_indirect_eq(const void*_tag1, const void*_tag2)
 {

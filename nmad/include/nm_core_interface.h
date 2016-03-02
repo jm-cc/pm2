@@ -117,9 +117,6 @@ typedef nm_status_t nm_so_flag_t;
 typedef uint16_t nm_seq_t;
 
 #if defined(NM_TAGS_AS_INDIRECT_HASH)
-/* ** Note: only indirect hashing allows long/structured tags.
- */
-#define NM_TAGS_STRUCT
 /** An internal tag */
 typedef struct
 {
@@ -135,6 +132,10 @@ static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
   const nm_core_tag_t core_tag = { .tag = tag, .hashcode = hashcode };
   return core_tag;
 }
+static inline nm_tag_t nm_tag_get(nm_core_tag_t core_tag)
+{
+  return core_tag.tag;
+}
 #else /* NM_TAGS_AS_INDIRECT_HASH */
 /** An internal tag */
 typedef nm_tag_t nm_core_tag_t;
@@ -145,6 +146,10 @@ typedef nm_tag_t nm_core_tag_t;
 static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
 {
   const nm_core_tag_t core_tag = tag;
+  return core_tag;
+}
+static inline nm_tag_t nm_tag_get(nm_core_tag_t core_tag)
+{
   return core_tag;
 }
 #endif /* NM_TAGS_AS_INDIRECT_HASH */

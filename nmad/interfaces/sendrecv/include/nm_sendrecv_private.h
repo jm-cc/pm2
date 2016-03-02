@@ -115,21 +115,6 @@ static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask
 }
 #endif /* PIOMAN_POLL */
 
-/* ** Tags mangling **************************************** */
-
-static inline nm_tag_t nm_sr_tag_get(nm_core_tag_t core_tag)
-{
-#ifdef NM_TAGS_STRUCT
-  return core_tag.tag;
-#else
-  return core_tag;
-#endif
-}
-static inline void nm_sr_tag_build(nm_session_t p_session, nm_tag_t tag, nm_core_tag_t*core_tag)
-{
-  *core_tag = nm_tag_build(p_session->hash_code, tag);
-}
-
 /* ** Requests inline ************************************** */
 
 static inline int nm_sr_get_ref(nm_session_t p_session,
@@ -144,7 +129,7 @@ static inline int nm_sr_get_rtag(nm_session_t p_session,
 				 nm_sr_request_t *p_request,
 				 nm_tag_t*tag)
 {
-  *tag = nm_sr_tag_get(p_request->req.unpack.tag);
+  *tag = nm_tag_get(p_request->req.unpack.tag);
   return NM_ESUCCESS;
 }
 
@@ -152,7 +137,7 @@ static inline int nm_sr_get_stag(nm_session_t p_session,
 				 nm_sr_request_t *p_request,
 				 nm_tag_t*tag)
 {
-  *tag = nm_sr_tag_get(p_request->req.pack.tag);
+  *tag = nm_tag_get(p_request->req.pack.tag);
   return NM_ESUCCESS;
 }
 
@@ -206,9 +191,7 @@ static inline int nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_req
 				   nm_gate_t p_gate, nm_tag_t tag)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_core_tag_t core_tag;
-  NM_CORE_TAG_INIT_NONE(core_tag);
-  nm_sr_tag_build(p_session, tag, &core_tag);
+  const nm_core_tag_t core_tag = nm_tag_build(p_session->hash_code, tag);
   const int err = nm_core_pack_send(p_core, &p_request->req.pack, core_tag, p_gate, 0);
   return err;
 }
@@ -216,9 +199,7 @@ static inline int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_re
 				    nm_gate_t p_gate, nm_tag_t tag)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_core_tag_t core_tag;
-  NM_CORE_TAG_INIT_NONE(core_tag);
-  nm_sr_tag_build(p_session, tag, &core_tag);
+  const nm_core_tag_t core_tag = nm_tag_build(p_session->hash_code, tag);
   const int err = nm_core_pack_send(p_core, &p_request->req.pack, core_tag, p_gate, NM_PACK_SYNCHRONOUS);
   return err;
 }
@@ -226,9 +207,7 @@ static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_req
 				   nm_gate_t p_gate, nm_tag_t tag)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_core_tag_t core_tag;
-  NM_CORE_TAG_INIT_NONE(core_tag);
-  nm_sr_tag_build(p_session, tag, &core_tag);
+  const nm_core_tag_t core_tag = nm_tag_build(p_session->hash_code, tag);
   const int err = nm_core_pack_send(p_core, &p_request->req.pack, core_tag, p_gate, 0);
   return err;
 }
@@ -269,12 +248,8 @@ static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_re
 				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_core_tag_t core_tag;
-  NM_CORE_TAG_INIT_NONE(core_tag);
-  nm_sr_tag_build(p_session, tag, &core_tag);
-  nm_core_tag_t core_mask;
-  NM_CORE_TAG_INIT_NONE(core_mask);
-  nm_sr_tag_build(p_session, mask, &core_mask);
+  const nm_core_tag_t core_tag = nm_tag_build(p_session->hash_code, tag);
+  const nm_core_tag_t core_mask = nm_tag_build(p_session->hash_code, mask);
   const int err = nm_core_unpack_recv(p_core, &p_request->req.unpack, p_gate, core_tag, core_mask);
   return err;
 }

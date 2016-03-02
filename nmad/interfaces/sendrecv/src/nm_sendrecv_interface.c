@@ -278,10 +278,8 @@ int nm_sr_probe(nm_session_t p_session,
 		nm_len_t*p_out_len)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_core_tag_t core_tag = NM_CORE_TAG_NONE;
-  nm_sr_tag_build(p_session, tag, &core_tag);
-  nm_core_tag_t core_mask = NM_CORE_TAG_MASK_FULL;
-  nm_sr_tag_build(p_session, mask, &core_mask);
+  const nm_core_tag_t core_tag = nm_tag_build(p_session->hash_code, tag);
+  const nm_core_tag_t core_mask = nm_tag_build(p_session->hash_code, mask);
 
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
@@ -295,7 +293,7 @@ int nm_sr_probe(nm_session_t p_session,
   if(pp_out_gate)
     *pp_out_gate = p_out_gate;
   if(p_out_tag)
-    *p_out_tag = nm_sr_tag_get(out_core_tag);
+    *p_out_tag = nm_tag_get(out_core_tag);
   if(p_out_len)
     *p_out_len = out_size;
 
@@ -449,7 +447,7 @@ static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
 
 static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
 {
-  nm_tag_t sr_tag = nm_sr_tag_get(event->tag);
+  nm_tag_t sr_tag = nm_tag_get(event->tag);
 
   const nm_sr_event_info_t info = { 
     .recv_unexpected.p_gate = event->p_gate,

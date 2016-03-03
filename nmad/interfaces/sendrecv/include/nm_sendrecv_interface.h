@@ -67,6 +67,7 @@ typedef union
     nm_gate_t p_gate;
     nm_tag_t tag;
     nm_len_t len;
+    nm_session_t p_session;
   } recv_unexpected;
   struct
   {

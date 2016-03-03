@@ -136,6 +136,10 @@ static inline nm_tag_t nm_tag_get(nm_core_tag_t core_tag)
 {
   return core_tag.tag;
 }
+static inline nm_tag_t nm_tag_get_hashcode(nm_core_tag_t core_tag)
+{
+  return core_tag.hashcode;
+}
 #else /* NM_TAGS_AS_INDIRECT_HASH */
 /** An internal tag */
 typedef nm_tag_t nm_core_tag_t;
@@ -151,6 +155,10 @@ static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
 static inline nm_tag_t nm_tag_get(nm_core_tag_t core_tag)
 {
   return core_tag;
+}
+static inline nm_tag_t nm_tag_get_hashcode(nm_core_tag_t core_tag)
+{
+  return 0;
 }
 #endif /* NM_TAGS_AS_INDIRECT_HASH */
 

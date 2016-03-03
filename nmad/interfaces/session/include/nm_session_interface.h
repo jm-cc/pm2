@@ -69,6 +69,9 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*rem
  */
 int nm_session_destroy(nm_session_t p_session);
 
+/** Lookup a session by hashcode
+*/
+nm_session_t nm_session_lookup(uint32_t hashcode);
 
 /* @} */
 

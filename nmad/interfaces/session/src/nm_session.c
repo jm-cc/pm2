@@ -395,4 +395,10 @@ int nm_session_destroy(nm_session_t p_session)
   return NM_ESUCCESS;
 }
 
+nm_session_t nm_session_lookup(uint32_t hashcode)
+{
+  struct nm_session_s*p_session = puk_hashtable_lookup(nm_session.sessions, &hashcode);
+  return p_session;
+}
+
 

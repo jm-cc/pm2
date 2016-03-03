@@ -25,6 +25,7 @@ struct nm_session_s
   struct nm_core*p_core; /**< the current nmad object */
   uint32_t hash_code;    /**< hash of session label, used as ID on the wire */
   const char*label;      /**< plain text session name */
+  void*ref;              /**< reference to be used by session user (mostly sendrecv) */
 };
 
 #endif /* NM_SESSION_PRIVATE_H */

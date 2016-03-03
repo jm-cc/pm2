@@ -198,8 +198,6 @@ static inline int nm_sr_isend_with_ref(nm_session_t p_session,
   nm_sr_send_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_send_pack_contiguous(p_session, p_request, data, len);
-  if(ref != NULL)
-    nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
 }
@@ -254,8 +252,6 @@ static inline int nm_sr_isend_iov_with_ref(nm_session_t p_session,
   nm_sr_send_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_send_pack_iov(p_session, p_request, iov, num_entries);
-  if(ref != NULL)
-    nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
 }
@@ -343,8 +339,6 @@ static inline int nm_sr_irecv_with_ref(nm_session_t p_session,
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_recv_unpack_contiguous(p_session, p_request, data, len);
-  if(ref != NULL)
-    nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
@@ -368,8 +362,6 @@ static inline int nm_sr_irecv_iov_with_ref(nm_session_t p_session,
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
-  if(ref != NULL)
-    nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
@@ -438,12 +430,12 @@ extern int nm_sr_probe(nm_session_t p_session,
 extern int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
 
 /** Poll for any completed recv request (any source, any tag).
- * @note Only nm_sr_recv*_with_ref functions (with ref != NULL) generate such an event.
+ * @note call nm_sr_request_set_completion_queue() to generate such an event.
  */
 extern int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req);
 
 /** Poll for any completed send request.
- * @note Only nm_sr_isend*_with_ref functions (with ref != NULL) generate such an event.
+ * @note call nm_sr_request_set_completion_queue() to generate such an event.
  */
 extern int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req);
 

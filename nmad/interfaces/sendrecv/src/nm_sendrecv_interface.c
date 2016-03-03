@@ -36,12 +36,14 @@ static struct
   struct nm_sr_event_monitor_vect_s monitors;
   /** flags whether sendrecv init has already been done */
   int init_done;
-  /** queue of completed recv requests */
-  struct nm_sr_request_lfqueue_s completed_rreq;
-  /** queue of completed send requests */
-  struct nm_sr_request_lfqueue_s completed_sreq;
 } nm_sr_data = { .init_done = 0 };
 
+/** per-session status for sendrecv interface */
+struct nm_sr_session_s
+{
+  struct nm_sr_request_lfqueue_s completed_rreq; /**< queue of completed recv requests */
+  struct nm_sr_request_lfqueue_s completed_sreq; /**< queue of completed send requests */
+};
 
 /* ** Status *********************************************** */
 
@@ -98,18 +100,24 @@ static const struct nm_core_monitor_s nm_sr_monitor_unexpected =
 int nm_sr_init(nm_session_t p_session)
 {
   nm_core_t p_core = p_session->p_core;
+  if(p_session->ref != NULL)
+    {
+      fprintf(stderr, "nmad: FATAL- sendrecv cannot use session %p; ref is non-empty.\n", p_session);
+      abort();
+    }
+  struct nm_sr_session_s*p_sr_session = malloc(sizeof(struct nm_sr_session_s));
+  nm_sr_request_lfqueue_init(&p_sr_session->completed_rreq);
+  nm_sr_request_lfqueue_init(&p_sr_session->completed_sreq);
+  p_session->ref = p_sr_session;
+  
   if(!nm_sr_data.init_done)
     {
       /* Fill-in scheduler callbacks */
       nmad_lock();
+      nm_sr_event_monitor_vect_init(&nm_sr_data.monitors);
       nm_core_monitor_add(p_core, &nm_sr_monitor_unexpected);
       nm_core_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
       nm_core_monitor_add(p_core, &nm_sr_monitor_pack_completed);
-      
-      nm_sr_request_lfqueue_init(&nm_sr_data.completed_rreq);
-      nm_sr_request_lfqueue_init(&nm_sr_data.completed_sreq);
-      nm_sr_event_monitor_vect_init(&nm_sr_data.monitors);
-      
       nm_sr_data.init_done = 1;
       nmad_unlock();
     }
@@ -119,6 +127,11 @@ int nm_sr_init(nm_session_t p_session)
 int nm_sr_exit(nm_session_t p_session)
 {
   nm_core_t p_core = p_session->p_core;
+  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  assert(p_sr_session != NULL);
+  free(p_sr_session);
+  p_session->ref = NULL;
+
   if(nm_sr_data.init_done)
     {
       nmad_lock();
@@ -339,12 +352,14 @@ static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info
   if(event & NM_SR_STATUS_RECV_COMPLETED)
     {
       nm_sr_request_t*p_request = event_info->recv_completed.p_request;
-      nm_sr_request_lfqueue_enqueue(&nm_sr_data.completed_rreq, p_request);
+      struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
+      nm_sr_request_lfqueue_enqueue(&p_sr_session->completed_rreq, p_request);
     }
   else if(event & NM_SR_STATUS_SEND_COMPLETED)
     {
       nm_sr_request_t*p_request = event_info->send_completed.p_request;
-      nm_sr_request_lfqueue_enqueue(&nm_sr_data.completed_sreq, p_request);
+      struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
+      nm_sr_request_lfqueue_enqueue(&p_sr_session->completed_sreq, p_request);
     }
 }
 
@@ -367,24 +382,26 @@ int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t
 }
 
 
-int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
+int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t**out_req)
 {
-  if(nm_sr_request_lfqueue_empty(&nm_sr_data.completed_rreq))
+  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  if(nm_sr_request_lfqueue_empty(&p_sr_session->completed_rreq))
     {
       nm_sr_progress(p_session);
     }
-  nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&nm_sr_data.completed_rreq);
+  nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&p_sr_session->completed_rreq);
   *out_req = p_request;
   return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
-int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req)
+int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t**out_req)
 {
-  if(nm_sr_request_lfqueue_empty(&nm_sr_data.completed_sreq))
+  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  if(nm_sr_request_lfqueue_empty(&p_sr_session->completed_sreq))
     {
       nm_sr_progress(p_session);
     }
-  nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&nm_sr_data.completed_sreq);
+  nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&p_sr_session->completed_sreq);
   *out_req = p_request;
   return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }

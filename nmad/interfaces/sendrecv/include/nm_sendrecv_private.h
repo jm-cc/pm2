@@ -67,10 +67,11 @@ extern int nm_sr_flush(struct nm_core *p_core);
 
 /* ** Events *********************************************** */
 
+/** descriptor for an event monitor */
 struct nm_sr_event_monitor_s
 {
-  nm_sr_event_t mask;
-  nm_sr_event_notifier_t notifier;
+  nm_sr_event_t mask;               /**< event bitmask */
+  nm_sr_event_notifier_t notifier;  /**< notification function to call uppon event*/
 };
 
 #define NM_SR_EVENT_MONITOR_NULL ((struct nm_sr_event_monitor_s){ .mask = 0, .notifier = NULL })
@@ -87,8 +88,9 @@ struct nm_sr_request_s
   } req;
   struct nm_data_s data;
   nm_sr_cond_t status;
-  struct nm_sr_event_monitor_s monitor;
-  void*ref;
+  nm_session_t p_session;               /**< session this request belongs to */
+  struct nm_sr_event_monitor_s monitor; /**< events triggered on status transitions */
+  void*ref;                             /**< reference usable by end-user */
 };
 
 /* ** Locking inline *************************************** */
@@ -186,6 +188,7 @@ static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_req
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_request->ref = NULL;
+  p_request->p_session = p_session;
 }
 static inline void nm_sr_send_pack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
 					      const void*data, nm_len_t len)
@@ -240,6 +243,7 @@ static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_req
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_request->ref = NULL;
+  p_request->p_session = p_session;
 }
 
 static inline void nm_sr_recv_unpack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 

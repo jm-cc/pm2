@@ -203,9 +203,25 @@ static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_core_tag_t tag, nm_s
  */
 static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const event, nm_status_t*p_status)
 {
+  /* request monitors */
+  if((p_status != NULL) && ((*p_status) & NM_STATUS_PACK_POSTED))
+    {
+      struct nm_pack_s*p_pack = tbx_container_of(p_status, struct nm_pack_s, status);
+      if(p_pack->monitor.mask & event->status)
+	{
+	  (*p_pack->monitor.notifier)(event);
+	}
+    }
+  else if((p_status != NULL) && ((*p_status) & NM_STATUS_UNPACK_POSTED))
+    {
+      struct nm_unpack_s*p_unpack = tbx_container_of(p_status, struct nm_unpack_s, status);
+      if(p_unpack->monitor.mask & event->status)
+	{
+	  (*p_unpack->monitor.notifier)(event);
+	}
+    }
+  /* fire global monitors */
   nm_core_monitor_vect_itor_t i;
-  if(p_status)
-    *p_status |= event->status;
   puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)
     {
       if((*i)->mask & event->status)
@@ -213,6 +229,9 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
 	  ((*i)->notifier)(event);
 	}
     }
+  /* set status *after* events */
+  if(p_status)
+    *p_status |= event->status;
 }
 
 

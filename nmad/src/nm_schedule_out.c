@@ -25,11 +25,12 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*p_data)
 {
-  p_pack->status    = NM_STATUS_NONE;
+  p_pack->status    = NM_STATUS_PACK_INIT;
   p_pack->p_data    = p_data;
   p_pack->len       = nm_data_size(p_data);
   p_pack->done      = 0;
   p_pack->scheduled = 0;
+  p_pack->monitor   = NM_CORE_MONITOR_NULL;
 }
 
 /** data iterator to call strategy pack on every chunk of data */
@@ -48,6 +49,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
   nmad_lock();
   nm_lock_interface(p_core);
   assert(p_gate != NULL);
+  assert(p_pack->status == NM_STATUS_PACK_INIT);
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
   p_so_tag->send_seq_number = seq;

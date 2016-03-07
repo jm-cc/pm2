@@ -83,7 +83,7 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t *pp_gate);
 int nm_core_gate_connect(nm_core_t p_core, nm_gate_t gate, nm_drv_t  p_drv, const char *url);
 
 
-/* ** Packs/unpacks **************************************** */
+/* ** status *********************************************** */
 
 /** status of a pack/unpack request */
 typedef uint16_t nm_status_t;
@@ -94,27 +94,34 @@ typedef nm_status_t nm_so_flag_t;
 
 /* ** status and flags, used in pack/unpack requests and events */
 
+/** empty request */
 #define NM_STATUS_NONE                     ((nm_status_t)0x0000)
+/** request initialized, not sent yet */
+#define NM_STATUS_PACK_INIT                ((nm_status_t)0x0001)
+/** request initialized, not sent yet */
+#define NM_STATUS_UNPACK_INIT              ((nm_status_t)0x0002)
 /** sending operation has completed */
-#define NM_STATUS_PACK_COMPLETED           ((nm_status_t)0x0001)
+#define NM_STATUS_PACK_COMPLETED           ((nm_status_t)0x0004)
 /** unpack operation has completed */
-#define NM_STATUS_UNPACK_COMPLETED         ((nm_status_t)0x0002)
+#define NM_STATUS_UNPACK_COMPLETED         ((nm_status_t)0x0008)
 /** data or rdv has arrived, with no matching unpack */
-#define NM_STATUS_UNEXPECTED               ((nm_status_t)0x0004)
+#define NM_STATUS_UNEXPECTED               ((nm_status_t)0x0010)
 /** unpack operation has been cancelled */
-#define NM_STATUS_UNPACK_CANCELLED         ((nm_status_t)0x0008)
+#define NM_STATUS_UNPACK_CANCELLED         ((nm_status_t)0x0020)
 /** sending operation is in progress */
-#define NM_STATUS_PACK_POSTED              ((nm_status_t)0x0010)
+#define NM_STATUS_PACK_POSTED              ((nm_status_t)0x0040)
 /** unpack operation is in progress */
-#define NM_STATUS_UNPACK_POSTED            ((nm_status_t)0x0020)
+#define NM_STATUS_UNPACK_POSTED            ((nm_status_t)0x0080)
 /** ack received for the given pack */
-#define NM_STATUS_ACK_RECEIVED             ((nm_status_t)0x0080)
+#define NM_STATUS_ACK_RECEIVED             ((nm_status_t)0x0100)
 
 /** flag pack as synchronous (i.e. request the receiver to send an ack) */
 #define NM_PACK_SYNCHRONOUS     ((nm_so_flag_t)0x1000)
 
 /** Sequence number */
 typedef uint16_t nm_seq_t;
+
+/* ** tags ************************************************* */
 
 #if defined(NM_TAGS_AS_INDIRECT_HASH)
 /** An internal tag */
@@ -162,59 +169,6 @@ static inline nm_tag_t nm_tag_get_hashcode(nm_core_tag_t core_tag)
 }
 #endif /* NM_TAGS_AS_INDIRECT_HASH */
 
-/** An unpack request */
-struct nm_unpack_s
-{
-  struct tbx_fast_list_head _link;
-  nm_status_t status;
-  const struct nm_data_s*p_data;
-  nm_len_t expected_len;
-  nm_len_t cumulated_len;
-  nm_gate_t p_gate;
-  nm_core_tag_t tag;
-  nm_seq_t seq;
-  nm_core_tag_t tag_mask;
-};
-
-/** A pack request */
-struct nm_pack_s
-{
-  struct tbx_fast_list_head _link;
-  nm_status_t status;
-  const struct nm_data_s*p_data;
-  nm_len_t len;       /**< cumulated data length */
-  nm_len_t scheduled; /**< cumulated length of data scheduled for sending */
-  nm_len_t done;      /**< cumulated length of data sent so far */
-  nm_gate_t p_gate;
-  nm_core_tag_t tag;
-  nm_seq_t seq;
-};
-
-/** build a pack request from data descriptor */
-void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*p_data);
-
-/** post a pack request */
-int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
-
-/** build an unpack request from data descriptor */
-void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*p_data);
-
-/** post an unpack request */
-int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
-
-/** cancel a pending unpack
- * @note cancel may fail if matching was already done.
- */
-int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
-
-/** probe unexpected packet, check matching for (packet_tag & tag_mask) == tag */
-int nm_core_iprobe(struct nm_core*p_core,
-		   struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
-		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size);
-
-/** Flush the given gate. */
-int nm_core_flush(nm_gate_t p_gate);
-
 
 /* ** Event notification *********************************** */
 
@@ -243,6 +197,79 @@ struct nm_core_monitor_s
 void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m);
 /** Unregister an event monitor. */
 void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m);
+
+#define NM_CORE_MONITOR_NULL ((struct nm_core_monitor_s){ . notifier = NULL, .mask = 0})
+
+/* ** Packs/unpacks **************************************** */
+
+/** An unpack request */
+struct nm_unpack_s
+{
+  struct tbx_fast_list_head _link;
+  nm_status_t status;
+  const struct nm_data_s*p_data;
+  nm_gate_t p_gate;
+  nm_core_tag_t tag;
+  nm_seq_t seq;
+  struct nm_core_monitor_s monitor;
+  nm_len_t expected_len;
+  nm_len_t cumulated_len;
+  nm_core_tag_t tag_mask;
+};
+
+/** A pack request */
+struct nm_pack_s
+{
+  struct tbx_fast_list_head _link;
+  nm_status_t status;
+  const struct nm_data_s*p_data;
+  nm_gate_t p_gate;
+  nm_core_tag_t tag;
+  nm_seq_t seq;
+  struct nm_core_monitor_s monitor;
+  nm_len_t len;       /**< cumulated data length */
+  nm_len_t scheduled; /**< cumulated length of data scheduled for sending */
+  nm_len_t done;      /**< cumulated length of data sent so far */
+};
+
+/** build a pack request from data descriptor */
+void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*p_data);
+
+static inline void nm_core_pack_monitor(struct nm_pack_s*p_pack, struct nm_core_monitor_s monitor)
+{
+  assert(p_pack->monitor.notifier == NULL);
+  assert(p_pack->status == NM_STATUS_PACK_INIT);
+  p_pack->monitor = monitor;
+}
+
+/** post a pack request */
+int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
+
+/** build an unpack request from data descriptor */
+void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*p_data);
+
+static inline void nm_core_unpack_monitor(struct nm_unpack_s*p_unpack, struct nm_core_monitor_s monitor)
+{
+  assert(p_unpack->monitor.notifier == NULL);
+  assert(p_unpack->status == NM_STATUS_UNPACK_INIT);
+  p_unpack->monitor = monitor;
+}
+
+/** post an unpack request */
+int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
+
+/** cancel a pending unpack
+ * @note cancel may fail if matching was already done.
+ */
+int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
+
+/** probe unexpected packet, check matching for (packet_tag & tag_mask) == tag */
+int nm_core_iprobe(struct nm_core*p_core,
+		   struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
+		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size);
+
+/** Flush the given gate. */
+int nm_core_flush(nm_gate_t p_gate);
 
 
 /* ** Progression ****************************************** */

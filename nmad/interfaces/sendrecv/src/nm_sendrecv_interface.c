@@ -77,13 +77,13 @@ static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
 static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const event);
 static void nm_sr_event_unexpected(const struct nm_core_event_s*const event);
 
-static const struct nm_core_monitor_s nm_sr_monitor_pack_completed = 
+const struct nm_core_monitor_s nm_sr_monitor_pack_completed = 
   {
     .notifier = &nm_sr_event_pack_completed,
     .mask = NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED
   };
 
-static const struct nm_core_monitor_s nm_sr_monitor_unpack_completed = 
+const struct nm_core_monitor_s nm_sr_monitor_unpack_completed = 
   {
     .notifier = &nm_sr_event_unpack_completed,
     .mask = NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED
@@ -116,8 +116,6 @@ int nm_sr_init(nm_session_t p_session)
       nmad_lock();
       nm_sr_event_monitor_vect_init(&nm_sr_data.monitors);
       nm_core_monitor_add(p_core, &nm_sr_monitor_unexpected);
-      nm_core_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
-      nm_core_monitor_add(p_core, &nm_sr_monitor_pack_completed);
       nm_sr_data.init_done = 1;
       nmad_unlock();
     }
@@ -136,11 +134,32 @@ int nm_sr_exit(nm_session_t p_session)
     {
       nmad_lock();
       nm_core_monitor_remove(p_core, &nm_sr_monitor_unexpected);
-      nm_core_monitor_remove(p_core, &nm_sr_monitor_unpack_completed);
-      nm_core_monitor_remove(p_core, &nm_sr_monitor_pack_completed);
       nmad_unlock();
     }
   return NM_ESUCCESS;
+}
+
+static inline void nm_sr_request_completion_wait(nm_sr_request_t*p_request)
+{
+#warning TODO- temporary fix for race condition in status notification
+  if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
+    {
+      if(!(p_request->req.unpack.status & NM_STATUS_UNPACK_COMPLETED))
+	{
+	  volatile nm_status_t*p_status = &p_request->req.unpack.status;
+	  while(!((*p_status) &  NM_STATUS_UNPACK_COMPLETED))
+	    { }
+	}
+    }
+  else if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
+    {
+      if(!(p_request->req.pack.status & NM_STATUS_PACK_COMPLETED))
+	{
+	  volatile nm_status_t*p_status = &p_request->req.pack.status;
+	  while(!((*p_status) &  NM_STATUS_PACK_COMPLETED))
+	    { }
+	}
+    }
 }
 
 /** Test for the completion of a non blocking send request.
@@ -211,6 +230,7 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
     {
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_SEND_COMPLETED, p_core);
     }
+  nm_sr_request_completion_wait(p_request);
   return NM_ESUCCESS;
 }
 
@@ -274,6 +294,7 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
     {
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED, p_core);
     }
+  nm_sr_request_completion_wait(p_request);
   NM_TRACEF("request %p completed\n", p_request);
   return nm_sr_rtest(p_session, p_request);
 }
@@ -393,6 +414,8 @@ int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t**out_req)
     }
   nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&p_sr_session->completed_rreq);
   *out_req = p_request;
+  if(p_request)
+    nm_sr_request_completion_wait(p_request);
   return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
@@ -405,6 +428,8 @@ int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t**out_req)
     }
   nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&p_sr_session->completed_sreq);
   *out_req = p_request;
+  if(p_request)
+    nm_sr_request_completion_wait(p_request);
   return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 

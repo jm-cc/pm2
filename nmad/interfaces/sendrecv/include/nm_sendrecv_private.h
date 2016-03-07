@@ -183,6 +183,8 @@ static inline int nm_sr_get_size(nm_session_t p_session, nm_sr_request_t *p_requ
 
 /* ** Send inline ****************************************** */
 
+extern const struct nm_core_monitor_s nm_sr_monitor_pack_completed;
+
 static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
@@ -190,12 +192,20 @@ static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_req
   p_request->ref = NULL;
   p_request->p_session = p_session;
 }
-static inline void nm_sr_send_pack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
-					      const void*data, nm_len_t len)
+static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_data_contiguous_set(&p_request->data, (struct nm_data_contiguous_s){ .ptr = (void*)data, .len = len });
+  p_request->data = *p_data;
   nm_core_pack_data(p_core, &p_request->req.pack, &p_request->data);
+  nm_core_pack_monitor(&p_request->req.pack, nm_sr_monitor_pack_completed);
+}
+static inline void nm_sr_send_pack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
+					      const void*ptr, nm_len_t len)
+{
+  nm_core_t p_core = p_session->p_core;
+  nm_data_contiguous_set(&p_request->data, (struct nm_data_contiguous_s){ .ptr = (void*)ptr, .len = len });
+  nm_core_pack_data(p_core, &p_request->req.pack, &p_request->data);
+  nm_core_pack_monitor(&p_request->req.pack, nm_sr_monitor_pack_completed);
 }
 static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 				       const struct iovec*iov, int num_entries)
@@ -203,12 +213,7 @@ static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p
   nm_core_t p_core = p_session->p_core;
   nm_data_iov_set(&p_request->data, (struct nm_data_iov_s){ .v = (struct iovec*)iov, .n = num_entries });
   nm_core_pack_data(p_core, &p_request->req.pack, &p_request->data);
-}
-static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
-{
-  nm_core_t p_core = p_session->p_core;
-  p_request->data = *p_data;
-  nm_core_pack_data(p_core, &p_request->req.pack, &p_request->data);
+  nm_core_pack_monitor(&p_request->req.pack, nm_sr_monitor_pack_completed);
 }
 
 static inline int nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -238,6 +243,8 @@ static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_req
 
 /* ** Recv inline ****************************************** */
 
+extern const struct nm_core_monitor_s nm_sr_monitor_unpack_completed;
+
 static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request)
 { 
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
@@ -252,6 +259,7 @@ static inline void nm_sr_recv_unpack_contiguous(nm_session_t p_session, nm_sr_re
   nm_core_t p_core = p_session->p_core;
   nm_data_contiguous_set(&p_request->data, (struct nm_data_contiguous_s){ .ptr = (void*)data, .len = len });
   nm_core_unpack_data(p_core, &p_request->req.unpack, &p_request->data);
+  nm_core_unpack_monitor(&p_request->req.unpack, nm_sr_monitor_unpack_completed);
 }
 
 static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -260,6 +268,7 @@ static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t
   nm_core_t p_core = p_session->p_core;
   nm_data_iov_set(&p_request->data, (struct nm_data_iov_s){ .v = (struct iovec*)iov, .n = num_entries });
   nm_core_unpack_data(p_core, &p_request->req.unpack, &p_request->data);
+  nm_core_unpack_monitor(&p_request->req.unpack, nm_sr_monitor_unpack_completed);
 }
 
 static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
@@ -267,6 +276,7 @@ static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_
   nm_core_t p_core = p_session->p_core;
   p_request->data = *p_data;
   nm_core_unpack_data(p_core, &p_request->req.unpack, &p_request->data);
+  nm_core_unpack_monitor(&p_request->req.unpack, nm_sr_monitor_unpack_completed);
 }
 
 static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,

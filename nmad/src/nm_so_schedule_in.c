@@ -257,10 +257,11 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
 
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*p_data)
 { 
-  p_unpack->status = NM_STATUS_NONE;
-  p_unpack->p_data = p_data;
+  p_unpack->status        = NM_STATUS_UNPACK_INIT;
+  p_unpack->p_data        = p_data;
   p_unpack->cumulated_len = 0;
-  p_unpack->expected_len = nm_data_size(p_data);
+  p_unpack->expected_len  = nm_data_size(p_data);
+  p_unpack->monitor       = NM_CORE_MONITOR_NULL;
 }
 
 /** Handle an unpack request.
@@ -271,6 +272,7 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
   nmad_lock();
   nm_lock_interface(p_core);
   /* fill-in the unpack request */
+  assert(p_unpack->status == NM_STATUS_UNPACK_INIT);
   p_unpack->status |= NM_STATUS_UNPACK_POSTED;
   p_unpack->p_gate = p_gate;
   p_unpack->tag = tag;
@@ -435,6 +437,7 @@ static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, st
     {
       if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
 	{
+	  assert(p_unpack->status & NM_STATUS_UNPACK_POSTED);
 	  const nm_len_t chunk_len = h->data_len;
 	  const nm_len_t chunk_offset = h->chunk_offset;
 	  nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);

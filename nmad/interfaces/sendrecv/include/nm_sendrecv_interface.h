@@ -430,6 +430,9 @@ extern int nm_sr_probe(nm_session_t p_session,
 /** monitors sendrecv events globally */
 extern int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
 
+/** monitors unexpected messages */
+extern int nm_sr_unexpected(nm_session_t p_session, nm_sr_event_notifier_t notifier);
+
 /** Poll for any completed recv request (any source, any tag).
  * @note call nm_sr_request_set_completion_queue() to generate such an event.
  */

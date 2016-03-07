@@ -43,6 +43,7 @@ struct nm_sr_session_s
 {
   struct nm_sr_request_lfqueue_s completed_rreq; /**< queue of completed recv requests */
   struct nm_sr_request_lfqueue_s completed_sreq; /**< queue of completed send requests */
+  nm_sr_event_notifier_t unexpected;             /**< monitor unexpected messages */
 };
 
 /* ** Status *********************************************** */
@@ -61,12 +62,6 @@ static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_
 	  (*i->notifier)(event, info);
 	  nmad_lock();
 	}
-    }
-  if(p_request && (event & p_request->monitor.mask) && p_request->monitor.notifier)
-    {
-      nmad_unlock();
-      (*p_request->monitor.notifier)(event, info);
-      nmad_lock();
     }
 }
 
@@ -108,6 +103,7 @@ int nm_sr_init(nm_session_t p_session)
   struct nm_sr_session_s*p_sr_session = malloc(sizeof(struct nm_sr_session_s));
   nm_sr_request_lfqueue_init(&p_sr_session->completed_rreq);
   nm_sr_request_lfqueue_init(&p_sr_session->completed_sreq);
+  p_sr_session->unexpected = NULL;
   p_session->ref = p_sr_session;
   
   if(!nm_sr_data.init_done)
@@ -338,6 +334,15 @@ int nm_sr_probe(nm_session_t p_session,
   return err;
 }
 
+int nm_sr_unexpected(nm_session_t p_session, nm_sr_event_notifier_t notifier)
+{
+  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  nmad_lock();
+  p_sr_session->unexpected = notifier;
+  nmad_unlock();
+  return NM_ESUCCESS;
+}
+
 int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
   const struct nm_sr_event_monitor_s m = { .mask = mask, .notifier = notifier };
@@ -484,7 +489,12 @@ static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
       ( (!(status & NM_PACK_SYNCHRONOUS)) || (event->status & NM_STATUS_ACK_RECEIVED)) )
     {
       const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
-      nm_sr_monitor_notify(p_request, NM_SR_STATUS_SEND_COMPLETED, &info);
+      if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
+	{
+	  nmad_unlock();
+	  (*p_request->monitor.notifier)(NM_SR_STATUS_SEND_COMPLETED, &info);
+	  nmad_lock();
+	}
       nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
     }
 }
@@ -503,6 +513,13 @@ static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
       .recv_unexpected.p_session = p_session
     };
   nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, &info);
+  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  if(p_sr_session->unexpected != NULL)
+    {
+      nmad_unlock();
+      (*p_sr_session->unexpected)(NM_SR_EVENT_RECV_UNEXPECTED, &info);
+      nmad_lock();
+    }
 }
 
 /** Check the status for a receive request (gate/is_any_src,tag,seq).
@@ -530,7 +547,12 @@ static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const even
     .recv_completed.p_request = p_request,
     .recv_completed.p_gate = p_unpack->p_gate
   };
-  nm_sr_monitor_notify(p_request, sr_event, &info);
+  if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
+    {
+      nmad_unlock();
+      (*p_request->monitor.notifier)(NM_SR_STATUS_RECV_COMPLETED, &info);
+      nmad_lock();
+    }
   nm_sr_request_signal(p_request, sr_event);
 }
 

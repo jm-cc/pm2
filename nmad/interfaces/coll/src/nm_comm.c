@@ -190,7 +190,7 @@ void nm_comm_destroy(nm_comm_t p_comm)
 {
   if(p_comm != NULL)
     {
-      nm_session_destroy(p_comm->p_session);
+      nm_sr_session_close(p_comm->p_session);
       nm_group_free(p_comm->group);
       free(p_comm);
     }

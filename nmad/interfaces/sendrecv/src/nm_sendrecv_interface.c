@@ -49,7 +49,7 @@ struct nm_sr_session_s
 
 static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_t event, const nm_sr_event_info_t*info)
 {
-
+  nmad_lock_assert();
   nm_sr_event_monitor_vect_itor_t i;
   for(i  = nm_sr_event_monitor_vect_begin(&nm_sr_data.monitors);
       i != nm_sr_event_monitor_vect_end(&nm_sr_data.monitors);
@@ -340,10 +340,8 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
 int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
-  nmad_lock();
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
-  nmad_unlock();
   return NM_ESUCCESS;
 }
 
@@ -353,13 +351,17 @@ static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info
     {
       nm_sr_request_t*p_request = event_info->recv_completed.p_request;
       struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
-      nm_sr_request_lfqueue_enqueue(&p_sr_session->completed_rreq, p_request);
+      int rc = nm_sr_request_lfqueue_enqueue(&p_sr_session->completed_rreq, p_request);
+      if(rc != 0)
+	abort();
     }
   else if(event & NM_SR_STATUS_SEND_COMPLETED)
     {
       nm_sr_request_t*p_request = event_info->send_completed.p_request;
       struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
-      nm_sr_request_lfqueue_enqueue(&p_sr_session->completed_sreq, p_request);
+      int rc = nm_sr_request_lfqueue_enqueue(&p_sr_session->completed_sreq, p_request);
+      if(rc != 0)
+	abort();
     }
 }
 
@@ -453,8 +455,8 @@ static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
   struct nm_pack_s*p_pack = event->p_pack;
   struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req.pack);
   const nm_status_t status = p_pack->status;
-  if( (status & NM_STATUS_PACK_COMPLETED) &&
-      ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_STATUS_ACK_RECEIVED)) )
+  if( (event->status & NM_STATUS_PACK_COMPLETED) &&
+      ( (!(status & NM_PACK_SYNCHRONOUS)) || (event->status & NM_STATUS_ACK_RECEIVED)) )
     {
       const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
       nm_sr_monitor_notify(p_request, NM_SR_STATUS_SEND_COMPLETED, &info);
@@ -467,6 +469,7 @@ static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
   const nm_tag_t sr_tag = nm_tag_get(event->tag);
   const uint32_t hashcode = nm_tag_get_hashcode(event->tag);
   nm_session_t p_session = nm_session_lookup(hashcode);
+  assert(p_session != NULL);
   const nm_sr_event_info_t info =
     { 
       .recv_unexpected.p_gate    = event->p_gate,

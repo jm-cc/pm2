@@ -116,6 +116,7 @@ void nm_coll_gather(nm_comm_t p_comm, int root, const void*sbuf, nm_len_t slen, 
   else
     {
       nm_gate_t p_root_gate = nm_comm_get_gate(p_comm, root);
+      assert(p_root_gate != NULL);
       nm_sr_send(nm_comm_get_session(p_comm), p_root_gate, tag, sbuf, slen);
     }
 }

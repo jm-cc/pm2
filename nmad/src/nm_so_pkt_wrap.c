@@ -414,7 +414,7 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
     {
       proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
     }
-  if(p_pack->status & NM_PACK_SYNCHRONOUS)
+  if(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)
     {
       proto_flags |= NM_PROTO_FLAG_ACKREQ;
     }
@@ -600,9 +600,9 @@ void nm_pw_completions_notify(struct nm_pkt_wrap*p_pw)
 	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_PACK_COMPLETED,
-	      .p_pack = p_pack
+	      .p_req = p_pack
 	    };
-	  nm_core_status_event(p_pw->p_gate->p_core, &event, &p_pack->status);
+	  nm_core_status_event(p_pw->p_gate->p_core, &event, p_pack);
 	}
       else if(p_pack->pack.done > p_pack->pack.len)
 	{ 

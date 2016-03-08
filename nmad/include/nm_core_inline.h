@@ -201,24 +201,12 @@ static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_core_tag_t tag, nm_s
 
 /** Fires an event
  */
-static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const event, nm_status_t*p_status)
+static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const event, struct nm_req_s*p_req)
 {
   /* request monitors */
-  if((p_status != NULL) && ((*p_status) & NM_STATUS_PACK_POSTED))
+  if((p_req != NULL) && (p_req->monitor.mask & event->status))
     {
-      struct nm_req_s*p_pack = tbx_container_of(p_status, struct nm_req_s, status);
-      if(p_pack->monitor.mask & event->status)
-	{
-	  (*p_pack->monitor.notifier)(event);
-	}
-    }
-  else if((p_status != NULL) && ((*p_status) & NM_STATUS_UNPACK_POSTED))
-    {
-      struct nm_req_s*p_unpack = tbx_container_of(p_status, struct nm_req_s, status);
-      if(p_unpack->monitor.mask & event->status)
-	{
-	  (*p_unpack->monitor.notifier)(event);
-	}
+      (*p_req->monitor.notifier)(event);
     }
   /* fire global monitors */
   nm_core_monitor_vect_itor_t i;
@@ -230,8 +218,8 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
 	}
     }
   /* set status *after* events */
-  if(p_status)
-    *p_status |= event->status;
+  if(p_req)
+    p_req->status |= event->status;
 }
 
 

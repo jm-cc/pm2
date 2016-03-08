@@ -44,7 +44,7 @@ static void nm_core_pack_chunk(void*ptr, nm_len_t len, void*_context)
 }
 
 int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
-		      nm_so_flag_t flags)
+		      nm_req_flag_t flags)
 {
   int err = NM_ESUCCESS;
   nmad_lock();
@@ -54,11 +54,12 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
   p_so_tag->send_seq_number = seq;
-  p_pack->status |= flags | NM_STATUS_PACK_POSTED;
+  p_pack->status |= NM_STATUS_PACK_POSTED;
+  p_pack->flags |= flags;
   p_pack->seq    = seq;
   p_pack->tag    = tag;
   p_pack->p_gate = p_gate;
-  if(p_pack->status & NM_PACK_SYNCHRONOUS)
+  if(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)
     {
       tbx_fast_list_add_tail(&p_pack->_link, &p_core->pending_packs);
     }

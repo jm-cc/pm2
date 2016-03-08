@@ -225,7 +225,7 @@ static inline int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_re
 {
   nm_core_t p_core = p_session->p_core;
   const nm_core_tag_t core_tag = nm_tag_build(p_session->hash_code, tag);
-  const int err = nm_core_pack_send(p_core, &p_request->req, core_tag, p_gate, NM_PACK_SYNCHRONOUS);
+  const int err = nm_core_pack_send(p_core, &p_request->req, core_tag, p_gate, NM_FLAG_PACK_SYNCHRONOUS);
   return err;
 }
 static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_request,

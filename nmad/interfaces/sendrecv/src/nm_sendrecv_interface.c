@@ -437,11 +437,10 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
  */
 static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
 {
-  struct nm_req_s*p_pack = event->p_pack;
+  struct nm_req_s*p_pack = event->p_req;
   struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req);
-  const nm_status_t status = p_pack->status;
   if( (event->status & NM_STATUS_PACK_COMPLETED) &&
-      ( (!(status & NM_PACK_SYNCHRONOUS)) || (event->status & NM_STATUS_ACK_RECEIVED)) )
+      ( (!(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)) || (event->status & NM_STATUS_ACK_RECEIVED)) )
     {
       const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
       if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
@@ -485,7 +484,7 @@ static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
  */
 static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const event)
 {
-  struct nm_req_s*p_unpack = event->p_unpack;
+  struct nm_req_s*p_unpack = event->p_req;
   struct nm_sr_request_s*p_request = tbx_container_of(p_unpack, struct nm_sr_request_s, req);
   nm_sr_status_t sr_event;
 

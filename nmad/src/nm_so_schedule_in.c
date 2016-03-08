@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -186,9 +186,9 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
       const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNPACK_COMPLETED,
-	  .p_unpack = p_unpack
+	  .p_req = p_unpack
 	};
-      nm_core_status_event(p_core, &event, &p_unpack->status);
+      nm_core_status_event(p_core, &event, p_unpack);
     }
   else if(p_unpack->unpack.cumulated_len > p_unpack->unpack.expected_len)
     {
@@ -420,9 +420,9 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
       const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNPACK_CANCELLED,
-	  .p_unpack = p_unpack
+	  .p_req = p_unpack
 	};
-      nm_core_status_event(p_core, &event, &p_unpack->status);
+      nm_core_status_event(p_core, &event, p_unpack);
       return NM_ESUCCESS;
     }
   else
@@ -638,9 +638,9 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
 	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_ACK_RECEIVED,
-	      .p_pack = p_pack
+	      .p_req = p_pack
 	    };
-	  nm_core_status_event(p_core, &event, &p_pack->status);
+	  nm_core_status_event(p_core, &event, p_pack);
 	  return;
 	}
     }

@@ -89,7 +89,7 @@ int nm_core_gate_connect(nm_core_t p_core, nm_gate_t gate, nm_drv_t  p_drv, cons
 typedef uint16_t nm_status_t;
 
 /** pack/unpack flags */
-typedef uint16_t nm_so_flag_t;
+typedef uint16_t nm_req_flag_t;
 
 /* ** status and flags, used in pack/unpack requests and events */
 
@@ -115,12 +115,11 @@ typedef uint16_t nm_so_flag_t;
 #define NM_STATUS_ACK_RECEIVED             ((nm_status_t)0x0100)
 
 /** flag pack as synchronous (i.e. request the receiver to send an ack) */
-#define NM_FLAG_PACK_SYNCHRONOUS     ((nm_so_flag_t)0x1000)
-#define NM_FLAG_PACK                 ((nm_so_flag_t)0x2000)
-#define NM_FLAG_UNPACK               ((nm_so_flag_t)0x4000)
-
-/* backward compatibility */
-#define NM_PACK_SYNCHRONOUS NM_FLAG_PACK_SYNCHRONOUS
+#define NM_FLAG_PACK_SYNCHRONOUS     ((nm_req_flag_t)0x1000)
+/** flag request as a pack */
+#define NM_FLAG_PACK                 ((nm_req_flag_t)0x2000)
+/** flag request as an unpack */
+#define NM_FLAG_UNPACK               ((nm_req_flag_t)0x4000)
 
 /** Sequence number */
 typedef uint16_t nm_seq_t;
@@ -184,8 +183,7 @@ struct nm_core_event_s
   nm_core_tag_t tag;
   nm_seq_t seq;
   nm_len_t len;
-  struct nm_req_s*p_unpack;
-  struct nm_req_s*p_pack;
+  struct nm_req_s*p_req;
 };
 
 /** an event notifier, fired upon status transition */
@@ -215,7 +213,7 @@ struct nm_req_s
   struct nm_core_monitor_s monitor;
   struct tbx_fast_list_head _link;
   nm_status_t status;
-  nm_so_flag_t flags;
+  nm_req_flag_t flags;
   nm_seq_t seq;
   union
   {
@@ -245,7 +243,7 @@ static inline void nm_core_pack_monitor(struct nm_req_s*p_pack, struct nm_core_m
 }
 
 /** post a pack request */
-int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
+int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_req_flag_t flags);
 
 /** build an unpack request from data descriptor */
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);

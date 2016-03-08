@@ -26,18 +26,6 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 PUK_LFQUEUE_TYPE(nm_sr_request, struct nm_sr_request_s*, NULL, 1024);
 
-PUK_VECT_TYPE(nm_sr_event_monitor, struct nm_sr_event_monitor_s);
-
-/** Structure that contains all sendrecv-related static variables.
- */
-static struct
-{
-  /** vector of sendrecv event monitors */
-  struct nm_sr_event_monitor_vect_s monitors;
-  /** flags whether sendrecv init has already been done */
-  int init_done;
-} nm_sr_data = { .init_done = 0 };
-
 /** per-session status for sendrecv interface */
 struct nm_sr_session_s
 {
@@ -45,26 +33,6 @@ struct nm_sr_session_s
   struct nm_sr_request_lfqueue_s completed_sreq; /**< queue of completed send requests */
   nm_sr_event_notifier_t unexpected;             /**< monitor unexpected messages */
 };
-
-/* ** Status *********************************************** */
-
-static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_t event, const nm_sr_event_info_t*info)
-{
-  nmad_lock_assert();
-  nm_sr_event_monitor_vect_itor_t i;
-  for(i  = nm_sr_event_monitor_vect_begin(&nm_sr_data.monitors);
-      i != nm_sr_event_monitor_vect_end(&nm_sr_data.monitors);
-      i  = nm_sr_event_monitor_vect_next(i))
-    {
-      if(event & i->mask)
-	{
-	  nmad_unlock();
-	  (*i->notifier)(event, info);
-	  nmad_lock();
-	}
-    }
-}
-
 
 /* ** Events *********************************************** */
 
@@ -105,14 +73,14 @@ int nm_sr_init(nm_session_t p_session)
   nm_sr_request_lfqueue_init(&p_sr_session->completed_sreq);
   p_sr_session->unexpected = NULL;
   p_session->ref = p_sr_session;
-  
-  if(!nm_sr_data.init_done)
+
+  static int init_done = 0;
+  if(!init_done)
     {
       /* Fill-in scheduler callbacks */
       nmad_lock();
-      nm_sr_event_monitor_vect_init(&nm_sr_data.monitors);
       nm_core_monitor_add(p_core, &nm_sr_monitor_unexpected);
-      nm_sr_data.init_done = 1;
+      init_done = 1;
       nmad_unlock();
     }
   return NM_ESUCCESS;
@@ -125,13 +93,6 @@ int nm_sr_exit(nm_session_t p_session)
   assert(p_sr_session != NULL);
   free(p_sr_session);
   p_session->ref = NULL;
-
-  if(nm_sr_data.init_done)
-    {
-      nmad_lock();
-      nm_core_monitor_remove(p_core, &nm_sr_monitor_unexpected);
-      nmad_unlock();
-    }
   return NM_ESUCCESS;
 }
 
@@ -167,7 +128,6 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
-  assert(nm_sr_data.init_done);
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
 
@@ -215,7 +175,6 @@ extern int nm_sr_flush(struct nm_core *p_core)
 int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
 #ifdef DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
@@ -245,7 +204,6 @@ int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request)
 int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request) 
 {
   int rc = NM_ESUCCESS;
-  assert(nm_sr_data.init_done);
 
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
     {
@@ -277,7 +235,6 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
 int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
 #ifdef DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
@@ -358,8 +315,6 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
 	  TBX_FAILURE("nmad: FATAL- cannot set UNEXPECTED monitor: pending unexpected messages.\n");
 	}
     }
-  nm_sr_event_monitor_vect_push_back(&nm_sr_data.monitors, m);
-  usleep(200*1000);
   return NM_ESUCCESS;
 }
 
@@ -512,7 +467,6 @@ static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
       .recv_unexpected.len       = event->len,
       .recv_unexpected.p_session = p_session
     };
-  nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, &info);
   struct nm_sr_session_s*p_sr_session = p_session->ref;
   if(p_sr_session->unexpected != NULL)
     {

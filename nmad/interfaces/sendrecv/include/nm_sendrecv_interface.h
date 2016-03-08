@@ -31,7 +31,7 @@
 
 
 /** a request status or event */
-typedef uint8_t nm_sr_status_t;
+typedef uint16_t nm_sr_status_t;
 
 /** a posted send has completed */
 #define NM_SR_STATUS_SEND_COMPLETED  ((nm_sr_status_t)NM_STATUS_PACK_COMPLETED)

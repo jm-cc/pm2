@@ -206,7 +206,7 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
   /* request monitors */
   if((p_status != NULL) && ((*p_status) & NM_STATUS_PACK_POSTED))
     {
-      struct nm_pack_s*p_pack = tbx_container_of(p_status, struct nm_pack_s, status);
+      struct nm_req_s*p_pack = tbx_container_of(p_status, struct nm_req_s, status);
       if(p_pack->monitor.mask & event->status)
 	{
 	  (*p_pack->monitor.notifier)(event);
@@ -214,7 +214,7 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
     }
   else if((p_status != NULL) && ((*p_status) & NM_STATUS_UNPACK_POSTED))
     {
-      struct nm_unpack_s*p_unpack = tbx_container_of(p_status, struct nm_unpack_s, status);
+      struct nm_req_s*p_unpack = tbx_container_of(p_status, struct nm_req_s, status);
       if(p_unpack->monitor.mask & event->status)
 	{
 	  (*p_unpack->monitor.notifier)(event);

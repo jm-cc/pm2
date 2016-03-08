@@ -42,7 +42,7 @@ static inline void nm_tactic_pack_ctrl(const union nm_header_ctrl_generic_s*p_ct
 
 /** Pack small data into an existing packet wrapper on track #0
  */
-static inline void nm_tactic_pack_small_into_pw(struct nm_pack_s*p_pack, const char*data, nm_len_t len, nm_len_t offset,
+static inline void nm_tactic_pack_small_into_pw(struct nm_req_s*p_pack, const char*data, nm_len_t len, nm_len_t offset,
 						nm_len_t copy_threshold, struct nm_pkt_wrap*p_pw)
 {
   if(len < copy_threshold)
@@ -53,7 +53,7 @@ static inline void nm_tactic_pack_small_into_pw(struct nm_pack_s*p_pack, const c
 
 /** Pack small data into a new packet wrapper on track #0
  */
-static inline void nm_tactic_pack_small_new_pw(struct nm_pack_s*p_pack, const char*data, int len, int offset,
+static inline void nm_tactic_pack_small_new_pw(struct nm_req_s*p_pack, const char*data, int len, int offset,
 					       int copy_threshold, struct tbx_fast_list_head*out_list)
 { 
   struct nm_pkt_wrap *p_pw = NULL;
@@ -65,14 +65,14 @@ static inline void nm_tactic_pack_small_new_pw(struct nm_pack_s*p_pack, const ch
 /** Pack large data into a new packet wrapper stored as pending large,
  * and pack a rdv for this data.
  */
-static inline void nm_tactic_pack_rdv(struct nm_pack_s*p_pack, const char*data, nm_len_t len, nm_len_t offset)
+static inline void nm_tactic_pack_rdv(struct nm_req_s*p_pack, const char*data, nm_len_t len, nm_len_t offset)
 {
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
   nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_NOHEADER);
   tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_header_ctrl_generic_s ctrl;
-  nm_header_init_rdv(&ctrl, p_pack, len, offset, (p_pack->scheduled == p_pack->len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
+  nm_header_init_rdv(&ctrl, p_pack, len, offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_pack->p_gate->strategy_receptacle;
   (*strategy->driver->pack_ctrl)(strategy->_status, p_pack->p_gate, &ctrl);
 }

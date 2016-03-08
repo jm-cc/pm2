@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -397,7 +397,7 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
  *  @return The NM status.
  */
 void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
-			     struct nm_pack_s*p_pack,
+			     struct nm_req_s*p_pack,
 			     const void*ptr, nm_len_t len,
 			     nm_len_t offset,
 			     int flags)
@@ -409,8 +409,8 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
 
   /* add the contrib ref to the pw */
   nm_pw_completion_add(p_pw, p_pack, len);
-  assert(offset + len <= p_pack->len);
-  if(offset + len == p_pack->len)
+  assert(offset + len <= p_pack->pack.len);
+  if(offset + len == p_pack->pack.len)
     {
       proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
     }
@@ -556,7 +556,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 /* ********************************************************* */
 /* ** completions */
 
-void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, nm_len_t len)
+void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_req_s*p_pack, nm_len_t len)
 {
   if((p_pw->n_completions > 0) &&
      (p_pw->completions[p_pw->n_completions - 1].p_pack == p_pack))
@@ -582,7 +582,7 @@ void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, nm_l
        memcpy(&p_pw->completions[p_pw->n_completions], &completion, sizeof(struct nm_pw_completion_s));
        p_pw->n_completions++;
      }
-  p_pack->scheduled += len;
+  p_pack->pack.scheduled += len;
 }
 
 /** fires completion handlers on the given pw */
@@ -592,11 +592,11 @@ void nm_pw_completions_notify(struct nm_pkt_wrap*p_pw)
   for(i = 0; i < p_pw->n_completions; i++)
     {
       const struct nm_pw_completion_s*p_completion = &p_pw->completions[i];
-      struct nm_pack_s*p_pack = p_completion->p_pack;
-      p_pack->done += p_completion->len;
-      if(p_pack->done == p_pack->len)
+      struct nm_req_s*p_pack = p_completion->p_pack;
+      p_pack->pack.done += p_completion->len;
+      if(p_pack->pack.done == p_pack->pack.len)
 	{
-	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->len);
+	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->pack.len);
 	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_PACK_COMPLETED,
@@ -604,10 +604,10 @@ void nm_pw_completions_notify(struct nm_pkt_wrap*p_pw)
 	    };
 	  nm_core_status_event(p_pw->p_gate->p_core, &event, &p_pack->status);
 	}
-      else if(p_pack->done > p_pack->len)
+      else if(p_pack->pack.done > p_pack->pack.len)
 	{ 
 	  TBX_FAILUREF("more bytes sent than posted (should have been = %lu; actually sent = %lu)\n",
-		       p_pack->len, p_pack->done);
+		       p_pack->pack.len, p_pack->pack.done);
 	}
       
     }

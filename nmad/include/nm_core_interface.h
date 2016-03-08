@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,9 +88,8 @@ int nm_core_gate_connect(nm_core_t p_core, nm_gate_t gate, nm_drv_t  p_drv, cons
 /** status of a pack/unpack request */
 typedef uint16_t nm_status_t;
 
-/** pack/unpack flags
- * @note for now, flags are included in status */
-typedef nm_status_t nm_so_flag_t;
+/** pack/unpack flags */
+typedef uint16_t nm_so_flag_t;
 
 /* ** status and flags, used in pack/unpack requests and events */
 
@@ -116,7 +115,12 @@ typedef nm_status_t nm_so_flag_t;
 #define NM_STATUS_ACK_RECEIVED             ((nm_status_t)0x0100)
 
 /** flag pack as synchronous (i.e. request the receiver to send an ack) */
-#define NM_PACK_SYNCHRONOUS     ((nm_so_flag_t)0x1000)
+#define NM_FLAG_PACK_SYNCHRONOUS     ((nm_so_flag_t)0x1000)
+#define NM_FLAG_PACK                 ((nm_so_flag_t)0x2000)
+#define NM_FLAG_UNPACK               ((nm_so_flag_t)0x4000)
+
+/* backward compatibility */
+#define NM_PACK_SYNCHRONOUS NM_FLAG_PACK_SYNCHRONOUS
 
 /** Sequence number */
 typedef uint16_t nm_seq_t;
@@ -180,8 +184,8 @@ struct nm_core_event_s
   nm_core_tag_t tag;
   nm_seq_t seq;
   nm_len_t len;
-  struct nm_unpack_s*p_unpack;
-  struct nm_pack_s*p_pack;
+  struct nm_req_s*p_unpack;
+  struct nm_req_s*p_pack;
 };
 
 /** an event notifier, fired upon status transition */
@@ -202,40 +206,38 @@ void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m);
 
 /* ** Packs/unpacks **************************************** */
 
-/** An unpack request */
-struct nm_unpack_s
+/** a generic pack/unpack request */
+struct nm_req_s
 {
-  struct tbx_fast_list_head _link;
-  nm_status_t status;
   const struct nm_data_s*p_data;
   nm_gate_t p_gate;
   nm_core_tag_t tag;
-  nm_seq_t seq;
   struct nm_core_monitor_s monitor;
-  nm_len_t expected_len;
-  nm_len_t cumulated_len;
-  nm_core_tag_t tag_mask;
-};
-
-/** A pack request */
-struct nm_pack_s
-{
   struct tbx_fast_list_head _link;
   nm_status_t status;
-  const struct nm_data_s*p_data;
-  nm_gate_t p_gate;
-  nm_core_tag_t tag;
+  nm_so_flag_t flags;
   nm_seq_t seq;
-  struct nm_core_monitor_s monitor;
-  nm_len_t len;       /**< cumulated data length */
-  nm_len_t scheduled; /**< cumulated length of data scheduled for sending */
-  nm_len_t done;      /**< cumulated length of data sent so far */
+  union
+  {
+    struct
+    {
+      nm_len_t len;       /**< cumulated data length */
+      nm_len_t scheduled; /**< cumulated length of data scheduled for sending */
+      nm_len_t done;      /**< cumulated length of data sent so far */
+    } pack;
+    struct
+    {
+      nm_len_t expected_len;
+      nm_len_t cumulated_len;
+      nm_core_tag_t tag_mask;
+    } unpack;
+  };
 };
 
 /** build a pack request from data descriptor */
-void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*p_data);
+void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data);
 
-static inline void nm_core_pack_monitor(struct nm_pack_s*p_pack, struct nm_core_monitor_s monitor)
+static inline void nm_core_pack_monitor(struct nm_req_s*p_pack, struct nm_core_monitor_s monitor)
 {
   assert(p_pack->monitor.notifier == NULL);
   assert(p_pack->status == NM_STATUS_PACK_INIT);
@@ -243,12 +245,12 @@ static inline void nm_core_pack_monitor(struct nm_pack_s*p_pack, struct nm_core_
 }
 
 /** post a pack request */
-int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
+int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
 
 /** build an unpack request from data descriptor */
-void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct nm_data_s*p_data);
+void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);
 
-static inline void nm_core_unpack_monitor(struct nm_unpack_s*p_unpack, struct nm_core_monitor_s monitor)
+static inline void nm_core_unpack_monitor(struct nm_req_s*p_unpack, struct nm_core_monitor_s monitor)
 {
   assert(p_unpack->monitor.notifier == NULL);
   assert(p_unpack->status == NM_STATUS_UNPACK_INIT);
@@ -256,12 +258,12 @@ static inline void nm_core_unpack_monitor(struct nm_unpack_s*p_unpack, struct nm
 }
 
 /** post an unpack request */
-int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
+int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
 
 /** cancel a pending unpack
  * @note cancel may fail if matching was already done.
  */
-int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
+int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack);
 
 /** probe unexpected packet, check matching for (packet_tag & tag_mask) == tag */
 int nm_core_iprobe(struct nm_core*p_core,

@@ -197,7 +197,7 @@ static inline void nm_header_init_short_data(nm_header_short_data_t*p_header, nm
   p_header->len      = len;
 }
 
-static inline void nm_header_init_rdv(union nm_header_ctrl_generic_s*p_ctrl, struct nm_pack_s*p_pack,
+static inline void nm_header_init_rdv(union nm_header_ctrl_generic_s*p_ctrl, struct nm_req_s*p_pack,
 				      nm_len_t len, nm_len_t chunk_offset, uint8_t rdv_flags)
 {
   if(p_pack->status & NM_PACK_SYNCHRONOUS)

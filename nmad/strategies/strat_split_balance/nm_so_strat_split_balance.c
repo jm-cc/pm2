@@ -29,7 +29,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_split_balance, &nm_strat_split_balance_loa
  */
 
 static int  strat_split_balance_todo(void*, struct nm_gate*);
-static void strat_split_balance_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
+static void strat_split_balance_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
 static int  strat_split_balance_try_and_commit(void*, struct nm_gate*);
 static void strat_split_balance_rdv_accept(void*, struct nm_gate*);
@@ -143,7 +143,7 @@ strat_split_balance_pack_ctrl(void *_status,
 
 
 static void
-strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
+strat_split_balance_launch_large_chunk(void *_status, struct nm_req_s*p_pack,
 				       const void *data, nm_len_t len, nm_len_t chunk_offset, uint8_t is_last_chunk)
 {
   int flags = NM_PW_NOHEADER;
@@ -158,7 +158,7 @@ strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
 }
 
 static void 
-strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack,
+strat_split_balance_try_to_agregate_small(void *_status, struct nm_req_s*p_pack,
 					  const void *data, nm_len_t len, nm_len_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_strat_split_balance*status = _status;
@@ -168,7 +168,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
   /* We aggregate ONLY if data are very small OR if there are
      already two ready packets */
 
-  if(p_pack->len <= 512 || status->nb_packets >= 2)
+  if(p_pack->pack.len <= 512 || status->nb_packets >= 2)
     {
       /* We first try to find an existing packet to form an aggregate */
       tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
@@ -206,10 +206,10 @@ static int strat_split_balance_todo(void*_status,
 }
 
 /** push message chunk */
-static void strat_split_balance_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
+static void strat_split_balance_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
   struct nm_strat_split_balance*status = _status;
-  tbx_bool_t is_last_chunk = (chunk_offset + len >= p_pack->len);
+  tbx_bool_t is_last_chunk = (chunk_offset + len >= p_pack->pack.len);
   if(len <= status->nm_max_small)
     {
       /* Small packet */

@@ -23,26 +23,27 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
-void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack, const struct nm_data_s*p_data)
+void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data)
 {
   p_pack->status    = NM_STATUS_PACK_INIT;
+  p_pack->flags     = NM_FLAG_PACK;
   p_pack->p_data    = p_data;
-  p_pack->len       = nm_data_size(p_data);
-  p_pack->done      = 0;
-  p_pack->scheduled = 0;
+  p_pack->pack.len  = nm_data_size(p_data);
+  p_pack->pack.done = 0;
+  p_pack->pack.scheduled = 0;
   p_pack->monitor   = NM_CORE_MONITOR_NULL;
 }
 
 /** data iterator to call strategy pack on every chunk of data */
 static void nm_core_pack_chunk(void*ptr, nm_len_t len, void*_context)
 {
-  struct nm_pack_s*p_pack = _context;
+  struct nm_req_s*p_pack = _context;
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
   assert(r->driver->pack_chunk != NULL);
-  (*r->driver->pack_chunk)(r->_status, p_pack, ptr, len, p_pack->scheduled);
+  (*r->driver->pack_chunk)(r->_status, p_pack, ptr, len, p_pack->pack.scheduled);
 }
 
-int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
+int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
 		      nm_so_flag_t flags)
 {
   int err = NM_ESUCCESS;

@@ -26,7 +26,7 @@
  */
 
 static int  strat_immediate_todo(void*, struct nm_gate*);
-static void strat_immediate_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
+static void strat_immediate_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_immediate_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
 static int  strat_immediate_try_and_commit(void*, struct nm_gate*);
 static void strat_immediate_rdv_accept(void*, struct nm_gate*);
@@ -116,7 +116,7 @@ static int strat_immediate_todo(void* _status, struct nm_gate*p_gate)
 }
 
 /** push a message chunk */
-static void strat_immediate_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
+static void strat_immediate_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
   struct nm_strat_immediate*status = _status;
   if(len < status->max_small)

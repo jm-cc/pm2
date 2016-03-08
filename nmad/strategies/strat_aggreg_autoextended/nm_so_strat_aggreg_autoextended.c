@@ -30,7 +30,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg_autoextended, &nm_strat_aggreg_auto
 */
 
 static int  strat_aggreg_autoextended_todo(void*, struct nm_gate*);
-static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
+static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_aggreg_autoextended_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
 static int  strat_aggreg_autoextended_try_and_commit(void*, struct nm_gate*);
 static void strat_aggreg_autoextended_rdv_accept(void*, struct nm_gate*);
@@ -185,7 +185,7 @@ static int strat_aggreg_autoextended_todo(void*_status,
 }
 
 /** push message chunk */
-static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_pack_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
+static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
   struct nm_so_strat_aggreg_autoextended_gate*status = _status;
   struct nm_pkt_wrap *p_pw = NULL;

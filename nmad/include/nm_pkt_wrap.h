@@ -64,7 +64,7 @@ typedef uint32_t nm_pw_flag_t;
 /** notification of pw send completion */
 struct nm_pw_completion_s
 {
-  struct nm_pack_s*p_pack; /**< pack the pw contributes to */
+  struct nm_req_s*p_pack; /**< pack the pw contributes to */
   nm_len_t len; /**< length of the pack enclosed in the pw (a pw may contain a partial chunk of a pack) */
 };
 
@@ -114,7 +114,7 @@ struct nm_pkt_wrap
 
   /* ** fields used when receiving */
 
-  struct nm_unpack_s*p_unpack;            /**< user-level unpack request (large message only) */
+  struct nm_req_s*p_unpack;               /**< user-level unpack request (large message only) */
   nm_len_t chunk_offset;                  /**< offset of this chunk in the message (for large message) */
 
   /* ** obsolete */
@@ -143,7 +143,7 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
 			struct nm_pkt_wrap *pp_pw2,
 			nm_len_t offset);
 
-void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
+void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw, struct nm_req_s*p_pack,
 			     const void *data, nm_len_t len, nm_len_t offset, int flags);
 
 void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
@@ -166,7 +166,7 @@ int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_header_ctrl_gen
 
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 
-void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, nm_len_t len);
+void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_req_s*p_pack, nm_len_t len);
 
 void nm_pw_completions_notify(struct nm_pkt_wrap*p_pw);
 

@@ -101,18 +101,18 @@ static inline void nm_sr_request_completion_wait(nm_sr_request_t*p_request)
 #warning TODO- temporary fix for race condition in status notification
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
     {
-      if(!(p_request->req.unpack.status & NM_STATUS_UNPACK_COMPLETED))
+      if(!(p_request->req.status & NM_STATUS_UNPACK_COMPLETED))
 	{
-	  volatile nm_status_t*p_status = &p_request->req.unpack.status;
+	  volatile nm_status_t*p_status = &p_request->req.status;
 	  while(!((*p_status) &  NM_STATUS_UNPACK_COMPLETED))
 	    { }
 	}
     }
   else if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
     {
-      if(!(p_request->req.pack.status & NM_STATUS_PACK_COMPLETED))
+      if(!(p_request->req.status & NM_STATUS_PACK_COMPLETED))
 	{
-	  volatile nm_status_t*p_status = &p_request->req.pack.status;
+	  volatile nm_status_t*p_status = &p_request->req.status;
 	  while(!((*p_status) &  NM_STATUS_PACK_COMPLETED))
 	    { }
 	}
@@ -255,7 +255,7 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
 int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
 {
   if(pp_gate)
-    *pp_gate = p_request->req.unpack.p_gate;
+    *pp_gate = p_request->req.p_gate;
   return NM_ESUCCESS;
 }
 
@@ -420,7 +420,7 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
     }
   else
     {
-      err = nm_core_unpack_cancel(p_core, &p_request->req.unpack);
+      err = nm_core_unpack_cancel(p_core, &p_request->req);
     }
   nm_unlock_status(p_core);
   nm_unlock_interface(p_core);
@@ -437,8 +437,8 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
  */
 static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
 {
-  struct nm_pack_s*p_pack = event->p_pack;
-  struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req.pack);
+  struct nm_req_s*p_pack = event->p_pack;
+  struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req);
   const nm_status_t status = p_pack->status;
   if( (event->status & NM_STATUS_PACK_COMPLETED) &&
       ( (!(status & NM_PACK_SYNCHRONOUS)) || (event->status & NM_STATUS_ACK_RECEIVED)) )
@@ -485,8 +485,8 @@ static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
  */
 static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const event)
 {
-  struct nm_unpack_s*p_unpack = event->p_unpack;
-  struct nm_sr_request_s*p_request = tbx_container_of(p_unpack, struct nm_sr_request_s, req.unpack);
+  struct nm_req_s*p_unpack = event->p_unpack;
+  struct nm_sr_request_s*p_request = tbx_container_of(p_unpack, struct nm_sr_request_s, req);
   nm_sr_status_t sr_event;
 
   if(event->status & NM_STATUS_UNPACK_CANCELLED)

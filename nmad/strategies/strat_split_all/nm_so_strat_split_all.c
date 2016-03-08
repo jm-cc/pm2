@@ -52,7 +52,7 @@ static p_tbx_memory_t nm_ssa_pw_mem = NULL;
  */
 
 static int strat_split_all_todo(void*, struct nm_gate*);
-static int strat_split_all_pack(void*_status, struct nm_pack_s*p_pack);
+static int strat_split_all_pack(void*_status, struct nm_req_s*p_pack);
 static int strat_split_all_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
 static int strat_split_all_pack_ctrl_chunk(void*, struct nm_pkt_wrap *, const union nm_header_ctrl_generic_s *);
 static int strat_split_all_pack_extended_ctrl(void*, struct nm_gate *, nm_len_t, const union nm_header_ctrl_generic_s *, struct nm_pkt_wrap **);
@@ -268,7 +268,7 @@ static int strat_split_all_todo(void*_status,
 /* Handle the arrival of a new packet. The strategy may already apply
    some optimizations at this point */
 static int
-strat_split_all_pack(void *_status, struct nm_pack_s*p_pack)
+strat_split_all_pack(void *_status, struct nm_req_s*p_pack)
 {
 #warning FIXME: strat_split_all->pack is not implemented !
  #if 0

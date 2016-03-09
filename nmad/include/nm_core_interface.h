@@ -24,6 +24,10 @@
 #include <Padico/Puk.h>
 #include <tbx_fast_list.h>
 
+#ifdef PIOMAN
+#include <pioman.h>
+#endif
+
 #include <sys/uio.h>
 
 /** @defgroup core_interface nmad core interface
@@ -83,7 +87,19 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t *pp_gate);
 int nm_core_gate_connect(nm_core_t p_core, nm_gate_t gate, nm_drv_t  p_drv, const char *url);
 
 
-/* ** status *********************************************** */
+/* ** Progression ****************************************** */
+
+int nm_schedule(nm_core_t p_core);
+
+#if(!defined(PIOMAN))
+/* use nmad progression */
+#define NMAD_POLL 1
+#else
+/* use pioman as a progression engine */
+#define PIOMAN_POLL 1
+#endif
+
+/* ** Status *********************************************** */
 
 /** status of a pack/unpack request */
 typedef uint16_t nm_status_t;
@@ -113,6 +129,8 @@ typedef uint16_t nm_req_flag_t;
 #define NM_STATUS_UNPACK_POSTED            ((nm_status_t)0x0080)
 /** ack received for the given pack */
 #define NM_STATUS_ACK_RECEIVED             ((nm_status_t)0x0100)
+/** request is finalized, may be freed */
+#define NM_STATUS_FINALIZED                ((nm_status_t)0x0400)
 
 /** flag pack as synchronous (i.e. request the receiver to send an ack) */
 #define NM_FLAG_PACK_SYNCHRONOUS     ((nm_req_flag_t)0x1000)
@@ -235,12 +253,7 @@ struct nm_req_s
 /** build a pack request from data descriptor */
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data);
 
-static inline void nm_core_pack_monitor(struct nm_req_s*p_pack, struct nm_core_monitor_s monitor)
-{
-  assert(p_pack->monitor.notifier == NULL);
-  assert(p_pack->status == NM_STATUS_PACK_INIT);
-  p_pack->monitor = monitor;
-}
+static inline void nm_core_pack_monitor(struct nm_req_s*p_pack, struct nm_core_monitor_s monitor);
 
 /** post a pack request */
 int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_req_flag_t flags);
@@ -248,12 +261,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
 /** build an unpack request from data descriptor */
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);
 
-static inline void nm_core_unpack_monitor(struct nm_req_s*p_unpack, struct nm_core_monitor_s monitor)
-{
-  assert(p_unpack->monitor.notifier == NULL);
-  assert(p_unpack->status == NM_STATUS_UNPACK_INIT);
-  p_unpack->monitor = monitor;
-}
+static inline void nm_core_unpack_monitor(struct nm_req_s*p_unpack, struct nm_core_monitor_s monitor);
 
 /** post an unpack request */
 int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
@@ -271,18 +279,63 @@ int nm_core_iprobe(struct nm_core*p_core,
 /** Flush the given gate. */
 int nm_core_flush(nm_gate_t p_gate);
 
+/* ** Status transition ************************************ */
 
-/* ** Progression ****************************************** */
+#if 0 && defined(PIOMAN_POLL)
+#warning PIOMAN_POLL
+#define nm_status_init(STATUS, BITMASK)       piom_cond_init((STATUS),   (BITMASK))
+#define nm_status_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
+#define nm_status_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
+#define nm_status_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
+static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t mask)
+{
+  piom_cond_signal(&p_req->status, mask);
+}
+#else /* PIOMAN_POLL */
+static inline void nm_status_assert(const struct nm_req_s*p_req, nm_status_t value)
+{
+  assert(p_req->status == value);
+}
+static inline void nm_status_init(struct nm_req_s*p_req, nm_status_t bitmask)
+{
+  p_req->status = bitmask;
+}
+static inline int  nm_status_test(const struct nm_req_s*p_req, nm_status_t bitmask)
+{
+  return (p_req->status & bitmask);
+}
+static inline void nm_status_add(struct nm_req_s*p_req, nm_status_t bitmask)
+{
+  p_req->status |= bitmask;
+}
+static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t mask)
+{
+  p_req->status |= mask;
+}
+static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm_core_t p_core)
+{
+  while(!nm_status_test(p_req, bitmask))
+    {
+      nm_schedule(p_core);
+    }
+}
+#endif /* PIOMAN_POLL */
 
-int nm_schedule(nm_core_t p_core);
+static inline void nm_core_pack_monitor(struct nm_req_s*p_pack, struct nm_core_monitor_s monitor)
+{
+  assert(p_pack->monitor.notifier == NULL);
+  nm_status_assert(p_pack, NM_STATUS_PACK_INIT);
+  p_pack->monitor = monitor;
+}
 
-#if(!defined(PIOMAN))
-/* use nmad progression */
-#define NMAD_POLL 1
-#else
-/* use pioman as a progression engine */
-#define PIOMAN_POLL 1
-#endif
+static inline void nm_core_unpack_monitor(struct nm_req_s*p_unpack, struct nm_core_monitor_s monitor)
+{
+  assert(p_unpack->monitor.notifier == NULL);
+  nm_status_assert(p_unpack, NM_STATUS_UNPACK_INIT);
+  p_unpack->monitor = monitor;
+}
+
+
 
 /* @} */
 

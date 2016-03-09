@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data)
 {
-  p_pack->status    = NM_STATUS_PACK_INIT;
+  nm_status_init(p_pack, NM_STATUS_PACK_INIT);
   p_pack->flags     = NM_FLAG_PACK;
   p_pack->p_data    = p_data;
   p_pack->pack.len  = nm_data_size(p_data);
@@ -50,11 +50,11 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   nmad_lock();
   nm_lock_interface(p_core);
   assert(p_gate != NULL);
-  assert(p_pack->status == NM_STATUS_PACK_INIT);
+  nm_status_assert(p_pack, NM_STATUS_PACK_INIT);
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
   p_so_tag->send_seq_number = seq;
-  p_pack->status |= NM_STATUS_PACK_POSTED;
+  nm_status_add(p_pack, NM_STATUS_PACK_POSTED);
   p_pack->flags |= flags;
   p_pack->seq    = seq;
   p_pack->tag    = tag;

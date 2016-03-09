@@ -257,7 +257,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
 
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data)
 { 
-  p_unpack->status        = NM_STATUS_UNPACK_INIT;
+  nm_status_init(p_unpack, NM_STATUS_UNPACK_INIT);
   p_unpack->flags         = NM_FLAG_UNPACK;
   p_unpack->p_data        = p_data;
   p_unpack->unpack.cumulated_len = 0;
@@ -273,8 +273,8 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct 
   nmad_lock();
   nm_lock_interface(p_core);
   /* fill-in the unpack request */
-  assert(p_unpack->status == NM_STATUS_UNPACK_INIT);
-  p_unpack->status |= NM_STATUS_UNPACK_POSTED;
+  nm_status_assert(p_unpack, NM_STATUS_UNPACK_INIT);
+  nm_status_add(p_unpack, NM_STATUS_UNPACK_POSTED);
   p_unpack->p_gate = p_gate;
   p_unpack->tag = tag;
   p_unpack->unpack.tag_mask = tag_mask;
@@ -409,7 +409,7 @@ int nm_core_iprobe(struct nm_core*p_core,
 
 int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
-  if(p_unpack->status & (NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNEXPECTED))
+  if(nm_status_test(p_unpack, (NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNEXPECTED)))
     {
       /* receive is already in progress- too late to cancel */
       return -NM_EINPROGRESS;
@@ -436,9 +436,9 @@ static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, st
 {
   if(p_unpack)
     {
-      if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
+      if(!(nm_status_test(p_unpack, NM_STATUS_UNPACK_CANCELLED)))
 	{
-	  assert(p_unpack->status & NM_STATUS_UNPACK_POSTED);
+	  assert(nm_status_test(p_unpack, NM_STATUS_UNPACK_POSTED));
 	  const nm_len_t chunk_len = h->data_len;
 	  const nm_len_t chunk_offset = h->chunk_offset;
 	  nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
@@ -465,7 +465,7 @@ static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
   const nm_len_t chunk_offset = 0;
   if(p_unpack)
     {
-      if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
+      if(!nm_status_test(p_unpack, NM_STATUS_UNPACK_CANCELLED))
 	{
 	  const uint8_t flags = NM_PROTO_FLAG_LASTCHUNK;
 	  nm_so_data_flags_decode(p_unpack, flags, chunk_offset, len);
@@ -490,7 +490,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
   const nm_len_t chunk_offset = h->chunk_offset;
   if(p_unpack)
     {
-      if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
+      if(!nm_status_test(p_unpack, NM_STATUS_UNPACK_CANCELLED))
 	{
 	  nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
 	  assert(chunk_offset + chunk_len <= p_unpack->unpack.expected_len);

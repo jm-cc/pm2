@@ -219,7 +219,7 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
     }
   /* set status *after* events */
   if(p_req)
-    p_req->status |= event->status;
+    nm_status_signal(p_req, event->status);
 }
 
 

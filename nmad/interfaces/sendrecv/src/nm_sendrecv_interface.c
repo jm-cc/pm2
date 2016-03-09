@@ -458,20 +458,23 @@ static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
   const nm_tag_t sr_tag = nm_tag_get(event->tag);
   const uint32_t hashcode = nm_tag_get_hashcode(event->tag);
   nm_session_t p_session = nm_session_lookup(hashcode);
-  assert(p_session != NULL);
-  const nm_sr_event_info_t info =
-    { 
-      .recv_unexpected.p_gate    = event->p_gate,
-      .recv_unexpected.tag       = sr_tag,
-      .recv_unexpected.len       = event->len,
-      .recv_unexpected.p_session = p_session
-    };
-  struct nm_sr_session_s*p_sr_session = p_session->ref;
-  if(p_sr_session->unexpected != NULL)
+  if(p_session != NULL)
     {
-      nmad_unlock();
-      (*p_sr_session->unexpected)(NM_SR_EVENT_RECV_UNEXPECTED, &info);
-      nmad_lock();
+      assert(p_session != NULL);
+      const nm_sr_event_info_t info =
+	{ 
+	  .recv_unexpected.p_gate    = event->p_gate,
+	  .recv_unexpected.tag       = sr_tag,
+	  .recv_unexpected.len       = event->len,
+	  .recv_unexpected.p_session = p_session
+	};
+      struct nm_sr_session_s*p_sr_session = p_session->ref;
+      if(p_sr_session && p_sr_session->unexpected != NULL)
+	{
+	  nmad_unlock();
+	  (*p_sr_session->unexpected)(NM_SR_EVENT_RECV_UNEXPECTED, &info);
+	  nmad_lock();
+	}
     }
 }
 

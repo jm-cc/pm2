@@ -676,7 +676,7 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t
 	      for(j = 0; j < p_datatype->count; j++)
 		{
 		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->size,
+		    { .ptr        = ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->extent,
 		      .p_datatype = p_datatype->VECTOR.p_old_type,
 		      .count      = p_datatype->VECTOR.blocklength };
 		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);

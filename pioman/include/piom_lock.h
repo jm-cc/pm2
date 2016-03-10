@@ -37,7 +37,7 @@
 
 /* ** cond ************************************************* */
 
-typedef uint8_t piom_cond_value_t;
+typedef uint16_t piom_cond_value_t;
 
 #if defined(PIOMAN_MULTITHREAD)
 typedef struct
@@ -77,12 +77,18 @@ static inline int piom_mask_acquire(piom_mask_t*mask)
   return 0;
 }
 
+/** add a bit to the value, without signaling */
+static inline void piom_cond_add(piom_cond_t *cond, piom_cond_value_t mask)
+{
+  __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
+}
+/** add a bit and signal */
 static inline void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
 {
   __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
   piom_sem_V(&cond->sem);
 }
-
+/** tests whether a bit is set */
 static inline int piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask)
 {
   return cond->value & mask;
@@ -133,6 +139,10 @@ static inline void piom_cond_wait(piom_cond_t*cond, piom_cond_value_t mask)
 {
   while(!(*cond & mask))
     piom_ltask_schedule(PIOM_POLL_POINT_BUSY);		
+}
+static inline void piom_cond_add(piom_cond_t*cond, piom_cond_value_t mask)
+{
+  *cond |= mask;
 }
 static inline void piom_cond_signal(piom_cond_t*cond, piom_cond_value_t mask)
 {

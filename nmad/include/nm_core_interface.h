@@ -297,7 +297,7 @@ static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t mask)
 }
 static inline void nm_status_assert(const struct nm_req_s*p_req, nm_status_t value)
 {
-  assert(p_req->status->value == value);
+  assert(p_req->status.value == value);
 }
 #else /* PIOMAN_POLL */
 static inline void nm_status_assert(const struct nm_req_s*p_req, nm_status_t value)
@@ -331,7 +331,7 @@ static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm
 
 static inline void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor)
 {
-  assert(p_pack->monitor.notifier == NULL);
+  assert(p_req->monitor.notifier == NULL);
   assert((!nm_status_test(p_req, NM_STATUS_PACK_POSTED)) && (!nm_status_test(p_req, NM_STATUS_UNPACK_POSTED)));
   p_req->monitor = monitor;
 }

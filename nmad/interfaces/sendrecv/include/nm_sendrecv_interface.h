@@ -30,33 +30,30 @@
 #include <sys/uio.h>
 
 
-/** a request status or event */
-typedef uint16_t nm_sr_status_t;
-
 /** a posted send has completed */
-#define NM_SR_STATUS_SEND_COMPLETED  ((nm_sr_status_t)NM_STATUS_PACK_COMPLETED)
+#define NM_SR_STATUS_SEND_COMPLETED  (NM_STATUS_PACK_COMPLETED)
 /** a posted recv has completed */
-#define NM_SR_STATUS_RECV_COMPLETED  ((nm_sr_status_t)NM_STATUS_UNPACK_COMPLETED)
+#define NM_SR_STATUS_RECV_COMPLETED  (NM_STATUS_UNPACK_COMPLETED)
 /** recv operation was canceled */
-#define NM_SR_STATUS_RECV_CANCELLED  ((nm_sr_status_t)NM_STATUS_UNPACK_CANCELLED)
+#define NM_SR_STATUS_RECV_CANCELLED  (NM_STATUS_UNPACK_CANCELLED)
 /** a send is posted */
-#define NM_SR_STATUS_SEND_POSTED     ((nm_sr_status_t)NM_STATUS_PACK_POSTED)
+#define NM_SR_STATUS_SEND_POSTED     (NM_STATUS_PACK_POSTED)
 /** a recv is posted */
-#define NM_SR_STATUS_RECV_POSTED     ((nm_sr_status_t)NM_STATUS_UNPACK_POSTED)
+#define NM_SR_STATUS_RECV_POSTED     (NM_STATUS_UNPACK_POSTED)
 
 /** events for nm_sr_monitor() */
 typedef enum
   {
     /** an unexpected packet has arrived. Post a recv to get data
      */
-    NM_SR_EVENT_RECV_UNEXPECTED = ((nm_sr_status_t)NM_STATUS_UNEXPECTED),
+    NM_SR_EVENT_RECV_UNEXPECTED = NM_STATUS_UNEXPECTED,
     NM_SR_EVENT_RECV_COMPLETED  = NM_SR_STATUS_RECV_COMPLETED,
     NM_SR_EVENT_SEND_COMPLETED  = NM_SR_STATUS_SEND_COMPLETED,
     NM_SR_EVENT_RECV_CANCELLED  = NM_SR_STATUS_RECV_CANCELLED
   } nm_sr_event_t;
 
 
-/** a sendrecv request object. Supposedly opaque for applications.*/
+/** a sendrecv request object. Supposedly opaque for applications. */
 typedef struct nm_sr_request_s nm_sr_request_t;
 
 /** information field for sendrecv events */

@@ -223,6 +223,8 @@ struct nm_core_monitor_s
 void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m);
 /** Unregister an event monitor. */
 void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m);
+/** rgister an event monitor for the given request */
+static inline void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor);
 
 #define NM_CORE_MONITOR_NULL ((struct nm_core_monitor_s){ . notifier = NULL, .mask = 0})
 
@@ -259,15 +261,11 @@ struct nm_req_s
 /** build a pack request from data descriptor */
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data);
 
-static inline void nm_core_pack_monitor(struct nm_req_s*p_pack, struct nm_core_monitor_s monitor);
-
 /** post a pack request */
 int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_req_flag_t flags);
 
 /** build an unpack request from data descriptor */
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);
-
-static inline void nm_core_unpack_monitor(struct nm_req_s*p_unpack, struct nm_core_monitor_s monitor);
 
 /** post an unpack request */
 int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
@@ -331,19 +329,13 @@ static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm
 }
 #endif /* PIOMAN_POLL */
 
-static inline void nm_core_pack_monitor(struct nm_req_s*p_pack, struct nm_core_monitor_s monitor)
+static inline void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor)
 {
   assert(p_pack->monitor.notifier == NULL);
-  nm_status_assert(p_pack, NM_STATUS_PACK_INIT);
-  p_pack->monitor = monitor;
+  assert((!nm_status_test(p_req, NM_STATUS_PACK_POSTED)) && (!nm_status_test(p_req, NM_STATUS_UNPACK_POSTED)));
+  p_req->monitor = monitor;
 }
 
-static inline void nm_core_unpack_monitor(struct nm_req_s*p_unpack, struct nm_core_monitor_s monitor)
-{
-  assert(p_unpack->monitor.notifier == NULL);
-  nm_status_assert(p_unpack, NM_STATUS_UNPACK_INIT);
-  p_unpack->monitor = monitor;
-}
 
 
 

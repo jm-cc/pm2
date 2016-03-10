@@ -36,20 +36,13 @@ struct nm_sr_session_s
 
 /* ** Events *********************************************** */
 
-static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event);
-static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const event);
+static void nm_sr_event_req_completed(const struct nm_core_event_s*const event);
 static void nm_sr_event_unexpected(const struct nm_core_event_s*const event);
 
-const struct nm_core_monitor_s nm_sr_monitor_pack_completed = 
+static const struct nm_core_monitor_s nm_sr_monitor_req_completed = 
   {
-    .notifier = &nm_sr_event_pack_completed,
-    .mask = NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED
-  };
-
-const struct nm_core_monitor_s nm_sr_monitor_unpack_completed = 
-  {
-    .notifier = &nm_sr_event_unpack_completed,
-    .mask = NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED
+    .notifier = &nm_sr_event_req_completed,
+    .mask = NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED
   };
 
 static const struct nm_core_monitor_s nm_sr_monitor_unexpected = 
@@ -96,27 +89,6 @@ int nm_sr_exit(nm_session_t p_session)
   return NM_ESUCCESS;
 }
 
-static inline void nm_sr_request_completion_wait(nm_sr_request_t*p_request)
-{
-#warning TODO- temporary fix for race condition in status notification
-  if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
-    {
-      if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
-	{
-	  while(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
-	    { }
-	}
-    }
-  else if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
-    {
-      if(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
-	{
-	  while(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
-	    { }
-	}
-    }
-}
-
 /** Test for the completion of a non blocking send request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
  *  @param request the request to check.
@@ -129,13 +101,13 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
 
-  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
+  if(!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED))
     {
       rc = -NM_ENOTPOSTED;
       goto exit;
     }
 
-  if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
+  if(nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
     {
       rc = NM_ESUCCESS;
       goto exit;
@@ -143,7 +115,7 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 
   nm_sr_progress(p_session);
 
-  rc = (nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED)) ?
+  rc = (nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED)) ?
     NM_ESUCCESS : -NM_EAGAIN;
 
  exit:
@@ -175,15 +147,14 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_core_t p_core = p_session->p_core;
   nm_sr_flush(p_core);
 #ifdef DEBUG
-  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
+  if(!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED))
     TBX_FAILUREF("nm_sr_swait- req=%p no send posted!\n", p_request);
 #endif /* DEBUG */
 
-  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
+  if(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
     {
-      nm_sr_status_wait(&p_request->status, NM_SR_STATUS_SEND_COMPLETED, p_core);
+      nm_status_wait(&p_request->req, NM_STATUS_PACK_COMPLETED, p_core);
     }
-  nm_sr_request_completion_wait(p_request);
   return NM_ESUCCESS;
 }
 
@@ -203,21 +174,21 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   int rc = NM_ESUCCESS;
 
-  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
+  if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_POSTED))
     {
       rc = -NM_ENOTPOSTED;
       goto exit;
     }
-  if( !nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED))
+  if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED))
     {
       nm_sr_progress(p_session);
     }
 
-  if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
+  if(nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
     {
       rc = NM_ESUCCESS;
     }
-  else if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_CANCELLED))
+  else if(nm_status_test(&p_request->req, NM_STATUS_UNPACK_CANCELLED))
     {
       rc = -NM_ECANCELED;
     }
@@ -235,18 +206,13 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_core_t p_core = p_session->p_core;
   nm_sr_flush(p_core);
 #ifdef DEBUG
-  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
+  if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_POSTED))
     TBX_FAILUREF("nm_sr_rwait- req=%p no recv posted!\n", p_request);
 #endif /* DEBUG */
-
-  NM_TRACEF("request %p completion = %d\n", p_request,
-	    nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED));
-  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED)) 
+  if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED)) 
     {
-      nm_sr_status_wait(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED, p_core);
+      nm_status_wait(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED, p_core);
     }
-  nm_sr_request_completion_wait(p_request);
-  NM_TRACEF("request %p completed\n", p_request);
   return nm_sr_rtest(p_session, p_request);
 }
 
@@ -312,6 +278,7 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
 	{
 	  TBX_FAILURE("nmad: FATAL- cannot set UNEXPECTED monitor: pending unexpected messages.\n");
 	}
+      nm_sr_unexpected(p_session, notifier);
     }
   return NM_ESUCCESS;
 }
@@ -321,6 +288,7 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 {
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
+  nm_core_req_monitor(&p_request->req, nm_sr_monitor_req_completed);
   return NM_ESUCCESS;
 }
 
@@ -373,7 +341,10 @@ int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t**out_req)
   nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&p_sr_session->completed_rreq);
   *out_req = p_request;
   if(p_request)
-    nm_sr_request_completion_wait(p_request);
+    {
+      while(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
+	{ }
+    }
   return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
@@ -387,7 +358,10 @@ int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t**out_req)
   nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&p_sr_session->completed_sreq);
   *out_req = p_request;
   if(p_request)
-    nm_sr_request_completion_wait(p_request);
+    {
+      while(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
+	{ }
+    }
   return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
@@ -408,11 +382,11 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
 
-  if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
+  if(nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
     {
       err = -NM_EALREADY;
     }
-  else if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_CANCELLED))
+  else if(nm_status_test(&p_request->req, NM_STATUS_UNPACK_CANCELLED))
     {
       err = -NM_ECANCELED;
     }
@@ -427,27 +401,42 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
   return err;
 }
 
-/** Check the status for a send request (gate,tag,seq).
- *  @param p_gate the pointer to the gate object.
- *  @param tag the message tag.
- *  @param seq the fragment sequence number.
- *  @return The NM status.
- */
-static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
+static void nm_sr_event_req_completed(const struct nm_core_event_s*const event)
 {
-  struct nm_req_s*p_pack = event->p_req;
-  struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req);
-  if( (event->status & NM_STATUS_PACK_COMPLETED) &&
-      ( (!(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)) || (event->status & NM_STATUS_ACK_RECEIVED)) )
+  struct nm_req_s*p_req = event->p_req;
+  struct nm_sr_request_s*p_request = tbx_container_of(p_req, struct nm_sr_request_s, req);
+  if(p_req->flags & NM_FLAG_PACK)
     {
-      const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
+      if( ((p_req->flags & NM_FLAG_PACK_SYNCHRONOUS) && (event->status & NM_STATUS_ACK_RECEIVED)) ||
+	  ((!(p_req->flags & NM_FLAG_PACK_SYNCHRONOUS)) && (event->status & NM_STATUS_PACK_COMPLETED)))
+	{
+	  const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
+	  if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
+	    {
+	      nmad_unlock();
+	      (*p_request->monitor.notifier)(NM_SR_STATUS_SEND_COMPLETED, &info);
+	      nmad_lock();
+
+	    }
+	}
+    }
+  else if(p_req->flags & NM_FLAG_UNPACK)
+    {
+      const nm_sr_event_info_t info =
+	{ 
+	  .recv_completed.p_request = p_request,
+	  .recv_completed.p_gate = p_req->p_gate
+	};
       if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
 	{
 	  nmad_unlock();
-	  (*p_request->monitor.notifier)(NM_SR_STATUS_SEND_COMPLETED, &info);
+	  (*p_request->monitor.notifier)(NM_SR_STATUS_RECV_COMPLETED, &info);
 	  nmad_lock();
 	}
-      nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
+    }
+  else
+    {
+      abort();
     }
 }
 
@@ -474,40 +463,6 @@ static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
 	  nmad_lock();
 	}
     }
-}
-
-/** Check the status for a receive request (gate/is_any_src,tag,seq).
- *  @param p_gate the pointer to the gate object or @c NULL if @p is_any_src is @c true.
- *  @param tag the message tag.
- *  @param seq the fragment sequence number (ignored if @p is_any_src is @c true).
- *  @param is_any_src whether to check for a specific gate or for any gate.
- *  @return The NM status.
- */
-static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const event)
-{
-  struct nm_req_s*p_unpack = event->p_req;
-  struct nm_sr_request_s*p_request = tbx_container_of(p_unpack, struct nm_sr_request_s, req);
-  nm_sr_status_t sr_event;
-
-  if(event->status & NM_STATUS_UNPACK_CANCELLED)
-    {
-      sr_event = NM_SR_STATUS_RECV_CANCELLED;
-    }
-  else
-    {
-      sr_event = NM_SR_STATUS_RECV_COMPLETED;
-    }
-  const nm_sr_event_info_t info = { 
-    .recv_completed.p_request = p_request,
-    .recv_completed.p_gate = p_unpack->p_gate
-  };
-  if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
-    {
-      nmad_unlock();
-      (*p_request->monitor.notifier)(NM_SR_STATUS_RECV_COMPLETED, &info);
-      nmad_lock();
-    }
-  nm_sr_request_signal(p_request, sr_event);
 }
 
 int nm_sr_progress(nm_session_t p_session)

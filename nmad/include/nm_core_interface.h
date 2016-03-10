@@ -101,8 +101,14 @@ int nm_schedule(nm_core_t p_core);
 
 /* ** Status *********************************************** */
 
+#ifdef PIOMAN_POLL
+typedef piom_cond_value_t nm_status_t;
+typedef piom_cond_t nm_core_status_t;
+#else
 /** status of a pack/unpack request */
 typedef uint16_t nm_status_t;
+typedef nm_status_t nm_core_status_t;
+#endif
 
 /** pack/unpack flags */
 typedef uint16_t nm_req_flag_t;
@@ -230,7 +236,7 @@ struct nm_req_s
   nm_core_tag_t tag;
   struct nm_core_monitor_s monitor;
   struct tbx_fast_list_head _link;
-  nm_status_t status;
+  nm_core_status_t status;
   nm_req_flag_t flags;
   nm_seq_t seq;
   union
@@ -281,15 +287,19 @@ int nm_core_flush(nm_gate_t p_gate);
 
 /* ** Status transition ************************************ */
 
-#if 0 && defined(PIOMAN_POLL)
-#warning PIOMAN_POLL
-#define nm_status_init(STATUS, BITMASK)       piom_cond_init((STATUS),   (BITMASK))
-#define nm_status_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
-#define nm_status_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
-#define nm_status_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
+#if defined(PIOMAN_POLL)
+#define nm_status_init(REQ, BITMASK)       piom_cond_init(&(REQ)->status, (BITMASK))
+#define nm_status_test(REQ, BITMASK)       piom_cond_test(&(REQ)->status, (BITMASK))
+#define nm_status_mask(REQ, BITMASK)       piom_cond_mask(&(REQ)->status, (BITMASK))
+#define nm_status_add(REQ, BITMASK)        piom_cond_add(&(REQ)->status,  (BITMASK))
+#define nm_status_wait(REQ, BITMASK, CORE) piom_cond_wait(&(REQ)->status, (BITMASK))
 static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t mask)
 {
   piom_cond_signal(&p_req->status, mask);
+}
+static inline void nm_status_assert(const struct nm_req_s*p_req, nm_status_t value)
+{
+  assert(p_req->status->value == value);
 }
 #else /* PIOMAN_POLL */
 static inline void nm_status_assert(const struct nm_req_s*p_req, nm_status_t value)

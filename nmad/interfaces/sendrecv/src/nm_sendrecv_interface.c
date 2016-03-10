@@ -101,19 +101,17 @@ static inline void nm_sr_request_completion_wait(nm_sr_request_t*p_request)
 #warning TODO- temporary fix for race condition in status notification
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
     {
-      if(!(p_request->req.status & NM_STATUS_UNPACK_COMPLETED))
+      if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
 	{
-	  volatile nm_status_t*p_status = &p_request->req.status;
-	  while(!((*p_status) &  NM_STATUS_UNPACK_COMPLETED))
+	  while(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
 	    { }
 	}
     }
   else if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
     {
-      if(!(p_request->req.status & NM_STATUS_PACK_COMPLETED))
+      if(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
 	{
-	  volatile nm_status_t*p_status = &p_request->req.status;
-	  while(!((*p_status) &  NM_STATUS_PACK_COMPLETED))
+	  while(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
 	    { }
 	}
     }

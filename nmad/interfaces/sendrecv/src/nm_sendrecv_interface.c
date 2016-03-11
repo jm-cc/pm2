@@ -84,7 +84,6 @@ int nm_sr_init(nm_session_t p_session)
 
 int nm_sr_exit(nm_session_t p_session)
 {
-  nm_core_t p_core = p_session->p_core;
   struct nm_sr_session_s*p_sr_session = p_session->ref;
   assert(p_sr_session != NULL);
   free(p_sr_session);
@@ -101,31 +100,23 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
-  nm_lock_interface(p_core);
-  nm_lock_status(p_core);
-
+#ifdef DEBUG
   if(!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED))
     {
       rc = -NM_ENOTPOSTED;
-      goto exit;
     }
-
-  if(nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
+  else
+#endif
+  if(nm_status_testall(&p_request->req, NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED))
     {
       rc = NM_ESUCCESS;
-      goto exit;
     }
-
-  nm_sr_progress(p_session);
-
-  rc = (nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED)) ?
-    NM_ESUCCESS : -NM_EAGAIN;
-
- exit:
-
-  nm_unlock_status(p_core);
-  nm_unlock_interface(p_core);
-  NM_TRACEF("req=%p; rc=%d\n", p_request, rc);
+  else
+    {
+      nm_sr_progress(p_session);
+      rc = (nm_status_testall(&p_request->req, NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED)) ?
+	NM_ESUCCESS : -NM_EAGAIN;
+    }
   return rc;
 }
 
@@ -148,15 +139,15 @@ extern int nm_sr_flush(struct nm_core *p_core)
 int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_sr_flush(p_core);
 #ifdef DEBUG
   if(!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED))
     TBX_FAILUREF("nm_sr_swait- req=%p no send posted!\n", p_request);
 #endif /* DEBUG */
-
-  if(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
+  if(!nm_status_testall(&p_request->req, NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED))
     {
+      nm_sr_flush(p_core);
       nm_status_wait(&p_request->req, NM_STATUS_PACK_COMPLETED, p_core);
+      nm_status_spinwait(&p_request->req, NM_STATUS_FINALIZED);
     }
   return NM_ESUCCESS;
 }
@@ -176,18 +167,14 @@ int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request)
 int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request) 
 {
   int rc = NM_ESUCCESS;
-
+#ifdef DEBUG
   if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_POSTED))
     {
       rc = -NM_ENOTPOSTED;
-      goto exit;
     }
-  if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED))
-    {
-      nm_sr_progress(p_session);
-    }
-
-  if(nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
+  else
+#endif
+  if(nm_status_testall(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_FINALIZED))
     {
       rc = NM_ESUCCESS;
     }
@@ -197,26 +184,28 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
     }
   else
     {
+      nm_sr_progress(p_session);
       rc = -NM_EAGAIN;
     }
- exit:
-  NM_TRACEF("req=%p; rc=%d\n", p_request, rc);
   return rc;
 }
 
 int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_sr_flush(p_core);
 #ifdef DEBUG
   if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_POSTED))
     TBX_FAILUREF("nm_sr_rwait- req=%p no recv posted!\n", p_request);
 #endif /* DEBUG */
-  if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED)) 
+  int rc = nm_sr_rtest(p_session, p_request);
+  if(rc != NM_ESUCCESS)
     {
+      nm_sr_flush(p_core);
       nm_status_wait(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED, p_core);
+      nm_status_spinwait(&p_request->req, NM_STATUS_FINALIZED);
+      rc = nm_sr_rtest(p_session, p_request);
     }
-  return nm_sr_rtest(p_session, p_request);
+  return rc;
 }
 
 int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
@@ -345,8 +334,7 @@ int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t**out_req)
   *out_req = p_request;
   if(p_request)
     {
-      while(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
-	{ }
+      nm_status_spinwait(&p_request->req, NM_STATUS_FINALIZED);
     }
   return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
@@ -362,8 +350,7 @@ int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t**out_req)
   *out_req = p_request;
   if(p_request)
     {
-      while(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
-	{ }
+      nm_status_spinwait(&p_request->req, NM_STATUS_FINALIZED);
     }
   return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }

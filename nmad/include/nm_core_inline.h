@@ -203,8 +203,14 @@ static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_core_tag_t tag, nm_s
  */
 static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const event, struct nm_req_s*p_req)
 {
+  const nm_status_t status = event->status & ~NM_STATUS_FINALIZED;
+  /* signal event if finalized */
+  if(p_req && (event->status & NM_STATUS_FINALIZED))
+    {
+      nm_status_signal(p_req, status);
+    }
   /* request monitors */
-  if((p_req != NULL) && (p_req->monitor.mask & event->status))
+  if((p_req != NULL) && (p_req->monitor.mask & status))
     {
       (*p_req->monitor.notifier)(event);
     }
@@ -212,7 +218,7 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
   nm_core_monitor_vect_itor_t i;
   puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)
     {
-      if( ((*i)->mask & event->status) &&
+      if( ((*i)->mask & status) &&
 	  ((*i)->matching.p_gate == NM_GATE_NONE || (*i)->matching.p_gate == event->p_gate) &&
 	  (nm_tag_match(event->tag, (*i)->matching.tag, (*i)->matching.tag_mask))
 	  )
@@ -220,9 +226,9 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
 	  ((*i)->notifier)(event);
 	}
     }
-  /* set status *after* events */
+  /* set final status *after* events */
   if(p_req)
-    nm_status_signal(p_req, event->status);
+    nm_status_add(p_req, event->status);
 }
 
 

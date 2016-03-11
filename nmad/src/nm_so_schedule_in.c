@@ -185,7 +185,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
 	}
       const struct nm_core_event_s event =
 	{
-	  .status = NM_STATUS_UNPACK_COMPLETED,
+	  .status = NM_STATUS_UNPACK_COMPLETED | NM_STATUS_FINALIZED,
 	  .p_req = p_unpack
 	};
       nm_core_status_event(p_core, &event, p_unpack);
@@ -419,7 +419,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
       tbx_fast_list_del(&p_unpack->_link);
       const struct nm_core_event_s event =
 	{
-	  .status = NM_STATUS_UNPACK_CANCELLED,
+	  .status = NM_STATUS_UNPACK_CANCELLED | NM_STATUS_FINALIZED,
 	  .p_req = p_unpack
 	};
       nm_core_status_event(p_core, &event, p_unpack);

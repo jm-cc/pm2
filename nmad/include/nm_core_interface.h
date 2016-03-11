@@ -317,7 +317,7 @@ static inline void nm_status_init(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   p_req->status = bitmask;
 }
-static inline int  nm_status_test(const struct nm_req_s*p_req, nm_status_t bitmask)
+static inline nm_status_t nm_status_test(const struct nm_req_s*p_req, nm_status_t bitmask)
 {
   return (p_req->status & bitmask);
 }
@@ -337,6 +337,18 @@ static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm
     }
 }
 #endif /* PIOMAN_POLL */
+/* ** convenient frontends to deal with status */
+
+static inline void nm_status_spinwait(const struct nm_req_s*p_req, nm_status_t status)
+{
+  while(!nm_status_test(p_req, status))
+    {  }
+}
+
+static inline int nm_status_testall(const struct nm_req_s*p_req, nm_status_t bitmask)
+{
+  return (nm_status_test(p_req, bitmask) == bitmask);
+}
 
 static inline void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor)
 {

@@ -168,8 +168,6 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 
 void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_req_s*p_pack, nm_len_t len);
 
-void nm_pw_completions_notify(struct nm_pkt_wrap*p_pw);
-
 
 #endif /* NM_PKT_WRAP_H */
 

@@ -89,7 +89,7 @@ static inline void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
   piom_sem_V(&cond->sem);
 }
 /** tests whether a bit is set */
-static inline int piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask)
+static inline int piom_cond_test(const piom_cond_t *cond, piom_cond_value_t mask)
 {
   return cond->value & mask;
 }
@@ -148,7 +148,7 @@ static inline void piom_cond_signal(piom_cond_t*cond, piom_cond_value_t mask)
 {
   *cond |= mask;
 }
-static inline int piom_cond_test(piom_cond_t*cond, piom_cond_value_t mask)
+static inline int piom_cond_test(const piom_cond_t*cond, piom_cond_value_t mask)
 {
   return *cond & mask;
 }

@@ -585,30 +585,3 @@ void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_req_s*p_pack, nm_le
   p_pack->pack.scheduled += len;
 }
 
-/** fires completion handlers on the given pw */
-void nm_pw_completions_notify(struct nm_pkt_wrap*p_pw)
-{
-  int i;
-  for(i = 0; i < p_pw->n_completions; i++)
-    {
-      const struct nm_pw_completion_s*p_completion = &p_pw->completions[i];
-      struct nm_req_s*p_pack = p_completion->p_pack;
-      p_pack->pack.done += p_completion->len;
-      if(p_pack->pack.done == p_pack->pack.len)
-	{
-	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->pack.len);
-	  const struct nm_core_event_s event =
-	    {
-	      .status = NM_STATUS_PACK_COMPLETED,
-	      .p_req = p_pack
-	    };
-	  nm_core_status_event(p_pw->p_gate->p_core, &event, p_pack);
-	}
-      else if(p_pack->pack.done > p_pack->pack.len)
-	{ 
-	  TBX_FAILUREF("more bytes sent than posted (should have been = %lu; actually sent = %lu)\n",
-		       p_pack->pack.len, p_pack->pack.done);
-	}
-      
-    }
-}

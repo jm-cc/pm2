@@ -212,7 +212,10 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
   nm_core_monitor_vect_itor_t i;
   puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)
     {
-      if((*i)->mask & event->status)
+      if( ((*i)->mask & event->status) &&
+	  ((*i)->matching.p_gate == NM_GATE_NONE || (*i)->matching.p_gate == event->p_gate) &&
+	  (nm_tag_match(event->tag, (*i)->matching.tag, (*i)->matching.tag_mask))
+	  )
 	{
 	  ((*i)->notifier)(event);
 	}

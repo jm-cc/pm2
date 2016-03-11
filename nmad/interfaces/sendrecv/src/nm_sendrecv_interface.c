@@ -42,13 +42,16 @@ static void nm_sr_event_unexpected(const struct nm_core_event_s*const event);
 static const struct nm_core_monitor_s nm_sr_monitor_req_completed = 
   {
     .notifier = &nm_sr_event_req_completed,
-    .mask = NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED
+    .mask     = NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED |
+                NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED,
+    .matching = { .p_gate = NM_ANY_GATE, .tag = { 0 }, .tag_mask = { 0 } }
   };
 
 static const struct nm_core_monitor_s nm_sr_monitor_unexpected = 
   {
     .notifier = &nm_sr_event_unexpected,
-    .mask = NM_STATUS_UNEXPECTED
+    .mask     = NM_STATUS_UNEXPECTED,
+    .matching = { .p_gate = NM_ANY_GATE, .tag = { 0 }, .tag_mask = { 0 } }
   };
 
 /* User interface */

@@ -213,11 +213,20 @@ struct nm_core_event_s
 /** an event notifier, fired upon status transition */
 typedef void (*nm_event_notifier_t)(const struct nm_core_event_s* const event);
 
+/** matching info for monitors */
+struct nm_event_matching_s
+{
+  nm_gate_t p_gate;
+  nm_core_tag_t tag;
+  nm_core_tag_t tag_mask;
+};
+
 /** monitor for status transitions */
 struct nm_core_monitor_s
 {
   nm_event_notifier_t notifier; /**< notification function called to fire events */
   nm_status_t mask;             /**< mask applied to status to check whether to fire events */
+  struct nm_event_matching_s matching;
 };
 /** Register an event monitor. */
 void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m);

@@ -150,17 +150,21 @@ typedef uint16_t nm_seq_t;
 
 /* ** tags ************************************************* */
 
+/** the hash part in tags, used to multiplex sessions */
+typedef uint32_t nm_tag_hash_t;
+
+/** mask for all sessions */
+#define NM_CORE_TAG_HASH_FULL ((nm_tag_hash_t)0xFFFFFFFF)
+
 #if defined(NM_TAGS_AS_INDIRECT_HASH)
 /** An internal tag */
 typedef struct
 {
-  nm_tag_t tag;       /**< the interface level tag */
-  uint32_t hashcode;  /**< the session hashcode */
+  nm_tag_t tag;           /**< the interface level tag */
+  nm_tag_hash_t hashcode; /**< the session hashcode */
 } __attribute__((packed)) nm_core_tag_t;
-#define NM_CORE_TAG_MASK_FULL ((nm_core_tag_t){ .tag = NM_TAG_MASK_FULL, .hashcode = 0xFFFFFFFF })
+#define NM_CORE_TAG_MASK_FULL ((nm_core_tag_t){ .tag = NM_TAG_MASK_FULL, .hashcode = NM_CORE_TAG_HASH_FULL })
 #define NM_CORE_TAG_NONE      ((nm_core_tag_t){ .tag = 0, .hashcode = 0x0 })
-#define NM_CORE_TAG_INIT_NONE(t) { t.tag = 0 ; t.hashcode = 0x0; }
-#define NM_CORE_TAG_INIT_MASK_FULL(t) { t.tag = NM_TAG_MASK_FULL; t.hashcode = 0xFFFFFFFF; }
 static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
 {
   const nm_core_tag_t core_tag = { .tag = tag, .hashcode = hashcode };
@@ -179,8 +183,6 @@ static inline nm_tag_t nm_tag_get_hashcode(nm_core_tag_t core_tag)
 typedef nm_tag_t nm_core_tag_t;
 #define NM_CORE_TAG_MASK_FULL NM_TAG_MASK_FULL
 #define NM_CORE_TAG_NONE ((nm_tag_t)0)
-#define NM_CORE_TAG_INIT_NONE(tag) { tag = 0; }
-#define NM_CORE_TAG_INIT_MASK_FULL(tag) { tag = NM_TAG_MASK_FULL; }
 static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
 {
   const nm_core_tag_t core_tag = tag;
@@ -235,7 +237,11 @@ void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m);
 /** rgister an event monitor for the given request */
 static inline void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor);
 
-#define NM_CORE_MONITOR_NULL ((struct nm_core_monitor_s){ . notifier = NULL, .mask = 0})
+/** matches any event */
+#define NM_EVENT_MATCHING_ANY ((struct nm_event_matching_s){ .p_gate = NM_ANY_GATE, .tag = NM_CORE_TAG_NONE, .tag_mask = NM_CORE_TAG_NONE })
+
+#define NM_CORE_MONITOR_NULL ((struct nm_core_monitor_s){ .notifier = NULL, .mask = 0, .matching = NM_EVENT_MATCHING_ANY })
+
 
 /* ** Packs/unpacks **************************************** */
 

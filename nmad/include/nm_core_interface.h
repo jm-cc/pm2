@@ -138,6 +138,9 @@ typedef uint16_t nm_req_flag_t;
 /** request is finalized, may be freed */
 #define NM_STATUS_FINALIZED                ((nm_status_t)0x0400)
 
+/** mask to catch all bits of status */
+#define NM_STATUS_MASK_FULL                ((nm_status_t)-1)
+
 /** flag pack as synchronous (i.e. request the receiver to send an ack) */
 #define NM_FLAG_PACK_SYNCHRONOUS     ((nm_req_flag_t)0x1000)
 /** flag request as a pack */
@@ -310,15 +313,7 @@ static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t mask)
 {
   piom_cond_signal(&p_req->status, mask);
 }
-static inline void nm_status_assert(const struct nm_req_s*p_req, nm_status_t value)
-{
-  assert(p_req->status.value == value);
-}
 #else /* PIOMAN_POLL */
-static inline void nm_status_assert(const struct nm_req_s*p_req, nm_status_t value)
-{
-  assert(p_req->status == value);
-}
 static inline void nm_status_init(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   p_req->status = bitmask;
@@ -344,6 +339,11 @@ static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm
 }
 #endif /* PIOMAN_POLL */
 /* ** convenient frontends to deal with status */
+
+static inline void nm_status_assert(const struct nm_req_s*p_req, nm_status_t value)
+{
+  assert(nm_status_test(p_req, NM_STATUS_MASK_FULL) == value);
+}
 
 static inline void nm_status_spinwait(const struct nm_req_s*p_req, nm_status_t status)
 {

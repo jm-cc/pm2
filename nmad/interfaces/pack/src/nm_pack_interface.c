@@ -18,37 +18,26 @@
 #include <sys/uio.h>
 #include <assert.h>
 
+#include <Padico/Puk.h>
 #include <nm_private.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_pack_interface.h>
 
-#define NM_PACK_MAX_PENDING 256
-#define NM_PACK_REQS_PREALLOC 16
-
-static p_tbx_memory_t nm_pack_mem = NULL;
-
 static inline void nm_pack_cnx_init(nm_session_t p_session, nm_gate_t gate, nm_tag_t tag, nm_pack_cnx_t*cnx)
 {
-  if(tbx_unlikely(nm_pack_mem == NULL))
-    {
-      tbx_malloc_init(&nm_pack_mem,  NM_PACK_MAX_PENDING * sizeof(nm_sr_request_t), NM_PACK_REQS_PREALLOC, "nmad/pack/requests"); 
-    }
-  cnx->reqs       = tbx_malloc(nm_pack_mem);
   cnx->p_session  = p_session;
   cnx->gate       = gate;
   cnx->tag        = tag;
   cnx->nb_packets = 0;
 }
 
-int nm_begin_packing(nm_session_t p_session,
-		     nm_gate_t gate, nm_tag_t tag,
-		     nm_pack_cnx_t *cnx)
+int nm_begin_packing(nm_session_t p_session, nm_gate_t gate, nm_tag_t tag, nm_pack_cnx_t*cnx)
 {
   nm_pack_cnx_init(p_session, gate, tag, cnx);
   return NM_ESUCCESS;
 }
 
-int nm_pack(nm_pack_cnx_t *cnx, const void *data, uint32_t len)
+int nm_pack(nm_pack_cnx_t *cnx, const void *data, nm_len_t len)
 {
   if(tbx_unlikely(cnx->nb_packets >= NM_PACK_MAX_PENDING - 1))
     nm_flush_packs(cnx);
@@ -58,7 +47,6 @@ int nm_pack(nm_pack_cnx_t *cnx, const void *data, uint32_t len)
 int nm_end_packing(nm_pack_cnx_t *cnx)
 {
   int err = nm_flush_packs(cnx);
-  tbx_free(nm_pack_mem, cnx->reqs);
   return err;
 }
 
@@ -67,15 +55,13 @@ int nm_cancel_packing(nm_pack_cnx_t *cnx)
   return NM_ENOTIMPL;
 }
 
-int nm_begin_unpacking(nm_session_t p_session,
-		       nm_gate_t gate, nm_tag_t tag,
-		       nm_pack_cnx_t *cnx)
+int nm_begin_unpacking(nm_session_t p_session, nm_gate_t gate, nm_tag_t tag, nm_pack_cnx_t *cnx)
 {
   nm_pack_cnx_init(p_session, gate, tag, cnx);
   return NM_ESUCCESS;
 }
 
-int nm_unpack(nm_pack_cnx_t *cnx, void *data, uint32_t len)
+int nm_unpack(nm_pack_cnx_t *cnx, void *data, nm_len_t len)
 {
   if(cnx->gate != NM_ANY_GATE)
     {
@@ -107,7 +93,6 @@ int nm_unpack(nm_pack_cnx_t *cnx, void *data, uint32_t len)
 int nm_end_unpacking(nm_pack_cnx_t *cnx)
 {
   int err = nm_flush_unpacks(cnx);
-  tbx_free(nm_pack_mem, cnx->reqs);
   return err;
 }
 

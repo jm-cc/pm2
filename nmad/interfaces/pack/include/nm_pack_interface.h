@@ -27,6 +27,8 @@
 #include <nm_sendrecv_interface.h>
 #include <nm_session_interface.h>
 
+#define NM_PACK_MAX_PENDING 64
+
 /** Connection storage for the pack interface.
  */
 struct nm_pack_cnx
@@ -41,7 +43,7 @@ struct nm_pack_cnx
   nm_tag_t tag;
 
   /** sendrecv requests */
-  nm_sr_request_t*reqs;
+  nm_sr_request_t reqs[NM_PACK_MAX_PENDING];
 
   /** Number of packets. */
   unsigned long nb_packets;
@@ -56,9 +58,7 @@ typedef struct nm_pack_cnx nm_pack_cnx_t;
  *  @param cnx a NM/SO connection pointer.
  *  @return The NM status.
  */
-extern int nm_begin_packing(nm_session_t p_session,
-			    nm_gate_t gate, nm_tag_t tag,
-			    nm_pack_cnx_t *cnx);
+extern int nm_begin_packing(nm_session_t p_session, nm_gate_t gate, nm_tag_t tag, nm_pack_cnx_t *cnx);
 
 /** Append a data fragment to the current message.
  *  @param cnx a NM/SO connection pointer.
@@ -66,8 +66,7 @@ extern int nm_begin_packing(nm_session_t p_session,
  *  @param len the length of the data fragment.
  *  @return The NM status.
  */
-extern int nm_pack(nm_pack_cnx_t *cnx,
-		   const void *data, uint32_t len);
+extern int nm_pack(nm_pack_cnx_t *cnx, const void*data, nm_len_t len);
 
 /** End building and flush the current message.
  *  @param cnx a NM/SO connection pointer.
@@ -88,9 +87,7 @@ extern int nm_cancel_packing(nm_pack_cnx_t *cnx);
  *  @param cnx a NM/SO connection pointer.
  *  @return The NM status.
  */
-extern int nm_begin_unpacking(nm_session_t p_session,
-			      nm_gate_t gate, nm_tag_t tag,
-			      nm_pack_cnx_t *cnx);
+extern int nm_begin_unpacking(nm_session_t p_session, nm_gate_t gate, nm_tag_t tag, nm_pack_cnx_t*cnx);
 
 /** Extract a data fragment from the current message.
  *  @param cnx a NM/SO connection pointer.
@@ -98,8 +95,7 @@ extern int nm_begin_unpacking(nm_session_t p_session,
  *  @param len the length of the data fragment.
  *  @return The NM status.
  */
-extern int nm_unpack(nm_pack_cnx_t *cnx,
-		     void *data, uint32_t len);
+extern int nm_unpack(nm_pack_cnx_t *cnx, void*data, nm_len_t len);
 
 /** End receiving and flush extraction of the current message.
  *  @param cnx a NM/SO connection pointer.

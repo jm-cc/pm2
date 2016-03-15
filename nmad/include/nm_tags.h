@@ -106,41 +106,43 @@ static int nm_tag_hasheq(const void*_tag1, const void*_tag2)
   return (tag1 == tag2);
 }
 
-#define NM_TAG_TABLE_HASHTABLE(NAME, ENTRY_TYPE) \
-  struct NAME##_table_s \
-  { \
-    puk_hashtable_t _h; \
-    p_tbx_memory_t _mem; \
-  }; \
-  static inline void NAME##_table_init(struct NAME##_table_s*t) \
-  { \
-    t->_h = puk_hashtable_new(&nm_tag_hash, &nm_tag_hasheq); \
-    tbx_malloc_extended_init(&t->_mem, sizeof(ENTRY_TYPE), NM_TAGS_PREALLOC, "nmad/taghash/" #NAME, 1); \
-  } \
-  static inline void NAME##_table_destroy(struct NAME##_table_s*t) \
-  { \
+#define NM_TAG_TABLE_HASHTABLE(NAME, ENTRY_TYPE)			\
+  PUK_ALLOCATOR_TYPE(NAME##_entry, ENTRY_TYPE);				\
+  struct NAME##_table_s							\
+  {									\
+    puk_hashtable_t _h;							\
+    NAME##_entry_allocator_t _allocator;				\
+  };									\
+  static inline void NAME##_table_init(struct NAME##_table_s*t)		\
+  {									\
+    t->_h = puk_hashtable_new(&nm_tag_hash, &nm_tag_hasheq);		\
+    t->_allocator = NAME##_entry_allocator_new(NM_TAGS_PREALLOC);	\
+  }									\
+  static inline void NAME##_table_destroy(struct NAME##_table_s*t)	\
+  {									\
     puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(t->_h); \
-    ENTRY_TYPE*data = puk_hashtable_enumerator_next_data(e); \
-    while(data) \
-    { \
-      NAME##_dtor(data); \
-      tbx_free(t->_mem, data); \
-      data = puk_hashtable_enumerator_next_data(e); \
-    } \
-    puk_hashtable_delete(t->_h); \
-    tbx_malloc_clean(t->_mem); \
-  } \
-  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*table, nm_core_tag_t tag) \
-  { \
+    ENTRY_TYPE*data = puk_hashtable_enumerator_next_data(e);		\
+    while(data)								\
+      {									\
+	NAME##_dtor(data);						\
+	NAME##_entry_free(t->_allocator, data);				\
+	data = puk_hashtable_enumerator_next_data(e);			\
+      }									\
+    puk_hashtable_delete(t->_h);					\
+    NAME##_entry_allocator_delete(t->_allocator);			\
+  }									\
+  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*t, nm_core_tag_t tag) \
+  {									\
     const nm_core_tag_t shift_tag = tag + 1; /* 0 is forbidden as a hashing key- shift tags */ \
-    void*key = (void*)((intptr_t)shift_tag); \
-    ENTRY_TYPE*e = puk_hashtable_lookup(table->_h, key); \
-    if(tbx_unlikely(e == NULL)) { \
-      e = tbx_malloc(table->_mem); \
-      NAME##_ctor(e, tag); \
-      puk_hashtable_insert(table->_h, key, e); \
-    } \
-    return e; \
+    void*key = (void*)((intptr_t)shift_tag);				\
+    ENTRY_TYPE*e = puk_hashtable_lookup(t->_h, key);			\
+    if(tbx_unlikely(e == NULL))						\
+      {									\
+	e = NAME##_entry_malloc(t->_allocator);				\
+	NAME##_ctor(e, tag);						\
+	puk_hashtable_insert(t->_h, key, e);				\
+      }									\
+    return e;								\
   }
 
 #endif /* NM_TAGS_AS_HASHTABLE */
@@ -172,46 +174,47 @@ static int nm_tag_indirect_eq(const void*_tag1, const void*_tag2)
 }
 
 #define NM_TAG_TABLE_INDIRECT_HASH(NAME, ENTRY_TYPE)			\
-  struct NAME##_table_s							\
-  {									\
-    puk_hashtable_t _h;							\
-    p_tbx_memory_t _mem;						\
-  };									\
   struct NAME##_entry_s							\
   {									\
     ENTRY_TYPE _data;							\
     nm_core_tag_t _tag;							\
   };									\
+  PUK_ALLOCATOR_TYPE(NAME##_entry, struct NAME##_entry_s);		\
+  struct NAME##_table_s							\
+  {									\
+    puk_hashtable_t _h;							\
+    NAME##_entry_allocator_t _allocator;				\
+  };									\
   static inline void NAME##_table_init(struct NAME##_table_s*t)		\
   {									\
     t->_h = puk_hashtable_new(&nm_tag_indirect_hash, &nm_tag_indirect_eq); \
-    tbx_malloc_extended_init(&t->_mem, sizeof(struct NAME##_entry_s), NM_TAGS_PREALLOC, "nmad/taghashentry/" #NAME, 1); \
+    t->_allocator = NAME##_entry_allocator_new(NM_TAGS_PREALLOC);	\
   }									\
   static inline void NAME##_table_destroy(struct NAME##_table_s*t)	\
   {									\
     puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(t->_h); \
-    ENTRY_TYPE*data = puk_hashtable_enumerator_next_data(e);		\
-    while(data)								\
+    struct NAME##_entry_s*entry = puk_hashtable_enumerator_next_data(e); \
+    while(entry)							\
       {									\
-	NAME##_dtor(data);						\
-	tbx_free(t->_mem, data);					\
-	data = puk_hashtable_enumerator_next_data(e);			\
+	NAME##_dtor(&entry->_data);					\
+	NAME##_entry_free(t->_allocator, entry);			\
+	entry = puk_hashtable_enumerator_next_data(e);			\
       }									\
     puk_hashtable_delete(t->_h);					\
-    tbx_malloc_clean(t->_mem);						\
+    NAME##_entry_allocator_delete(t->_allocator);			\
   }									\
-  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*table, nm_core_tag_t tag) \
+  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*t, nm_core_tag_t tag) \
   {									\
     const void*key = (const void*)&tag;					\
-    ENTRY_TYPE*e = puk_hashtable_lookup(table->_h, key);		\
+    ENTRY_TYPE*e = puk_hashtable_lookup(t->_h, key);			\
     if(tbx_unlikely(e == NULL))						\
       {									\
-	struct NAME##_entry_s*entry = tbx_malloc(table->_mem);		\
+	struct NAME##_entry_s*entry = NAME##_entry_malloc(t->_allocator); \
 	key = &entry->_tag;						\
 	e   = &entry->_data;						\
 	NAME##_ctor(&entry->_data, tag);				\
 	entry->_tag = tag;						\
-	puk_hashtable_insert(table->_h, key, e);			\
+	puk_hashtable_insert(t->_h, key, e);				\
       }									\
     return e;								\
   }

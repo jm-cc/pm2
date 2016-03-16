@@ -133,6 +133,7 @@ nm_comm_t nm_comm_create(nm_comm_t p_comm, nm_group_t group)
       newcomm->rank = newrank;
       newcomm->group = nm_group_dup(group);
       newcomm->p_session = NULL;
+      newcomm->reverse = NULL;
       while(newcomm->p_session == NULL)
 	{
 	  if(newrank == newroot)
@@ -192,6 +193,8 @@ void nm_comm_destroy(nm_comm_t p_comm)
     {
       nm_sr_session_close(p_comm->p_session);
       nm_group_free(p_comm->group);
+      if(p_comm->reverse)
+	puk_hashtable_delete(p_comm->reverse);
       free(p_comm);
     }
 }

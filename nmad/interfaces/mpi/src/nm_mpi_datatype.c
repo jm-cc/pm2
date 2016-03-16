@@ -143,7 +143,7 @@ void nm_mpi_datatype_init(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_exit(void)
 {
-  nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes, NULL);
+  nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes, &nm_mpi_datatype_free);
 }
 
 /* ********************************************************* */
@@ -589,7 +589,7 @@ int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype)
 {
   p_datatype->refcount--;
   assert(p_datatype->refcount >= 0);
-  if(p_datatype->refcount == 0)
+  if(p_datatype->refcount == 0 && p_datatype->id >= _NM_MPI_DATATYPE_OFFSET);
     {
       nm_mpi_datatype_free(p_datatype);
     }
@@ -598,8 +598,6 @@ int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype)
 
 static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
 {
-  assert(p_datatype->refcount == 0);
-  assert(p_datatype->id >= _NM_MPI_DATATYPE_OFFSET);
   switch(p_datatype->combiner)
     {
     case MPI_COMBINER_INDEXED:

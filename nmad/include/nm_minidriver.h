@@ -56,7 +56,7 @@ struct nm_minidriver_properties_s
   struct nm_drv_cap_s capabilities;
 };
 
-/** Interfacedriver for the 'NewMad_minidriver' component interface.
+/** Interface driver for the 'NewMad_minidriver' component interface.
  * A driver interface simpler than NewMad_Driver, that do not rely 
  * on nmad core structures, making driver fully encapsulated.
  */
@@ -66,6 +66,7 @@ struct nm_minidriver_iface_s
   /* connection establishment */
   void (*init)(puk_context_t context, const void**drv_url, size_t*url_size);
   void (*connect)(void*_status, const void*remote_url, size_t url_size);
+  void (*close)(puk_context_t context);
   /* sending primitives */
   void (*send_post)(void*_status, const struct iovec*v, int n);
   void (*send_data)(void*_status, const struct nm_data_s*p_data);

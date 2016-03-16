@@ -259,6 +259,15 @@ static int nm_minidriver_close(struct nm_drv *p_drv)
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
   struct nm_minidriver_context_s*p_minidriver_context = puk_context_get_status(p_minidriver_drv->context);
+  int i;
+  for(i = 0; i < 2; i++)
+    {
+      puk_context_t context = p_minidriver_context->trks_array[i].minidriver;
+      const struct nm_minidriver_iface_s*minidriver_iface = 
+	puk_component_get_driver_NewMad_minidriver(context->component, "minidriver");
+      if(minidriver_iface->close)
+	(*minidriver_iface->close)(context);
+    }
   TBX_FREE(p_minidriver_context->url);
   TBX_FREE(p_minidriver_context);
   TBX_FREE(p_minidriver_drv);

@@ -128,6 +128,7 @@ static int nm_tag_hasheq(const void*_tag1, const void*_tag2)
 	NAME##_entry_free(t->_allocator, data);				\
 	data = puk_hashtable_enumerator_next_data(e);			\
       }									\
+    puk_hashtable_enumerator_delete(e);					\
     puk_hashtable_delete(t->_h);					\
     NAME##_entry_allocator_delete(t->_allocator);			\
   }									\
@@ -200,6 +201,7 @@ static int nm_tag_indirect_eq(const void*_tag1, const void*_tag2)
 	NAME##_entry_free(t->_allocator, entry);			\
 	entry = puk_hashtable_enumerator_next_data(e);			\
       }									\
+    puk_hashtable_enumerator_delete(e);					\
     puk_hashtable_delete(t->_h);					\
     NAME##_entry_allocator_delete(t->_allocator);			\
   }									\

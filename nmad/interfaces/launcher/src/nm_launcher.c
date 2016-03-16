@@ -121,6 +121,7 @@ int nm_launcher_exit(void)
   if(exit_done)
     return NM_ESUCCESS;
   exit_done = 1;
+  nm_sr_exit((*launcher.r.driver->get_session)(launcher.r._status));
   free(launcher.gates);
   puk_instance_destroy(launcher.instance);
   return NM_ESUCCESS;

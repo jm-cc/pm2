@@ -30,6 +30,7 @@
 
 #define MAX_ARG_LEN 128
 
+static char**global_argv = NULL;
 
 #ifdef TBX_FORTRAN_COMPILER_GNU
 
@@ -52,7 +53,7 @@ void tbx_fortran_init(int *argc, char ***argv)
 
 	*argc = 1 + _gfortran_iargc();
 	//  fprintf(stderr,"argc = %d\n", *argc);
-	*argv = malloc(*argc * sizeof(char *));
+	*argv = malloc((1 + *argc) * sizeof(char *));
 
 	for (i = 0; i < *argc; i++) {
 		int j;
@@ -71,6 +72,8 @@ void tbx_fortran_init(int *argc, char ***argv)
 		}
 		((*argv)[i])[j] = '\0';
 	}
+	(*argv)[*argc] = NULL;
+	global_argv = *argv;
 //  for (i = 0; i < *argc; i++) {
 //    fprintf(stderr,"argv[%d] = [%s]\n", i, (*argv)[i]);
 //  }
@@ -91,7 +94,7 @@ void tbx_fortran_init(int *argc, char ***argv)
 
 	*argc = 1 + iargc_();
 	fprintf(stderr, "argc = %d\n", *argc);
-	*argv = malloc(*argc * sizeof(char *));
+	*argv = malloc((1 + *argc) * sizeof(char *));
 	for (i = 0; i < *argc; i++) {
 		int j;
 
@@ -107,6 +110,7 @@ void tbx_fortran_init(int *argc, char ***argv)
 	for (i = 0; i < *argc; i++) {
 		fprintf(stderr, "argv[%d] = [%s]\n", i, (*argv)[i]);
 	}
+	global_argv = *argv;
 }
 
 
@@ -120,3 +124,17 @@ void tbx_fortran_init(int *argc TBX_UNUSED, char ***argv TBX_UNUSED)
 
 
 #endif
+
+void tbx_fortran_finalize(void)
+{
+  if(global_argv)
+    {
+      char**argv;
+      for(argv = global_argv; *argv != NULL; argv++)
+	{
+	  free(*argv);
+	}
+      free(global_argv);
+      global_argv = NULL;
+    }
+}

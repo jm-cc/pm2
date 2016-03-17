@@ -38,6 +38,8 @@
 
 void tbx_fortran_init(int *argc, char ***argv);
 
+void tbx_fortran_finalize(void);
+
 /* @} */
 
 #endif				/* TBX_FORTRAN_ARGUMENT_H */

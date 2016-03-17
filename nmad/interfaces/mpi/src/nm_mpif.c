@@ -26,39 +26,14 @@
 PADICO_MODULE_HOOK(MadMPI);
 
 
-#if defined NMAD_FORTRAN_TARGET_GFORTRAN
-/* GFortran iargc/getargc bindings
- */
-void _gfortran_getarg_i4(int32_t *num, char *value, int val_len)	__attribute__ ((weak));
-
-void _gfortran_getarg_i8(int64_t *num, char *value, int val_len)	__attribute__ ((weak));
-
-int32_t _gfortran_iargc(void)	__attribute__ ((weak));
+#if defined(NMAD_FORTRAN_TARGET_GFORTRAN) || defined(NMAD_FORTRAN_TARGET_IFORT)
 /**
  * Fortran version for MPI_INIT
  */
-int mpi_init_(void) {
-  int argc;
-  char **argv;
-
-  tbx_fortran_init(&argc, &argv);
-  return MPI_Init(&argc, &argv);
-}
-#elif defined NMAD_FORTRAN_TARGET_IFORT
-/* Ifort iargc/getargc bindings
- */
-/** Initialisation by Fortran code.
- */
-extern int  iargc_();
-extern void getarg_(int*, char*, int);
-
-/**
- * Fortran version for MPI_INIT
- */
-int mpi_init_() {
-  int argc;
-  char **argv;
-
+int mpi_init_(void)
+{
+  int argc = -1;
+  char**argv = NULL;
   tbx_fortran_init(&argc, &argv);
   return MPI_Init(&argc, &argv);
 }
@@ -95,6 +70,7 @@ void mpi_initialized_(int *flag, int *ierr)
  */
 void mpi_finalize_(void)
 {
+  tbx_fortran_finalize();
   MPI_Finalize();
 }
 

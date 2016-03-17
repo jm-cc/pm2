@@ -66,6 +66,7 @@ int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *
 {
   int err = MPI_SUCCESS;
   nm_gate_t p_gate = nm_mpi_communicator_get_gate(p_comm, dest);
+  p_req->p_datatype->refcount++;
   if(p_gate == NULL)
     {
       TBX_FAILUREF("Cannot find rank %d in comm %p.\n", dest, p_comm);
@@ -81,8 +82,6 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
   int err = MPI_SUCCESS;
   nm_tag_t nm_tag, tag_mask;
   nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
-  nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
-  p_datatype->refcount++;
   nm_session_t p_session = nm_mpi_communicator_get_session(p_req->p_comm);
   struct nm_data_s data;
   nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = (void*)p_req->sbuf, .p_datatype = p_req->p_datatype, .count = p_req->count });
@@ -140,6 +139,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
     }
   p_req->request_source = source;
   p_req->request_type = NM_MPI_REQUEST_RECV;
+  p_req->p_datatype->refcount++;
   return MPI_SUCCESS;
 }
 
@@ -150,8 +150,6 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
 {
   nm_tag_t nm_tag, tag_mask;
   nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
-  nm_mpi_datatype_t*p_datatype = p_req->p_datatype;
-  p_datatype->refcount++;
   nm_session_t p_session = nm_mpi_communicator_get_session(p_req->p_comm);
   struct nm_data_s data;
   nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = p_req->rbuf, .p_datatype = p_req->p_datatype, .count = p_req->count });

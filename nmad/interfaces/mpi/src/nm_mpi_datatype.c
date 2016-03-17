@@ -589,7 +589,7 @@ int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype)
 {
   p_datatype->refcount--;
   assert(p_datatype->refcount >= 0);
-  if(p_datatype->refcount == 0 && p_datatype->id >= _NM_MPI_DATATYPE_OFFSET);
+  if((p_datatype->refcount == 0) && (p_datatype->id >= _NM_MPI_DATATYPE_OFFSET))
     {
       nm_mpi_datatype_free(p_datatype);
     }

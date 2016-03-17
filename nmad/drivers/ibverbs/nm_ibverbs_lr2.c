@@ -51,6 +51,12 @@ static inline nm_len_t nm_ibverbs_min(const nm_len_t a, const nm_len_t b)
     return b;
 }
 
+/** context for ibverbs lr2 */
+struct nm_ibverbs_lr2_context_s
+{
+  struct nm_ibverbs_hca_s*p_hca;
+  struct nm_connector_s*p_connector;
+};
 
 /** Connection state for tracks sending with lr2 */
 struct nm_ibverbs_lr2
@@ -93,6 +99,7 @@ struct nm_ibverbs_lr2
 
 static void nm_ibverbs_lr2_getprops(int index, struct nm_minidriver_properties_s*props);
 static void nm_ibverbs_lr2_init(puk_context_t context, const void**drv_url, size_t*url_size);
+static void nm_ibverbs_lr2_close(puk_context_t context);
 static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n);
 static void nm_ibverbs_lr2_send_data(void*_status, const struct nm_data_s*p_data);
@@ -106,6 +113,7 @@ static const struct nm_minidriver_iface_s nm_ibverbs_lr2_minidriver =
   {
     .getprops    = &nm_ibverbs_lr2_getprops,
     .init        = &nm_ibverbs_lr2_init,
+    .close       = &nm_ibverbs_lr2_close,
     .connect     = &nm_ibverbs_lr2_connect,
     .send_post   = &nm_ibverbs_lr2_send_post,
     .send_data   = &nm_ibverbs_lr2_send_data,
@@ -147,13 +155,22 @@ static void* nm_ibverbs_lr2_instantiate(puk_instance_t instance, puk_context_t c
   lr2->buffer.rack = 0;
   lr2->mr = NULL;
   lr2->context = context;
+  lr2->cnx = NULL;
   return lr2;
 }
 
 static void nm_ibverbs_lr2_destroy(void*_status)
 {
-  TBX_FREE(_status);
-  /* TODO */
+  struct nm_ibverbs_lr2*lr2 = _status;
+  if(lr2->cnx)
+    {
+      nm_ibverbs_cnx_close(lr2->cnx);
+    }
+  if(lr2->mr)
+    {
+      ibv_dereg_mr(lr2->mr);
+    }
+  free(lr2);
 }
 
 /* *** lr2 connection ************************************** */
@@ -167,40 +184,51 @@ static void nm_ibverbs_lr2_getprops(int index, struct nm_minidriver_properties_s
 static void nm_ibverbs_lr2_init(puk_context_t context, const void**drv_url, size_t*url_size)
 { 
   const char*url = NULL;
-  nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
+  const char*s_index = puk_context_getattr(context, "index");
+  const int index = s_index ? atoi(s_index) : 0;
+  struct nm_ibverbs_lr2_context_s*p_lr2_context = malloc(sizeof(struct nm_ibverbs_lr2_context_s));
+  p_lr2_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
+  p_lr2_context->p_hca = nm_ibverbs_hca_resolve(index);
+  puk_context_set_status(context, p_lr2_context);
   puk_context_putattr(context, "local_url", url);
   *drv_url = url;
   *url_size = strlen(url);
 }
 
+static void nm_ibverbs_lr2_close(puk_context_t context)
+{
+  struct nm_ibverbs_lr2_context_s*p_lr2_context = puk_context_get_status(context);
+  nm_connector_destroy(p_lr2_context->p_connector);
+  nm_ibverbs_hca_release(p_lr2_context->p_hca);
+  puk_context_set_status(context, NULL);
+  free(p_lr2_context);
+}
+
 static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t url_size)
 {
   struct nm_ibverbs_lr2*lr2 = _status;
-  const char*s_index = puk_context_getattr(lr2->context, "index");
-  const int index= s_index ? atoi(s_index) : 0;
-  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
-  struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
-  lr2->cnx = p_ibverbs_cnx;
-  lr2->mr = ibv_reg_mr(p_hca->pd, &lr2->buffer, sizeof(lr2->buffer),
+  struct nm_ibverbs_lr2_context_s*p_lr2_context = puk_context_get_status(lr2->context);
+  lr2->cnx = nm_ibverbs_cnx_new(p_lr2_context->p_hca);
+  lr2->mr = ibv_reg_mr(p_lr2_context->p_hca->pd, &lr2->buffer, sizeof(lr2->buffer),
 		       IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   lr2->send.prefetch = NULL;
   if(lr2->mr == NULL)
     {
       TBX_FAILURE("Infiniband: lr2 cannot register MR.\n");
     }
-  struct nm_ibverbs_segment*seg = &p_ibverbs_cnx->local_addr.segment;
+  struct nm_ibverbs_segment*seg = &lr2->cnx->local_addr.segment;
   seg->raddr = (uintptr_t)&lr2->buffer;
   seg->rkey  = lr2->mr->rkey;
   /* ** exchange addresses */
   const char*local_url = puk_context_getattr(lr2->context, "local_url");
   int rc = nm_connector_exchange(local_url, remote_url,
-				 &p_ibverbs_cnx->local_addr, &p_ibverbs_cnx->remote_addr);
+				 &lr2->cnx->local_addr, &lr2->cnx->remote_addr);
   if(rc)
     {
       fprintf(stderr, "nmad: FATAL- ibverbs: timeout in address exchange.\n");
     }
-  lr2->seg = p_ibverbs_cnx->remote_addr.segment;
-  nm_ibverbs_cnx_connect(p_ibverbs_cnx);
+  lr2->seg = lr2->cnx->remote_addr.segment;
+  nm_ibverbs_cnx_connect(lr2->cnx);
 }
 
 /* *** lr2 I/O ********************************************* */

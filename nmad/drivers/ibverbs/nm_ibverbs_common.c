@@ -59,8 +59,9 @@ PADICO_MODULE_DECLARE(NewMad_ibverbs_common);
 
 static struct
 {
+  int refcount;              /**< number of drivers using ibverbs common */
   puk_hashtable_t hca_table; /**< HCAs, hashed by index (as int) */
-} nm_ibverbs_common = { .hca_table = NULL };
+} nm_ibverbs_common = { .refcount = 0, .hca_table = NULL };
 
 static tbx_checksum_t _nm_ibverbs_checksum = NULL;
 
@@ -115,7 +116,10 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
     index = 0;
  struct nm_ibverbs_hca_s*p_hca = puk_hashtable_lookup(nm_ibverbs_common.hca_table, (void*)(uintptr_t)(index + 1));
   if(p_hca)
-    return p_hca;
+    {
+      p_hca->refcount++;
+      return p_hca;
+    }
 
   p_hca = TBX_MALLOC(sizeof(struct nm_ibverbs_hca_s));
 
@@ -218,7 +222,8 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
       fprintf(stderr, "nmad: FATAL- ibverbs: cannot allocate IB protection domain.\n");
       abort();
     }
-
+  p_hca->refcount = 1;
+  p_hca->index = index;
   puk_hashtable_insert(nm_ibverbs_common.hca_table, (void*)(uintptr_t)(index + 1), p_hca);
   return p_hca;
 }
@@ -244,7 +249,21 @@ void nm_ibverbs_hca_get_profile(int index, struct nm_drv_profile_s*p_profile)
 #endif /* PM2_TOPOLOGY */
   p_profile->latency = 1200; /* from sampling */
   p_profile->bandwidth = 1024 * (p_hca->ib_caps.data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
+  p_hca->refcount--; /* decrease refcount, but do not free for now */
 }
+
+void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca)
+{
+  p_hca->refcount--;
+  if(p_hca->refcount <= 0)
+    {
+      puk_hashtable_remove(nm_ibverbs_common.hca_table, (void*)(uintptr_t)(p_hca->index + 1));
+      ibv_dealloc_pd(p_hca->pd);
+      ibv_close_device(p_hca->context);
+      free(p_hca);
+    }
+}
+
 
 struct nm_ibverbs_cnx*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca)
 {
@@ -263,6 +282,14 @@ void nm_ibverbs_cnx_connect(struct nm_ibverbs_cnx*p_ibverbs_cnx)
   nm_ibverbs_cnx_qp_init(p_ibverbs_cnx);
   nm_ibverbs_cnx_qp_rtr(p_ibverbs_cnx);
   nm_ibverbs_cnx_qp_rts(p_ibverbs_cnx);
+}
+
+void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx*p_ibverbs_cnx)
+{
+  ibv_destroy_qp(p_ibverbs_cnx->qp);
+  ibv_destroy_cq(p_ibverbs_cnx->if_cq);
+  ibv_destroy_cq(p_ibverbs_cnx->of_cq);
+  free(p_ibverbs_cnx);
 }
 
 void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx*p_ibverbs_cnx)

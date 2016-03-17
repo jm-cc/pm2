@@ -52,6 +52,13 @@ struct nm_ibverbs_bycopy_packet
   struct nm_ibverbs_bycopy_header header;
 } __attribute__((packed));
 
+/** context for ibverbs bycopy */
+struct nm_ibverbs_bycopy_context_s
+{
+  struct nm_ibverbs_hca_s*p_hca;
+  struct nm_connector_s*p_connector;
+};
+
 /** Connection state for tracks sending by copy
  */
 struct nm_ibverbs_bycopy
@@ -86,7 +93,7 @@ struct nm_ibverbs_bycopy
     int v_done;         /**< size of current iovec segment already sent */
     int v_current;      /**< current iovec segment beeing sent */
   } send;
-  
+
   struct nm_ibverbs_segment seg; /**< remote segment */
   struct ibv_mr*mr;           /**< global MR (used for 'buffer') */
   struct nm_ibverbs_cnx*cnx;
@@ -95,6 +102,7 @@ struct nm_ibverbs_bycopy
 
 static void nm_ibverbs_bycopy_getprops(int index, struct nm_minidriver_properties_s*props);
 static void nm_ibverbs_bycopy_init(puk_context_t context, const void**drv_url, size_t*url_size);
+static void nm_ibverbs_bycopy_close(puk_context_t context);
 static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_bycopy_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_bycopy_send_poll(void*_status);
@@ -106,6 +114,7 @@ static const struct nm_minidriver_iface_s nm_ibverbs_bycopy_minidriver =
   {
     .getprops    = &nm_ibverbs_bycopy_getprops,
     .init        = &nm_ibverbs_bycopy_init,
+    .close       = &nm_ibverbs_bycopy_close,
     .connect     = &nm_ibverbs_bycopy_connect,
     .send_post   = &nm_ibverbs_bycopy_send_post,
     .send_poll   = &nm_ibverbs_bycopy_send_poll,
@@ -153,12 +162,22 @@ static void* nm_ibverbs_bycopy_instantiate(puk_instance_t instance, puk_context_
   bycopy->recv.buf_posted = NULL;
   bycopy->send.v          = NULL;
   bycopy->context         = context;
+  bycopy->cnx             = NULL;
   return bycopy;
 }
 
 static void nm_ibverbs_bycopy_destroy(void*_status)
 {
-  /* TODO */
+  struct nm_ibverbs_bycopy*bycopy = _status;
+  if(bycopy->cnx)
+    {
+      nm_ibverbs_cnx_close(bycopy->cnx);
+    }
+  if(bycopy->mr)
+    {
+      ibv_dereg_mr(bycopy->mr);
+    }
+  free(bycopy);
 }
 
 
@@ -171,24 +190,33 @@ static void nm_ibverbs_bycopy_init(puk_context_t context, const void**drv_url, s
 {
   const char*url = NULL;
   assert(context != NULL);
-  nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
+  const char*s_index = puk_context_getattr(context, "index");
+  const int index = s_index ? atoi(s_index) : 0;
+  struct nm_ibverbs_bycopy_context_s*p_bycopy_context = malloc(sizeof(struct nm_ibverbs_bycopy_context_s));
+  p_bycopy_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
+  p_bycopy_context->p_hca = nm_ibverbs_hca_resolve(index);
+  puk_context_set_status(context, p_bycopy_context);
   puk_context_putattr(context, "local_url", url);
   *drv_url = url;
   *url_size = strlen(url);
+}
+
+static void nm_ibverbs_bycopy_close(puk_context_t context)
+{
+  struct nm_ibverbs_bycopy_context_s*p_bycopy_context = puk_context_get_status(context);
+  nm_connector_destroy(p_bycopy_context->p_connector);
+  nm_ibverbs_hca_release(p_bycopy_context->p_hca);
+  puk_context_set_status(context, NULL);
+  free(p_bycopy_context);
 }
 
 
 static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_t url_size)
 {
   struct nm_ibverbs_bycopy*bycopy = _status;
-  const char*s_index = puk_context_getattr(bycopy->context, "index");
-  const int index = s_index ? atoi(s_index) : 0;
-  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
-  struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
-  bycopy->cnx = p_ibverbs_cnx;
-
-  /* register Memory Region */
-  bycopy->mr = ibv_reg_mr(p_hca->pd, &bycopy->buffer, sizeof(bycopy->buffer),
+  struct nm_ibverbs_bycopy_context_s*p_bycopy_context = puk_context_get_status(bycopy->context);
+  bycopy->cnx = nm_ibverbs_cnx_new(p_bycopy_context->p_hca);
+  bycopy->mr = ibv_reg_mr(p_bycopy_context->p_hca->pd, &bycopy->buffer, sizeof(bycopy->buffer),
 			  IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(bycopy->mr == NULL)
     {
@@ -197,25 +225,25 @@ static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_
 		   err, strerror(err));
     }
 
-  struct nm_ibverbs_segment*seg = &p_ibverbs_cnx->local_addr.segment;
+  struct nm_ibverbs_segment*seg = &bycopy->cnx->local_addr.segment;
   seg->raddr = (uintptr_t)&bycopy->buffer;
   seg->rkey  = bycopy->mr->rkey;
   /* ** exchange addresses */
   const char*local_url = puk_context_getattr(bycopy->context, "local_url");
   int rc = nm_connector_exchange(local_url, remote_url,
-				 &p_ibverbs_cnx->local_addr, &p_ibverbs_cnx->remote_addr);
+				 &bycopy->cnx->local_addr, &bycopy->cnx->remote_addr);
   if(rc)
     {
       fprintf(stderr, "nmad: FATAL- ibverbs: timeout in address exchange.\n");
     }
-  bycopy->seg = p_ibverbs_cnx->remote_addr.segment;
+  bycopy->seg = bycopy->cnx->remote_addr.segment;
   bycopy->buffer.rready = 0;
-  nm_ibverbs_cnx_connect(p_ibverbs_cnx);
+  nm_ibverbs_cnx_connect(bycopy->cnx);
   /*
   bycopy->buffer.sready = 1;
   while(!bycopy->buffer.rready)
     {
-      nm_ibverbs_sync_send((void*)&bycopy->buffer.sready, (void*)&bycopy->buffer.rready, sizeof(bycopy->buffer.sready), p_ibverbs_cnx);
+      nm_ibverbs_sync_send((void*)&bycopy->buffer.sready, (void*)&bycopy->buffer.rready, sizeof(bycopy->buffer.sready), bycopy->cnx);
     }
   */
 }

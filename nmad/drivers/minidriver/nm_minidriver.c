@@ -267,7 +267,13 @@ static int nm_minidriver_close(struct nm_drv *p_drv)
 	puk_component_get_driver_NewMad_minidriver(context->component, "minidriver");
       if(minidriver_iface->close)
 	(*minidriver_iface->close)(context);
+#ifdef PM2_TOPOLOGY
+      hwloc_bitmap_free(p_minidriver_context->trks_array[i].props.profile.cpuset);
+#endif
     }
+#ifdef PM2_TOPOLOGY
+  hwloc_bitmap_free(p_drv->profile.cpuset);
+#endif
   TBX_FREE(p_minidriver_context->url);
   TBX_FREE(p_minidriver_context);
   TBX_FREE(p_minidriver_drv);

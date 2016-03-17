@@ -196,6 +196,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 	    }
 	  free(s_drv_cpuset);
 	  free(s_current);
+	  hwloc_bitmap_free(current);
 	}
       else
 	{

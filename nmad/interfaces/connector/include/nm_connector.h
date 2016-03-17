@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2013 (see AUTHORS file)
+ * Copyright (C) 2013-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ struct nm_connector_s*nm_connector_create(int addr_len, const char**url);
 int nm_connector_exchange(const char*local_connector_url, const char*remote_connector_url,
 			  const void*local_cnx_addr, void*remote_cnx_addr);
 
+void nm_connector_destroy(struct nm_connector_s*p_connector);
 
 
 #endif /* NM_CONNECTOR_H */

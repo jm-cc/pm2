@@ -99,6 +99,8 @@ struct nm_ibverbs_hca_s
     uint64_t max_msg_size;    /**< maximum message size */
     int data_rate;
   } ib_caps;
+  int refcount;
+  int index;
 };
 
 
@@ -121,11 +123,17 @@ struct nm_ibverbs_cnx
 
 /* ********************************************************* */
 
+/** resolve the HCA for given index; return existing reference if HCA already open */
 struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index);
+
+/** release ref on HCA; close if last reference */
+void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca);
 
 void nm_ibverbs_hca_get_profile(int index, struct nm_drv_profile_s*p_profile);
 
 struct nm_ibverbs_cnx*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca);
+
+void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx*p_ibverbs_cnx);
 
 void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx*p_ibverbs_cnx);
 

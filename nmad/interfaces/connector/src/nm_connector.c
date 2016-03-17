@@ -126,6 +126,22 @@ struct nm_connector_s*nm_connector_create(int addr_len, const char**url)
   return c;
 }
 
+void nm_connector_destroy(struct nm_connector_s*p_connector)
+{
+  NM_SYS(close)(p_connector->sock);
+  puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(p_connector->addrs);
+  struct nm_connector_entry_s*entry = puk_hashtable_enumerator_next_data(e);
+  while(entry)
+    {
+      puk_hashtable_remove(p_connector->addrs, entry);
+      free(entry);
+      entry = puk_hashtable_enumerator_next_data(e);
+    };
+  puk_hashtable_enumerator_delete(e);
+  puk_hashtable_delete(p_connector->addrs);
+  free(p_connector);
+}
+
 
 static void nm_connector_send(struct nm_connector_s*p_connector, const char*remote_url,
 			      const void*local_addr, int ack)

@@ -19,6 +19,18 @@
 
 PUK_VECT_TYPE(nm_core_monitor, const struct nm_core_monitor_s*);
 
+/** a chunk of unexpected message to be stored */
+struct nm_unexpected_s
+{
+  void*header;
+  struct nm_pkt_wrap*p_pw;
+  nm_gate_t p_gate;
+  nm_seq_t seq;
+  nm_core_tag_t tag;
+  nm_len_t msg_len; /**< length of full message on last chunk, NM_LEN_UNDEFINED if not last chunk */
+  struct tbx_fast_list_head link;
+};
+
 /** Core NewMadeleine structure.
  */
 struct nm_core

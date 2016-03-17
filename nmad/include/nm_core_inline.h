@@ -199,36 +199,44 @@ static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_core_tag_t tag, nm_s
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }
 
+static inline int nm_event_matches(const struct nm_core_monitor_s*p_monitor, const struct nm_core_event_s*p_event)
+{
+  const nm_status_t status = p_event->status & ~NM_STATUS_FINALIZED;
+  const int matches =
+    ( (p_monitor->mask & status) &&
+      (p_monitor->matching.p_gate == NM_GATE_NONE || p_monitor->matching.p_gate == p_event->p_gate) &&
+      (nm_tag_match(p_event->tag, p_monitor->matching.tag, p_monitor->matching.tag_mask))
+      );
+  return matches;
+}
+
 /** Fires an event
  */
-static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const event, struct nm_req_s*p_req)
+static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_req_s*p_req)
 {
-  const nm_status_t status = event->status & ~NM_STATUS_FINALIZED;
+  const nm_status_t status = p_event->status & ~NM_STATUS_FINALIZED;
   /* signal event if finalized */
-  if(p_req && (event->status & NM_STATUS_FINALIZED))
+  if(p_req && (p_event->status & NM_STATUS_FINALIZED))
     {
       nm_status_signal(p_req, status);
     }
   /* request monitors */
   if((p_req != NULL) && (p_req->monitor.mask & status))
     {
-      (*p_req->monitor.notifier)(event);
+      (*p_req->monitor.notifier)(p_event);
     }
   /* fire global monitors */
   nm_core_monitor_vect_itor_t i;
   puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)
     {
-      if( ((*i)->mask & status) &&
-	  ((*i)->matching.p_gate == NM_GATE_NONE || (*i)->matching.p_gate == event->p_gate) &&
-	  (nm_tag_match(event->tag, (*i)->matching.tag, (*i)->matching.tag_mask))
-	  )
+      if(nm_event_matches(*i, p_event))
 	{
-	  ((*i)->notifier)(event);
+	  ((*i)->notifier)(p_event);
 	}
     }
   /* set final status *after* events */
   if(p_req)
-    nm_status_add(p_req, event->status);
+    nm_status_add(p_req, p_event->status);
 }
 
 

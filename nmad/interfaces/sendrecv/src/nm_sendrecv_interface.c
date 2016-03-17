@@ -268,22 +268,18 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
       }
     };
   p_sr_session->unexpected = notifier;
-  nmad_lock();
-  nm_core_monitor_add(p_session->p_core, &p_sr_session->monitor);
-  nmad_unlock();
   /* sanity check */
   if(mask == NM_STATUS_UNEXPECTED)
     {
-      if(!tbx_fast_list_empty(&p_session->p_core->gate_list))
-	{
-	  fprintf(stderr, "nmad: WARNING- nm_sr_monitor() set for event UNEXPECTED after connecting gate. Behavior is unspecified.\n");
-	}
       int rc = nm_sr_probe(p_session, NM_GATE_NONE, NULL, 0, NM_TAG_MASK_NONE, NULL, NULL);
       if(rc == NM_ESUCCESS)
 	{
-	  TBX_FAILURE("nmad: FATAL- cannot set UNEXPECTED monitor: pending unexpected messages.\n");
+	  fprintf(stderr, "# nmad: WARNING- set UNEXPECTED monitor with pending unexpected messages.\n");
 	}
     }
+  nmad_lock();
+  nm_core_monitor_add(p_session->p_core, &p_sr_session->monitor);
+  nmad_unlock();
   return NM_ESUCCESS;
 }
 

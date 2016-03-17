@@ -34,16 +34,6 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
 /* ********************************************************* */
 /* ** unexpected/matching */
 
-/** a chunk of unexpected message to be stored */
-struct nm_unexpected_s
-{
-  void*header;
-  struct nm_pkt_wrap*p_pw;
-  nm_gate_t p_gate;
-  nm_seq_t seq;
-  nm_core_tag_t tag;
-  struct tbx_fast_list_head link;
-};
 
 /** fast allocator for struct nm_unexpected_s */
 PUK_ALLOCATOR_TYPE(nm_unexpected, struct nm_unexpected_s);
@@ -243,6 +233,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
   const nm_proto_t*proto_id = header;
   if(*proto_id & NM_PROTO_FLAG_LASTCHUNK)
     {
+      p_chunk->msg_len = chunk_offset + chunk_len;
       const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNEXPECTED,
@@ -252,6 +243,10 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
 	  .len    = chunk_offset + chunk_len
 	};
       nm_core_status_event(p_core, &event, NULL);
+    }
+  else
+    {
+      p_chunk->msg_len = NM_LEN_UNDEFINED;
     }
 }
 

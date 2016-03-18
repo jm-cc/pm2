@@ -73,7 +73,9 @@ int nm_sr_exit(nm_session_t p_session)
   assert(p_sr_session != NULL);
   if(p_sr_session->monitor.notifier != NULL)
     {
+      nmad_lock();
       nm_core_monitor_remove(p_session->p_core, &p_sr_session->monitor);
+      nmad_unlock();
     }
   free(p_sr_session);
   p_session->ref = NULL;

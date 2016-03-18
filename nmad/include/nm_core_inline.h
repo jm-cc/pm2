@@ -79,13 +79,13 @@ static __inline__ void nm_so_pw_assign(struct nm_pkt_wrap*p_pw, nm_trk_id_t trk_
 
 static inline void nm_pw_ref_inc(struct nm_pkt_wrap *p_pw)
 {
-  p_pw->ref_count++;
+  __sync_fetch_and_add(&p_pw->ref_count, 1);
 }
 static inline void nm_pw_ref_dec(struct nm_pkt_wrap *p_pw)
 {
-  p_pw->ref_count--;
-  assert(p_pw->ref_count >= 0);
-  if(p_pw->ref_count == 0)
+  const int count = __sync_sub_and_fetch(&p_pw->ref_count, 1);
+  assert(count >= 0);
+  if(count == 0)
     {
       nm_so_pw_free(p_pw);
     }

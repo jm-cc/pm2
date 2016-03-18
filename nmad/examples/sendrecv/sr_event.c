@@ -53,11 +53,13 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
       const nm_gate_t from = info->recv_unexpected.p_gate;
       const nm_tag_t tag = info->recv_unexpected.tag;
       const size_t len = info->recv_unexpected.len;
-      printf(":: event NM_SR_EVENT_RECV_UNEXPECTED- tag = %d; len = %d; from gate = %s\n",
+      printf("# event NM_SR_EVENT_RECV_UNEXPECTED- tag = %d; len = %d; from gate = %s\n",
 	     (int)tag, (int)len, from?(from == p_gate ? "peer":"unknown"):"(nil)");
       if(tag == 1)
 	{
-	  printf("   receiving tag = %d in event handler...\n", (int)tag);
+	  printf(":: event NM_SR_EVENT_RECV_UNEXPECTED- tag = %d; len = %d; from gate = %s\n",
+		 (int)tag, (int)len, from?(from == p_gate ? "peer":"unknown"):"(nil)");
+	  printf("   receiving tag = %d; len = %d in event handler...\n", (int)tag, (int)len);
 	  nm_sr_request_t*request = &unexpected_requests[n_unexpected++];
 	  nm_sr_irecv(p_session, from, tag, buf, len, request);
 	}
@@ -82,6 +84,7 @@ int main(int argc, char **argv)
       memset(buf, 0, long_len);
       nm_sr_monitor(p_session, NM_SR_EVENT_RECV_UNEXPECTED, &request_notifier);
 
+      fprintf(stderr, "# ## per-request event...\n");
       /* per-request event. */
       memset(buf, 0, long_len);
       nm_sr_recv_init(p_session, &request0);
@@ -89,24 +92,28 @@ int main(int argc, char **argv)
       nm_sr_request_monitor(p_session, &request0, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
       nm_sr_recv_irecv(p_session, &request0, NM_ANY_GATE, 0, NM_TAG_MASK_FULL);
       nm_sr_rwait(p_session, &request0);
+      fprintf(stderr, "# done.\n");
 
-      /* set global handler for recv complete */
-      nm_sr_monitor(p_session, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
-
+      fprintf(stderr, "# ## force recv.\n");
       /* receive the last packet to force all others to be unexpected */
       nm_sr_irecv(p_session, NM_ANY_GATE, 2, buf, short_len, &request1);
       nm_sr_rwait(p_session, &request1);
+      fprintf(stderr, "# done.\n");
 
+      fprintf(stderr, "# ## recv with ref.\n");
       /* test the *_with_ref feature */
       nm_sr_irecv_with_ref(p_session, NM_ANY_GATE, 0, buf, short_len, &request0, (void*)0xDEADBEEF);
       nm_sr_rwait(p_session, &request0);
+      fprintf(stderr, "# done.\n");
 
+      fprintf(stderr, "# ## flushing pending requests.\n");
       /* flush pending requests */
       int i;
       for(i = 0; i < n_unexpected; i++)
 	{
 	  nm_sr_rwait(p_session, &unexpected_requests[i]);
 	}
+      fprintf(stderr, "# done.\n");
     }
   else
     {

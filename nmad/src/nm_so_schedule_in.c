@@ -87,24 +87,24 @@ void nm_unexpected_clean(struct nm_core*p_core)
  */
 static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
-  struct nm_unexpected_s*chunk;
-  tbx_fast_list_for_each_entry(chunk, &p_core->unexpected, link)
+  struct nm_unexpected_s*p_chunk;
+  tbx_fast_list_for_each_entry(p_chunk, &p_core->unexpected, link)
     {
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
+      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_chunk->p_gate->tags, p_chunk->tag);
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-      if(((p_unpack->p_gate == chunk->p_gate) || (p_unpack->p_gate == NM_ANY_GATE)) && /* gate matches */
-	 nm_tag_match(chunk->tag, p_unpack->tag, p_unpack->unpack.tag_mask) && /* tag matches */
-	 ((p_unpack->seq == chunk->seq) || ((p_unpack->seq == NM_SEQ_NONE) && (chunk->seq == next_seq))) /* seq number matches */ ) 
+      if(((p_unpack->p_gate == p_chunk->p_gate) || (p_unpack->p_gate == NM_ANY_GATE)) && /* gate matches */
+	 nm_tag_match(p_chunk->tag, p_unpack->tag, p_unpack->unpack.tag_mask) && /* tag matches */
+	 ((p_unpack->seq == p_chunk->seq) || ((p_unpack->seq == NM_SEQ_NONE) && (p_chunk->seq == next_seq))) /* seq number matches */ ) 
 	{
 	  if(p_unpack->seq == NM_SEQ_NONE)
 	    {
 	      p_so_tag->recv_seq_number = next_seq;
 	    }
-	  p_unpack->tag      = chunk->tag;
+	  p_unpack->tag      = p_chunk->tag;
 	  p_unpack->unpack.tag_mask = NM_CORE_TAG_MASK_FULL;
-	  p_unpack->p_gate   = chunk->p_gate;
-	  p_unpack->seq      = chunk->seq;
-	  return chunk;
+	  p_unpack->p_gate   = p_chunk->p_gate;
+	  p_unpack->seq      = p_chunk->seq;
+	  return p_chunk;
 	}
     }
   return NULL;

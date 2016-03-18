@@ -195,7 +195,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 			}
 		    else
 			{
-			    PIOM_FATAL("wrong state 0x%x for scheduled ltask.\n", prestate);
+			    PIOM_FATAL("wrong state 0x%4x for scheduled ltask.\n", prestate);
 			}
 		    piom_trace_local_state(PIOM_TRACE_STATE_NONE);
 		    if(success)
@@ -376,8 +376,8 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
 {
     if(ltask->state == PIOM_LTASK_STATE_NONE)
 	return;
-    piom_ltask_state_unset(ltask, PIOM_LTASK_STATE_READY);
     piom_ltask_state_set(ltask, PIOM_LTASK_STATE_CANCELLED);
+    piom_ltask_state_unset(ltask, PIOM_LTASK_STATE_READY);
     struct piom_ltask_queue*queue = ltask->queue;
     if(queue)
 	{

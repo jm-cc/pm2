@@ -166,7 +166,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
   p_unpack->unpack.cumulated_len += chunk_len;
   if(p_unpack->unpack.cumulated_len == p_unpack->unpack.expected_len)
     {
-#warning Paulette: lock
+      nmad_lock_assert();
       tbx_fast_list_del(&p_unpack->_link);
 
       if((p_pw != NULL) && (p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
@@ -228,7 +228,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
       if(nm_unexpected_mem_size > 64*1024)
 	TBX_FAILUREF("nmad: FATAL- %lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
     }
-#warning Paulette: lock
+  nmad_lock_assert();
   tbx_fast_list_add_tail(&p_chunk->link, &p_core->unexpected);
   const nm_proto_t*proto_id = header;
   if(*proto_id & NM_PROTO_FLAG_LASTCHUNK)
@@ -556,7 +556,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
 		p_pack->seq, p_large_pw->chunk_offset);
       if((p_pack->seq == seq) && nm_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
 	{
-#warning Paulette: lock
+	  nmad_lock_assert();
 	  tbx_fast_list_del(&p_large_pw->link);
 	  if(chunk_len < p_large_pw->length)
 	    {
@@ -578,7 +578,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
 	      p_large_pw->completions[0].len = chunk_len; /* truncate the contrib */
 	      /* populate p_pw2 iovec */
 	      nm_so_pw_split_data(p_large_pw, p_pw2, chunk_len);
-#warning Paulette: lock
+	      nmad_lock_assert();
 	      tbx_fast_list_add(&p_pw2->link, &p_gate->pending_large_send);
 	    }
 	  /* send the data */
@@ -628,7 +628,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
     {
       if(nm_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
 	{
-#warning Paulette: lock
+	  nmad_lock_assert();
 	  tbx_fast_list_del(&p_pack->_link);
 	  const struct nm_core_event_s event =
 	    {

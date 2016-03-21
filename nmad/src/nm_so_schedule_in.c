@@ -206,7 +206,9 @@ static inline void nm_so_data_flags_decode(struct nm_req_s*p_unpack, uint8_t fla
       p_unpack->unpack.expected_len = chunk_end;
     }
   if((p_unpack->unpack.cumulated_len == 0) && (flags & NM_PROTO_FLAG_ACKREQ))
-    nm_so_post_ack(p_unpack->p_gate, p_unpack->tag, p_unpack->seq);
+    {
+      nm_so_post_ack(p_unpack->p_gate, p_unpack->tag, p_unpack->seq);
+    }
 }
 
 /** store an unexpected chunk of data (data/short_data/rdv) */
@@ -624,6 +626,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
   const nm_core_tag_t tag = header->tag_id;
   const nm_seq_t seq = header->seq;
   struct nm_req_s*p_pack = NULL;
+
   tbx_fast_list_for_each_entry(p_pack, &p_core->pending_packs, _link)
     {
       if(nm_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
@@ -632,7 +635,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
 	  tbx_fast_list_del(&p_pack->_link);
 	  const struct nm_core_event_s event =
 	    {
-	      .status = NM_STATUS_ACK_RECEIVED,
+	      .status = NM_STATUS_ACK_RECEIVED | (nm_status_test(p_pack, NM_STATUS_PACK_COMPLETED) ? NM_STATUS_FINALIZED : 0),
 	      .p_req = p_pack
 	    };
 	  nm_core_status_event(p_core, &event, p_pack);

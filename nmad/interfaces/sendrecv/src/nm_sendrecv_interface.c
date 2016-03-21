@@ -134,10 +134,24 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
   if(!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED))
     TBX_FAILUREF("nm_sr_swait- req=%p no send posted!\n", p_request);
 #endif /* DEBUG */
+  const nm_status_t status = (p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS) ?
+    (NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED) : (NM_STATUS_PACK_COMPLETED);
+
   if(!nm_status_testall(&p_request->req, NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED))
     {
       nm_sr_flush(p_core);
-      nm_status_wait(&p_request->req, NM_STATUS_PACK_COMPLETED, p_core);
+      if(p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS)
+	{
+	  nm_status_wait(&p_request->req, NM_STATUS_ACK_RECEIVED, p_core);
+	  while(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
+	    {
+	      nm_sr_progress(p_session);
+	    }
+	}
+      else
+	{
+	  nm_status_wait(&p_request->req, NM_STATUS_PACK_COMPLETED, p_core);
+	}
       nm_status_spinwait(&p_request->req, NM_STATUS_FINALIZED);
     }
   return NM_ESUCCESS;

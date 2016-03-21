@@ -188,21 +188,18 @@ static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv
 static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_self*status = (struct nm_self*)_status;
-  p_pw->drv_priv = (void*)0x01;
+  nm_pw_ref_inc(p_pw);
   int err = nm_pw_lfqueue_enqueue(&status->queues[p_pw->trk_id], p_pw);
   if(err != 0)
     {
       fprintf(stderr, "nmad: self- queue full while sending data.\n");
     }
-  return -NM_EAGAIN;
+  return NM_ESUCCESS;
 }
 
 static int nm_self_poll_send(void*_status, struct nm_pkt_wrap *p_pw)
 {
-  if(p_pw->drv_priv == NULL)
-    return NM_ESUCCESS;
-  else
-    return -NM_EAGAIN;
+  return NM_ESUCCESS;
 }
 
 static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
@@ -221,7 +218,9 @@ static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
   struct nm_self*status = (struct nm_self*)_status;
   struct nm_pkt_wrap*p_send_pw = nm_pw_lfqueue_dequeue(&status->queues[p_pw->trk_id]);
   if(p_send_pw == NULL)
-    return -NM_EAGAIN;
+    {
+      return -NM_EAGAIN;
+    }
   int done = 0;
   int i;
   for(i = 0; i < p_send_pw->v_nb; i++)
@@ -234,7 +233,8 @@ static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
       memcpy(p_pw->v[0].iov_base + done, p_send_pw->v[i].iov_base, p_send_pw->v[i].iov_len);
       done += p_send_pw->v[i].iov_len;
     }
-  p_send_pw->drv_priv = NULL;
+  p_pw->v[0].iov_len = done;
+  nm_pw_ref_dec(p_send_pw);
   return NM_ESUCCESS;
 }
 

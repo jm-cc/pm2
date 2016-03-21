@@ -99,7 +99,8 @@ int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw
 	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->pack.len);
 	  const struct nm_core_event_s event =
 	    {
-	      .status = NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED,
+	      .status = NM_STATUS_PACK_COMPLETED |
+	      ( ((!(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)) || nm_status_test(p_pack, NM_STATUS_ACK_RECEIVED)) ? NM_STATUS_FINALIZED : 0),
 	      .p_req = p_pack
 	    };
 	  nm_core_status_event(p_pw->p_gate->p_core, &event, p_pack);

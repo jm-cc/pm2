@@ -348,6 +348,10 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
       *(const int**)attr_value = &nm_mpi_wtime_is_global;
       *flag = 1;
       break;
+    case MPI_UNIVERSE_SIZE:
+      nm_launcher_get_size(attr_value);
+      *flag = 1;
+      break;
     default:
       {
 	struct nm_mpi_keyval_s*p_keyval = nm_mpi_handle_keyval_get(&nm_mpi_keyvals, keyval);

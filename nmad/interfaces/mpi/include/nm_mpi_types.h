@@ -338,7 +338,8 @@ typedef int (MPI_Comm_delete_attr_function)(MPI_Comm comm, int comm_keyval, void
 #define MPI_HOST            2
 #define MPI_IO              3
 #define MPI_WTIME_IS_GLOBAL 4
-#define _NM_MPI_ATTR_OFFSET 5
+#define MPI_UNIVERSE_SIZE   5
+#define _NM_MPI_ATTR_OFFSET 6
 
 /* @} */
 

@@ -141,7 +141,11 @@ int mpi_op_free(MPI_Op*op)
   TYPE_FUNC(MPI_UINT8_T,          uint8_t);			\
   TYPE_FUNC(MPI_UINT16_T,         uint16_t);			\
   TYPE_FUNC(MPI_UINT32_T,         uint32_t);			\
-  TYPE_FUNC(MPI_UINT64_T,         uint64_t);
+  TYPE_FUNC(MPI_UINT64_T,         uint64_t);			\
+  TYPE_FUNC(MPI_AINT,             MPI_Aint);			\
+  TYPE_FUNC(MPI_OFFSET,           MPI_Offset);			\
+  TYPE_FUNC(MPI_C_BOOL,           _Bool);			\
+  TYPE_FUNC(MPI_COUNT,            MPI_Count);
 
 /** apply a macro to floating point <MPI type, C type> pairs */
 #define NM_MPI_TYPES_APPLY_FLOATS(TYPE_FUNC)			\
@@ -154,7 +158,10 @@ int mpi_op_free(MPI_Op*op)
 /** apply a macro to COMPLEX <MPI type, C type> pairs */
 #define NM_MPI_TYPES_APPLY_COMPLEX(TYPE_FUNC)			\
   TYPE_FUNC(MPI_COMPLEX,          complex float);		\
-  TYPE_FUNC(MPI_DOUBLE_COMPLEX,   complex double);
+  TYPE_FUNC(MPI_DOUBLE_COMPLEX,   complex double);		\
+  TYPE_FUNC(MPI_C_FLOAT_COMPLEX,  float _Complex);		\
+  TYPE_FUNC(MPI_C_DOUBLE_COMPLEX, double _Complex);		\
+  TYPE_FUNC(MPI_C_LONG_DOUBLE_COMPLEX, long double _Complex);
 
 
 /** generate a switch case stanza for a given type and operation */

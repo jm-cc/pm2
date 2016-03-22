@@ -253,10 +253,17 @@ typedef int MPI_Datatype;
 #define MPI_UINT16_T          ((MPI_Datatype)47)
 #define MPI_UINT32_T          ((MPI_Datatype)48)
 #define MPI_UINT64_T          ((MPI_Datatype)49)
+#define MPI_AINT              ((MPI_Datatype)50)
+#define MPI_OFFSET            ((MPI_Datatype)51)
+#define MPI_C_BOOL            ((MPI_Datatype)52)
+#define MPI_C_COMPLEX         MPI_C_FLOAT_COMPLEX
+#define MPI_C_FLOAT_COMPLEX   ((MPI_Datatype)53)
+#define MPI_C_DOUBLE_COMPLEX  ((MPI_Datatype)54)
+#define MPI_C_LONG_DOUBLE_COMPLEX ((MPI_Datatype)55)
 /* MPI-3 MPI_Count */
-#define MPI_COUNT             ((MPI_Datatype)50)
+#define MPI_COUNT             ((MPI_Datatype)56)
 /* offset for dynamically allocated datatypes */
-#define _NM_MPI_DATATYPE_OFFSET              51
+#define _NM_MPI_DATATYPE_OFFSET              57
 
 /** Types of datatypes */
 typedef enum 

@@ -107,7 +107,7 @@
       PARAMETER (MPI_UB=40)
       INTEGER MPI_LB
       PARAMETER (MPI_LB=41)
-
+! TODO- MPI-2 and MPI-3 types additions
 
 
 !

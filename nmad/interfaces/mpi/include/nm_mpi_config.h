@@ -65,6 +65,12 @@ int MPI_Initialized(int *flag);
 int MPI_Finalize(void);
 
 /**
+ * Indicates whether MPI_Finalize has been called.
+ * @param flag a pointer to an int set to 1 if MPI_Finalize has been called, 0 otherwise.
+ */
+int MPI_Finalized(int*flag);
+
+/**
  * This routine makes a ``best attempt'' to abort all tasks in the group of comm.
  * @param comm communicator of tasks to abort
  * @param errorcode error code to return to invoking environment

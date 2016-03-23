@@ -22,7 +22,7 @@
 #include <Padico/Module.h>
 PADICO_MODULE_BUILTIN(MadMPI, NULL, NULL, NULL);
 
-static int init_done = 0;
+static int init_done = 0, finalize_done = 0;
 
 NM_MPI_HANDLE_TYPE(errhandler, struct nm_mpi_errhandler_s, _NM_MPI_ERRHANDLER_OFFSET, 8);
 static struct nm_mpi_handle_errhandler_s nm_mpi_errhandlers;
@@ -37,6 +37,7 @@ NM_MPI_ALIAS(MPI_Init, mpi_init);
 NM_MPI_ALIAS(MPI_Init_thread, mpi_init_thread);
 NM_MPI_ALIAS(MPI_Initialized, mpi_initialized);
 NM_MPI_ALIAS(MPI_Finalize, mpi_finalize);
+NM_MPI_ALIAS(MPI_Finalized, mpi_finalized);
 NM_MPI_ALIAS(MPI_Abort, mpi_abort);
 NM_MPI_ALIAS(MPI_Get_processor_name, mpi_get_processor_name);
 NM_MPI_ALIAS(MPI_Wtime, mpi_wtime);
@@ -126,9 +127,15 @@ int mpi_init_thread(int*argc, char***argv, int required, int*provided)
   return err;
 }
 
-int mpi_initialized(int *flag)
+int mpi_initialized(int*flag)
 {
   *flag = init_done;
+  return MPI_SUCCESS;
+}
+
+int mpi_finalized(int*flag)
+{
+  *flag = finalize_done;
   return MPI_SUCCESS;
 }
 
@@ -146,6 +153,7 @@ int mpi_finalize(void)
   nm_mpi_handle_errhandler_finalize(&nm_mpi_errhandlers, NULL);
   nm_mpi_handle_info_finalize(&nm_mpi_infos, NULL);
   init_done = 0;
+  finalize_done = 1;
   nm_launcher_exit();
   return err;
 }

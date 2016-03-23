@@ -21,31 +21,14 @@
 PADICO_MODULE_HOOK(MadMPI);
 
 
-/** subroutine types for FORTRAN binding */
-typedef void (nm_mpi_copy_subroutine_t)(MPI_Comm*oldcomm, int*keyval, void*extra_state, void*attribute_val_in, void*attribute_val_out, int*flag, int*ierr);
-typedef void (nm_mpi_delete_subroutine_t)(MPI_Comm*comm, int*keyval, void*attribute_val, void*extra_state, int*ierr);
-
-struct nm_mpi_keyval_s
-{
-  int id;
-  MPI_Copy_function*copy_fn;
-  MPI_Delete_function*delete_fn;
-  nm_mpi_copy_subroutine_t*copy_subroutine;
-  nm_mpi_delete_subroutine_t*delete_subroutine;
-  void*extra_state;
-};
-
 NM_MPI_HANDLE_TYPE(communicator, nm_mpi_communicator_t, _NM_MPI_COMM_OFFSET, 16); 
 NM_MPI_HANDLE_TYPE(group, nm_mpi_group_t, _NM_MPI_GROUP_OFFSET, 16); 
-NM_MPI_HANDLE_TYPE(keyval, struct nm_mpi_keyval_s, _NM_MPI_ATTR_OFFSET, 16);
 
 static struct nm_mpi_handle_communicator_s nm_mpi_communicators;
 static struct nm_mpi_handle_group_s nm_mpi_groups;
-static struct nm_mpi_handle_keyval_s nm_mpi_keyvals;
 
 static void nm_mpi_communicator_destroy(nm_mpi_communicator_t*p_comm);
 static void nm_mpi_group_destroy(nm_mpi_group_t*p_group);
-static void nm_mpi_keyval_destroy(struct nm_mpi_keyval_s*p_keyval);
 
 /* ********************************************************* */
 
@@ -56,6 +39,11 @@ NM_MPI_ALIAS(MPI_Keyval_free,           mpi_keyval_free);
 NM_MPI_ALIAS(MPI_Attr_put,              mpi_attr_put);
 NM_MPI_ALIAS(MPI_Attr_get,              mpi_attr_get);
 NM_MPI_ALIAS(MPI_Attr_delete,           mpi_attr_delete);
+NM_MPI_ALIAS(MPI_Comm_create_keyval,    mpi_comm_create_keyval);
+NM_MPI_ALIAS(MPI_Comm_free_keyval,      mpi_comm_free_keyval);
+NM_MPI_ALIAS(MPI_Comm_get_attr,         mpi_comm_get_attr);
+NM_MPI_ALIAS(MPI_Comm_set_attr,         mpi_comm_set_attr);
+NM_MPI_ALIAS(MPI_Comm_delete_attr,      mpi_comm_delete_attr);
 NM_MPI_ALIAS(MPI_Comm_group,            mpi_comm_group);
 NM_MPI_ALIAS(MPI_Comm_create,           mpi_comm_create);
 NM_MPI_ALIAS(MPI_Comm_split,            mpi_comm_split);
@@ -96,7 +84,6 @@ void nm_mpi_comm_init(void)
   /* handles allocator */
   nm_mpi_handle_communicator_init(&nm_mpi_communicators);
   nm_mpi_handle_group_init(&nm_mpi_groups);
-  nm_mpi_handle_keyval_init(&nm_mpi_keyvals);
 
   /* built-in communicators */
   nm_mpi_communicator_t*p_comm_world = nm_mpi_handle_communicator_store(&nm_mpi_communicators, MPI_COMM_WORLD);
@@ -122,7 +109,6 @@ void nm_mpi_comm_exit(void)
 {
   nm_mpi_handle_communicator_finalize(&nm_mpi_communicators, &nm_mpi_communicator_destroy);
   nm_mpi_handle_group_finalize(&nm_mpi_groups, &nm_mpi_group_destroy);
-  nm_mpi_handle_keyval_finalize(&nm_mpi_keyvals, &nm_mpi_keyval_destroy);
 }
 
 __PUK_SYM_INTERNAL
@@ -166,14 +152,6 @@ static void nm_mpi_group_destroy(nm_mpi_group_t*p_group)
     }
 }
 
-static void nm_mpi_keyval_destroy(struct nm_mpi_keyval_s*p_keyval)
-{
-  if(p_keyval != NULL)
-    {
-      nm_mpi_handle_keyval_free(&nm_mpi_keyvals, p_keyval);
-    }
-}
-
 /* ********************************************************* */
 
 int mpi_comm_size(MPI_Comm comm, int*size)
@@ -196,78 +174,10 @@ int mpi_comm_rank(MPI_Comm comm, int *rank)
   return MPI_SUCCESS;
 }
 
-/** return new attribute table from old communicator */
-static int nm_mpi_comm_attrs_copy(nm_mpi_communicator_t*p_old_comm, puk_hashtable_t*p_attrs)
-{
-  if(p_old_comm->attrs)
-    {
-      puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(p_old_comm->attrs);
-      struct nm_mpi_keyval_s*p_keyval = NULL;
-      void*p_value = NULL;
-      do
-	{
-	  puk_hashtable_enumerator_next2(e, &p_keyval, &p_value);
-	  if((p_keyval != NULL) && (p_keyval->copy_fn != MPI_NULL_COPY_FN))
-	    { 
-	      int flag = 0;
-	      void*v = puk_hashtable_lookup(p_old_comm->attrs, p_keyval);
-	      void*out = NULL;
-	      int err = MPI_SUCCESS;
-	      if(p_keyval->copy_fn != NULL)
-		{
-		  err = (p_keyval->copy_fn)(p_old_comm->id, p_keyval->id, p_keyval->extra_state, &v, &out, &flag);
-		}
-	      else if(p_keyval->copy_subroutine != NULL)
-		{
-		  (p_keyval->copy_subroutine)(&p_old_comm->id, &p_keyval->id, p_keyval->extra_state, &v, &out, &flag, &err);
-		}
-	      if(err != MPI_SUCCESS)
-		{
-		  fprintf(stderr, "# madmpi: error while copying attribute.\n");
-		  return err;
-		}
-	      if(flag)
-		{
-		  if(*p_attrs == NULL)
-		    *p_attrs = puk_hashtable_new_ptr();
-		  puk_hashtable_insert(*p_attrs, p_keyval, out);
-		}
-	    }
-	}
-      while(p_keyval != NULL);
-      puk_hashtable_enumerator_delete(e);
-    }
-  return MPI_SUCCESS;
-}
-
-static int nm_mpi_comm_attr_delete(nm_mpi_communicator_t*p_comm, struct nm_mpi_keyval_s*p_keyval)
-{
-  int err = MPI_SUCCESS;
-  if(p_comm->attrs != NULL && puk_hashtable_probe(p_comm->attrs, p_keyval))
-    {
-      void*v = puk_hashtable_lookup(p_comm->attrs, p_keyval);
-      if(p_keyval->delete_fn != NULL)
-	{
-	  err = (p_keyval->delete_fn)(p_comm->id, p_keyval->id, &v, p_keyval->extra_state);
-	}
-      else if(p_keyval->delete_subroutine != NULL)
-	{
-	  (p_keyval->delete_subroutine)(&p_comm->id, &p_keyval->id, &v, p_keyval->extra_state, &err);
-	}
-      if(err == MPI_SUCCESS)
-	{
-	  puk_hashtable_remove(p_comm->attrs, p_keyval);
-	}
-    }
-  return err;
-}
-
 /** FORTRAN binding for MPI_Keyval_create */
 void mpi_keyval_create_(void*copy_subroutine, void*delete_subroutine, int*keyval, void*extra_state, int*ierr)
 {
-  struct nm_mpi_keyval_s*p_keyval = nm_mpi_handle_keyval_alloc(&nm_mpi_keyvals);
-  p_keyval->copy_fn = NULL;;
-  p_keyval->delete_fn = NULL;
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_new();
   p_keyval->copy_subroutine = copy_subroutine;
   p_keyval->delete_subroutine = delete_subroutine;
   p_keyval->extra_state = extra_state;
@@ -277,11 +187,9 @@ void mpi_keyval_create_(void*copy_subroutine, void*delete_subroutine, int*keyval
 
 int mpi_keyval_create(MPI_Copy_function*copy_fn, MPI_Delete_function*delete_fn, int*keyval, void*extra_state)
 {
-  struct nm_mpi_keyval_s*p_keyval = nm_mpi_handle_keyval_alloc(&nm_mpi_keyvals);
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_new();
   p_keyval->copy_fn = copy_fn;
   p_keyval->delete_fn = delete_fn;
-  p_keyval->copy_subroutine = NULL;
-  p_keyval->delete_subroutine = NULL;
   p_keyval->extra_state = extra_state;
   *keyval = p_keyval->id;
   return MPI_SUCCESS;
@@ -289,17 +197,17 @@ int mpi_keyval_create(MPI_Copy_function*copy_fn, MPI_Delete_function*delete_fn, 
 
 int mpi_keyval_free(int*keyval)
 {
-  struct nm_mpi_keyval_s*p_keyval = nm_mpi_handle_keyval_get(&nm_mpi_keyvals, *keyval);
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(*keyval);
   if(p_keyval == NULL)
     return MPI_ERR_KEYVAL;
-  nm_mpi_handle_keyval_free(&nm_mpi_keyvals, p_keyval);
+  nm_mpi_keyval_delete(p_keyval);
   *keyval = MPI_KEYVAL_INVALID;
   return MPI_SUCCESS;
 }
 
 int mpi_attr_put(MPI_Comm comm, int keyval, void*attr_value)
 {
-  struct nm_mpi_keyval_s*p_keyval = nm_mpi_handle_keyval_get(&nm_mpi_keyvals, keyval);
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(keyval);
   if(p_keyval == NULL)
     return MPI_ERR_KEYVAL;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
@@ -309,14 +217,8 @@ int mpi_attr_put(MPI_Comm comm, int keyval, void*attr_value)
     {
       p_comm->attrs = puk_hashtable_new_ptr();
     }
-  if(puk_hashtable_probe(p_comm->attrs, p_keyval))
-    {
-      int err = nm_mpi_comm_attr_delete(p_comm, p_keyval);
-      if(err != MPI_SUCCESS)
-	return err;
-    }
-  puk_hashtable_insert(p_comm->attrs, p_keyval, attr_value);
-  return MPI_SUCCESS;
+  int err = nm_mpi_attr_put(p_comm->id, p_comm->attrs, p_keyval, attr_value);
+  return err;
 }
 
 int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
@@ -329,6 +231,8 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
   const static int nm_mpi_attr_io = 1;
 #else
   const static int nm_mpi_attr_io = 0;
+  static int nm_mpi_universe_size = 0;
+  static int nm_mpi_lastusedcode = MPI_ERR_LASTCODE;
 #endif
   switch(keyval)
     {
@@ -349,28 +253,28 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
       *flag = 1;
       break;
     case MPI_UNIVERSE_SIZE:
-      nm_launcher_get_size(attr_value);
+      nm_launcher_get_size(&nm_mpi_universe_size);
+      *(const int**)attr_value = &nm_mpi_universe_size;
+      *flag = 1;
+      break;
+    case MPI_APPNUM:
+      *flag = 0;
+      break;
+    case MPI_LASTUSEDCODE:
+#warning TODO- check dyanmic value
+      *(int**)attr_value = &nm_mpi_lastusedcode;
       *flag = 1;
       break;
     default:
       {
-	struct nm_mpi_keyval_s*p_keyval = nm_mpi_handle_keyval_get(&nm_mpi_keyvals, keyval);
+	struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(keyval);
 	if(p_keyval == NULL)
 	  return MPI_ERR_KEYVAL;
 	nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
 	if(p_comm == NULL)
 	  return MPI_ERR_COMM;
 	*flag = 0;
-	if(p_comm->attrs != NULL)
-	  {
-	    void*v = puk_hashtable_lookup(p_comm->attrs, p_keyval);
-	    if(v != NULL)
-	      {
-		void**_value = attr_value;
-		*_value = v;
-		*flag = 1;
-	      }
-	  }
+	nm_mpi_attr_get(p_comm->attrs, p_keyval, attr_value, flag);
       }
       break;
     }
@@ -379,13 +283,44 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
 
 int mpi_attr_delete(MPI_Comm comm, int keyval)
 {
-  struct nm_mpi_keyval_s*p_keyval = nm_mpi_handle_keyval_get(&nm_mpi_keyvals, keyval);
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(keyval);
   if(p_keyval == NULL)
     return MPI_ERR_KEYVAL;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   if(p_comm == NULL)
     return MPI_ERR_COMM;
-  int err = nm_mpi_comm_attr_delete(p_comm, p_keyval);
+  int err = nm_mpi_attr_delete(p_comm->id, p_comm->attrs, p_keyval);
+  return err;
+}
+
+
+int mpi_comm_create_keyval(MPI_Comm_copy_attr_function*comm_copy_attr_fn, MPI_Comm_delete_attr_function*comm_delete_attr_fn, int*comm_keyval, void*extra_state)
+{
+  int err = mpi_keyval_create(comm_copy_attr_fn, comm_delete_attr_fn, comm_keyval, extra_state);
+  return err;
+}
+
+int mpi_comm_free_keyval(int*comm_keyval)
+{
+  int err = mpi_keyval_free(comm_keyval);
+  return err;
+}
+  
+int mpi_comm_get_attr(MPI_Comm comm, int comm_keyval, void*attr_value, int*flag)
+{
+  int err = mpi_attr_get(comm, comm_keyval, attr_value, flag);
+  return err;
+}
+
+int mpi_comm_set_attr(MPI_Comm comm, int comm_keyval, void*attr_value)
+{
+  int err = mpi_attr_put(comm, comm_keyval, attr_value);
+  return err;
+}
+
+int mpi_comm_delete_attr(MPI_Comm comm, int comm_keyval)
+{
+  int err = mpi_attr_delete(comm, comm_keyval);
   return err;
 }
 
@@ -570,11 +505,15 @@ int mpi_comm_dup(MPI_Comm oldcomm, MPI_Comm *newcomm)
     return MPI_ERR_COMM;
   nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_dup(p_old_comm->p_nm_comm),
 							       p_old_comm->p_errhandler, p_old_comm->kind);
-  int err = nm_mpi_comm_attrs_copy(p_old_comm, &p_new_comm->attrs);
-  if(err)
+  if(p_old_comm->attrs)
     {
-      *newcomm = MPI_COMM_NULL;
-      return err;
+      int err = nm_mpi_attrs_copy(p_old_comm->id, p_old_comm->attrs, &p_new_comm->attrs);
+      if(err)
+	{
+	  nm_mpi_communicator_destroy(p_new_comm);
+	  *newcomm = MPI_COMM_NULL;
+	  return err;
+	}
     }
   if(p_old_comm->kind == NM_MPI_COMMUNICATOR_INTER)
     {
@@ -610,6 +549,7 @@ int mpi_comm_free(MPI_Comm *comm)
       ERROR("Communicator %d unknown\n", *comm);
       return MPI_ERR_OTHER;
     }
+  nm_mpi_attrs_destroy(p_comm->id, &p_comm->attrs);
   nm_mpi_communicator_destroy(p_comm);
   *comm = MPI_COMM_NULL;
   return MPI_SUCCESS;

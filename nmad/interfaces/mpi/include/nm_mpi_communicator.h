@@ -179,30 +179,34 @@ int MPI_Comm_size(MPI_Comm comm,
 int MPI_Comm_rank(MPI_Comm comm,
                   int *rank);
 
-int MPI_Keyval_create(MPI_Copy_function*copy_fn,
-		      MPI_Delete_function*delete_fn,
-		      int*keyval,
-		      void*extra_state);
+int MPI_Keyval_create(MPI_Copy_function*copy_fn, MPI_Delete_function*delete_fn, int*keyval, void*extra_state);
 
-int MPI_Keyval_free(int *keyval);
+int MPI_Keyval_free(int*keyval);
 
 /**
  * This function returns attributes values from communicators.
  */
-int MPI_Attr_get(MPI_Comm comm,
-		 int keyval,
-		 void*attr_value,
-		 int*flag);
+int MPI_Attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag);
 
 /**
  * Stores attribute value associated with a key
  */
-int MPI_Attr_put(MPI_Comm comm,
-		 int keyval,
-		 void*attr_value);
+int MPI_Attr_put(MPI_Comm comm, int keyval, void*attr_value);
 
-int MPI_Attr_delete(MPI_Comm comm,
-		    int keyval);
+int MPI_Attr_delete(MPI_Comm comm, int keyval);
+
+
+int MPI_Comm_create_keyval(MPI_Comm_copy_attr_function*comm_copy_attr_fn, MPI_Comm_delete_attr_function*comm_delete_attr_fn, int*comm_keyval, void*extra_state);
+
+int MPI_Comm_free_keyval(int*comm_keyval);
+
+int MPI_Comm_get_attr(MPI_Comm comm, int comm_keyval, void*attr_value, int*flag);
+
+int MPI_Comm_set_attr(MPI_Comm comm, int comm_keyval, void*attr_value);
+
+int MPI_Comm_delete_attr(MPI_Comm comm, int comm_keyval);
+
+
 
 /**
  * Creates a new communicator

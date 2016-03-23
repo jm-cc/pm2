@@ -99,6 +99,31 @@ struct nm_mpi_info_s
   puk_hashtable_t content; /**< hashtable of <keys, values> */
 };
 
+/** @name keyval and attributes
+ * @{ */
+
+/** subroutine types for FORTRAN attributes binding */
+typedef void (nm_mpi_copy_subroutine_t)(int*id, int*keyval, void*extra_state, void*attribute_val_in, void*attribute_val_out, int*flag, int*ierr);
+typedef void (nm_mpi_delete_subroutine_t)(int*id, int*keyval, void*attribute_val, void*extra_state, int*ierr);
+
+/** generic C type for comm/win/types attributes */
+typedef int (nm_mpi_attr_copy_fn_t)(int id, int comm_keyval, void*extra_state, void*attribute_val_in, void*attribute_val_out, int*flag);
+typedef int (nm_mpi_attr_delete_fn_t)(MPI_Comm comm, int comm_keyval, void*attribute_val, void*extra_state); 
+
+/** a keyval used to index comm/types/win attributes */
+struct nm_mpi_keyval_s
+{
+  int id;
+  nm_mpi_attr_copy_fn_t*copy_fn;
+  nm_mpi_attr_delete_fn_t*delete_fn;
+  nm_mpi_copy_subroutine_t*copy_subroutine;
+  nm_mpi_delete_subroutine_t*delete_subroutine;
+  void*extra_state;
+  int refcount; /**< number of attributes indexed by this keyval */
+};
+
+/* @} */
+
 /** @name Communicators */
 /* @{ */
 
@@ -452,6 +477,9 @@ void nm_mpi_io_init(void);
 
 void nm_mpi_io_exit(void);
 
+void nm_mpi_attrs_init(void);
+
+void nm_mpi_attrs_exit(void);
 
 /* Accessor functions */
 
@@ -591,6 +619,25 @@ void nm_mpi_get_tag(nm_mpi_communicator_t*p_comm, int user_tag, nm_tag_t*nm_tag,
  * Checks whether the given tag is in the permitted bounds
  */
 int nm_mpi_check_tag(int user_tag);
+
+/* Attributes */
+
+struct nm_mpi_keyval_s*nm_mpi_keyval_new(void);
+
+void nm_mpi_keyval_delete(struct nm_mpi_keyval_s*p_keyval);
+
+struct nm_mpi_keyval_s*nm_mpi_keyval_get(int id);
+
+int nm_mpi_attrs_copy(int id, puk_hashtable_t p_old_attrs, puk_hashtable_t*p_new_attrs);
+
+void nm_mpi_attrs_destroy(int id, puk_hashtable_t*p_old_attrs);
+
+int nm_mpi_attr_put(int id, puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p_keyval, void*attr_value);
+
+void nm_mpi_attr_get(puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p_keyval, void**p_attr_value, int*flag);
+
+int nm_mpi_attr_delete(int id, puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p_keyval);
+
 
 
 /* ********************************************************* */

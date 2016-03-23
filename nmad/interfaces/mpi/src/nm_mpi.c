@@ -103,6 +103,7 @@ int mpi_init(int*argc, char***argv)
   struct nm_mpi_errhandler_s*p_errhandler_fatal =  nm_mpi_handle_errhandler_store(&nm_mpi_errhandlers, MPI_ERRORS_ARE_FATAL);
   p_errhandler_fatal->function = &nm_mpi_errhandler_fatal_function;
   nm_launcher_init(argc, argv ? *argv : NULL);
+  nm_mpi_attrs_init();
   nm_mpi_comm_init();
   nm_mpi_datatype_init();
   nm_mpi_op_init();
@@ -141,6 +142,7 @@ int mpi_finalize(void)
   nm_mpi_op_exit();
   nm_mpi_comm_exit();
   nm_mpi_request_exit();
+  nm_mpi_attrs_exit();
   nm_mpi_handle_errhandler_finalize(&nm_mpi_errhandlers, NULL);
   nm_mpi_handle_info_finalize(&nm_mpi_infos, NULL);
   init_done = 0;

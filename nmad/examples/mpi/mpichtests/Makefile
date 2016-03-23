@@ -8,7 +8,8 @@ MPICHTEST_ROOT = ./mpich/test/mpi
 BUILDDIR = ./build
 
 TESTS_BASIC := \
-  basic/simple basic/srtest basic/wtime basic/self basic/netmpi
+  basic/simple basic/srtest basic/wtime basic/self basic/netmpi \
+  attr/baseattrcomm attr/baseattr2 attr/fkeyval
 
 TESTS_DATATYPE := \
   datatype/localpack datatype/unpack datatype/simple-pack \

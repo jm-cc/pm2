@@ -9,7 +9,8 @@ BUILDDIR = ./build
 
 TESTS_BASIC := \
   basic/simple basic/srtest basic/wtime basic/self basic/netmpi \
-  attr/baseattrcomm attr/baseattr2 attr/fkeyval
+  attr/baseattrcomm attr/baseattr2 attr/fkeyval attr/fkeyvalcomm attr/attrdeleteget attr/attrend attr/attrerr attr/attrerrcomm attr/attrorder attr/attrordercomm attr/attrt attr/attrend2 attr/keyval_double_free
+# attr/attric (intercomm)
 
 TESTS_DATATYPE := \
   datatype/localpack datatype/unpack datatype/simple-pack \

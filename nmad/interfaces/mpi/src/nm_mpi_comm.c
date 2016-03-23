@@ -134,10 +134,9 @@ static void nm_mpi_communicator_destroy(nm_mpi_communicator_t*p_comm)
 {
   if(p_comm != NULL)
     {
+      nm_mpi_attrs_destroy(p_comm->id, &p_comm->attrs);
       if(p_comm->name)
 	free(p_comm->name);
-      if(p_comm->attrs)
-	puk_hashtable_delete(p_comm->attrs);
       nm_comm_destroy(p_comm->p_nm_comm);
       nm_mpi_handle_communicator_free(&nm_mpi_communicators, p_comm);
     }
@@ -549,7 +548,6 @@ int mpi_comm_free(MPI_Comm *comm)
       ERROR("Communicator %d unknown\n", *comm);
       return MPI_ERR_OTHER;
     }
-  nm_mpi_attrs_destroy(p_comm->id, &p_comm->attrs);
   nm_mpi_communicator_destroy(p_comm);
   *comm = MPI_COMM_NULL;
   return MPI_SUCCESS;

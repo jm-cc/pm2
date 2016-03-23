@@ -353,13 +353,13 @@ NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_ops);
     nm_mpi_spinlock_t lock;						\
     ENAME##_allocator_t allocator;					\
   };									\
-  /** initialize the allocator */								\
+  /** initialize the allocator */					\
   static void nm_mpi_handle_##ENAME##_init(struct nm_mpi_handle_##ENAME##_s*p_allocator) \
   {									\
     nm_mpi_entry_##ENAME##_vect_init(&p_allocator->table);		\
     p_allocator->pool = puk_int_vect_new();				\
     p_allocator->next_id = OFFSET;					\
-    nm_mpi_spin_init(&p_allocator->lock);					\
+    nm_mpi_spin_init(&p_allocator->lock);				\
     p_allocator->allocator = ENAME ## _allocator_new(SLABSIZE);		\
     int i;								\
     for(i = 0; i < OFFSET; i++)						\
@@ -404,7 +404,7 @@ NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_ops);
   {									\
     TYPE*e = ENAME ## _malloc(p_allocator->allocator);			\
     int new_id = -1;							\
-    nm_mpi_spin_lock(&p_allocator->lock);					\
+    nm_mpi_spin_lock(&p_allocator->lock);				\
     if(puk_int_vect_empty(p_allocator->pool))				\
       {									\
 	new_id = p_allocator->next_id++;				\
@@ -419,14 +419,22 @@ NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_ops);
     e->id = new_id;							\
     return e;								\
   }									\
+  /** release the ID, but do not free block */				\
+  static void nm_mpi_handle_##ENAME##_release(struct nm_mpi_handle_##ENAME##_s*p_allocator, TYPE*e) \
+  {									\
+    const int id = e->id;						\
+    assert(id > 0);							\
+    nm_mpi_spin_lock(&p_allocator->lock);				\
+    nm_mpi_entry_##ENAME##_vect_put(&p_allocator->table, NULL, id);	\
+    puk_int_vect_push_back(p_allocator->pool, id);			\
+    e->id = -1;								\
+    nm_mpi_spin_unlock(&p_allocator->lock);				\
+  }									\
   /** free an entry  */							\
   static void nm_mpi_handle_##ENAME##_free(struct nm_mpi_handle_##ENAME##_s*p_allocator, TYPE*e) \
   {									\
-    const int id = e->id;						\
-    nm_mpi_spin_lock(&p_allocator->lock);					\
-    puk_int_vect_push_back(p_allocator->pool, id);			\
-    nm_mpi_entry_##ENAME##_vect_put(&p_allocator->table, NULL, id);	\
-    nm_mpi_spin_unlock(&p_allocator->lock);				\
+    if(e->id > 0)							\
+      nm_mpi_handle_##ENAME##_release(p_allocator, e);			\
     ENAME ## _free(p_allocator->allocator, e);				\
   }									\
   /** get a pointer on an entry from its ID */				\
@@ -441,7 +449,7 @@ NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_ops);
       }									\
     else								\
       {									\
-	ERROR("madmpi: cannot get invalid handle id %d\n", id);		\
+	return NULL;							\
       }									\
     return e;								\
   }

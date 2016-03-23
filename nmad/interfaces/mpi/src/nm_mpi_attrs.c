@@ -53,20 +53,20 @@ static void nm_mpi_keyval_ref_inc(struct nm_mpi_keyval_s*p_keyval)
   __sync_fetch_and_add(&p_keyval->refcount, 1);
 }
 
-static void nm_mpi_keyval_ref_dec(struct nm_mpi_keyval_s*p_keyval)
+static void nm_mpi_keyval_ref_dec(struct nm_mpi_keyval_s**p_keyval)
 {
-  const int count = __sync_sub_and_fetch(&p_keyval->refcount, 1);
-  assert(count >= 0);
+  const int count = __sync_sub_and_fetch(&(*p_keyval)->refcount, 1);
   if(count == 0)
     {
-      nm_mpi_handle_keyval_free(&nm_mpi_keyvals, p_keyval);
+      nm_mpi_handle_keyval_free(&nm_mpi_keyvals, *p_keyval);
+      *p_keyval = NULL;
     }
 }
 
 static inline void nm_mpi_attr_remove(puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p_keyval)
 {
   puk_hashtable_remove(p_attrs, p_keyval);
-  nm_mpi_keyval_ref_dec(p_keyval);
+  nm_mpi_keyval_ref_dec(&p_keyval);
 }
 
 /* ********************************************************* */
@@ -95,20 +95,16 @@ struct nm_mpi_keyval_s*nm_mpi_keyval_new(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_keyval_delete(struct nm_mpi_keyval_s*p_keyval)
 {
-  nm_mpi_keyval_ref_dec(p_keyval);
+  nm_mpi_keyval_ref_dec(&p_keyval);
 }
 
 __PUK_SYM_INTERNAL
 void nm_mpi_attr_get(puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p_keyval, void**p_attr_value, int*flag)
 {
-  if(p_attrs != NULL)
+  if((p_attrs != NULL) && puk_hashtable_probe(p_attrs, p_keyval))
     {
-      void*v = puk_hashtable_lookup(p_attrs, p_keyval);
-      if(v != NULL)
-	{
-	  *p_attr_value = v;
-	  *flag = 1;
-	}
+      *p_attr_value = puk_hashtable_lookup(p_attrs, p_keyval);
+      *flag = 1;
     }
 }
 
@@ -139,7 +135,6 @@ int nm_mpi_attrs_copy(int id, puk_hashtable_t p_old_attrs, puk_hashtable_t*p_new
       if(p_keyval != NULL)
 	{ 
 	  int flag = 0;
-	  void*v = puk_hashtable_lookup(p_old_attrs, p_keyval);
 	  void*out = NULL;
 	  int err = MPI_SUCCESS;
 	  if((p_keyval->copy_fn == MPI_NULL_COPY_FN) && (p_keyval->copy_subroutine == NULL))
@@ -150,20 +145,20 @@ int nm_mpi_attrs_copy(int id, puk_hashtable_t p_old_attrs, puk_hashtable_t*p_new
 	  else if((p_keyval->copy_fn == MPI_DUP_FN) || (p_keyval->copy_subroutine == (nm_mpi_copy_subroutine_t*)MPI_DUP_FN))
 	    {
 	      err = MPI_SUCCESS;
-	      out = v;
+	      out = p_value;
 	      flag = 1;
 	    }
 	  else if(p_keyval->copy_fn != NULL)
 	    {
-	      err = (*p_keyval->copy_fn)(id, p_keyval->id, p_keyval->extra_state, v, &out, &flag);
+	      err = (*p_keyval->copy_fn)(id, p_keyval->id, p_keyval->extra_state, p_value, &out, &flag);
 	    }
 	  else if(p_keyval->copy_subroutine != NULL)
 	    {
-	      (*p_keyval->copy_subroutine)(&id, &p_keyval->id, p_keyval->extra_state, &v, &out, &flag, &err);
+	      (*p_keyval->copy_subroutine)(&id, &p_keyval->id, p_keyval->extra_state, &p_value, &out, &flag, &err);
 	    }
 	  if(err != MPI_SUCCESS)
 	    {
-	      fprintf(stderr, "# madmpi: error while copying attribute.\n");
+	      fprintf(stderr, "# madmpi: WARNING- copy_fn returned and error while copying attribute.\n");
 	      return err;
 	    }
 	  if(flag)
@@ -223,7 +218,7 @@ int nm_mpi_attr_delete(int id, puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p
 	}
       else
 	{
-	  fprintf(stderr, "# madmpi: error while deleting attribute.\n");
+	  fprintf(stderr, "# madmpi: WARNING- delete_fn returned an error while deleting attribute.\n");
 	}
     }
   return err;

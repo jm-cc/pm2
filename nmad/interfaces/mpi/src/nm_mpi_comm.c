@@ -46,6 +46,7 @@ NM_MPI_ALIAS(MPI_Comm_set_attr,         mpi_comm_set_attr);
 NM_MPI_ALIAS(MPI_Comm_delete_attr,      mpi_comm_delete_attr);
 NM_MPI_ALIAS(MPI_Comm_group,            mpi_comm_group);
 NM_MPI_ALIAS(MPI_Comm_create,           mpi_comm_create);
+NM_MPI_ALIAS(MPI_Comm_create_group,     mpi_comm_create_group);
 NM_MPI_ALIAS(MPI_Comm_split,            mpi_comm_split);
 NM_MPI_ALIAS(MPI_Comm_dup,              mpi_comm_dup);
 NM_MPI_ALIAS(MPI_Comm_free,             mpi_comm_free);
@@ -425,6 +426,34 @@ int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
   return MPI_SUCCESS;
 }
 
+int mpi_comm_create_group(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm*newcomm)
+{
+  nm_mpi_communicator_t*p_old_comm = nm_mpi_communicator_get(comm);
+  if(p_old_comm == NULL)
+    return MPI_ERR_COMM;
+  if(p_old_comm->kind != NM_MPI_COMMUNICATOR_INTRA)
+    return MPI_ERR_COMM;
+  if(group == MPI_GROUP_NULL)
+    return MPI_ERR_GROUP;
+  nm_mpi_group_t*p_new_group = nm_mpi_handle_group_get(&nm_mpi_groups, group);
+  if(p_new_group == NULL)
+    return MPI_ERR_GROUP;
+  if(nm_group_size(p_new_group->p_nm_group) == 0)
+    {
+      *newcomm = MPI_COMM_NULL;
+      return MPI_SUCCESS;
+    }
+  nm_comm_t p_nm_comm = nm_comm_create_group(p_old_comm->p_nm_comm, p_new_group->p_nm_group, p_new_group->p_nm_group);
+  if(p_nm_comm == NULL)
+    {
+      *newcomm = MPI_COMM_NULL;
+      return MPI_SUCCESS;
+    }
+  nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, p_old_comm->p_errhandler, NM_MPI_COMMUNICATOR_INTRA);
+  *newcomm = p_new_comm->id;
+  return MPI_SUCCESS;
+}
+  
 /** a node participating in a mpi_coll_split */
 struct nm_mpi_comm_split_node_s
 {

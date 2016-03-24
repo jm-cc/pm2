@@ -218,6 +218,8 @@ int MPI_Comm_create(MPI_Comm comm,
 		    MPI_Group group,
 		    MPI_Comm*newcomm);
 
+int MPI_Comm_create_group(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm*newcomm);
+
 /**
  * Returns a handle to the group of the given communicator.
  * @param comm communicator

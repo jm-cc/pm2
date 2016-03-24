@@ -119,6 +119,7 @@ struct nm_data_s
   static inline void nm_data_##ENAME##_set(struct nm_data_s*p_data, CONTENT_TYPE value) \
   {									\
     p_data->ops = *(OPS);						\
+    assert(p_data->ops.p_traversal != NULL);				\
     if(p_data->ops.p_generator == NULL)					\
       {									\
 	p_data->ops.p_generator = nm_data_default_generator;		\
@@ -142,7 +143,7 @@ struct nm_data_contiguous_s
   void*ptr;
   nm_len_t len;
 };
-const struct nm_data_ops_s nm_data_ops_contiguous;
+extern const struct nm_data_ops_s nm_data_ops_contiguous;
 NM_DATA_TYPE(contiguous, struct nm_data_contiguous_s, &nm_data_ops_contiguous);
 /** data descriptor for iov data
  */
@@ -151,13 +152,14 @@ struct nm_data_iov_s
   struct iovec*v;
   int n;
 };
-const struct nm_data_ops_s nm_data_ops_iov;
+extern const struct nm_data_ops_s nm_data_ops_iov;
 NM_DATA_TYPE(iov, struct nm_data_iov_s, &nm_data_ops_iov);
 
 /** helper function to apply iterator to data
  */
 static inline void nm_data_traversal_apply(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context)
 {
+  assert(p_data->ops.p_traversal != NULL);
   (*p_data->ops.p_traversal)((void*)p_data->_content, apply, _context);
 }
 

@@ -34,6 +34,8 @@
 int MPI_Type_size(MPI_Datatype datatype,
 		  int *size);
 
+int MPI_Type_size_x(MPI_Datatype datatype, MPI_Count*size);
+
 /**
  * Returns the lower bound and the extent of datatype
  * @param datatype datatype
@@ -205,6 +207,25 @@ int MPI_Type_create_hvector(int count,
 			    MPI_Aint hstride,
 			    MPI_Datatype oldtype,
 			    MPI_Datatype*newtype);
+
+int MPI_Type_create_indexed_block(int count,
+				  int blocklength,
+				  const int array_of_displacements[],
+				  MPI_Datatype oldtype,
+				  MPI_Datatype *newtype);
+
+int MPI_Type_create_hindexed_block(int count,
+				   int blocklength,
+				   const MPI_Aint array_of_displacements[],
+				   MPI_Datatype oldtype, MPI_Datatype * newtype);
+
+int MPI_Type_create_subarray(int ndims,
+			     const int array_of_sizes[],
+			     const int array_of_subsizes[],
+			     const int array_of_starts[],
+			     int order,
+			     MPI_Datatype oldtype,
+			     MPI_Datatype *newtype);
 
 int MPI_Type_create_struct(int count,
 			   int array_of_blocklengths[],

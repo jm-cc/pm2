@@ -276,9 +276,16 @@ typedef enum
     MPI_COMBINER_HINDEXED,    /**< indexed type, offset in bytes */
     MPI_COMBINER_STRUCT,      /**< structured type */
     MPI_COMBINER_RESIZED,     /**< type is resized from another type */
-    MPI_COMBINER_DUP          /**< type is duplicated from another type */
+    MPI_COMBINER_DUP,         /**< type is duplicated from another type */
+    MPI_COMBINER_INDEXED_BLOCK,
+    MPI_COMBINER_HINDEXED_BLOCK,
+    MPi_COMBINER_SUBARRAY
   }
   nm_mpi_type_combiner_t;
+
+/* ** order of sub-arrays */
+#define MPI_ORDER_C        1  /**< array is row-major */
+#define MPI_ORDER_FORTRAN  2  /**< array is column-major */
 
 /* @} */
 

@@ -54,6 +54,7 @@ NM_MPI_ALIAS(MPI_Comm_get_errhandler, mpi_comm_get_errhandler);
 NM_MPI_ALIAS(MPI_Get_version, mpi_get_version);
 NM_MPI_ALIAS(MPI_Get_count, mpi_get_count);
 NM_MPI_ALIAS(MPI_Get_elements, mpi_get_elements);
+NM_MPI_ALIAS(MPI_Get_elements_x, mpi_get_elements_x);
 NM_MPI_ALIAS(MPI_Get_address, mpi_get_address);
 NM_MPI_ALIAS(MPI_Address, mpi_address);
 NM_MPI_ALIAS(MPI_Alloc_mem, mpi_alloc_mem);
@@ -346,7 +347,7 @@ int mpi_get_count(MPI_Status*status, MPI_Datatype datatype, int*count)
   return MPI_SUCCESS;
 }
 
-int mpi_get_elements(const MPI_Status*status, MPI_Datatype datatype, int*count)
+int mpi_get_elements_x(const MPI_Status*status, MPI_Datatype datatype, MPI_Count*count)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
@@ -372,7 +373,25 @@ int mpi_get_elements(const MPI_Status*status, MPI_Datatype datatype, int*count)
     }
   return MPI_SUCCESS;
 }
-  
+
+int mpi_get_elements(const MPI_Status*status, MPI_Datatype datatype, int*count)
+{
+  MPI_Count large_count;
+  int err = mpi_get_elements_x(status, datatype, &large_count);
+  if(err == MPI_SUCCESS)
+    {
+      if(large_count < INT_MAX || large_count == MPI_UNDEFINED)
+	{
+	  *count = large_count;
+	  return err;
+	}
+      else
+	return MPI_ERR_OTHER;
+    }
+  else
+    return err;
+}
+
 int mpi_get_address(void *location, MPI_Aint *address)
 {
   /* This is the "portable" way to generate an address.

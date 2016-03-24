@@ -72,7 +72,7 @@ typedef struct nm_mpi_errhandler_s
     abort();								\
   }
 
-#define FREE_AND_SET_NULL(p) free(p); p = NULL;
+#define FREE_AND_SET_NULL(p) { free(p); p = NULL; }
 
 /** Maximum value of the tag specified by the end-user */
 #define NM_MPI_TAG_MAX           0x7FFFFFFF
@@ -242,9 +242,9 @@ typedef struct nm_mpi_datatype_s
   /** combiner of datatype elements */
   nm_mpi_type_combiner_t combiner;
   /** number of blocks in type map */
-  int count;
+  MPI_Count count;
   /** total number of basic elements contained in type*/
-  int elements;
+  MPI_Count elements;
   /** whether entirely contiguous */
   int is_contig;
   /** lower bound of type */
@@ -301,6 +301,30 @@ typedef struct nm_mpi_datatype_s
 	MPI_Aint displacement; /**< displacement in bytes */
       } *p_map;
     } HINDEXED;
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
+      int blocklength;
+      int*array_of_displacements;
+    } INDEXED_BLOCK;
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
+      int blocklength;
+      MPI_Aint*array_of_displacements;
+    } HINDEXED_BLOCK;
+    struct
+    {
+      struct nm_mpi_datatype_s*p_old_type;
+      int ndims;
+      int order;
+      struct nm_mpi_type_subarray_dim_s
+      {
+	int size;
+	int subsize;
+	int start;
+      } *p_dims;
+    } SUBARRAY;
     struct
     {
       struct nm_mpi_type_struct_map_s

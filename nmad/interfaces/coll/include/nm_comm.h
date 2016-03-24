@@ -26,6 +26,9 @@ extern nm_comm_t nm_comm_self(void);
 
 extern nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group);
 
+/** create a new communicator, with parent p_comm, new communicator group is p_newcomm_group, collectively called from group p_bcast_group */
+extern nm_comm_t nm_comm_create_group(nm_comm_t p_comm, nm_group_t p_newcomm_group, nm_group_t p_bcast_group);
+
 extern void      nm_comm_destroy(nm_comm_t p_comm);
 
 extern nm_comm_t nm_comm_dup(nm_comm_t comm);

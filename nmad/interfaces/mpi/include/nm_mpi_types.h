@@ -262,6 +262,11 @@ typedef int MPI_Datatype;
 #define MPI_C_LONG_DOUBLE_COMPLEX ((MPI_Datatype)55)
 /* MPI-3 MPI_Count */
 #define MPI_COUNT             ((MPI_Datatype)56)
+/* unsupported C++ types- define to TYPE_NULL */
+#define MPI_CXX_BOOL                MPI_DATATYPE_NULL
+#define MPI_CXX_FLOAT_COMPLEX       MPI_DATATYPE_NULL
+#define MPI_CXX_DOUBLE_COMPLEX      MPI_DATATYPE_NULL
+#define MPI_CXX_LONG_DOUBLE_COMPLEX MPI_DATATYPE_NULL
 /* offset for dynamically allocated datatypes */
 #define _NM_MPI_DATATYPE_OFFSET              57
 
@@ -279,13 +284,18 @@ typedef enum
     MPI_COMBINER_DUP,         /**< type is duplicated from another type */
     MPI_COMBINER_INDEXED_BLOCK,
     MPI_COMBINER_HINDEXED_BLOCK,
-    MPi_COMBINER_SUBARRAY
+    MPI_COMBINER_SUBARRAY
   }
   nm_mpi_type_combiner_t;
 
 /* ** order of sub-arrays */
 #define MPI_ORDER_C        1  /**< array is row-major */
 #define MPI_ORDER_FORTRAN  2  /**< array is column-major */
+/* ** distributed arrays (not implemented yet) */
+#define MPI_DISTRIBUTE_BLOCK     1
+#define MPI_DISTRIBUTE_CYCLIC    2
+#define MPI_DISTRIBUTE_NONE      3
+#define MPI_DISTRIBUTE_DFLT_DARG 4
 
 /* @} */
 

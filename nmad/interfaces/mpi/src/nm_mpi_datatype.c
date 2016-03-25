@@ -61,6 +61,7 @@ NM_MPI_ALIAS(MPI_Type_create_hindexed,       mpi_type_create_hindexed);
 NM_MPI_ALIAS(MPI_Type_create_indexed_block,  mpi_type_create_indexed_block);
 NM_MPI_ALIAS(MPI_Type_create_hindexed_block, mpi_type_create_hindexed_block);
 NM_MPI_ALIAS(MPI_Type_create_subarray,       mpi_type_create_subarray);
+NM_MPI_ALIAS(MPI_Type_create_darray,         mpi_type_create_darray);
 NM_MPI_ALIAS(MPI_Type_create_struct,         mpi_type_create_struct);
 NM_MPI_ALIAS(MPI_Type_get_envelope,   mpi_type_get_envelope);
 NM_MPI_ALIAS(MPI_Type_get_contents,   mpi_type_get_contents);
@@ -549,9 +550,54 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
 
 int mpi_type_create_subarray(int ndims, const int array_of_sizes[], const int array_of_subsizes[], const int array_of_starts[], int order, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
-  padico_fatal("create_subarray: not supported yet.\n");
+  nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
+  if(p_oldtype == NULL)
+    {
+      *newtype = MPI_DATATYPE_NULL;
+      return MPI_ERR_TYPE;
+    }
+  p_oldtype->refcount++;
+  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_SUBARRAY, p_oldtype->size, 1);
+  *newtype = p_newtype->id;
+  p_newtype->is_contig = 0;
+  p_newtype->SUBARRAY.p_dims = malloc(ndims * sizeof(struct nm_mpi_type_subarray_dim_s));
+  p_newtype->SUBARRAY.ndims = ndims;
+  p_newtype->SUBARRAY.order = order;
+  p_newtype->SUBARRAY.p_old_type = p_oldtype;
+  MPI_Count elements = 1;
+  MPI_Aint last_offset = 0, first_offset = 0;
+  MPI_Count blocklength = 1;
+  int d;
+  for(d = ndims - 1; d >= 0; d--)
+    {
+      p_newtype->SUBARRAY.p_dims[d].size     = array_of_sizes[d];
+      p_newtype->SUBARRAY.p_dims[d].subsize  = array_of_subsizes[d];
+      p_newtype->SUBARRAY.p_dims[d].start    = array_of_starts[d];
+      elements     *= array_of_subsizes[d];
+      blocklength  *= array_of_sizes[d];
+      first_offset += array_of_starts[d] * blocklength;
+      last_offset  += (array_of_starts[d] + array_of_subsizes[d]) * blocklength;
+    }
+  nm_mpi_datatype_update_bounds(1, first_offset, p_oldtype, p_newtype);
+  nm_mpi_datatype_update_bounds(1, last_offset, p_oldtype, p_newtype);
+  p_newtype->size     = elements * p_oldtype->size;
+  p_newtype->elements = elements;
+  if(p_newtype->lb == MPI_UNDEFINED)
+    p_newtype->lb = 0;
+  if(p_newtype->extent == MPI_UNDEFINED)
+    p_newtype->extent = 0;
   return MPI_SUCCESS;
 }
+
+int mpi_type_create_darray(int size, int rank, int ndims,
+			   const int array_of_gsizes[], const int array_of_distribs[],
+			   const int array_of_dargs[], const int array_of_psizes[],
+			   int order, MPI_Datatype oldtype, MPI_Datatype *newtype)
+{
+  padico_warning("madmpi: MPI_Type_create_darray()- unsupported.\n");
+  return MPI_ERR_OTHER;
+}
+  
 
 int mpi_type_create_struct(int count, int array_of_blocklengths[], MPI_Aint array_of_displacements[], MPI_Datatype array_of_types[], MPI_Datatype *newtype)
 {
@@ -613,6 +659,14 @@ int mpi_type_get_envelope(MPI_Datatype datatype, int*num_integers, int*num_addre
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_HINDEXED_BLOCK:
+      *num_integers  = 1;
+      *num_addresses = p_datatype->count;
+      *num_datatypes = 1;
+      break;
+    case MPI_COMBINER_SUBARRAY:
+      *num_integers  = 3 * p_datatype->SUBARRAY.ndims;
+      *num_addresses = 0;
+      *num_datatypes = 1;
       break;
     case MPI_COMBINER_STRUCT:
       *num_integers  = p_datatype->count;
@@ -669,6 +723,9 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
     case MPI_COMBINER_HINDEXED_BLOCK:
       padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
       break;
+    case MPI_COMBINER_SUBARRAY:
+      padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
+      break;
     case MPI_COMBINER_STRUCT:
       padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
       break;
@@ -720,6 +777,10 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
     case MPI_COMBINER_HINDEXED_BLOCK:
       if(p_datatype->HINDEXED_BLOCK.array_of_displacements != NULL)
 	FREE_AND_SET_NULL(p_datatype->HINDEXED_BLOCK.array_of_displacements);
+      break;
+    case MPI_COMBINER_SUBARRAY:
+      if(p_datatype->SUBARRAY.p_dims != NULL)
+	FREE_AND_SET_NULL(p_datatype->SUBARRAY.p_dims);
       break;
     case MPI_COMBINER_STRUCT:
       if(p_datatype->STRUCT.p_map != NULL)
@@ -847,6 +908,51 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t
 		      .count      = p_datatype->HINDEXED_BLOCK.blocklength };
 		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 		}
+	      break;
+
+	    case MPI_COMBINER_SUBARRAY:
+	      {
+		int done = 0;
+		int cur[p_datatype->SUBARRAY.ndims]; /* current N-dim index */
+		int k;
+		/* init index */
+		for(k = 0; k < p_datatype->SUBARRAY.ndims; k++)
+		  {
+		    cur[k] = p_datatype->SUBARRAY.p_dims[k].start;
+		  }
+		while(!done)
+		  {
+		    /* calculate linear offset for current N-dim index */
+		    MPI_Count blocklength = 1;
+		    MPI_Aint offset = 0;
+		    for(k = 0; k < p_datatype->SUBARRAY.ndims; k++)
+		      {
+			const int d = (p_datatype->SUBARRAY.order == MPI_ORDER_C) ?
+			  (p_datatype->SUBARRAY.ndims - k - 1) : k;
+			offset      += cur[d] * blocklength;
+			blocklength *= p_datatype->SUBARRAY.p_dims[d].size;
+		      }
+		    /* apply datatype function */
+		    const struct nm_data_mpi_datatype_s sub =
+		      { .ptr        = ptr + offset * p_datatype->SUBARRAY.p_old_type->extent,
+			.p_datatype = p_datatype->SUBARRAY.p_old_type,
+			.count      = 1 };
+		    nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+		    /* increment N-dim index */
+		    for(k = 0; k < p_datatype->SUBARRAY.ndims; k++)
+		      {
+			const int d = (p_datatype->SUBARRAY.order == MPI_ORDER_C) ?
+			  (p_datatype->SUBARRAY.ndims - k - 1) : k;
+			if(cur[d] + 1 < p_datatype->SUBARRAY.p_dims[d].start + p_datatype->SUBARRAY.p_dims[d].subsize)
+			  {
+			    cur[d]++;
+			    break;
+			  }
+			cur[d] = p_datatype->SUBARRAY.p_dims[d].start; /* reset dim and propagate carry */
+		      }
+		    done = (k >= p_datatype->SUBARRAY.ndims);
+		  }
+	      }
 	      break;
 
 	    case MPI_COMBINER_STRUCT:

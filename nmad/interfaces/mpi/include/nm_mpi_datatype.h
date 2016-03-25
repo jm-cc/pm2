@@ -227,6 +227,13 @@ int MPI_Type_create_subarray(int ndims,
 			     MPI_Datatype oldtype,
 			     MPI_Datatype *newtype);
 
+int MPI_Type_create_darray(int size, int rank, int ndims,
+			   const int array_of_gsizes[],
+			   const int array_of_distribs[],
+			   const int array_of_dargs[],
+			   const int array_of_psizes[],
+			   int order, MPI_Datatype oldtype, MPI_Datatype *newtype);
+  
 int MPI_Type_create_struct(int count,
 			   int array_of_blocklengths[],
 			   MPI_Aint array_of_displacements[],

@@ -251,6 +251,8 @@ typedef struct nm_mpi_datatype_s
   MPI_Aint lb;
   /** extent of type; upper bound is lb + extent */
   MPI_Aint extent;
+  MPI_Count true_lb;
+  MPI_Count true_extent;
   /** size of type */
   size_t size;
   /** number of references pointing to this type (active communications, handle) */

@@ -260,15 +260,16 @@ typedef int MPI_Datatype;
 #define MPI_C_FLOAT_COMPLEX   ((MPI_Datatype)53)
 #define MPI_C_DOUBLE_COMPLEX  ((MPI_Datatype)54)
 #define MPI_C_LONG_DOUBLE_COMPLEX ((MPI_Datatype)55)
+#define MPI_WCHAR             ((MPI_Datatype)56)
 /* MPI-3 MPI_Count */
-#define MPI_COUNT             ((MPI_Datatype)56)
+#define MPI_COUNT             ((MPI_Datatype)57)
 /* unsupported C++ types- define to TYPE_NULL */
 #define MPI_CXX_BOOL                MPI_DATATYPE_NULL
 #define MPI_CXX_FLOAT_COMPLEX       MPI_DATATYPE_NULL
 #define MPI_CXX_DOUBLE_COMPLEX      MPI_DATATYPE_NULL
 #define MPI_CXX_LONG_DOUBLE_COMPLEX MPI_DATATYPE_NULL
 /* offset for dynamically allocated datatypes */
-#define _NM_MPI_DATATYPE_OFFSET              57
+#define _NM_MPI_DATATYPE_OFFSET              58
 
 /** Types of datatypes */
 typedef enum 

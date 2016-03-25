@@ -438,7 +438,7 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
     }
   else
     {
-      fprintf(stderr, "type %d, elements %d\n", p_datatype->combiner, p_datatype->count);
+      fprintf(stderr, "type %d, elements %lld\n", p_datatype->combiner, p_datatype->count);
       ERROR("Datatype %d for MAXLOC Reduce operation", *type);
     }
 }

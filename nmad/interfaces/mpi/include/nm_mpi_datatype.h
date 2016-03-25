@@ -47,6 +47,10 @@ int MPI_Type_get_extent(MPI_Datatype datatype,
 			MPI_Aint *lb,
 			MPI_Aint *extent);
 
+int MPI_Type_get_extent_x(MPI_Datatype datatype,
+			  MPI_Count*lb,
+			  MPI_Count*extent);
+
 /**
  * Returns the extent of the datatype
  * @param datatype datatype
@@ -55,6 +59,11 @@ int MPI_Type_get_extent(MPI_Datatype datatype,
  */
 int MPI_Type_extent(MPI_Datatype datatype,
 		    MPI_Aint *extent);
+
+int MPI_Type_get_true_extent(MPI_Datatype datatype, MPI_Aint*true_lb, MPI_Aint*true_extent);
+
+int MPI_Type_get_true_extent_x(MPI_Datatype datatype, MPI_Count*true_lb, MPI_Count*true_extent);
+
 
 /**
  * Returns the lower bound of the datatype

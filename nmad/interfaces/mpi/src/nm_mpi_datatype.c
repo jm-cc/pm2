@@ -28,7 +28,7 @@ static struct nm_mpi_handle_datatype_s nm_mpi_datatypes;
 /** store builtin datatypes */
 static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*name);
 static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
-static void nm_mpi_datatype_iscontig(nm_mpi_datatype_t*p_datatype);
+static void nm_mpi_datatype_properties_compute(nm_mpi_datatype_t*p_datatype);
 static void nm_mpi_datatype_update_bounds(int blocklength, MPI_Aint displacement, nm_mpi_datatype_t*p_oldtype, nm_mpi_datatype_t*p_newtype);
 static void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context);
 
@@ -40,22 +40,25 @@ const struct nm_data_ops_s nm_mpi_datatype_ops =
 
 /* ********************************************************* */
 
-NM_MPI_ALIAS(MPI_Type_size,           mpi_type_size);
-NM_MPI_ALIAS(MPI_Type_size_x,         mpi_type_size_x);
-NM_MPI_ALIAS(MPI_Type_get_extent,     mpi_type_get_extent);
-NM_MPI_ALIAS(MPI_Type_extent,         mpi_type_extent);
-NM_MPI_ALIAS(MPI_Type_lb,             mpi_type_lb);
-NM_MPI_ALIAS(MPI_Type_ub,             mpi_type_ub);
-NM_MPI_ALIAS(MPI_Type_dup,            mpi_type_dup);
-NM_MPI_ALIAS(MPI_Type_create_resized, mpi_type_create_resized);
-NM_MPI_ALIAS(MPI_Type_commit,         mpi_type_commit);
-NM_MPI_ALIAS(MPI_Type_free,           mpi_type_free);
-NM_MPI_ALIAS(MPI_Type_contiguous,     mpi_type_contiguous);
-NM_MPI_ALIAS(MPI_Type_vector,         mpi_type_vector);
-NM_MPI_ALIAS(MPI_Type_hvector,        mpi_type_hvector);
-NM_MPI_ALIAS(MPI_Type_indexed,        mpi_type_indexed);
-NM_MPI_ALIAS(MPI_Type_hindexed,       mpi_type_hindexed);
-NM_MPI_ALIAS(MPI_Type_struct,         mpi_type_struct);
+NM_MPI_ALIAS(MPI_Type_size,                  mpi_type_size);
+NM_MPI_ALIAS(MPI_Type_size_x,                mpi_type_size_x);
+NM_MPI_ALIAS(MPI_Type_get_extent,            mpi_type_get_extent);
+NM_MPI_ALIAS(MPI_Type_get_extent_x,          mpi_type_get_extent_x);
+NM_MPI_ALIAS(MPI_Type_get_true_extent,       mpi_type_get_true_extent);
+NM_MPI_ALIAS(MPI_Type_get_true_extent_x,     mpi_type_get_true_extent_x);
+NM_MPI_ALIAS(MPI_Type_extent,                mpi_type_extent);
+NM_MPI_ALIAS(MPI_Type_lb,                    mpi_type_lb);
+NM_MPI_ALIAS(MPI_Type_ub,                    mpi_type_ub);
+NM_MPI_ALIAS(MPI_Type_dup,                   mpi_type_dup);
+NM_MPI_ALIAS(MPI_Type_create_resized,        mpi_type_create_resized);
+NM_MPI_ALIAS(MPI_Type_commit,                mpi_type_commit);
+NM_MPI_ALIAS(MPI_Type_free,                  mpi_type_free);
+NM_MPI_ALIAS(MPI_Type_contiguous,            mpi_type_contiguous);
+NM_MPI_ALIAS(MPI_Type_vector,                mpi_type_vector);
+NM_MPI_ALIAS(MPI_Type_hvector,               mpi_type_hvector);
+NM_MPI_ALIAS(MPI_Type_indexed,               mpi_type_indexed);
+NM_MPI_ALIAS(MPI_Type_hindexed,              mpi_type_hindexed);
+NM_MPI_ALIAS(MPI_Type_struct,                mpi_type_struct);
 NM_MPI_ALIAS(MPI_Type_create_hvector,        mpi_type_hvector);
 NM_MPI_ALIAS(MPI_Type_create_hindexed,       mpi_type_create_hindexed);
 NM_MPI_ALIAS(MPI_Type_create_indexed_block,  mpi_type_create_indexed_block);
@@ -63,13 +66,13 @@ NM_MPI_ALIAS(MPI_Type_create_hindexed_block, mpi_type_create_hindexed_block);
 NM_MPI_ALIAS(MPI_Type_create_subarray,       mpi_type_create_subarray);
 NM_MPI_ALIAS(MPI_Type_create_darray,         mpi_type_create_darray);
 NM_MPI_ALIAS(MPI_Type_create_struct,         mpi_type_create_struct);
-NM_MPI_ALIAS(MPI_Type_get_envelope,   mpi_type_get_envelope);
-NM_MPI_ALIAS(MPI_Type_get_contents,   mpi_type_get_contents);
-NM_MPI_ALIAS(MPI_Type_set_name,       mpi_type_set_name);
-NM_MPI_ALIAS(MPI_Type_get_name,       mpi_type_get_name);
-NM_MPI_ALIAS(MPI_Pack,                mpi_pack);
-NM_MPI_ALIAS(MPI_Unpack,              mpi_unpack);
-NM_MPI_ALIAS(MPI_Pack_size,           mpi_pack_size);
+NM_MPI_ALIAS(MPI_Type_get_envelope,          mpi_type_get_envelope);
+NM_MPI_ALIAS(MPI_Type_get_contents,          mpi_type_get_contents);
+NM_MPI_ALIAS(MPI_Type_set_name,              mpi_type_set_name);
+NM_MPI_ALIAS(MPI_Type_get_name,              mpi_type_get_name);
+NM_MPI_ALIAS(MPI_Pack,                       mpi_pack);
+NM_MPI_ALIAS(MPI_Unpack,                     mpi_unpack);
+NM_MPI_ALIAS(MPI_Pack_size,                  mpi_pack_size);
 
 /* ********************************************************* */
 
@@ -99,6 +102,7 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_UNSIGNED_LONG_LONG, sizeof(unsigned long long int), 1, "MPI_UNSIGNED_LONG_LONG");
 
   /* MPI-2 C additions */
+  nm_mpi_datatype_store(MPI_WCHAR,              sizeof(wchar_t), 1, "MPI_WCHAR");
   nm_mpi_datatype_store(MPI_INT8_T,             sizeof(int8_t), 1, "MPI_INT8_T");
   nm_mpi_datatype_store(MPI_INT16_T,            sizeof(int16_t), 1, "MPI_INT16_T");
   nm_mpi_datatype_store(MPI_INT32_T,            sizeof(int32_t), 1, "MPI_INT32_T");
@@ -175,6 +179,8 @@ static void nm_mpi_datatype_store(int id, size_t size, int count, const char*nam
   p_datatype->elements = count;
   p_datatype->extent = size;
   p_datatype->name = strdup(name);
+  p_datatype->true_lb = 0;
+  p_datatype->true_extent = size;
 }
 
 /** allocate a new datatype and init with default values */
@@ -191,6 +197,8 @@ static nm_mpi_datatype_t*nm_mpi_datatype_alloc(nm_mpi_type_combiner_t combiner, 
   p_newtype->refcount = 1;
   p_newtype->is_contig = 0;
   p_newtype->name = NULL;
+  p_newtype->true_lb = MPI_UNDEFINED;
+  p_newtype->true_extent = MPI_UNDEFINED;
   return p_newtype;
 }
 
@@ -235,6 +243,21 @@ int mpi_type_get_extent(MPI_Datatype datatype, MPI_Aint*lb, MPI_Aint*extent)
   return MPI_SUCCESS;
 }
 
+int mpi_type_get_extent_x(MPI_Datatype datatype, MPI_Count*lb, MPI_Count*extent)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    {
+      *extent = MPI_UNDEFINED;
+      return MPI_ERR_TYPE;
+    }
+  if(lb != NULL)
+    *lb = p_datatype->lb;
+  if(extent != NULL)
+    *extent = p_datatype->extent;
+  return MPI_SUCCESS;
+}
+  
 int mpi_type_extent(MPI_Datatype datatype, MPI_Aint*extent)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
@@ -244,6 +267,36 @@ int mpi_type_extent(MPI_Datatype datatype, MPI_Aint*extent)
       return MPI_ERR_TYPE;
     }
   *extent = p_datatype->extent;
+  return MPI_SUCCESS;
+}
+
+int mpi_type_get_true_extent(MPI_Datatype datatype,  MPI_Aint*true_lb, MPI_Aint*true_extent)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    {
+      *true_extent = MPI_UNDEFINED;
+      return MPI_ERR_TYPE;
+    }
+  if(true_lb != NULL)
+    *true_lb = p_datatype->true_lb;
+  if(true_extent != NULL)
+    *true_extent = p_datatype->true_extent;
+  return MPI_SUCCESS;
+}
+
+int mpi_type_get_true_extent_x(MPI_Datatype datatype, MPI_Count*true_lb, MPI_Count*true_extent)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    {
+      *true_extent = MPI_UNDEFINED;
+      return MPI_ERR_TYPE;
+    }
+  if(true_lb != NULL)
+    *true_lb = p_datatype->true_lb;
+  if(true_extent != NULL)
+    *true_extent = p_datatype->true_extent;
   return MPI_SUCCESS;
 }
 
@@ -305,7 +358,7 @@ int mpi_type_commit(MPI_Datatype*datatype)
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(*datatype);
   if(p_datatype == NULL)
     return MPI_ERR_TYPE;
-  nm_mpi_datatype_iscontig(p_datatype);
+  nm_mpi_datatype_properties_compute(p_datatype);
   assert(p_datatype->lb != MPI_UNDEFINED);
   assert(p_datatype->extent != MPI_UNDEFINED);
   p_datatype->committed = 1;
@@ -1017,27 +1070,48 @@ static void nm_mpi_datatype_update_bounds(int blocklength, MPI_Aint displacement
     }
 }
 
-struct nm_mpi_datatype_iscontig_s
+struct nm_mpi_datatype_properties_context_s
 {
-  int is_contig; /**< is contiguous up to current position */
+  void*baseptr;
   void*blockend; /**< end of previous block */
+  struct nm_mpi_datatype_properties_s
+  {
+    int is_contig; /**< is contiguous up to current position */
+    intptr_t true_lb;
+    intptr_t true_ub;
+  } props;
 };
-static void nm_mpi_datatype_iscontig_apply(void*ptr, nm_len_t len, void*_context)
+static void nm_mpi_datatype_properties_apply(void*ptr, nm_len_t len, void*_context)
 {
-  struct nm_mpi_datatype_iscontig_s*p_context = _context;
-  if(p_context->is_contig)
+  struct nm_mpi_datatype_properties_context_s*p_context = _context;
+  if(p_context->props.is_contig)
     {
       if((p_context->blockend != NULL) && (ptr != p_context->blockend))
-	p_context->is_contig = 0;
-      p_context->blockend = ptr + len;
+	p_context->props.is_contig = 0;
     }
+  p_context->blockend = ptr + len;
+  const intptr_t local_lb = ptr - p_context->baseptr;
+  if(local_lb < p_context->props.true_lb || p_context->props.true_lb == MPI_UNDEFINED)
+    p_context->props.true_lb = local_lb;
+  const intptr_t local_ub = (ptr + len) - p_context->baseptr;
+  if(local_ub > p_context->props.true_ub || p_context->props.true_ub == MPI_UNDEFINED)
+    p_context->props.true_ub = local_ub;
 }
-static void nm_mpi_datatype_iscontig(nm_mpi_datatype_t*p_datatype)
+static void nm_mpi_datatype_properties_compute(nm_mpi_datatype_t*p_datatype)
 {
-  struct nm_mpi_datatype_iscontig_s context = { .is_contig = 1, .blockend = NULL };
+  struct nm_mpi_datatype_properties_context_s context =
+    {
+      .baseptr = NULL,
+      .blockend = NULL,
+      .props.is_contig = 1,
+      .props.true_lb = MPI_UNDEFINED,
+      .props.true_ub = MPI_UNDEFINED
+    };
   const struct nm_data_mpi_datatype_s content = { .ptr = NULL, .p_datatype = p_datatype, .count = 1 };
-  nm_mpi_datatype_traversal_apply(&content, &nm_mpi_datatype_iscontig_apply, &context);
-  p_datatype->is_contig = context.is_contig;
+  nm_mpi_datatype_traversal_apply(&content, &nm_mpi_datatype_properties_apply, &context);
+  p_datatype->is_contig   = context.props.is_contig;
+  p_datatype->true_lb     = context.props.true_lb;
+  p_datatype->true_extent = context.props.true_ub - context.props.true_lb;
 }
 
 /** status for nm_mpi_datatype_*_memcpy */

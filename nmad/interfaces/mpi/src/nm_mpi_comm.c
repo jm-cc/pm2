@@ -227,12 +227,12 @@ int mpi_attr_get(MPI_Comm comm, int keyval, void*attr_value, int*flag)
   const static int nm_mpi_tag_ub = NM_MPI_TAG_MAX;
   const static int nm_mpi_wtime_is_global = 0;
   const static int nm_mpi_host = MPI_PROC_NULL;
+  static int nm_mpi_universe_size = 0;
+  static int nm_mpi_lastusedcode = MPI_ERR_LASTCODE;
 #ifdef NM_MPI_ENABLE_ROMIO
   const static int nm_mpi_attr_io = 1;
 #else
   const static int nm_mpi_attr_io = 0;
-  static int nm_mpi_universe_size = 0;
-  static int nm_mpi_lastusedcode = MPI_ERR_LASTCODE;
 #endif
   switch(keyval)
     {

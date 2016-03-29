@@ -159,7 +159,6 @@ typedef struct nm_mpi_communicator_s
   {
     nm_group_t p_local_group;
     nm_group_t p_remote_group;
-    int local_leader, remote_leader;
     nm_tag_t tag;
     int remote_offset; /**< offset of remote group in global nm_comm */
   } intercomm;

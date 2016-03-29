@@ -934,7 +934,9 @@ int mpi_group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group gr
   int i;
   for(i = 0; i < n; i++)
     {
-      if(ranks2[i] == -1)
+      if(ranks1[i] == MPI_PROC_NULL)
+	ranks2[i] = MPI_PROC_NULL;
+      else if(ranks2[i] == -1)
 	ranks2[i] = MPI_UNDEFINED;
     }
   return MPI_SUCCESS;
@@ -997,7 +999,7 @@ int mpi_intercomm_create(MPI_Comm local_comm, int local_leader,
     {
       p_group = nm_group_union(p_local_group, p_remote_group2);
     }
-  nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_create(nm_comm_world(), p_group),
+  nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_create_group(nm_comm_world(), p_group, p_group),
 							       nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL),
 							       NM_MPI_COMMUNICATOR_INTER);
   p_new_comm->intercomm.remote_offset = (local_leader_world > remote_leader_world) ? 0 : nm_group_size(p_local_group);

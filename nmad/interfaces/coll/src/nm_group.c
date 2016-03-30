@@ -68,6 +68,12 @@ nm_gate_t nm_group_get_gate(nm_group_t p_group, int rank)
     }
 }
 
+int nm_group_get_dest(nm_group_t p_group, nm_gate_t p_gate)
+{
+  nm_gate_vect_itor_t i = nm_gate_vect_find(p_group, p_gate);
+  return nm_gate_vect_rank(p_group, i);
+}
+
 nm_group_t nm_group_dup(nm_group_t group)
 {
   nm_group_t newgroup = nm_gate_vect_copy(group);

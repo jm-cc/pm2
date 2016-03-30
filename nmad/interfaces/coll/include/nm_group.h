@@ -49,11 +49,18 @@ typedef nm_gate_vect_t nm_group_t;
  MPI_GROUP_EMPTY
 */
 
+#define nm_group_new nm_gate_vect_new
+
+#define nm_group_add_node(GROUP, GATE) nm_gate_vect_push_back((GROUP), (GATE))
+
 extern int nm_group_size(nm_group_t group);
 
 extern int nm_group_rank(nm_group_t group);
 
 extern nm_gate_t nm_group_get_gate(nm_group_t p_group, int rank);
+
+/** @note slow, use with care (linear search) */
+extern int nm_group_get_dest(nm_group_t p_group, nm_gate_t p_gate);
 
 extern int nm_group_compare(nm_group_t group1, nm_group_t group2);
 

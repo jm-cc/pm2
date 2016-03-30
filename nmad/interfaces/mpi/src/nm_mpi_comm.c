@@ -442,28 +442,84 @@ int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
     return MPI_ERR_COMM;
   if(group == MPI_GROUP_NULL)
     return MPI_ERR_GROUP;
-  if(p_old_comm->kind == NM_MPI_COMMUNICATOR_INTER)
-    {
-      fprintf(stderr, "# madmpi: MPI_Comm_create() not implemented yet for intercommunicators.\n");
-      abort();
-    }
   nm_mpi_group_t*p_new_group = nm_mpi_handle_group_get(&nm_mpi_groups, group);
   if(p_new_group == NULL)
     return MPI_ERR_GROUP;
-  if(nm_group_size(p_new_group->p_nm_group) == 0)
+  if(p_old_comm->kind == NM_MPI_COMMUNICATOR_INTER)
     {
-      *newcomm = MPI_COMM_NULL;
-      return MPI_SUCCESS;
+      nm_session_t p_session = nm_comm_get_session(p_old_comm->p_nm_comm);
+      const nm_tag_t tag = NM_MPI_TAG_PRIVATE_COMMCREATE;
+      nm_group_t p_local_group = nm_group_intersection(p_new_group->p_nm_group, p_old_comm->intercomm.p_local_group);
+      const int local_size = nm_group_size(p_local_group);
+      const int local_rank = nm_group_rank(p_local_group);
+      int remote_size = nm_group_size(p_old_comm->intercomm.p_remote_group);
+      int*remote_ranks = malloc(sizeof(int) * remote_size);
+      nm_sr_request_t rreq;
+      nm_sr_irecv(p_session, NM_GATE_NONE, tag, remote_ranks, sizeof(int) * remote_size, &rreq);
+      if((local_rank == 0) || (local_size == 0 && p_old_comm->intercomm.rank == 0))
+	{
+	  /* local leader */
+	  int*local_ranks = malloc(sizeof(int) * local_size);
+	  int i;
+	  for(i = 0; i < local_size; i++)
+	    {
+	      const nm_gate_t p_gate = nm_group_get_gate(p_local_group, i);
+	      local_ranks[i] = nm_group_get_dest(p_old_comm->intercomm.p_local_group, p_gate);
+	    }
+	  for(i = 0; i < remote_size; i++)
+	    {
+	      nm_sr_send(p_session, nm_group_get_gate(p_old_comm->intercomm.p_remote_group, i),
+			 tag, local_ranks, sizeof(int) * local_size);
+	    }
+	  free(local_ranks);
+	}
+      nm_sr_rwait(p_session, &rreq);
+      nm_len_t rlen = -1;
+      nm_sr_get_size(p_session, &rreq, &rlen);
+      remote_size = rlen / sizeof(int);
+      if((local_rank == -1) || (remote_size == 0))
+	{
+	  /* node not in new comm; discard remote group */
+	  free(remote_ranks);
+	  *newcomm = MPI_COMM_NULL;
+	  return MPI_SUCCESS;
+	}
+      nm_group_t p_remote_group = nm_group_new();
+      int i;
+      for(i = 0; i < remote_size; i++)
+	{
+	  nm_gate_t p_gate = nm_group_get_gate(p_old_comm->intercomm.p_remote_group, remote_ranks[i]);
+	  nm_group_add_node(p_remote_group, p_gate);
+	}
+      free(remote_ranks);
+      const int group_first = (p_old_comm->intercomm.remote_offset != 0);
+      nm_group_t p_overlay_group = group_first ? nm_group_union(p_local_group, p_remote_group) : nm_group_union(p_remote_group, p_local_group);
+      nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_create_group(p_old_comm->p_nm_comm, p_overlay_group, p_overlay_group),
+								   nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL),
+								   NM_MPI_COMMUNICATOR_INTER);
+      p_new_comm->intercomm.p_remote_group = p_remote_group;
+      p_new_comm->intercomm.p_local_group  = p_local_group;
+      p_new_comm->intercomm.rank           = local_rank;
+      p_new_comm->intercomm.remote_offset  = group_first ? local_size : 0;
+      *newcomm = p_new_comm->id;
     }
-  nm_comm_t p_nm_comm = nm_comm_create(p_old_comm->p_nm_comm, p_new_group->p_nm_group);
-  if(p_nm_comm == NULL)
+  else if(p_old_comm->kind == NM_MPI_COMMUNICATOR_INTRA)
     {
-      /* node not in group*/
-      *newcomm = MPI_COMM_NULL;
-      return MPI_SUCCESS;
+      if(nm_group_size(p_new_group->p_nm_group) == 0)
+	{
+	  *newcomm = MPI_COMM_NULL;
+	  return MPI_SUCCESS;
+	}
+      nm_comm_t p_nm_comm = nm_comm_create(p_old_comm->p_nm_comm, p_new_group->p_nm_group);
+      if(p_nm_comm == NULL)
+	{
+	  /* node not in group*/
+	  *newcomm = MPI_COMM_NULL;
+	  return MPI_SUCCESS;
+	}
+      nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, p_old_comm->p_errhandler, NM_MPI_COMMUNICATOR_INTRA);
+      *newcomm = p_new_comm->id;
     }
-  nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, p_old_comm->p_errhandler, NM_MPI_COMMUNICATOR_INTRA);
-  *newcomm = p_new_comm->id;
   return MPI_SUCCESS;
 }
 
@@ -525,7 +581,11 @@ int mpi_comm_split(MPI_Comm oldcomm, int color, int key, MPI_Comm *newcomm)
   const int rank = nm_comm_rank(p_old_comm->p_nm_comm);
   struct nm_mpi_comm_split_node_s local_node = { .color = color, .key = key, .rank = rank};
   struct nm_mpi_comm_split_node_s*all_nodes = malloc(comm_size * sizeof(struct nm_mpi_comm_split_node_s));
-
+  if(p_old_comm->kind == NM_MPI_COMMUNICATOR_INTER)
+    {
+      fprintf(stderr, "madmpi: MPI_Comm_split() not implemented yet for intercomm.\n");
+      abort();
+    }
   nm_coll_gather(p_old_comm->p_nm_comm, root, &local_node, sizeof(local_node), all_nodes, sizeof(local_node), tag);
   if(rank == root)
     {
@@ -1069,7 +1129,7 @@ int mpi_intercomm_create(MPI_Comm local_comm, int local_leader,
   nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_create_group(p_parent_comm->p_nm_comm, p_group, p_group),
 							       nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL),
 							       NM_MPI_COMMUNICATOR_INTER);
-  p_new_comm->intercomm.p_remote_group = nm_group_dup(p_remote_group);
+  p_new_comm->intercomm.p_remote_group = p_remote_group;
   p_new_comm->intercomm.p_local_group  = nm_group_dup(p_local_group);
   p_new_comm->intercomm.rank           = nm_comm_rank(p_local_comm->p_nm_comm);
   p_new_comm->intercomm.remote_offset  = group_first ? local_size : 0;

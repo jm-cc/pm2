@@ -91,6 +91,7 @@ typedef struct nm_mpi_errhandler_s
 #define NM_MPI_TAG_PRIVATE_ALLGATHER     (NM_MPI_TAG_PRIVATE_BASE | 0x0B)
 
 #define NM_MPI_TAG_PRIVATE_COMMSPLIT     (NM_MPI_TAG_PRIVATE_BASE | 0xF1)
+#define NM_MPI_TAG_PRIVATE_COMMCREATE    (NM_MPI_TAG_PRIVATE_BASE | 0xF2)
 
 /** content for MPI_Info */
 struct nm_mpi_info_s

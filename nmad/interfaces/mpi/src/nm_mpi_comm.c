@@ -138,6 +138,11 @@ static void nm_mpi_communicator_destroy(nm_mpi_communicator_t*p_comm)
       nm_mpi_attrs_destroy(p_comm->id, &p_comm->attrs);
       if(p_comm->name)
 	free(p_comm->name);
+      if(p_comm->kind == NM_MPI_COMMUNICATOR_INTER)
+	{
+	  nm_group_free(p_comm->intercomm.p_local_group);
+	  nm_group_free(p_comm->intercomm.p_remote_group);
+	}
       nm_comm_destroy(p_comm->p_nm_comm);
       nm_mpi_handle_communicator_free(&nm_mpi_communicators, p_comm);
     }
@@ -156,10 +161,22 @@ static void nm_mpi_group_destroy(nm_mpi_group_t*p_group)
 
 int mpi_comm_size(MPI_Comm comm, int*size)
 {
-  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   if(size)
     {
-      *size = nm_comm_size(p_comm->p_nm_comm);
+      if(p_comm->kind == NM_MPI_COMMUNICATOR_INTER)
+	{
+	  *size = nm_group_size(p_comm->intercomm.p_local_group);
+	}
+      else if(p_comm->kind == NM_MPI_COMMUNICATOR_INTRA)
+	{
+	  *size = nm_comm_size(p_comm->p_nm_comm);
+	}
+      else
+	{
+	  *size = MPI_UNDEFINED;
+	  return MPI_ERR_COMM;
+	}
     }
   return MPI_SUCCESS;
 }
@@ -169,7 +186,19 @@ int mpi_comm_rank(MPI_Comm comm, int *rank)
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   if(rank)
     {
-      *rank = nm_comm_rank(p_comm->p_nm_comm);
+      if(p_comm->kind == NM_MPI_COMMUNICATOR_INTER)
+	{
+	  *rank = p_comm->intercomm.rank;
+	}
+      else if(p_comm->kind == NM_MPI_COMMUNICATOR_INTRA)
+	{
+	  *rank = nm_comm_rank(p_comm->p_nm_comm);
+	}
+      else
+	{
+	  *rank = MPI_UNDEFINED;
+	  return MPI_ERR_COMM;
+	}
     }
   return MPI_SUCCESS;
 }
@@ -365,13 +394,18 @@ int mpi_comm_test_inter(MPI_Comm comm, int*flag)
 
 int mpi_comm_compare(MPI_Comm comm1, MPI_Comm comm2, int*result)
 {
+  if(comm1 == comm2)
+    {
+      *result = MPI_IDENT;
+      return MPI_SUCCESS;
+    }
   nm_mpi_communicator_t*p_comm1 = nm_mpi_communicator_get(comm1);
   nm_mpi_communicator_t*p_comm2 = nm_mpi_communicator_get(comm2);
   if(p_comm1 == NULL || p_comm2 == NULL)
     return MPI_ERR_COMM;
-  if(comm1 == comm2)
+  if((p_comm1->kind != p_comm2->kind) || (p_comm1->kind == NM_MPI_COMMUNICATOR_INTER && p_comm1->intercomm.remote_offset != p_comm2->intercomm.remote_offset))
     {
-      *result = MPI_IDENT;
+      *result = MPI_UNEQUAL;
       return MPI_SUCCESS;
     }
   int r = nm_group_compare(nm_comm_group(p_comm1->p_nm_comm), nm_comm_group(p_comm2->p_nm_comm));
@@ -392,7 +426,9 @@ int mpi_comm_group(MPI_Comm comm, MPI_Group*group)
   if(group != NULL)
     {
       nm_mpi_group_t*p_new_group = nm_mpi_handle_group_alloc(&nm_mpi_groups);
-      p_new_group->p_nm_group = nm_group_dup(nm_comm_group(p_comm->p_nm_comm));
+      p_new_group->p_nm_group = (p_comm->kind == NM_MPI_COMMUNICATOR_INTER) ?
+	nm_group_dup(p_comm->intercomm.p_local_group) :
+	nm_group_dup(nm_comm_group(p_comm->p_nm_comm));
       MPI_Group new_id = p_new_group->id;;
       *group = new_id;
     }
@@ -550,9 +586,10 @@ int mpi_comm_dup(MPI_Comm oldcomm, MPI_Comm *newcomm)
     }
   if(p_old_comm->kind == NM_MPI_COMMUNICATOR_INTER)
     {
-      p_new_comm->intercomm.p_local_group = nm_group_dup(p_old_comm->intercomm.p_local_group);
+      p_new_comm->intercomm.p_local_group  = nm_group_dup(p_old_comm->intercomm.p_local_group);
       p_new_comm->intercomm.p_remote_group = nm_group_dup(p_old_comm->intercomm.p_remote_group);
-      p_new_comm->intercomm.tag = p_old_comm->intercomm.tag;
+      p_new_comm->intercomm.rank           = p_old_comm->intercomm.rank;
+      p_new_comm->intercomm.remote_offset  = p_old_comm->intercomm.remote_offset;
     }
   if(p_old_comm->name != NULL)
     {
@@ -1032,10 +1069,10 @@ int mpi_intercomm_create(MPI_Comm local_comm, int local_leader,
   nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(nm_comm_create_group(p_parent_comm->p_nm_comm, p_group, p_group),
 							       nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL),
 							       NM_MPI_COMMUNICATOR_INTER);
-  p_new_comm->intercomm.remote_offset = group_first ? local_size : 0;
-  p_new_comm->intercomm.p_remote_group = p_remote_group;
-  p_new_comm->intercomm.p_local_group = p_local_group;
-  p_new_comm->intercomm.tag = tag;
+  p_new_comm->intercomm.p_remote_group = nm_group_dup(p_remote_group);
+  p_new_comm->intercomm.p_local_group  = nm_group_dup(p_local_group);
+  p_new_comm->intercomm.rank           = nm_comm_rank(p_local_comm->p_nm_comm);
+  p_new_comm->intercomm.remote_offset  = group_first ? local_size : 0;
   *newintercomm = p_new_comm->id;
   return MPI_SUCCESS;
 }

@@ -65,16 +65,16 @@ typedef union
     nm_tag_t tag;
     nm_len_t len;
     nm_session_t p_session;
-  } recv_unexpected;
+  } recv_unexpected; /**< field for event NM_SR_EVENT_RECV_UNEXPECTED */
   struct
   {
     nm_sr_request_t*p_request;
     nm_gate_t p_gate;
-  } recv_completed;
+  } recv_completed; /**< field for event NM_SR_EVENT_RECV_COMPLETED & CANCELLED */
   struct
   {
     nm_sr_request_t*p_request;
-  } send_completed;
+  } send_completed; /**< field for event NM_SR_EVENT_SEND_COMPLETED */
 } nm_sr_event_info_t;
 
 /** notification function for sendrecv events */
@@ -108,20 +108,25 @@ extern int nm_sr_request_set_completion_queue(nm_session_t p_session, nm_sr_requ
 extern int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t*p_request);
 
 /** Add a user reference to a request */
-static inline int nm_sr_request_set_ref(nm_session_t p_session, nm_sr_request_t*p_request, void*ref);
-
-/** Returns the received size of the message with the specified request. */
-static inline int nm_sr_get_size(nm_session_t p_session, nm_sr_request_t *request, size_t *size);
+static inline int nm_sr_request_set_ref(nm_sr_request_t*p_request, void*ref);
 
 /** Retrieve the 'ref' from a sendrecv request. */
-static inline int nm_sr_get_ref(nm_session_t p_session,	nm_sr_request_t *p_request, void**ref);
+static inline int nm_sr_request_get_ref(nm_sr_request_t*p_request, void**ref);
 
-/** Retrieve the tag from a receive request. */
-static inline int nm_sr_get_rtag(nm_session_t p_session, nm_sr_request_t *p_request, nm_tag_t*tag);
+/** Retrieve the tag from a sendrecv request. */
+static inline int nm_sr_request_get_tag(nm_sr_request_t*p_request, nm_tag_t*tag);
 
-/** Retrieve the tag from a send request. */
-static inline int nm_sr_get_stag(nm_session_t p_session, nm_sr_request_t *p_request, nm_tag_t*tag);
+/** Returns the received size of the message with the specified request. */
+static inline int nm_sr_request_get_size(nm_sr_request_t *request, nm_len_t*size);
 
+/** legacy symbol name */
+#define nm_sr_get_stag(SESSION, REQ, TAG)  nm_sr_request_get_tag(REQ, TAG)
+/** legacy symbol name */
+#define nm_sr_get_rtag(SESSION, REQ, TAG)  nm_sr_request_get_tag(REQ, TAG)
+/** legacy symbol name */
+#define nm_sr_get_ref(SESSION, REQ, REF)   nm_sr_request_get_ref(REQ, REF)
+/** legacy symbol name */
+#define nm_sr_get_size(SESSION, REQ, SIZE) nm_sr_request_get_size(REQ, SIZE)
 
 /* ** Building blocks for send ***************************** */
 
@@ -194,7 +199,7 @@ static inline int nm_sr_isend_with_ref(nm_session_t p_session,
 				       void*ref)
 {
   nm_sr_send_init(p_session, p_request);
-  nm_sr_request_set_ref(p_session, p_request, ref);
+  nm_sr_request_set_ref(p_request, ref);
   nm_sr_send_pack_contiguous(p_session, p_request, data, len);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
@@ -248,7 +253,7 @@ static inline int nm_sr_isend_iov_with_ref(nm_session_t p_session,
 					   void*ref)
 {
   nm_sr_send_init(p_session, p_request);
-  nm_sr_request_set_ref(p_session, p_request, ref);
+  nm_sr_request_set_ref(p_request, ref);
   nm_sr_send_pack_iov(p_session, p_request, iov, num_entries);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
@@ -260,7 +265,7 @@ static inline int nm_sr_isend_data(nm_session_t p_session,
 				   nm_sr_request_t *p_request, void*ref)
 {
   nm_sr_send_init(p_session, p_request);
-  nm_sr_request_set_ref(p_session, p_request, ref);
+  nm_sr_request_set_ref(p_request, ref);
   nm_sr_send_pack_data(p_session, p_request, filter);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
@@ -335,7 +340,7 @@ static inline int nm_sr_irecv_with_ref(nm_session_t p_session,
 				       void *ref)
 {
   nm_sr_recv_init(p_session, p_request);
-  nm_sr_request_set_ref(p_session, p_request, ref);
+  nm_sr_request_set_ref(p_request, ref);
   nm_sr_recv_unpack_contiguous(p_session, p_request, data, len);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
@@ -358,7 +363,7 @@ static inline int nm_sr_irecv_iov_with_ref(nm_session_t p_session,
 					   nm_sr_request_t *p_request, void *ref)
 {
   nm_sr_recv_init(p_session, p_request);
-  nm_sr_request_set_ref(p_session, p_request, ref);
+  nm_sr_request_set_ref(p_request, ref);
   nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
@@ -370,7 +375,7 @@ static inline int nm_sr_irecv_data(nm_session_t p_session,
 				   nm_sr_request_t *p_request, void*ref)
 {
   nm_sr_recv_init(p_session, p_request);
-  nm_sr_request_set_ref(p_session, p_request, ref);
+  nm_sr_request_set_ref(p_request, ref);
   nm_sr_recv_unpack_data(p_session, p_request, filter);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;

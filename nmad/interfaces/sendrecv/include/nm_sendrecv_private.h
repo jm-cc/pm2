@@ -82,31 +82,25 @@ struct nm_sr_request_s
 
 /* ** Requests inline ************************************** */
 
-static inline int nm_sr_get_ref(nm_session_t p_session,
-				nm_sr_request_t *p_request,
-				void**ref)
+static inline int nm_sr_request_get_ref(nm_sr_request_t*p_request, void**ref)
 {
   *ref = p_request->ref;
   return NM_ESUCCESS;
 }
 
-static inline int nm_sr_get_rtag(nm_session_t p_session,
-				 nm_sr_request_t *p_request,
-				 nm_tag_t*tag)
+static inline int nm_sr_request_get_session(nm_sr_request_t*p_request, nm_session_t*pp_session)
+{
+  *pp_session = p_request->p_session;
+  return NM_ESUCCESS;
+}
+
+static inline int nm_sr_request_get_tag(nm_sr_request_t*p_request, nm_tag_t*tag)
 {
   *tag = nm_tag_get(p_request->req.tag);
   return NM_ESUCCESS;
 }
 
-static inline int nm_sr_get_stag(nm_session_t p_session,
-				 nm_sr_request_t *p_request,
-				 nm_tag_t*tag)
-{
-  *tag = nm_tag_get(p_request->req.tag);
-  return NM_ESUCCESS;
-}
-
-static inline int nm_sr_request_set_ref(nm_session_t p_session, nm_sr_request_t*p_request, void*ref)
+static inline int nm_sr_request_set_ref(nm_sr_request_t*p_request, void*ref)
 {
   if(!p_request->ref)
     {
@@ -117,10 +111,20 @@ static inline int nm_sr_request_set_ref(nm_session_t p_session, nm_sr_request_t*
     return -NM_EALREADY;
 }
 
-static inline int nm_sr_get_size(nm_session_t p_session, nm_sr_request_t *p_request, size_t *size)
+static inline int nm_sr_request_get_size(nm_sr_request_t*p_request, nm_len_t*size)
 {
-  *size = p_request->req.unpack.cumulated_len;
-  return NM_ESUCCESS;
+  if(p_request->req.flags & NM_FLAG_PACK)
+    {
+      *size = p_request->req.pack.done;
+      return NM_ESUCCESS;
+    }
+  else if(p_request->req.flags & NM_FLAG_UNPACK)
+    {
+      *size = p_request->req.unpack.cumulated_len;
+      return NM_ESUCCESS;
+    }
+  else
+    return -NM_EINVAL;
 }
 
 /* ** Send inline ****************************************** */

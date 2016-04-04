@@ -40,9 +40,9 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
       size_t size;
       nm_tag_t tag;
       void*ref;
-      nm_sr_get_rtag(p_session, p_request, &tag);
-      nm_sr_get_size(p_session, p_request, &size);
-      nm_sr_get_ref(p_session, p_request, &ref);
+      nm_sr_request_get_tag(p_request, &tag);
+      nm_sr_request_get_size(p_request, &size);
+      nm_sr_request_get_ref(p_request, &ref);
       printf(":: event NM_SR_EVENT_RECV_COMPLETED- tag = %d; size = %d; ref = %p; from gate = %s\n",
 	     (int)tag, (int)size, ref, from?(from == p_gate ? "peer":"unknown"):"(nil)");
       if(size < 1024)

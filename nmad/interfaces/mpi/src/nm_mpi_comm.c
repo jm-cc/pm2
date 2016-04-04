@@ -475,7 +475,7 @@ int mpi_comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm*newcomm)
 	}
       nm_sr_rwait(p_session, &rreq);
       nm_len_t rlen = -1;
-      nm_sr_get_size(p_session, &rreq, &rlen);
+      nm_sr_request_get_size(&rreq, &rlen);
       remote_size = rlen / sizeof(int);
       if((local_rank == -1) || (remote_size == 0))
 	{

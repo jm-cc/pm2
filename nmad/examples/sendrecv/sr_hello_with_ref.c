@@ -50,15 +50,15 @@ int main(int argc, char**argv)
       printf("received buffer: %s\n", buf);
 
       char*ref2;
-      nm_sr_get_ref(p_session, req2, (void**)&ref2);
+      nm_sr_request_get_ref(req2, (void**)&ref2);
       printf("ref = %s; ref2 = %s\n", ref, ref2);
 
       size_t size = 0;
-      nm_sr_get_size(p_session, req2, &size);
+      nm_sr_request_get_size(req2, &size);
       printf("size = %zu\n", size);
       
       nm_tag_t tag = 0;
-      nm_sr_get_rtag(p_session, req2, &tag);
+      nm_sr_request_get_tag(req2, &tag);
       printf("tag = %lu", (unsigned long)tag);
     }
   else
@@ -77,7 +77,7 @@ int main(int argc, char**argv)
       while(!req2);
 
       char*ref2;
-      nm_sr_get_ref(p_session, req2, (void**)&ref2);
+      nm_sr_request_get_ref(req2, (void**)&ref2);
       printf("ref = %s; ref2 = %s\n", ref, ref2);
     }
   

@@ -106,12 +106,12 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
       if(p_req->user_tag == MPI_ANY_TAG)
 	{
 	  nm_tag_t nm_tag;
-	  nm_sr_get_rtag(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad, &nm_tag);
+	  nm_sr_request_get_tag(&p_req->request_nmad, &nm_tag);
 	  status->MPI_TAG = (int)nm_tag;
 	}
     }
-  size_t _size = 0;
-  nm_sr_get_size(nm_mpi_communicator_get_session(p_req->p_comm), &(p_req->request_nmad), &_size);
+  nm_len_t _size = 0;
+  nm_sr_request_get_size(&(p_req->request_nmad), &_size);
   status->size = _size;
   MPI_NMAD_TRACE("Size %d Size datatype %lu\n", status->size, (unsigned long)nm_mpi_datatype_size(p_req->p_datatype));
   return err;

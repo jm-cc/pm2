@@ -49,6 +49,11 @@ static inline nm_gate_t nm_comm_get_gate(nm_comm_t p_comm, int rank)
   return nm_group_get_gate(p_comm->group, rank);
 }
 
+static inline nm_gate_t nm_comm_gate_self(nm_comm_t p_comm)
+{
+  return nm_comm_get_gate(p_comm, nm_comm_rank(p_comm));
+}
+
 static inline int nm_comm_get_dest(nm_comm_t p_comm, nm_gate_t p_gate)
 {
   intptr_t rank_as_ptr = (intptr_t)puk_hashtable_lookup(p_comm->reverse, p_gate);

@@ -101,7 +101,7 @@ nm_comm_t nm_comm_dup(nm_comm_t p_comm)
 nm_comm_t nm_comm_create_group(nm_comm_t p_comm, nm_group_t p_newcomm_group, nm_group_t p_bcast_group)
 {
   nm_session_t p_session = nm_comm_get_session(p_comm);
-  nm_gate_t p_self_gate  = nm_comm_get_gate(p_comm, nm_comm_rank(p_comm));
+  nm_gate_t p_self_gate  = nm_comm_gate_self(p_comm);
   nm_gate_t p_root_gate  = nm_group_get_gate(p_bcast_group, 0);
   const int newrank      = nm_group_rank(p_newcomm_group);
   struct nm_comm_create_header_s

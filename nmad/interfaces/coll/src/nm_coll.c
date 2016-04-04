@@ -122,27 +122,26 @@ void nm_coll_group_scatter(nm_session_t p_session, nm_group_t p_group, nm_gate_t
 
 void nm_coll_barrier(nm_comm_t p_comm, nm_tag_t tag)
 {
-  nm_coll_group_barrier(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
-			nm_comm_get_gate(p_comm, nm_comm_rank(p_comm)),tag);
+  nm_coll_group_barrier(nm_comm_get_session(p_comm), nm_comm_group(p_comm), nm_comm_gate_self(p_comm), tag);
 }
 
 void nm_coll_bcast(nm_comm_t p_comm, int root, void*buffer, nm_len_t len, nm_tag_t tag)
 {
   nm_coll_group_bcast(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
-		      nm_comm_get_gate(p_comm, root), nm_comm_get_gate(p_comm, nm_comm_rank(p_comm)),
+		      nm_comm_get_gate(p_comm, root), nm_comm_gate_self(p_comm),
 		      buffer, len, tag);
 }
 
 void nm_coll_scatter(nm_comm_t p_comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
 {
   nm_coll_group_scatter(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
-		       nm_comm_get_gate(p_comm, root), nm_comm_get_gate(p_comm, nm_comm_rank(p_comm)),
+			nm_comm_get_gate(p_comm, root), nm_comm_gate_self(p_comm),
 			sbuf, slen, rbuf, rlen, tag);
 }
 
 void nm_coll_gather(nm_comm_t p_comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
 {
   nm_coll_group_gather(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
-		       nm_comm_get_gate(p_comm, root), nm_comm_get_gate(p_comm, nm_comm_rank(p_comm)),
+		       nm_comm_get_gate(p_comm, root), nm_comm_gate_self(p_comm),
 		       sbuf, slen, rbuf, rlen, tag);
 }

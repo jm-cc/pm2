@@ -483,12 +483,6 @@ NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_ops);
 
 /* ********************************************************* */
 
-/** Initialises internal data */
-int nm_mpi_internal_init(void);
-
-/** Internal shutdown of the application. */
-int nm_mpi_internal_exit(void);
-
 /** init request sub-system */
 void nm_mpi_request_init(void);
 void nm_mpi_request_exit(void);
@@ -642,17 +636,6 @@ nm_mpi_operator_t*nm_mpi_operator_get(MPI_Op op);
  * Gets the internal representation of the given communicator.
  */
 nm_mpi_communicator_t*nm_mpi_communicator_get(MPI_Comm comm);
-
-
-/**
- * Gets the NM tag for the given user tag and communicator.
- */
-void nm_mpi_get_tag(nm_mpi_communicator_t*p_comm, int user_tag, nm_tag_t*nm_tag, nm_tag_t*tag_mask);
-
-/**
- * Checks whether the given tag is in the permitted bounds
- */
-int nm_mpi_check_tag(int user_tag);
 
 /* Attributes */
 

@@ -302,6 +302,7 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
 int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
+  assert(p_request->monitor.notifier == NULL);
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
   nm_core_req_monitor(&p_request->req, nm_sr_monitor_req_completed);

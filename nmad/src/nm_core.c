@@ -132,10 +132,10 @@ int nm_schedule(struct nm_core *p_core)
 
 
 /** Add an event monitor to the list */
-void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m)
+void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*p_monitor)
 {
   nmad_lock_assert();
-  if(m->mask == NM_STATUS_UNEXPECTED)
+  if(p_monitor->mask == NM_STATUS_UNEXPECTED)
     {
       struct nm_unexpected_s*p_chunk = NULL, *tmp;
       tbx_fast_list_for_each_entry_safe(p_chunk, tmp, &p_core->unexpected, link)
@@ -150,14 +150,14 @@ void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m)
 		  .seq    = p_chunk->seq,
 		  .len    = p_chunk->msg_len
 		};
-	      if(nm_event_matches(m, &event))
+	      if(nm_event_matches(p_monitor, &event))
 		{
-		  (m->notifier)(&event);
+		  (p_monitor->notifier)(&event, p_monitor->ref);
 		}
 	    }
 	}
     }
-  nm_core_monitor_vect_push_back(&p_core->monitors, m);
+  nm_core_monitor_vect_push_back(&p_core->monitors, p_monitor);
 }
 
 void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m)

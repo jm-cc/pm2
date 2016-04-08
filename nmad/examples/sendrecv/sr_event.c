@@ -66,6 +66,15 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
     }
 }
 
+static const struct nm_sr_monitor_s monitor =
+  {
+    .p_notifier = &request_notifier,
+    .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
+    .p_gate     = NM_GATE_NONE,
+    .tag        = 0,
+    .tag_mask   = NM_TAG_MASK_NONE
+  };
+
 int main(int argc, char **argv)
 {
   const size_t short_len = 1 + strlen(short_msg);
@@ -82,7 +91,7 @@ int main(int argc, char **argv)
 
       /* set global handler for unexpected */
       memset(buf, 0, long_len);
-      nm_sr_monitor(p_session, NM_SR_EVENT_RECV_UNEXPECTED, &request_notifier);
+      nm_sr_session_monitor_set(p_session, &monitor);
 
       fprintf(stderr, "# ## per-request event...\n");
       /* per-request event. */
@@ -114,6 +123,7 @@ int main(int argc, char **argv)
 	  nm_sr_rwait(p_session, &unexpected_requests[i]);
 	}
       fprintf(stderr, "# done.\n");
+      nm_sr_session_monitor_remove(p_session, &monitor);
     }
   else
     {

@@ -31,14 +31,13 @@ struct nm_sr_session_s
 {
   struct nm_sr_request_lfqueue_s completed_rreq; /**< queue of completed recv requests */
   struct nm_sr_request_lfqueue_s completed_sreq; /**< queue of completed send requests */
-  struct nm_core_monitor_s monitor;              /**< monitor unexpected messages */
-  nm_sr_event_notifier_t unexpected;             /**< user callback for unexpected messages */
+  struct nm_core_monitor_vect_s core_monitors;   /**< core monitors for the session; sr_monitor stored in ref */
 };
 
 /* ** Events *********************************************** */
 
-static void nm_sr_event_req_completed(const struct nm_core_event_s*const event);
-static void nm_sr_event_unexpected(const struct nm_core_event_s*const event);
+static void nm_sr_event_req_completed(const struct nm_core_event_s*const event, void*_ref);
+static void nm_sr_event_handler(const struct nm_core_event_s*const event, void*_ref);
 
 static const struct nm_core_monitor_s nm_sr_monitor_req_completed = 
   {
@@ -52,7 +51,6 @@ static const struct nm_core_monitor_s nm_sr_monitor_req_completed =
 
 int nm_sr_init(nm_session_t p_session)
 {
-  nm_core_t p_core = p_session->p_core;
   if(p_session->ref != NULL)
     {
       fprintf(stderr, "nmad: FATAL- sendrecv cannot use session %p; ref is non-empty.\n", p_session);
@@ -61,8 +59,7 @@ int nm_sr_init(nm_session_t p_session)
   struct nm_sr_session_s*p_sr_session = malloc(sizeof(struct nm_sr_session_s));
   nm_sr_request_lfqueue_init(&p_sr_session->completed_rreq);
   nm_sr_request_lfqueue_init(&p_sr_session->completed_sreq);
-  p_sr_session->monitor = NM_CORE_MONITOR_NULL;
-  p_sr_session->unexpected = NULL;
+  nm_core_monitor_vect_init(&p_sr_session->core_monitors);
   p_session->ref = p_sr_session;
   return NM_ESUCCESS;
 }
@@ -71,12 +68,13 @@ int nm_sr_exit(nm_session_t p_session)
 {
   struct nm_sr_session_s*p_sr_session = p_session->ref;
   assert(p_sr_session != NULL);
-  if(p_sr_session->monitor.notifier != NULL)
+  while(!nm_core_monitor_vect_empty(&p_sr_session->core_monitors))
     {
-      nmad_lock();
-      nm_core_monitor_remove(p_session->p_core, &p_sr_session->monitor);
-      nmad_unlock();
+      const struct nm_core_monitor_s*p_core_monitor = *nm_core_monitor_vect_begin(&p_sr_session->core_monitors);
+      const struct nm_sr_monitor_s*p_sr_monitor = p_core_monitor->ref;
+      nm_sr_session_monitor_remove(p_session, p_sr_monitor);
     }
+  nm_core_monitor_vect_destroy(&p_sr_session->core_monitors);
   free(p_sr_session);
   p_session->ref = NULL;
   return NM_ESUCCESS;
@@ -89,7 +87,6 @@ int nm_sr_exit(nm_session_t p_session)
  */
 int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 {
-  nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
 #ifdef DEBUG
   if(!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED))
@@ -136,8 +133,7 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
 #endif /* DEBUG */
   const nm_status_t status = (p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS) ?
     (NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED) : (NM_STATUS_PACK_COMPLETED);
-
-  if(!nm_status_testall(&p_request->req, NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED))
+  if(!nm_status_testall(&p_request->req, status | NM_STATUS_FINALIZED))
     {
       nm_sr_flush(p_core);
       if(p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS)
@@ -252,52 +248,53 @@ int nm_sr_probe(nm_session_t p_session,
   return err;
 }
 
-int nm_sr_unexpected(nm_session_t p_session, nm_sr_event_notifier_t notifier)
+int nm_sr_session_monitor_set(nm_session_t p_session, const struct nm_sr_monitor_s*p_sr_monitor)
 {
   struct nm_sr_session_s*p_sr_session = p_session->ref;
-  p_sr_session->monitor = (struct nm_core_monitor_s)
+  struct nm_core_monitor_s*p_core_monitor = malloc(sizeof(struct nm_core_monitor_s));
+  *p_core_monitor = (struct nm_core_monitor_s)
     {
-      .notifier = &nm_sr_event_unexpected,
-      .mask     = NM_STATUS_UNEXPECTED,
-      .matching = { .p_gate   = NM_ANY_GATE,
-		    .tag      = nm_tag_build(p_session->hash_code, 0),
-		    .tag_mask = nm_tag_build(NM_CORE_TAG_HASH_FULL, 0)
-      }
+      .notifier = &nm_sr_event_handler,
+      .mask     = p_sr_monitor->event_mask,
+      .matching = { .p_gate   = p_sr_monitor->p_gate,
+		    .tag      = nm_tag_build(p_session->hash_code, p_sr_monitor->tag),
+		    .tag_mask = nm_tag_build(NM_CORE_TAG_HASH_FULL, p_sr_monitor->tag_mask)
+      },
+      .ref      = (void*)p_sr_monitor
     };
-  p_sr_session->unexpected = notifier;
   nmad_lock();
-  nm_core_monitor_add(p_session->p_core, &p_sr_session->monitor);
+  nm_core_monitor_vect_push_back(&p_sr_session->core_monitors, p_core_monitor);
+  nm_core_monitor_add(p_session->p_core, p_core_monitor);
   nmad_unlock();
   return NM_ESUCCESS;
 }
 
-int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
+int nm_sr_session_monitor_remove(nm_session_t p_session, const struct nm_sr_monitor_s*p_sr_monitor)
 {
   struct nm_sr_session_s*p_sr_session = p_session->ref;
-  p_sr_session->monitor = (struct nm_core_monitor_s)
+  const struct nm_core_monitor_s*p_core_monitor = NULL;
+  nm_core_monitor_vect_itor_t i;
+  puk_vect_foreach(i, nm_core_monitor, &p_sr_session->core_monitors)
     {
-      .notifier = &nm_sr_event_unexpected,
-      .mask     = mask,
-      .matching = { .p_gate   = NM_ANY_GATE,
-		    .tag      = nm_tag_build(p_session->hash_code, 0),
-		    .tag_mask = nm_tag_build(NM_CORE_TAG_HASH_FULL, 0)
-      }
-    };
-  p_sr_session->unexpected = notifier;
-  /* sanity check */
-  if(mask == NM_STATUS_UNEXPECTED)
-    {
-      int rc = nm_sr_probe(p_session, NM_GATE_NONE, NULL, 0, NM_TAG_MASK_NONE, NULL, NULL);
-      if(rc == NM_ESUCCESS)
+      if((*i)->ref == p_sr_monitor)
 	{
-	  fprintf(stderr, "# nmad: WARNING- set UNEXPECTED monitor with pending unexpected messages.\n");
+	  p_core_monitor = *i;
+	  break;
 	}
     }
+  if(p_core_monitor == NULL)
+    {
+      fprintf(stderr, "# nmad: cannot remove session monitor %p; not found.\n", p_sr_monitor);
+      abort();
+    }
   nmad_lock();
-  nm_core_monitor_add(p_session->p_core, &p_sr_session->monitor);
+  nm_core_monitor_vect_erase(&p_sr_session->core_monitors, i);
+  nm_core_monitor_remove(p_session->p_core, p_core_monitor);
   nmad_unlock();
+  free((void*)p_core_monitor);
   return NM_ESUCCESS;
 }
+
 
 int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
@@ -416,7 +413,7 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
   return err;
 }
 
-static void nm_sr_event_req_completed(const struct nm_core_event_s*const event)
+static void nm_sr_event_req_completed(const struct nm_core_event_s*const event, void*_ref)
 {
   struct nm_req_s*p_req = event->p_req;
   struct nm_sr_request_s*p_request = tbx_container_of(p_req, struct nm_sr_request_s, req);
@@ -455,13 +452,12 @@ static void nm_sr_event_req_completed(const struct nm_core_event_s*const event)
     }
 }
 
-static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
+static void nm_sr_event_handler(const struct nm_core_event_s*const event, void*_ref)
 {
+  struct nm_sr_monitor_s*p_monitor = _ref;
   const uint32_t hashcode = nm_tag_get_hashcode(event->tag);
   nm_session_t p_session = nm_session_lookup(hashcode);
   assert(p_session != NULL);
-  struct nm_sr_session_s*p_sr_session = p_session->ref;
-  assert(p_sr_session != NULL);
   const nm_tag_t sr_tag = nm_tag_get(event->tag);
   const nm_sr_event_info_t info =
     { 
@@ -471,7 +467,7 @@ static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
       .recv_unexpected.p_session = p_session
     };
   nmad_unlock();
-  (*p_sr_session->unexpected)(NM_SR_EVENT_RECV_UNEXPECTED, &info);
+  (*p_monitor->p_notifier)(NM_SR_EVENT_RECV_UNEXPECTED, &info);
   nmad_lock();
 }
 

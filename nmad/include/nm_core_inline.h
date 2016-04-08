@@ -223,7 +223,7 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
   /* request monitors */
   if((p_req != NULL) && (p_req->monitor.mask & status))
     {
-      (*p_req->monitor.notifier)(p_event);
+      (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
     }
   /* fire global monitors */
   nm_core_monitor_vect_itor_t i;
@@ -231,7 +231,7 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
     {
       if(nm_event_matches(*i, p_event))
 	{
-	  ((*i)->notifier)(p_event);
+	  ((*i)->notifier)(p_event, (*i)->ref);
 	}
     }
   /* set final status *after* events */

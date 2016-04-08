@@ -80,6 +80,15 @@ typedef union
 /** notification function for sendrecv events */
 typedef void (*nm_sr_event_notifier_t)(nm_sr_event_t event, const nm_sr_event_info_t*event_info);
 
+struct nm_sr_monitor_s
+{
+  nm_sr_event_notifier_t p_notifier;
+  nm_sr_event_t event_mask;
+  nm_gate_t p_gate;        /**< listen for events on given gate; NM_ANY_GATE for any */
+  nm_tag_t tag;            /**< tag value for event filter */
+  nm_tag_t tag_mask;       /**< tag mask for event filter- fire event when event.tag & monitor.tag_mask == monitor.tag; set tag = 0 && tag_mask = NM_TAG_MASK_NONE to catch any tag; set tag_mask = NM_TAG_MASK_FULL to catch a given tag */
+};
+
 /** open a new session ready for sendrecv */
 static inline nm_session_t nm_sr_session_open(const char*label);
 
@@ -432,8 +441,11 @@ extern int nm_sr_probe(nm_session_t p_session,
 /** monitors sendrecv events globally */
 extern int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
 
-/** monitors unexpected messages */
-extern int nm_sr_unexpected(nm_session_t p_session, nm_sr_event_notifier_t notifier);
+/** set a monitor for events on the session */
+int nm_sr_session_monitor_set(nm_session_t p_session, const struct nm_sr_monitor_s*p_monitor);
+
+/** remove the event monitor from the session */
+int nm_sr_session_monitor_remove(nm_session_t p_session, const struct nm_sr_monitor_s*p_monitor);
 
 /** Poll for any completed recv request (any source, any tag).
  * @note call nm_sr_request_set_completion_queue() to generate such an event.

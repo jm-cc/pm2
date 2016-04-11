@@ -299,10 +299,16 @@ int nm_sr_session_monitor_remove(nm_session_t p_session, const struct nm_sr_moni
 int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
-  assert(p_request->monitor.notifier == NULL);
+  if(p_request->monitor.notifier != NULL)
+    {
+      fprintf(stderr, "# nmad: WARNING- duplicate request monitor.\n");
+      return -NM_EINVAL;
+    }
+  nmad_lock();
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
   nm_core_req_monitor(&p_request->req, nm_sr_monitor_req_completed);
+  nmad_unlock();
   return NM_ESUCCESS;
 }
 

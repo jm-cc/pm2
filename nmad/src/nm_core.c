@@ -130,6 +130,22 @@ int nm_schedule(struct nm_core *p_core)
   return NM_ESUCCESS;
 }
 
+void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor)
+{
+  nmad_lock_assert();
+  assert(p_req->monitor.notifier == NULL);
+  p_req->monitor = monitor;
+  if(nm_status_test(p_req, monitor.mask))
+    {
+      /* immediate event */
+      const struct nm_core_event_s event =
+	{
+	  .status = p_req->status,
+	  .p_req  = p_req
+	};
+      (*p_req->monitor.notifier)(&event, p_req->monitor.ref);
+    }
+}
 
 /** Add an event monitor to the list */
 void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*p_monitor)

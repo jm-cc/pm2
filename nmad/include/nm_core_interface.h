@@ -238,8 +238,9 @@ struct nm_core_monitor_s
 void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m);
 /** Unregister an event monitor. */
 void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m);
-/** rgister an event monitor for the given request */
-static inline void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor);
+/** set a per-request monitor. Fire event immediately if pending */
+void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor);
+
 
 /** matches any event */
 #define NM_EVENT_MATCHING_ANY ((struct nm_event_matching_s){ .p_gate = NM_ANY_GATE, .tag = NM_CORE_TAG_NONE, .tag_mask = NM_CORE_TAG_NONE })
@@ -356,15 +357,6 @@ static inline int nm_status_testall(const struct nm_req_s*p_req, nm_status_t bit
 {
   return (nm_status_test(p_req, bitmask) == bitmask);
 }
-
-static inline void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor)
-{
-  assert(p_req->monitor.notifier == NULL);
-  assert((!nm_status_test(p_req, NM_STATUS_PACK_POSTED)) && (!nm_status_test(p_req, NM_STATUS_UNPACK_POSTED)));
-  p_req->monitor = monitor;
-}
-
-
 
 
 /* @} */

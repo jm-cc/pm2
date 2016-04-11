@@ -107,8 +107,8 @@ typedef uint16_t nm_drv_id_t;
 #include "nm_core.h"
 
 #include "nm_lock.h"
-#include "nm_core_inline.h"
 #include "nm_lock_inline.h"
+#include "nm_core_inline.h"
 #include "nm_tactics.h"
 
 #include "nm_sampling.h"

@@ -31,7 +31,7 @@ static char *buf = NULL;
 static int n_unexpected = 0;
 static nm_sr_request_t unexpected_requests[MAX_UNEXPECTED];
 
-static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
+static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info, void*_ref)
 {
   if(event &  NM_SR_EVENT_RECV_COMPLETED)
     {

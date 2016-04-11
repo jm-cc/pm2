@@ -77,8 +77,9 @@ typedef union
   } send_completed; /**< field for event NM_SR_EVENT_SEND_COMPLETED */
 } nm_sr_event_info_t;
 
-/** notification function for sendrecv events */
-typedef void (*nm_sr_event_notifier_t)(nm_sr_event_t event, const nm_sr_event_info_t*event_info);
+/** notification function for sendrecv events. 
+ * Received ref comes from monitor->ref in case of session monitor, and request->ref in case of request monitor */
+typedef void (*nm_sr_event_notifier_t)(nm_sr_event_t event, const nm_sr_event_info_t*event_info, void*ref);
 
 struct nm_sr_monitor_s
 {
@@ -87,6 +88,7 @@ struct nm_sr_monitor_s
   nm_gate_t p_gate;        /**< listen for events on given gate; NM_ANY_GATE for any */
   nm_tag_t tag;            /**< tag value for event filter */
   nm_tag_t tag_mask;       /**< tag mask for event filter- fire event when event.tag & monitor.tag_mask == monitor.tag; set tag = 0 && tag_mask = NM_TAG_MASK_NONE to catch any tag; set tag_mask = NM_TAG_MASK_FULL to catch a given tag */
+  void*ref;                /**< reference for user */
 };
 
 /** open a new session ready for sendrecv */

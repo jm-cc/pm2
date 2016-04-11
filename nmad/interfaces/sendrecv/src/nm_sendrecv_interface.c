@@ -306,7 +306,7 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
   return NM_ESUCCESS;
 }
 
-static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info_t*event_info)
+static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info_t*event_info, void*_ref)
 {
   if(event & NM_SR_STATUS_RECV_COMPLETED)
     {
@@ -426,7 +426,7 @@ static void nm_sr_event_req_completed(const struct nm_core_event_s*const event, 
 	  if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
 	    {
 	      nmad_unlock();
-	      (*p_request->monitor.notifier)(NM_SR_STATUS_SEND_COMPLETED, &info);
+	      (*p_request->monitor.notifier)(NM_SR_STATUS_SEND_COMPLETED, &info, p_request->ref);
 	      nmad_lock();
 
 	    }
@@ -442,7 +442,7 @@ static void nm_sr_event_req_completed(const struct nm_core_event_s*const event, 
       if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
 	{
 	  nmad_unlock();
-	  (*p_request->monitor.notifier)(NM_SR_STATUS_RECV_COMPLETED, &info);
+	  (*p_request->monitor.notifier)(NM_SR_STATUS_RECV_COMPLETED, &info, p_request->ref);
 	  nmad_lock();
 	}
     }
@@ -467,7 +467,7 @@ static void nm_sr_event_handler(const struct nm_core_event_s*const event, void*_
       .recv_unexpected.p_session = p_session
     };
   nmad_unlock();
-  (*p_monitor->p_notifier)(NM_SR_EVENT_RECV_UNEXPECTED, &info);
+  (*p_monitor->p_notifier)(NM_SR_EVENT_RECV_UNEXPECTED, &info, p_monitor->ref);
   nmad_lock();
 }
 

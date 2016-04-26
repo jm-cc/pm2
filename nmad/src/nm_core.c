@@ -140,7 +140,7 @@ void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor
       /* immediate event */
       const struct nm_core_event_s event =
 	{
-	  .status = p_req->status,
+	  .status = nm_status_test(p_req, monitor.mask),
 	  .p_req  = p_req
 	};
       (*p_req->monitor.notifier)(&event, p_req->monitor.ref);

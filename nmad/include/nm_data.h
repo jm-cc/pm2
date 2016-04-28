@@ -77,6 +77,7 @@ struct nm_data_chunk_s nm_data_coroutine_next(const struct nm_data_s*p_data, voi
 void                   nm_data_coroutine_generator_destroy(const struct nm_data_s*p_data, void*_generator);
 
 #define NM_DATA_USE_COROUTINE
+
 #ifdef NM_DATA_USE_COROUTINE
 #define nm_data_default_generator         &nm_data_coroutine_generator
 #define nm_data_default_next              &nm_data_coroutine_next

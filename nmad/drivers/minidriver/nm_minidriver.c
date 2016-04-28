@@ -324,7 +324,7 @@ static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap*__restri
   if(p_pw->p_data != NULL)
     {
       assert(minidriver->driver->send_data != NULL);
-      (*minidriver->driver->send_data)(minidriver->_status, p_pw->p_data);
+      (*minidriver->driver->send_data)(minidriver->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
     }
   else
     {
@@ -380,7 +380,7 @@ static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap*__restri
       if(p_pw->p_data != NULL && p_pw->v_nb == 0)
 	{
 	  assert(minidriver->driver->recv_data != NULL);
-	  (*minidriver->driver->recv_data)(minidriver->_status, p_pw->p_data);
+	  (*minidriver->driver->recv_data)(minidriver->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
 	}
       else
 	{

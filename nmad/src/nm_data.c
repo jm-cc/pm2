@@ -441,14 +441,20 @@ void nm_data_slicer_generator_destroy(nm_data_slicer_t*p_slicer)
 
 struct nm_data_slicer_coroutine_s
 {
-  enum nm_data_slicer_coroutine_op_e { NONE, FORWARD, COPY_FROM, COPY_TO } op;
-  void*ptr;
-  volatile nm_len_t slice_len;
+  enum nm_data_slicer_coroutine_op_e
+    {
+      NM_SLICER_OP_NONE = 0,
+      NM_SLICER_OP_FORWARD,
+      NM_SLICER_OP_COPY_FROM,
+      NM_SLICER_OP_COPY_TO
+    } op;
+  void*ptr;                     /**< pointer to copy from/to contiguous data */
+  volatile nm_len_t slice_len;  /**< length of the current slice */
   jmp_buf caller_context;
   jmp_buf traversal_context;
   ucontext_t generator_context;
   void*stack;
-  nm_len_t done;
+  nm_len_t done;                /**< length of data processed so far */
 };
 static void nm_data_slicer_coroutine_apply(void*ptr, nm_len_t len, void*_context)
 {
@@ -456,17 +462,22 @@ static void nm_data_slicer_coroutine_apply(void*ptr, nm_len_t len, void*_context
   nm_len_t chunk_len = 0;
  restart:
   chunk_len = (len > p_coroutine->slice_len) ? p_coroutine->slice_len : len;
-  if(p_coroutine->op == COPY_FROM)
+  if(p_coroutine->op == NM_SLICER_OP_COPY_FROM)
     {
       memcpy(p_coroutine->ptr, ptr, chunk_len);
     }
-  else if(p_coroutine->op == COPY_TO)
+  else if(p_coroutine->op == NM_SLICER_OP_COPY_TO)
     {
       memcpy(ptr, p_coroutine->ptr, chunk_len);
     }
-  else if(p_coroutine->op == FORWARD)
+  else if(p_coroutine->op == NM_SLICER_OP_FORWARD)
     {
       /* do nothing */
+    }
+  else
+    {
+      fprintf(stderr, "# nmad: FATAL- wrong state %d for data slicer.\n", p_coroutine->op);
+      abort();
     }
   p_coroutine->slice_len -= chunk_len;
   p_coroutine->ptr       += chunk_len;
@@ -512,6 +523,7 @@ void nm_data_slicer_coroutine_init(nm_data_slicer_t*p_slicer, const struct nm_da
 #ifdef DEBUG
   p_coroutine->done = 0;
 #endif
+  p_coroutine->op = NM_SLICER_OP_NONE;
   p_coroutine->ptr = NULL;
   p_coroutine->slice_len = 0;
   getcontext(&p_coroutine->generator_context);
@@ -527,33 +539,35 @@ void nm_data_slicer_coroutine_init(nm_data_slicer_t*p_slicer, const struct nm_da
     }
 }
 
-void nm_data_slicer_coroutine_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len)
+static inline void nm_data_slicer_coroutine_op(nm_data_slicer_t*p_slicer, void*ptr, nm_len_t len, enum nm_data_slicer_coroutine_op_e op)
 {
   struct nm_data_slicer_coroutine_s*p_coroutine = p_slicer->p_coroutine;
   assert(p_coroutine->slice_len == 0);
-  p_coroutine->op = COPY_FROM;
-  p_coroutine->ptr = dest_ptr;
-  p_coroutine->slice_len = slice_len;
+  assert(p_coroutine->op == NM_SLICER_OP_NONE);
+  p_coroutine->op = op;
+  p_coroutine->ptr = ptr;
+  p_coroutine->slice_len = len;
   if(_setjmp(p_coroutine->caller_context) == 0)
     {
       _longjmp(p_coroutine->traversal_context, 1);
     }
   assert(p_coroutine->slice_len == 0);
+  p_coroutine->op = NM_SLICER_OP_NONE;
 }
 
+void nm_data_slicer_coroutine_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len)
+{
+  nm_data_slicer_coroutine_op(p_slicer, dest_ptr, slice_len, NM_SLICER_OP_COPY_FROM);
+}
 
 void nm_data_slicer_coroutine_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_len_t slice_len)
 {
-  struct nm_data_slicer_coroutine_s*p_coroutine = p_slicer->p_coroutine;
-  assert(p_coroutine->slice_len == 0);
-  p_coroutine->op = COPY_TO;
-  p_coroutine->ptr = (void*)src_ptr;
-  p_coroutine->slice_len = slice_len;
-  if(_setjmp(p_coroutine->caller_context) == 0)
-    {
-      _longjmp(p_coroutine->traversal_context, 1);
-    }
-  assert(p_coroutine->slice_len == 0);
+  nm_data_slicer_coroutine_op(p_slicer, (void*)src_ptr, slice_len, NM_SLICER_OP_COPY_TO);
+}
+
+void nm_data_slicer_coroutine_forward(nm_data_slicer_t*p_slicer, nm_len_t offset)
+{
+  nm_data_slicer_coroutine_op(p_slicer, NULL, offset, NM_SLICER_OP_FORWARD);
 }
 
 void nm_data_slicer_coroutine_destroy(nm_data_slicer_t*p_slicer)

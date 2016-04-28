@@ -69,12 +69,12 @@ struct nm_minidriver_iface_s
   void (*close)(puk_context_t context);
   /* sending primitives */
   void (*send_post)(void*_status, const struct iovec*v, int n);
-  void (*send_data)(void*_status, const struct nm_data_s*p_data);
+  void (*send_data)(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
   int  (*send_poll)(void*_status);
   void (*send_prefetch)(void*_status, const void*ptr, uint64_t size);
   /* receiving primitives */
   void (*recv_init)(void*_status, struct iovec*v, int n);
-  void (*recv_data)(void*_status, const struct nm_data_s*p_data);
+  void (*recv_data)(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
   int  (*poll_one)(void*_status);
   int  (*cancel_recv)(void*_status); 
 };

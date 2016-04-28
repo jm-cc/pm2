@@ -58,7 +58,7 @@ static void nm_test_iovec_check(char*rbuf, int iov_count, int entry_size)
 static void nm_test_iovec_symmetrical_regular(char*sbuf, char*rbuf, int iov_count, int entry_size, nm_gate_t src, int overrun)
 {
   int i;
-  struct iovec riov[iov_count], siov[iov_count];
+  struct iovec riov[iov_count + 1], siov[iov_count + 1];
   nm_sr_request_t sreq, rreq;
 
   if(is_server)
@@ -74,8 +74,11 @@ static void nm_test_iovec_symmetrical_regular(char*sbuf, char*rbuf, int iov_coun
       riov[i].iov_base = &rbuf[(iov_count - i - 1) * entry_size];
       riov[i].iov_len = entry_size;
     }
-  
   riov[iov_count-1].iov_len += overrun;
+
+  siov[iov_count].iov_base = NULL;
+  riov[iov_count].iov_base = NULL;
+  
 
   if(is_server)
     {

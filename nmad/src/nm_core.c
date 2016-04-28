@@ -383,16 +383,14 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 	  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
 	  assert(p_pw == p_gdrv->p_in_rq_array[NM_TRK_SMALL]);
 	  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-	  int err = r->driver->cancel_recv_iov(r->_status, p_pw);
-	  assert(err == NM_ESUCCESS);
+	  (*r->driver->cancel_recv_iov)(r->_status, p_pw);
 	  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 	  p_gdrv->active_recv[NM_TRK_SMALL] = 0;
 	}
       else
 	{
 	  assert(p_pw->p_drv->p_in_rq == p_pw);
-	  int err = p_pw->p_drv->driver->cancel_recv_iov(NULL, p_pw);
-	  assert(err == NM_ESUCCESS);
+	  (*p_pw->p_drv->driver->cancel_recv_iov)(NULL, p_pw);
 	  p_pw->p_drv->p_in_rq = NULL;
 	}
     }
@@ -407,8 +405,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 	  piom_ltask_cancel(&p_pw->ltask);
 	  if(p_pw->p_drv->driver->cancel_recv_iov)
 	    {
-	      int err = p_pw->p_drv->driver->cancel_recv_iov(NULL, p_pw);
-	      assert(err == NM_ESUCCESS);
+	      (*p_pw->p_drv->driver->cancel_recv_iov)(NULL, p_pw);
 	      p_pw->p_drv->p_in_rq = NULL;
 	    }
 	}
@@ -427,8 +424,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 	      struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
 	      if(r->driver->cancel_recv_iov)
 		{
-		  int err = r->driver->cancel_recv_iov(r->_status, p_pw);
-		  assert(err == NM_ESUCCESS);
+		  (*r->driver->cancel_recv_iov)(r->_status, p_pw);
 		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 		  p_gdrv->active_recv[NM_TRK_SMALL] = 0;
 		}

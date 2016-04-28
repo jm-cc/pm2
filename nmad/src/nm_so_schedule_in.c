@@ -515,23 +515,8 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
       assert(p_unpack->p_gate != NULL);
       nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
       const struct nm_data_properties_s*p_props = nm_data_properties_get(p_unpack->p_data);
-      if((chunk_offset != 0) || (chunk_len != p_props->size))
-	{
-#warning TODO- check the condition. nm_data should be able to manage offset!=0
-	  struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
-	  nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
-	}
-      else
-	{
-	  struct nm_pkt_wrap*p_large_pw = NULL;
-	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw);
-	  p_large_pw->p_unpack     = p_unpack;
-	  p_large_pw->p_data       = p_unpack->p_data;
-	  p_large_pw->p_gate       = p_gate;
-	  p_large_pw->chunk_offset = chunk_offset;
-	  p_large_pw->length       = chunk_len;
-	  tbx_fast_list_add_tail(&p_large_pw->link, &p_gate->pending_large_recv);
-	}
+      struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
+      nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
     }
   else
     {

@@ -488,8 +488,6 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
   assert(p_pw->p_unpack == NULL);
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
   assert(!(p_pw->flags & NM_PW_FINALIZED));
-
-  nm_so_pw_add_last(p_pw);
   nm_header_global_finalize(p_pw);
   p_pw->flags |= NM_PW_FINALIZED;
   return NM_ESUCCESS;

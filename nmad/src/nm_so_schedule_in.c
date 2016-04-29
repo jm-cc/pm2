@@ -304,7 +304,7 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct 
 	  {
 	    struct nm_header_data_s*h = header;
 	    const void*ptr = (h->skip == 0xFFFF) ? (header + NM_HEADER_DATA_SIZE) :
-	      chunk->p_pw->v[0].iov_base + (h->skip + nm_header_global_skip(chunk->p_pw));
+	      chunk->p_pw->v[0].iov_base + (h->skip + nm_header_global_v0len(chunk->p_pw));
 	    nm_small_data_handler(p_core, p_unpack->p_gate, p_unpack, ptr, h, NULL);
 	  }
 	  break;
@@ -631,7 +631,6 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
 
 /** decode one chunk of headers.
  * @returns the number of processed bytes in global header, 
- *          0 if done (last chunk)
  */
 int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap*p_pw, struct nm_gate*p_gate)
 {
@@ -642,10 +641,6 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
   assert(proto_id != 0);
   switch(proto_id)
     {
-    case NM_PROTO_LAST:
-      return 0;
-      break;
-      
     case NM_PROTO_PKT_DATA:
       {
 	const struct nm_header_pkt_data_s*h = ptr;
@@ -675,7 +670,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	rc = NM_HEADER_DATA_SIZE;
 	/* Retrieve data location */
 	const void*data = (dh->skip == 0xFFFF) ? (ptr + NM_HEADER_DATA_SIZE) :
-	  p_pw->v[0].iov_base + (dh->skip + nm_header_global_skip(p_pw));
+	  p_pw->v[0].iov_base + (dh->skip + nm_header_global_v0len(p_pw));
 	assert(p_pw->v_nb == 1);
 	assert(data + dh->len <= p_pw->v->iov_base + p_pw->v->iov_len);
 	const nm_len_t size = (proto_flag & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
@@ -743,7 +738,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 
 /** Process a complete incoming request.
  */
-int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw)
+int nm_so_process_complete_recv(struct nm_core*p_core,	struct nm_pkt_wrap*p_pw)
 {
   struct nm_gate*const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);
@@ -783,7 +778,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	  done = nm_decode_header_chunk(p_core, ptr, p_pw, p_gate);
 	  ptr += done;
 	}
-      while(done != 0);
+      while(ptr < v0->iov_base + nm_header_global_v0len(p_pw));
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {

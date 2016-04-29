@@ -19,7 +19,7 @@
 /** global header at the beginning of pw */
 struct nm_header_global_s
 {
-  uint16_t skip; /**< size of v0 actually used ( == skip value to reach v[1] ) */
+  uint16_t v0len; /**< size of v0 actually used ( == offset value to reach v[1] ) */
 } __attribute__((packed));
 
 static inline void nm_header_global_finalize(struct nm_pkt_wrap*p_pw)
@@ -27,14 +27,14 @@ static inline void nm_header_global_finalize(struct nm_pkt_wrap*p_pw)
   struct nm_header_global_s*h = p_pw->v[0].iov_base;
   const int v0len = p_pw->v[0].iov_len;
   assert(v0len <= UINT16_MAX);
-  h->skip = v0len;
+  h->v0len = v0len;
 }
 
-static inline uint16_t nm_header_global_skip(const struct nm_pkt_wrap*p_pw)
+static inline uint16_t nm_header_global_v0len(const struct nm_pkt_wrap*p_pw)
 {
   assert(p_pw->flags & (NM_PW_GLOBAL_HEADER | NM_PW_BUFFER));
   const struct nm_header_global_s*h = p_pw->v[0].iov_base;
-  return h->skip;
+  return h->v0len;
 }
 
 typedef uint8_t nm_proto_t;
@@ -58,8 +58,6 @@ typedef uint8_t nm_proto_t;
 #define NM_PROTO_ACK            0x06
 /** ctrl chunk for strategy (don't decode in nm core) */
 #define NM_PROTO_STRAT          0x07
-/* last proto in packet */
-#define NM_PROTO_LAST           0x08
 
 /** last chunk of data for the given pack */
 #define NM_PROTO_FLAG_LASTCHUNK 0x10

@@ -819,6 +819,6 @@ void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pk
 			nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_data_pkt_unpacker_s data_unpacker =
-    { .h = h, .ptr = h + 1, .v1_base = p_pw->v[0].iov_base + nm_header_global_skip(p_pw), .rem_buf = NULL };
+    { .h = h, .ptr = h + 1, .v1_base = p_pw->v[0].iov_base + nm_header_global_v0len(p_pw), .rem_buf = NULL };
   nm_data_chunk_extractor_traversal(p_data, chunk_offset, chunk_len, &nm_data_pkt_unpack_apply, &data_unpacker);
 }

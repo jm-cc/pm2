@@ -339,7 +339,8 @@ static void nm_ns_eager_recv_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*
 	    }
 	  else
 	    TBX_FAILUREF("unexpected proto %x; len = %d (%d)\n", proto_id, (int)len, (int)_len);
-	} while( !(proto & NM_PROTO_LAST) );
+	}
+      while(ptr <  p_pw->v[0].iov_base + nm_header_global_v0len(p_pw));
       nm_so_pw_free(p_pw);
     }
 }

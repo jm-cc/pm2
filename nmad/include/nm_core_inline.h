@@ -58,18 +58,6 @@ static inline struct nm_drv*nm_drv_get_by_index(struct nm_gate*p_gate, int index
 
 /* ** Packet wrapper management **************************** */
 
-/** add last proto to pw */
-static inline void nm_so_pw_add_last(struct nm_pkt_wrap*p_pw)
-{
-  assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
-  assert(!(p_pw->flags & NM_PW_FINALIZED));
-  struct iovec*hvec = &p_pw->v[0];
-  nm_proto_t*proto_id = hvec->iov_base + hvec->iov_len;
-  *proto_id = NM_PROTO_LAST;
-  hvec->iov_len += sizeof(nm_proto_t);
-  p_pw->length += sizeof(nm_proto_t);
-}
-
 /** assign packet to given driver, gate, and track */
 static inline void nm_so_pw_assign(struct nm_pkt_wrap*p_pw, nm_trk_id_t trk_id, nm_drv_t p_drv, nm_gate_t p_gate)
 {

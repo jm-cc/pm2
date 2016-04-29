@@ -644,7 +644,7 @@ void nm_data_copy_to(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t le
 
 /* ********************************************************* */
 
-/** copy data from network buffer (contiguous) to user layout
+/** copy data from user layout to network buffer (contiguous)
  */
 struct nm_data_copy_from_s
 {
@@ -685,8 +685,6 @@ static void nm_data_pkt_pack_apply(void*ptr, nm_len_t len, void*_context)
   struct iovec*v0 = &p_pw->v[0];
   if(len < NM_DATA_IOV_THRESHOLD)
     {
-#warning TODO- remove nm_so_pw_finalize (save pointer to last header to set PROTO_LAST)
-      
       /* small data in header */
       assert(len <= UINT16_MAX);
       if((p_context->p_prev_len != NULL) && (*p_context->p_prev_len + len < NM_DATA_IOV_THRESHOLD))

@@ -114,7 +114,7 @@ void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
   struct iovec*hvec = &p_pw->v[0];
   struct nm_header_data_s *h = hvec->iov_base + hvec->iov_len;
-  nm_header_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0, len, chunk_offset);
+  nm_header_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0xFFFF, len, chunk_offset);
   hvec->iov_len += NM_HEADER_DATA_SIZE;
   p_pw->length  += NM_HEADER_DATA_SIZE;
   if(len)
@@ -133,13 +133,12 @@ void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_s
 {
   struct iovec*hvec = &p_pw->v[0];
   struct nm_header_data_s *h = hvec->iov_base + hvec->iov_len;
+  const nm_len_t skip = p_pw->length - hvec->iov_len;
   hvec->iov_len += NM_HEADER_DATA_SIZE;
   struct iovec *dvec = nm_pw_grow_iovec(p_pw);
   dvec->iov_base = (void*)data;
   dvec->iov_len = len;
-  /* We don't know yet the gap between header and data, so we
-     temporary store the iovec index as the 'skip' value */
-  nm_header_init_data(h, tag, seq, proto_flags, p_pw->v_nb, len, chunk_offset);
+  nm_header_init_data(h, tag, seq, proto_flags, skip, len, chunk_offset);
   p_pw->length += NM_HEADER_DATA_SIZE + len;
 }
 
@@ -425,7 +424,25 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
 	{
 	  /* data defined with iterator */
 	  const struct nm_data_s*p_data = ptr;
-	  nm_data_pkt_pack(p_pw, tag, seq, p_data, offset, len, proto_flags);
+	  if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
+	    {
+	      /* short data with iterator */
+	      struct iovec*hvec = &p_pw->v[0];
+	      struct nm_header_short_data_s *h = hvec->iov_base + hvec->iov_len;
+	      hvec->iov_len += NM_HEADER_SHORT_DATA_SIZE;
+	      nm_header_init_short_data(h, tag, seq, len);
+	      if(len)
+		{
+		  nm_data_copy_from(p_data, 0, len, hvec->iov_base + hvec->iov_len);
+		  hvec->iov_len += len;
+		}
+	      p_pw->length += NM_HEADER_SHORT_DATA_SIZE + len;
+	    }
+	  else
+	    {
+	      /* long data with iterator */
+	      nm_data_pkt_pack(p_pw, tag, seq, p_data, offset, len, proto_flags);
+	    }
 	}
       else if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
 	{
@@ -468,88 +485,14 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw,
  */
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 {
-  int err = NM_ESUCCESS;
-
-  /* finalize only on *sender* side */
   assert(p_pw->p_unpack == NULL);
+  assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
+  assert(!(p_pw->flags & NM_PW_FINALIZED));
 
-  if(!(p_pw->flags & NM_PW_FINALIZED) && (p_pw->flags & NM_PW_GLOBAL_HEADER))
-    {
-      /* Fix the 'skip' fields */
-      const struct iovec*v0 = &p_pw->v[0];
-      void*ptr = v0->iov_base + sizeof(struct nm_header_global_s);
-      long remaining_bytes = v0->iov_len - sizeof(struct nm_header_global_s);
-      long to_skip = 0;
-      const struct iovec*last_treated_vec = v0;
-      do 
-	{
-	  const nm_proto_t proto_id = *(nm_proto_t*)ptr & NM_PROTO_ID_MASK;
-	  nm_len_t proto_hsize = 0;
-	  if(proto_id == NM_PROTO_DATA)
-	    {
-	      /* Data header */
-	      struct nm_header_data_s*h = ptr;
-	      if(h->skip == 0)
-		{
-		  /* Data immediately follows */
-		  proto_hsize = NM_HEADER_DATA_SIZE + nm_so_aligned(h->len);
-		}
-	      else
-		{
-		  /* Data occupy a separate iovec entry */
-		  proto_hsize = NM_HEADER_DATA_SIZE;
-		  h->skip = remaining_bytes - NM_HEADER_DATA_SIZE + to_skip;
-		  last_treated_vec++;
-		  to_skip += last_treated_vec->iov_len;
-		}
-	    }
-	  else if(proto_id == NM_PROTO_SHORT_DATA)
-	    {
-	      struct nm_header_short_data_s*h = ptr;
-	      proto_hsize = NM_HEADER_SHORT_DATA_SIZE + h->len;
-	    }
-	  else if(proto_id == NM_PROTO_PKT_DATA)
-	    {
-	      struct nm_header_pkt_data_s*h = ptr;
-	      proto_hsize = h->hlen;
-	    }
-	  else if(proto_id == NM_PROTO_RDV || proto_id == NM_PROTO_RTR || proto_id == NM_PROTO_ACK)
-	    {
-	      /* Ctrl header */
-	      proto_hsize = NM_HEADER_CTRL_SIZE;
-	    }
-	  else
-	    {
-	      padico_fatal("# nmad: unknown proto_id = %d while finalizing pw\n", proto_id);
-	    }
-	  assert(remaining_bytes >= proto_hsize);
-	  remaining_bytes -= proto_hsize;
-	  if(remaining_bytes == 0)
-	    {
-	      nm_proto_t*p_proto = ptr;
-	      *p_proto |= NM_PROTO_LAST;
-	    }
-	  ptr += proto_hsize;
-	  assert(remaining_bytes >= 0);
-	}
-      while(remaining_bytes > 0);
-      nm_header_global_finalize(p_pw);
-      p_pw->flags |= NM_PW_FINALIZED;
-    }
-#ifdef DEBUG
-  if(p_pw->p_data == NULL)
-  {
-    int length = 0;
-    int i;
-    for(i = 0; i < p_pw->v_nb; i++)
-      {
-	length += p_pw->v[i].iov_len;
-      }
-    if(length != p_pw->length)
-      padico_fatal("# nmad: pw length inconsistency.\n");
-  }
-#endif /* DEBUG */
-  return err;
+  nm_so_pw_add_last(p_pw);
+  nm_header_global_finalize(p_pw);
+  p_pw->flags |= NM_PW_FINALIZED;
+  return NM_ESUCCESS;
 }
 
 

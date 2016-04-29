@@ -58,9 +58,9 @@ typedef uint8_t nm_proto_t;
 #define NM_PROTO_ACK            0x06
 /** ctrl chunk for strategy (don't decode in nm core) */
 #define NM_PROTO_STRAT          0x07
+/* last proto in packet */
+#define NM_PROTO_LAST           0x08
 
-/* flag for last proto in packet */
-#define NM_PROTO_LAST           0x80
 /** last chunk of data for the given pack */
 #define NM_PROTO_FLAG_LASTCHUNK 0x10
 /** data is 32 bit-aligned in packet */
@@ -73,22 +73,22 @@ typedef uint8_t nm_proto_t;
 
 struct nm_header_pkt_data_s
 {
-  nm_proto_t    proto_id;  /**< proto ID- should be NM_PROTO_PKT_DATA */
-  nm_core_tag_t tag_id;    /**< tag for the message */
-  nm_seq_t      seq;       /**< sequence number */
-  nm_len_t      data_len;  /**< length of data enclosed */
-  nm_len_t      chunk_offset;
-  uint16_t      hlen;      /**< length in header (header + data in header) */
+  nm_proto_t    proto_id;     /**< proto ID- should be NM_PROTO_PKT_DATA */
+  nm_core_tag_t tag_id;       /**< tag for the message */
+  nm_seq_t      seq;          /**< sequence number */
+  nm_len_t      data_len;     /**< length of data enclosed */
+  nm_len_t      chunk_offset; /**< offset of the enclosed chunk */
+  uint16_t      hlen;         /**< length in header (header + data in header) */
 } __attribute__((packed));
 
 struct nm_header_data_s
 {
-  nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_DATA */
-  nm_core_tag_t tag_id;
-  nm_seq_t seq;
+  nm_proto_t proto_id;   /**< proto ID- should be NM_PROTO_DATA */
+  nm_core_tag_t tag_id;  /**< tag for the message */
+  nm_seq_t seq;          /**< sequence number */
   nm_len_t len;
   nm_len_t chunk_offset;
-  uint16_t skip;
+  uint16_t skip;         /**< skip offset for data buffer, relative to v0 end (0xFFFF for inline data) */
 } __attribute__((packed));
 
 struct nm_header_short_data_s

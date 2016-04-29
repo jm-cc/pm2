@@ -303,7 +303,8 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct 
 	case NM_PROTO_DATA:
 	  {
 	    struct nm_header_data_s*h = header;
-	    const void *ptr = header + NM_HEADER_DATA_SIZE + h->skip;
+	    const void*ptr = (h->skip == 0xFFFF) ? (header + NM_HEADER_DATA_SIZE) :
+	      chunk->p_pw->v[0].iov_base + (h->skip + nm_header_global_skip(chunk->p_pw));
 	    nm_small_data_handler(p_core, p_unpack->p_gate, p_unpack, ptr, h, NULL);
 	  }
 	  break;
@@ -548,7 +549,6 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
 	  if(chunk_len < p_large_pw->length)
 	    {
 	      /* ** partial RTR- split the packet  */
-	      nm_so_pw_finalize(p_large_pw);
 	      /* assert ack is partial */
 	      assert(chunk_len > 0 && chunk_len < p_large_pw->length);
 	      /* create a new pw with the remaining data */
@@ -631,7 +631,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
 
 /** decode one chunk of headers.
  * @returns the number of processed bytes in global header, 
- *          -1 if done (last chunk)
+ *          0 if done (last chunk)
  */
 int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap*p_pw, struct nm_gate*p_gate)
 {
@@ -642,6 +642,10 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
   assert(proto_id != 0);
   switch(proto_id)
     {
+    case NM_PROTO_LAST:
+      return 0;
+      break;
+      
     case NM_PROTO_PKT_DATA:
       {
 	const struct nm_header_pkt_data_s*h = ptr;
@@ -670,12 +674,12 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	const struct nm_header_data_s*dh = ptr;
 	rc = NM_HEADER_DATA_SIZE;
 	/* Retrieve data location */
-	const unsigned long skip = dh->skip;
-	const void*data = ptr + NM_HEADER_DATA_SIZE + skip;
+	const void*data = (dh->skip == 0xFFFF) ? (ptr + NM_HEADER_DATA_SIZE) :
+	  p_pw->v[0].iov_base + (dh->skip + nm_header_global_skip(p_pw));
 	assert(p_pw->v_nb == 1);
 	assert(data + dh->len <= p_pw->v->iov_base + p_pw->v->iov_len);
-	const unsigned long size = (proto_flag & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
-	if(skip == 0)
+	const nm_len_t size = (proto_flag & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
+	if(dh->skip == 0xFFFF)
 	  { /* data is just after the header */
 	    rc += size;
 	  }  /* else the next header is just behind */
@@ -732,10 +736,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
     default:
       padico_fatal("nmad: received header with invalid proto_id 0x%02X\n", proto_id);
       break;
-      
     }
-  if(proto_flag & NM_PROTO_LAST)
-    rc = -1;
   return rc;
 }
 
@@ -775,13 +776,14 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       struct iovec*const v0 = p_pw->v;
       const void*ptr = v0->iov_base + sizeof(struct nm_header_global_s);
       nm_len_t done = 0;
-      while(done != -1)
+      do
 	{
 	  /* Iterate over header chunks */
 	  assert(ptr < v0->iov_base + v0->iov_len);
 	  done = nm_decode_header_chunk(p_core, ptr, p_pw, p_gate);
 	  ptr += done;
 	}
+      while(done != 0);
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {

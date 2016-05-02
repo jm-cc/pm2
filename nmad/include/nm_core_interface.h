@@ -306,11 +306,22 @@ int nm_core_flush(nm_gate_t p_gate);
 /* ** Status transition ************************************ */
 
 #if defined(PIOMAN_POLL)
-#define nm_status_init(REQ, BITMASK)       piom_cond_init(&(REQ)->status, (BITMASK))
-#define nm_status_test(REQ, BITMASK)       piom_cond_test(&(REQ)->status, (BITMASK))
-#define nm_status_mask(REQ, BITMASK)       piom_cond_mask(&(REQ)->status, (BITMASK))
-#define nm_status_add(REQ, BITMASK)        piom_cond_add(&(REQ)->status,  (BITMASK))
-#define nm_status_wait(REQ, BITMASK, CORE) piom_cond_wait(&(REQ)->status, (BITMASK))
+static inline void nm_status_init(struct nm_req_s*p_req, nm_status_t bitmask)
+{
+  piom_cond_init(&p_req->status, bitmask);
+}
+static inline nm_status_t nm_status_test(const struct nm_req_s*p_req, nm_status_t bitmask)
+{
+  return piom_cond_test(&p_req->status, bitmask);
+}
+static inline void nm_status_add(struct nm_req_s*p_req, nm_status_t bitmask)
+{
+  piom_cond_add(&p_req->status, bitmask);
+}
+static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm_core_t p_core)
+{
+  piom_cond_wait(&p_req->status, bitmask);
+}
 static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t mask)
 {
   piom_cond_signal(&p_req->status, mask);

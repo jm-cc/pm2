@@ -198,13 +198,13 @@ static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_core_tag_t tag, nm_s
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }
 
-static inline int nm_event_matches(const struct nm_core_monitor_s*p_monitor, const struct nm_core_event_s*p_event)
+static inline int nm_event_matches(const struct nm_core_monitor_s*p_core_monitor, const struct nm_core_event_s*p_event)
 {
   const nm_status_t status = p_event->status & ~NM_STATUS_FINALIZED;
   const int matches =
-    ( (p_monitor->mask & status) &&
-      (p_monitor->matching.p_gate == NM_GATE_NONE || p_monitor->matching.p_gate == p_event->p_gate) &&
-      (nm_tag_match(p_event->tag, p_monitor->matching.tag, p_monitor->matching.tag_mask))
+    ( (p_core_monitor->monitor.mask & status) &&
+      (p_core_monitor->matching.p_gate == NM_GATE_NONE || p_core_monitor->matching.p_gate == p_event->p_gate) &&
+      (nm_tag_match(p_event->tag, p_core_monitor->matching.tag, p_core_monitor->matching.tag_mask))
       );
   return matches;
 }
@@ -230,12 +230,21 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
     {
       if(nm_event_matches(*i, p_event))
 	{
-	  ((*i)->notifier)(p_event, (*i)->ref);
+	  ((*i)->monitor.notifier)(p_event, (*i)->monitor.ref);
 	}
     }
   /* set final status *after* events */
-  if(p_req)
-    nm_status_add(p_req, p_event->status);
+  if(p_req && (p_event->status & NM_STATUS_FINALIZED))
+    {
+      if(p_req->monitor.mask & NM_STATUS_FINALIZED)
+	{
+	  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	}
+      else
+	{
+	  nm_status_add(p_req, p_event->status);
+	}
+    }
 }
 
 

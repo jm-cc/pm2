@@ -130,7 +130,7 @@ int nm_schedule(struct nm_core *p_core)
   return NM_ESUCCESS;
 }
 
-void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor)
+void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor)
 {
   nmad_lock_assert();
   assert(p_req->monitor.notifier == NULL);
@@ -148,10 +148,10 @@ void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor
 }
 
 /** Add an event monitor to the list */
-void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*p_monitor)
+void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*p_core_monitor)
 {
   nmad_lock_assert();
-  if(p_monitor->mask == NM_STATUS_UNEXPECTED)
+  if(p_core_monitor->monitor.mask == NM_STATUS_UNEXPECTED)
     {
       struct nm_unexpected_s*p_chunk = NULL, *tmp;
       tbx_fast_list_for_each_entry_safe(p_chunk, tmp, &p_core->unexpected, link)
@@ -166,14 +166,14 @@ void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*p_moni
 		  .seq    = p_chunk->seq,
 		  .len    = p_chunk->msg_len
 		};
-	      if(nm_event_matches(p_monitor, &event))
+	      if(nm_event_matches(p_core_monitor, &event))
 		{
-		  (p_monitor->notifier)(&event, p_monitor->ref);
+		  (p_core_monitor->monitor.notifier)(&event, p_core_monitor->monitor.ref);
 		}
 	    }
 	}
     }
-  nm_core_monitor_vect_push_back(&p_core->monitors, p_monitor);
+  nm_core_monitor_vect_push_back(&p_core->monitors, p_core_monitor);
 }
 
 void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m)

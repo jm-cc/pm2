@@ -36,16 +36,8 @@ struct nm_sr_session_s
 
 /* ** Events *********************************************** */
 
-static void nm_sr_event_req_completed(const struct nm_core_event_s*const event, void*_ref);
+static void nm_sr_event_req_handler(const struct nm_core_event_s*const event, void*_ref);
 static void nm_sr_event_handler(const struct nm_core_event_s*const event, void*_ref);
-
-static const struct nm_core_monitor_s nm_sr_monitor_req_completed = 
-  {
-    .notifier = &nm_sr_event_req_completed,
-    .mask     = NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED |
-                NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED,
-    .matching = { .p_gate = NM_ANY_GATE, .tag = { 0 }, .tag_mask = { 0 } }
-  };
 
 /* User interface */
 
@@ -71,7 +63,7 @@ int nm_sr_exit(nm_session_t p_session)
   while(!nm_core_monitor_vect_empty(&p_sr_session->core_monitors))
     {
       const struct nm_core_monitor_s*p_core_monitor = *nm_core_monitor_vect_begin(&p_sr_session->core_monitors);
-      const struct nm_sr_monitor_s*p_sr_monitor = p_core_monitor->ref;
+      const struct nm_sr_monitor_s*p_sr_monitor = p_core_monitor->monitor.ref;
       nm_sr_session_monitor_remove(p_session, p_sr_monitor);
     }
   nm_core_monitor_vect_destroy(&p_sr_session->core_monitors);
@@ -252,15 +244,17 @@ int nm_sr_session_monitor_set(nm_session_t p_session, const struct nm_sr_monitor
 {
   struct nm_sr_session_s*p_sr_session = p_session->ref;
   struct nm_core_monitor_s*p_core_monitor = malloc(sizeof(struct nm_core_monitor_s));
-  *p_core_monitor = (struct nm_core_monitor_s)
+  p_core_monitor->monitor = (struct nm_monitor_s)
     {
       .notifier = &nm_sr_event_handler,
       .mask     = p_sr_monitor->event_mask,
-      .matching = { .p_gate   = p_sr_monitor->p_gate,
-		    .tag      = nm_tag_build(p_session->hash_code, p_sr_monitor->tag),
-		    .tag_mask = nm_tag_build(NM_CORE_TAG_HASH_FULL, p_sr_monitor->tag_mask)
-      },
       .ref      = (void*)p_sr_monitor
+    };
+  p_core_monitor->matching = (struct nm_core_event_matching_s)
+    {
+      .p_gate   = p_sr_monitor->p_gate,
+      .tag      = nm_tag_build(p_session->hash_code, p_sr_monitor->tag),
+      .tag_mask = nm_tag_build(NM_CORE_TAG_HASH_FULL, p_sr_monitor->tag_mask)
     };
   nmad_lock();
   nm_core_monitor_vect_push_back(&p_sr_session->core_monitors, p_core_monitor);
@@ -276,7 +270,7 @@ int nm_sr_session_monitor_remove(nm_session_t p_session, const struct nm_sr_moni
   nm_core_monitor_vect_itor_t i;
   puk_vect_foreach(i, nm_core_monitor, &p_sr_session->core_monitors)
     {
-      if((*i)->ref == p_sr_monitor)
+      if((*i)->monitor.ref == p_sr_monitor)
 	{
 	  p_core_monitor = *i;
 	  break;
@@ -304,17 +298,25 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
       fprintf(stderr, "# nmad: WARNING- duplicate request monitor.\n");
       return -NM_EINVAL;
     }
+  assert(!(mask & NM_SR_EVENT_RECV_UNEXPECTED));
+  if(mask & NM_STATUS_PACK_COMPLETED)
+    mask |=  NM_STATUS_ACK_RECEIVED;
   nmad_lock();
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
-  nm_core_req_monitor(&p_request->req, nm_sr_monitor_req_completed);
+  const struct nm_monitor_s monitor = 
+    {
+      .notifier = &nm_sr_event_req_handler,
+      .mask     = mask
+    };
+  nm_core_req_monitor(&p_request->req, monitor);
   nmad_unlock();
   return NM_ESUCCESS;
 }
 
 static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info_t*event_info, void*_ref)
 {
-  if(event & NM_SR_STATUS_RECV_COMPLETED)
+  if(event & NM_SR_EVENT_RECV_COMPLETED)
     {
       nm_sr_request_t*p_request = event_info->recv_completed.p_request;
       struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
@@ -322,7 +324,7 @@ static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info
       if(rc != 0)
 	abort();
     }
-  else if(event & NM_SR_STATUS_SEND_COMPLETED)
+  else if(event & NM_SR_EVENT_SEND_COMPLETED)
     {
       nm_sr_request_t*p_request = event_info->send_completed.p_request;
       struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
@@ -419,38 +421,42 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
   return err;
 }
 
-static void nm_sr_event_req_completed(const struct nm_core_event_s*const event, void*_ref)
+static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, void*_ref)
 {
-  struct nm_req_s*p_req = event->p_req;
+  struct nm_req_s*p_req = p_event->p_req;
   struct nm_sr_request_s*p_request = tbx_container_of(p_req, struct nm_sr_request_s, req);
-  if(p_req->flags & NM_FLAG_PACK)
+  assert(p_req != NULL);
+  assert(p_request != NULL);
+  assert(p_request->monitor.notifier);
+  const nm_status_t masked_status = p_event->status & p_request->monitor.mask;
+  if(masked_status & NM_STATUS_FINALIZED)
     {
-      if( ((p_req->flags & NM_FLAG_PACK_SYNCHRONOUS) && (event->status & NM_STATUS_ACK_RECEIVED)) ||
-	  ((!(p_req->flags & NM_FLAG_PACK_SYNCHRONOUS)) && (event->status & NM_STATUS_PACK_COMPLETED)))
+      const nm_sr_event_info_t info = { .finalized.p_request = p_request };
+      nmad_unlock();
+      (*p_request->monitor.notifier)(NM_SR_EVENT_FINALIZED, &info, p_request->ref);
+      nmad_lock();
+    }
+  else if(masked_status & NM_STATUS_PACK_COMPLETED)
+    {
+      if( ((p_req->flags & NM_FLAG_PACK_SYNCHRONOUS) && (p_event->status & NM_STATUS_ACK_RECEIVED)) ||
+	  ((!(p_req->flags & NM_FLAG_PACK_SYNCHRONOUS)) && (p_event->status & NM_STATUS_PACK_COMPLETED)))
 	{
 	  const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
-	  if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
-	    {
-	      nmad_unlock();
-	      (*p_request->monitor.notifier)(NM_SR_STATUS_SEND_COMPLETED, &info, p_request->ref);
-	      nmad_lock();
-
-	    }
+	  nmad_unlock();
+	  (*p_request->monitor.notifier)(NM_SR_EVENT_SEND_COMPLETED, &info, p_request->ref);
+	  nmad_lock();
 	}
     }
-  else if(p_req->flags & NM_FLAG_UNPACK)
+  else if(masked_status & NM_STATUS_UNPACK_COMPLETED)
     {
       const nm_sr_event_info_t info =
 	{ 
 	  .recv_completed.p_request = p_request,
 	  .recv_completed.p_gate = p_req->p_gate
 	};
-      if(p_request && (event->status & p_request->monitor.mask) && p_request->monitor.notifier)
-	{
-	  nmad_unlock();
-	  (*p_request->monitor.notifier)(NM_SR_STATUS_RECV_COMPLETED, &info, p_request->ref);
-	  nmad_lock();
-	}
+      nmad_unlock();
+      (*p_request->monitor.notifier)(NM_SR_EVENT_RECV_COMPLETED, &info, p_request->ref);
+      nmad_lock();
     }
   else
     {

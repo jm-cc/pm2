@@ -30,26 +30,19 @@
 #include <sys/uio.h>
 
 
-/** a posted send has completed */
-#define NM_SR_STATUS_SEND_COMPLETED  (NM_STATUS_PACK_COMPLETED)
-/** a posted recv has completed */
-#define NM_SR_STATUS_RECV_COMPLETED  (NM_STATUS_UNPACK_COMPLETED)
-/** recv operation was canceled */
-#define NM_SR_STATUS_RECV_CANCELLED  (NM_STATUS_UNPACK_CANCELLED)
-/** a send is posted */
-#define NM_SR_STATUS_SEND_POSTED     (NM_STATUS_PACK_POSTED)
-/** a recv is posted */
-#define NM_SR_STATUS_RECV_POSTED     (NM_STATUS_UNPACK_POSTED)
-
 /** events for nm_sr_monitor() */
 typedef enum
   {
-    /** an unexpected packet has arrived. Post a recv to get data
-     */
+    /** an unexpected packet has arrived. Post a recv to get data */
     NM_SR_EVENT_RECV_UNEXPECTED = NM_STATUS_UNEXPECTED,
-    NM_SR_EVENT_RECV_COMPLETED  = NM_SR_STATUS_RECV_COMPLETED,
-    NM_SR_EVENT_SEND_COMPLETED  = NM_SR_STATUS_SEND_COMPLETED,
-    NM_SR_EVENT_RECV_CANCELLED  = NM_SR_STATUS_RECV_CANCELLED
+    /** a posted recv has completed */
+    NM_SR_EVENT_RECV_COMPLETED  = NM_STATUS_UNPACK_COMPLETED,
+    /** a posted send has completed */
+    NM_SR_EVENT_SEND_COMPLETED  = NM_STATUS_PACK_COMPLETED,
+    /** recv operation was canceled */
+    NM_SR_EVENT_RECV_CANCELLED  = NM_STATUS_UNPACK_CANCELLED,
+    /** request finalized, may be freed by user */
+    NM_SR_EVENT_FINALIZED       = NM_STATUS_FINALIZED
   } nm_sr_event_t;
 
 
@@ -75,6 +68,10 @@ typedef union
   {
     nm_sr_request_t*p_request;
   } send_completed; /**< field for event NM_SR_EVENT_SEND_COMPLETED */
+  struct
+  {
+    nm_sr_request_t*p_request;
+  } finalized; /**< field for event NM_SR_EVENT_FINALIZED */
 } nm_sr_event_info_t;
 
 /** notification function for sendrecv events. 

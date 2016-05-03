@@ -219,33 +219,41 @@ struct nm_core_event_s
 typedef void (*nm_core_event_notifier_t)(const struct nm_core_event_s*const event, void*ref);
 
 /** matching info for monitors */
-struct nm_event_matching_s
+struct nm_core_event_matching_s
 {
   nm_gate_t p_gate;
   nm_core_tag_t tag;
   nm_core_tag_t tag_mask;
 };
 
-/** monitor for status transitions */
-struct nm_core_monitor_s
+/** generic monitor, used for requests */
+struct nm_monitor_s
 {
   nm_core_event_notifier_t notifier; /**< notification function called to fire events */
   nm_status_t mask;                  /**< mask applied to status to check whether to fire events */
-  struct nm_event_matching_s matching;
   void*ref;                          /**< opaque user-supplied pointer passed to notifier */
+};
+
+/** global monitor for status transitions */
+struct nm_core_monitor_s
+{
+  struct nm_monitor_s monitor;
+  struct nm_core_event_matching_s matching;
 };
 /** Register an event monitor. */
 void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m);
 /** Unregister an event monitor. */
 void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m);
 /** set a per-request monitor. Fire event immediately if pending */
-void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_core_monitor_s monitor);
+void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor);
 
 
 /** matches any event */
-#define NM_EVENT_MATCHING_ANY ((struct nm_event_matching_s){ .p_gate = NM_ANY_GATE, .tag = NM_CORE_TAG_NONE, .tag_mask = NM_CORE_TAG_NONE })
+#define NM_EVENT_MATCHING_ANY ((struct nm_core_event_matching_s){ .p_gate = NM_ANY_GATE, .tag = NM_CORE_TAG_NONE, .tag_mask = NM_CORE_TAG_NONE })
 
-#define NM_CORE_MONITOR_NULL ((struct nm_core_monitor_s){ .notifier = NULL, .mask = 0, .matching = NM_EVENT_MATCHING_ANY })
+#define NM_MONITOR_NULL ((struct nm_monitor_s){ .notifier = NULL, .mask = 0, .ref = NULL })
+
+#define NM_CORE_MONITOR_NULL ((struct nm_core_monitor_s){ .monitor = NM_MONITOR_NULL, .matching = NM_EVENT_MATCHING_ANY })
 
 
 /* ** Packs/unpacks **************************************** */
@@ -256,7 +264,7 @@ struct nm_req_s
   const struct nm_data_s*p_data;
   nm_gate_t p_gate;
   nm_core_tag_t tag;
-  struct nm_core_monitor_s monitor;
+  struct nm_monitor_s monitor;
   struct tbx_fast_list_head _link;
   nm_core_status_t status;
   nm_req_flag_t flags;

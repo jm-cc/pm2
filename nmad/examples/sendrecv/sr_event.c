@@ -64,6 +64,10 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info,
 	  nm_sr_irecv(p_session, from, tag, buf, len, request);
 	}
     }
+  if(event & NM_SR_EVENT_FINALIZED)
+    {
+      printf(":: event NM_SR_EVENT_FINALIZED.\n");
+    }
 }
 
 static const struct nm_sr_monitor_s monitor =

@@ -259,7 +259,7 @@ void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const 
   p_unpack->p_data        = p_data;
   p_unpack->unpack.cumulated_len = 0;
   p_unpack->unpack.expected_len  = nm_data_size(p_data);
-  p_unpack->monitor       = NM_CORE_MONITOR_NULL;
+  p_unpack->monitor       = NM_MONITOR_NULL;
 }
 
 /** Handle an unpack request.

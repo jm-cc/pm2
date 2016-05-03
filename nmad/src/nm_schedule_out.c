@@ -31,7 +31,7 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
   p_pack->pack.len  = nm_data_size(p_data);
   p_pack->pack.done = 0;
   p_pack->pack.scheduled = 0;
-  p_pack->monitor   = NM_CORE_MONITOR_NULL;
+  p_pack->monitor   = NM_MONITOR_NULL;
 }
 
 /** data iterator to call strategy pack on every chunk of data */

@@ -100,6 +100,12 @@ static inline int nm_sr_request_get_tag(nm_sr_request_t*p_request, nm_tag_t*tag)
   return NM_ESUCCESS;
 }
 
+static inline int nm_sr_request_get_gate(nm_sr_request_t*p_request, nm_gate_t*pp_gate)
+{
+  *pp_gate = p_request->req.p_gate;
+  return NM_ESUCCESS;
+}
+
 static inline int nm_sr_request_set_ref(nm_sr_request_t*p_request, void*ref)
 {
   if(!p_request->ref)

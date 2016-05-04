@@ -58,20 +58,11 @@ typedef union
     nm_tag_t tag;
     nm_len_t len;
     nm_session_t p_session;
-  } recv_unexpected; /**< field for event NM_SR_EVENT_RECV_UNEXPECTED */
+  } recv_unexpected; /**< field for global event NM_SR_EVENT_RECV_UNEXPECTED */
   struct
   {
     nm_sr_request_t*p_request;
-    nm_gate_t p_gate;
-  } recv_completed; /**< field for event NM_SR_EVENT_RECV_COMPLETED & CANCELLED */
-  struct
-  {
-    nm_sr_request_t*p_request;
-  } send_completed; /**< field for event NM_SR_EVENT_SEND_COMPLETED */
-  struct
-  {
-    nm_sr_request_t*p_request;
-  } finalized; /**< field for event NM_SR_EVENT_FINALIZED */
+  } req; /**< field for req events NM_SR_EVENT_SEND_COMPLETED, RECV_COMPLETED, CANCELLED, FINALIZED */
 } nm_sr_event_info_t;
 
 /** notification function for sendrecv events. 

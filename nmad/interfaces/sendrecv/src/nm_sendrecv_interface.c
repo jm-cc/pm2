@@ -116,12 +116,14 @@ extern int nm_sr_flush(struct nm_core *p_core)
   return ret;
 }
 
-int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
+int nm_sr_swait(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_core_t p_core = p_session->p_core;
 #ifdef DEBUG
   if(!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED))
     TBX_FAILUREF("nm_sr_swait- req=%p no send posted!\n", p_request);
+  if(p_request->monitor.mask & NM_SR_EVENT_FINALIZED)
+    TBX_FAILUREF("nm_sr_swait- req=%p has monitor for EVENT_FINALIZED; cannot swait.\n", p_request);
 #endif /* DEBUG */
   const nm_status_t status = (p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS) ?
     (NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED) : (NM_STATUS_PACK_COMPLETED);
@@ -189,6 +191,8 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
 #ifdef DEBUG
   if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_POSTED))
     TBX_FAILUREF("nm_sr_rwait- req=%p no recv posted!\n", p_request);
+  if(p_request->monitor.mask & NM_SR_EVENT_FINALIZED)
+    TBX_FAILUREF("nm_sr_rwait- req=%p has monitor for EVENT_FINALIZED; cannot rwait.\n", p_request);
 #endif /* DEBUG */
   int rc = nm_sr_rtest(p_session, p_request);
   if(rc != NM_ESUCCESS)
@@ -316,18 +320,16 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 
 static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info_t*event_info, void*_ref)
 {
+  nm_sr_request_t*p_request = event_info->req.p_request;
+  struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
   if(event & NM_SR_EVENT_RECV_COMPLETED)
     {
-      nm_sr_request_t*p_request = event_info->recv_completed.p_request;
-      struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
       int rc = nm_sr_request_lfqueue_enqueue(&p_sr_session->completed_rreq, p_request);
       if(rc != 0)
 	abort();
     }
   else if(event & NM_SR_EVENT_SEND_COMPLETED)
     {
-      nm_sr_request_t*p_request = event_info->send_completed.p_request;
-      struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
       int rc = nm_sr_request_lfqueue_enqueue(&p_sr_session->completed_sreq, p_request);
       if(rc != 0)
 	abort();
@@ -429,38 +431,18 @@ static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, 
   assert(p_request != NULL);
   assert(p_request->monitor.notifier);
   const nm_status_t masked_status = p_event->status & p_request->monitor.mask;
-  if(masked_status & NM_STATUS_FINALIZED)
+  const nm_sr_event_info_t info = { .req.p_request = p_request };
+  if( (masked_status & NM_STATUS_FINALIZED) ||
+      (masked_status & NM_STATUS_UNPACK_COMPLETED) ||
+      ( (masked_status & NM_STATUS_PACK_COMPLETED) &&
+	(((p_req->flags & NM_FLAG_PACK_SYNCHRONOUS) && (p_event->status & NM_STATUS_ACK_RECEIVED)) ||
+	((!(p_req->flags & NM_FLAG_PACK_SYNCHRONOUS)) && (p_event->status & NM_STATUS_PACK_COMPLETED))
+	 ))
+      )
     {
-      const nm_sr_event_info_t info = { .finalized.p_request = p_request };
       nmad_unlock();
       (*p_request->monitor.notifier)(NM_SR_EVENT_FINALIZED, &info, p_request->ref);
       nmad_lock();
-    }
-  else if(masked_status & NM_STATUS_PACK_COMPLETED)
-    {
-      if( ((p_req->flags & NM_FLAG_PACK_SYNCHRONOUS) && (p_event->status & NM_STATUS_ACK_RECEIVED)) ||
-	  ((!(p_req->flags & NM_FLAG_PACK_SYNCHRONOUS)) && (p_event->status & NM_STATUS_PACK_COMPLETED)))
-	{
-	  const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
-	  nmad_unlock();
-	  (*p_request->monitor.notifier)(NM_SR_EVENT_SEND_COMPLETED, &info, p_request->ref);
-	  nmad_lock();
-	}
-    }
-  else if(masked_status & NM_STATUS_UNPACK_COMPLETED)
-    {
-      const nm_sr_event_info_t info =
-	{ 
-	  .recv_completed.p_request = p_request,
-	  .recv_completed.p_gate = p_req->p_gate
-	};
-      nmad_unlock();
-      (*p_request->monitor.notifier)(NM_SR_EVENT_RECV_COMPLETED, &info, p_request->ref);
-      nmad_lock();
-    }
-  else
-    {
-      abort();
     }
 }
 

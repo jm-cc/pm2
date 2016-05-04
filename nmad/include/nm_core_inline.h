@@ -213,36 +213,40 @@ static inline int nm_event_matches(const struct nm_core_monitor_s*p_core_monitor
  */
 static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_req_s*p_req)
 {
-  const nm_status_t status = p_event->status & ~NM_STATUS_FINALIZED;
-  /* signal event if finalized */
-  if(p_req && (p_event->status & NM_STATUS_FINALIZED))
+  if(p_req)
     {
-      nm_status_signal(p_req, status);
-    }
-  /* request monitors */
-  if((p_req != NULL) && (p_req->monitor.mask & status))
-    {
-      (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
-    }
-  /* fire global monitors */
-  nm_core_monitor_vect_itor_t i;
-  puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)
-    {
-      if(nm_event_matches(*i, p_event))
+      /* signal event if finalized */
+      if(p_event->status & NM_STATUS_FINALIZED)
 	{
-	  ((*i)->monitor.notifier)(p_event, (*i)->monitor.ref);
-	}
-    }
-  /* set final status *after* events */
-  if(p_req && (p_event->status & NM_STATUS_FINALIZED))
-    {
-      if(p_req->monitor.mask & NM_STATUS_FINALIZED)
-	{
-	  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	  if(p_req->monitor.mask & NM_STATUS_FINALIZED)
+	    {
+	      /* if a monitor is listening to FINALIZED events, do not signal it twice on status bitmask */
+	      nm_status_signal(p_req, p_event->status & ~NM_STATUS_FINALIZED);
+	    }
+	  else
+	    {
+	      nm_status_signal(p_req, p_event->status);
+	    }
 	}
       else
 	{
 	  nm_status_add(p_req, p_event->status);
+	}
+      if(p_req->monitor.mask & p_event->status)
+	{
+	  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	}
+    }
+  else
+    {
+      /* fire global monitors */
+      nm_core_monitor_vect_itor_t i;
+      puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)
+	{
+	  if(nm_event_matches(*i, p_event))
+	    {
+	      ((*i)->monitor.notifier)(p_event, (*i)->monitor.ref);
+	    }
 	}
     }
 }

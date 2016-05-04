@@ -35,8 +35,9 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info,
 {
   if(event &  NM_SR_EVENT_RECV_COMPLETED)
     {
-      const nm_gate_t from = info->recv_completed.p_gate;
-      nm_sr_request_t*p_request = info->recv_completed.p_request;
+      nm_sr_request_t*p_request = info->req.p_request;
+      nm_gate_t from = NM_GATE_NONE;
+      nm_sr_request_get_gate(p_request, &from);
       size_t size;
       nm_tag_t tag;
       void*ref;
@@ -134,33 +135,41 @@ int main(int argc, char **argv)
       /* ** client */
       nm_sr_request_t request;
       /* test EVENT_RECV_COMPLETED */
+      fprintf(stderr, "# send tag 0- short\n");
       nm_sr_isend(p_session, p_gate, 0, short_msg, short_len, &request);
       nm_sr_swait(p_session, &request);
       /* test EVENT_RECV_COMPLETED with ref */
+      fprintf(stderr, "# send tag 0- short\n");
       nm_sr_isend(p_session, p_gate, 0, short_msg, short_len, &request);
       nm_sr_swait(p_session, &request);
       /* short unexpected (12 bytes) */
+      fprintf(stderr, "# send tag 1- short\n");
       nm_sr_isend(p_session, p_gate, 1, short_msg, short_len, &request);
       nm_sr_swait(p_session, &request);
       /* small unexpected (300 bytes) */
+      fprintf(stderr, "# send tag 1- small+small\n");
       nm_sr_isend(p_session, p_gate, 1, small_msg, small_len, &request);
       nm_sr_swait(p_session, &request);
       /* iovec unexpected (12+12 bytes) */
       struct iovec iov1[2] = 
 	{ [0] = { .iov_base = (void*)short_msg, .iov_len = short_len }, 
 	  [1] = { .iov_base = (void*)short_msg, .iov_len = short_len } };
+      fprintf(stderr, "# send tag 1- short+short\n");
       nm_sr_isend_iov(p_session, p_gate, 1, iov1, 2, &request);
       nm_sr_swait(p_session, &request);
       /* large unexpected (128 kB) */
+      fprintf(stderr, "# send tag 1- long\n");
       nm_sr_isend(p_session, p_gate, 1, long_msg, long_len, &request);
       nm_sr_swait(p_session, &request);
       /* iovec unexpected (300+128kB) */
       struct iovec iov2[2] = 
 	{ [0] = { .iov_base = (void*)small_msg, .iov_len = small_len }, 
 	  [1] = { .iov_base = (void*)long_msg,  .iov_len = long_len } };
+      fprintf(stderr, "# send tag 2- small+long\n");
       nm_sr_isend_iov(p_session, p_gate, 1, iov2, 2, &request);
       nm_sr_swait(p_session, &request);
       /* sync message */
+      fprintf(stderr, "# send tag 2- short\n");
       nm_sr_isend(p_session, p_gate, 2, short_msg, short_len, &request);
       nm_sr_swait(p_session, &request);
     }

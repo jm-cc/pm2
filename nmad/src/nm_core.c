@@ -210,6 +210,24 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
 	  padico_fatal("nmad: failed to load component '%s'\n", dcfa);
 	}
     }
+  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "shm") == 0))
+    {
+      static const char minidriver_shm[] = 
+	"<puk:composite id=\"nm:shm\">"
+	"  <puk:component id=\"0\" name=\"Minidriver_shm\"/>"
+	"  <puk:component id=\"1\" name=\"Minidriver_CMA\"/>"
+	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
+	"  </puk:component>"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
+	"</puk:composite>";
+      component = puk_component_parse(minidriver_shm);
+      if(component == NULL)
+	{
+	  padico_fatal("nmad: failed to load component '%s'\n", minidriver_shm);
+	}
+    }
   else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "ibverbs") == 0))
     {
       static const char ib_lr2[] = 

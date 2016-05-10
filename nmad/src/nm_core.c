@@ -192,7 +192,25 @@ void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m)
 puk_component_t nm_core_component_load(const char*entity, const char*name)
 {
   puk_component_t component = NULL;
-  if((strcmp(entity, "Driver") == 0) && (strcmp(name, "dcfa") == 0))
+  if((strcmp(entity, "Driver") == 0) && (strcmp(name, "local") == 0))
+    {
+      static const char minidriver_local[] =
+	"<puk:composite id=\"nsbe:nmminilocal\">"
+	"  <puk:component id=\"0\" name=\"Minidriver_local\"/>"
+	"  <puk:component id=\"1\" name=\"Minidriver_local\"/>"
+	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
+	"  </puk:component>"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
+	"</puk:composite>";
+      component = puk_component_parse(minidriver_local);
+      if(component == NULL)
+	{
+	  padico_fatal("nmad: failed to load component '%s'\n", minidriver_local);
+	}
+    }
+  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "dcfa") == 0))
     {
       static const char dcfa[] = 
 	"<puk:composite id=\"nm:dcfa\">"

@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_MOD = NewMad_Driver_local
+TARGET_MOD = Minidriver_local
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
@@ -17,5 +17,5 @@ CFLAGS   += @NMAD_CORE_CFLAGS@
 
 include @abs_top_builddir@/common_rules.mk
 
-NewMad_Driver_local: nm_local.pic.o
+Minidriver_local: nm_local.pic.o
 

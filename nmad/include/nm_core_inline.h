@@ -215,26 +215,34 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
 {
   if(p_req)
     {
-      /* signal event if finalized */
       if(p_event->status & NM_STATUS_FINALIZED)
 	{
+	  /* signal event if finalized */
 	  if(p_req->monitor.mask & NM_STATUS_FINALIZED)
 	    {
-	      /* if a monitor is listening to FINALIZED events, do not signal it twice on status bitmask */
+	      /* a monitor is listening to FINALIZED events- signal without FINALIZED, then notify monitor */
 	      nm_status_signal(p_req, p_event->status & ~NM_STATUS_FINALIZED);
+	      (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
 	    }
 	  else
 	    {
+	      /* no monitor on FINALIZED- add bitmask, notify, then signal */
+	      nm_status_add(p_req, p_event->status & ~NM_STATUS_FINALIZED);
+	      if(p_req->monitor.mask & p_event->status)
+		{
+		  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+		}
 	      nm_status_signal(p_req, p_event->status);
 	    }
 	}
       else
 	{
+	  /* not finalized, only add bitmask */
 	  nm_status_add(p_req, p_event->status);
-	}
-      if(p_req->monitor.mask & p_event->status)
-	{
-	  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	  if(p_req->monitor.mask & p_event->status)
+	    {
+	      (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	    }
 	}
     }
   else

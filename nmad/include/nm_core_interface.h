@@ -265,7 +265,7 @@ struct nm_req_s
   nm_gate_t p_gate;
   nm_core_tag_t tag;
   struct nm_monitor_s monitor;
-  struct tbx_fast_list_head _link;
+  PUK_LIST_LINK(nm_req);
   nm_core_status_t status;
   nm_req_flag_t flags;
   nm_seq_t seq;
@@ -285,6 +285,9 @@ struct nm_req_s
     } unpack;
   };
 };
+
+PUK_LIST_DECLARE_TYPE(nm_req);
+PUK_LIST_CREATE_FUNCS(nm_req);
 
 /** build a pack request from data descriptor */
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data);

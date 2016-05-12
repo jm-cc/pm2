@@ -153,8 +153,8 @@ void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*p_core
   nmad_lock_assert();
   if(p_core_monitor->monitor.mask == NM_STATUS_UNEXPECTED)
     {
-      struct nm_unexpected_s*p_chunk = NULL, *tmp;
-      tbx_fast_list_for_each_entry_safe(p_chunk, tmp, &p_core->unexpected, link)
+      struct nm_unexpected_s*p_chunk = NULL, *p_tmp;
+      puk_list_foreach_safe(p_chunk, p_tmp, &p_core->unexpected) /* use 'safe' iterator since notifier is likely to post a recv */
 	{
 	  if(p_chunk->msg_len != NM_LEN_UNDEFINED)
 	    {
@@ -359,14 +359,9 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 
   nm_core_monitor_vect_init(&p_core->monitors);
 
-  /* unpacks */
-  TBX_INIT_FAST_LIST_HEAD(&p_core->unpacks);
-
-  /* unexpected */
-  TBX_INIT_FAST_LIST_HEAD(&p_core->unexpected);
-  
-  /* pending packs */
-  TBX_INIT_FAST_LIST_HEAD(&p_core->pending_packs);
+  nm_req_list_init(&p_core->unpacks);
+  nm_req_list_init(&p_core->pending_packs);
+  nm_unexpected_list_init(&p_core->unexpected);
 
 #ifdef NMAD_POLL
   TBX_INIT_FAST_LIST_HEAD(&p_core->pending_recv_list);

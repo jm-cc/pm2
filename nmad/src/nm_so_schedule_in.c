@@ -56,24 +56,22 @@ static inline struct nm_unexpected_s*nm_unexpected_alloc(void)
 
 void nm_unexpected_clean(struct nm_core*p_core)
 {
-  struct nm_unexpected_s*chunk, *tmp;
-  tbx_fast_list_for_each_entry_safe(chunk, tmp, &p_core->unexpected, link)
+  struct nm_unexpected_s*p_chunk = nm_unexpected_list_pop_front(&p_core->unexpected);
+  while(p_chunk)
     {
-      if(chunk)
-	{
 #ifdef DEBUG
-	  fprintf(stderr, "nmad: WARNING- chunk %p is still in use\n", chunk);
+      fprintf(stderr, "nmad: WARNING- chunk %p is still in use\n", p_chunk);
 #endif /* DEBUG */
-	  if(chunk->p_pw) {
+      if(p_chunk->p_pw)
+	{
 #if(defined(PIOMAN_POLL))
-  	    piom_ltask_completed(&chunk->p_pw->ltask);
+	  piom_ltask_completed(&p_chunk->p_pw->ltask);
 #else /* PIOMAN_POLL */
-	    nm_pw_ref_dec(chunk->p_pw);
+	  nm_pw_ref_dec(p_chunk->p_pw);
 #endif /* PIOMAN_POLL */
-	  }
-	  tbx_fast_list_del(&chunk->link);
-	  nm_unexpected_free(nm_unexpected_allocator, chunk);
 	}
+      nm_unexpected_free(nm_unexpected_allocator, p_chunk);
+      p_chunk = nm_unexpected_list_pop_front(&p_core->unexpected);
     }
   if(nm_unexpected_allocator != NULL)
     {
@@ -88,7 +86,7 @@ void nm_unexpected_clean(struct nm_core*p_core)
 static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
   struct nm_unexpected_s*p_chunk;
-  tbx_fast_list_for_each_entry(p_chunk, &p_core->unexpected, link)
+  puk_list_foreach(p_chunk, &p_core->unexpected)
     {
       struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_chunk->p_gate->tags, p_chunk->tag);
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
@@ -118,7 +116,7 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
   struct nm_req_s*p_unpack = NULL;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-  tbx_fast_list_for_each_entry(p_unpack, &p_core->unpacks, _link)
+  puk_list_foreach(p_unpack, &p_core->unpacks)
     {
       if(((p_unpack->p_gate == p_gate) || (p_unpack->p_gate == NM_ANY_GATE)) && /* gate matches */
 	 nm_tag_match(tag, p_unpack->tag, p_unpack->unpack.tag_mask) && /* tag matches */
@@ -168,7 +166,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
   if(p_unpack->unpack.cumulated_len == p_unpack->unpack.expected_len)
     {
       nmad_lock_assert();
-      tbx_fast_list_del(&p_unpack->_link);
+      nm_req_list_erase(&p_core->unpacks, p_unpack);
       if((p_pw != NULL) && (p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
 	{
 	  nm_data_copy_to(p_unpack->p_data, 0 /* offset */, chunk_len, p_pw->v[0].iov_base);
@@ -232,7 +230,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
 	TBX_FAILUREF("nmad: FATAL- %lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
     }
   nmad_lock_assert();
-  tbx_fast_list_add_tail(&p_chunk->link, &p_core->unexpected);
+  nm_unexpected_list_push_back(&p_core->unexpected, p_chunk);
   const nm_proto_t*proto_id = header;
   if(*proto_id & NM_PROTO_FLAG_LASTCHUNK)
     {
@@ -278,7 +276,7 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct 
   p_unpack->unpack.tag_mask = tag_mask;
   p_unpack->seq = NM_SEQ_NONE;
   /* store the unpack request */
-  tbx_fast_list_add_tail(&p_unpack->_link, &p_core->unpacks);
+  nm_req_list_push_back(&p_core->unpacks, p_unpack);
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
   while(p_unexpected)
     {
@@ -315,7 +313,7 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct 
       /* Decrement the packet wrapper reference counter. If no other
 	 chunks are still in use, the pw will be destroyed. */
       nm_pw_ref_dec(p_unexpected->p_pw);
-      tbx_fast_list_del(&p_unexpected->link);
+      nm_unexpected_list_erase(&p_core->unexpected, p_unexpected);
       nm_unexpected_free(nm_unexpected_allocator, p_unexpected);
       nm_unexpected_mem_size--;
       p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
@@ -329,16 +327,16 @@ int nm_core_iprobe(struct nm_core*p_core,
 		   struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
 		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size)
 {
-  struct nm_unexpected_s*chunk;
-  tbx_fast_list_for_each_entry(chunk, &p_core->unexpected, link)
+  struct nm_unexpected_s*p_chunk;
+  puk_list_foreach(p_chunk, &p_core->unexpected)
     {
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
+      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_chunk->p_gate->tags, p_chunk->tag);
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-      if(((p_gate == chunk->p_gate) || (p_gate == NM_ANY_GATE)) && /* gate matches */
-	 nm_tag_match(chunk->tag, tag, tag_mask) && /* tag matches */
-	 (chunk->seq == next_seq) /* seq number matches */ )
+      if(((p_gate == p_chunk->p_gate) || (p_gate == NM_ANY_GATE)) && /* gate matches */
+	 nm_tag_match(p_chunk->tag, tag, tag_mask) && /* tag matches */
+	 (p_chunk->seq == next_seq) /* seq number matches */ )
 	{
-	  const void*header = chunk->header;
+	  const void*header = p_chunk->header;
 	  const nm_proto_t proto_id = (*(nm_proto_t*)header) & NM_PROTO_ID_MASK;
 	  const nm_proto_t proto_flags = (*(nm_proto_t*)header) & NM_PROTO_FLAG_MASK;
 	  int matches = 0;
@@ -386,9 +384,9 @@ int nm_core_iprobe(struct nm_core*p_core,
 	  if(matches)
 	    {
 	      if(pp_out_gate)
-		*pp_out_gate = chunk->p_gate;
+		*pp_out_gate = p_chunk->p_gate;
 	      if(p_out_tag)
-		*p_out_tag = chunk->tag;
+		*p_out_tag = p_chunk->tag;
 	      if(p_out_size)
 		*p_out_size = len;
 	      return NM_ESUCCESS;
@@ -408,7 +406,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
     }
   else if(p_unpack->seq == NM_SEQ_NONE)
     {
-      tbx_fast_list_del(&p_unpack->_link);
+      nm_req_list_erase(&p_core->unpacks, p_unpack);
       const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNPACK_CANCELLED | NM_STATUS_FINALIZED,
@@ -609,13 +607,13 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
   const nm_core_tag_t tag = header->tag_id;
   const nm_seq_t seq = header->seq;
   struct nm_req_s*p_pack = NULL;
-
-  tbx_fast_list_for_each_entry(p_pack, &p_core->pending_packs, _link)
+  
+  puk_list_foreach(p_pack, &p_core->pending_packs)
     {
       if(nm_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
 	{
 	  nmad_lock_assert();
-	  tbx_fast_list_del(&p_pack->_link);
+	  nm_req_list_erase(&p_core->pending_packs, p_pack);
 	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_ACK_RECEIVED | (nm_status_test(p_pack, NM_STATUS_PACK_COMPLETED) ? NM_STATUS_FINALIZED : 0),

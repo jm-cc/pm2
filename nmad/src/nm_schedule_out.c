@@ -61,7 +61,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   p_pack->p_gate = p_gate;
   if(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)
     {
-      tbx_fast_list_add_tail(&p_pack->_link, &p_core->pending_packs);
+      nm_req_list_push_back(&p_core->pending_packs, p_pack);
     }
 
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;

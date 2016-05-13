@@ -84,7 +84,7 @@ struct nm_pkt_wrap
 #ifdef PIOMAN_POLL
   struct piom_ltask ltask;   /**< ltask descriptor used by pioman for progression  */
 #endif /* PIOMAN_POLL */
-  struct nm_drv*p_drv;       /**< assignated driver.  */
+  nm_drv_t p_drv;       /**< assignated driver.  */
   nm_trk_id_t trk_id;        /**< assignated track ID.  */
   struct nm_gate*p_gate;     /**< assignated gate, if relevant. */
   struct nm_gate_drv*p_gdrv; /**< assignated gate driver, if relevant. */

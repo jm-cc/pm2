@@ -37,7 +37,7 @@ static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_t
  *  available, but the strategy does not support multi-rail.
  *  Currently: the first available network
  */
-static inline struct nm_drv*nm_drv_default(struct nm_gate*p_gate)
+static inline nm_drv_t nm_drv_default(struct nm_gate*p_gate)
 {
   assert(!nm_gdrv_vect_empty(&p_gate->gdrv_array));
   nm_gdrv_vect_itor_t i = nm_gdrv_vect_begin(&p_gate->gdrv_array);
@@ -46,7 +46,7 @@ static inline struct nm_drv*nm_drv_default(struct nm_gate*p_gate)
 
 /** Get a driver given its id.
  */
-static inline struct nm_drv*nm_drv_get_by_index(struct nm_gate*p_gate, int index)
+static inline nm_drv_t nm_drv_get_by_index(struct nm_gate*p_gate, int index)
 {
   assert(!nm_gdrv_vect_empty(&p_gate->gdrv_array));
   assert(index < nm_gdrv_vect_size(&p_gate->gdrv_array));
@@ -100,7 +100,7 @@ static inline void nm_pw_ref_dec(struct nm_pkt_wrap *p_pw)
  * without PIOMan).
  */
 static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm_gate *p_gate, 
-					     nm_trk_id_t trk_id, struct nm_drv*p_drv)
+					     nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
   nm_pw_post_lfqueue_enqueue(&p_drv->post_recv, p_pw);
@@ -123,7 +123,7 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
  */
 static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
 					     struct nm_pkt_wrap *p_pw,
-					     nm_trk_id_t trk_id, struct nm_drv*p_drv)
+					     nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
   /* Packet is assigned to given track, driver, and gate */
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);

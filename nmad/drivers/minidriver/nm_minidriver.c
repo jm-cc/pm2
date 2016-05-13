@@ -49,18 +49,18 @@ struct nm_minidriver
 
 /* ** component declaration */
 
-static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
-static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
-static int nm_minidriver_close(struct nm_drv*p_drv);
-static int nm_minidriver_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
-static int nm_minidriver_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
+static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_minidriver_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+static int nm_minidriver_close(nm_drv_t p_drv);
+static int nm_minidriver_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_minidriver_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_minidriver_poll_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_minidriver_send_prefetch(void*_status,  struct nm_pkt_wrap *p_pw);
 static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_minidriver_poll_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_minidriver_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static const char* nm_minidriver_get_driver_url(struct nm_drv *p_drv);
+static const char* nm_minidriver_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_minidriver_driver =
   {
@@ -127,7 +127,7 @@ static void nm_minidriver_destroy(void*_status)
   TBX_FREE(status);
 }
 
-const static char*nm_minidriver_get_driver_url(struct nm_drv *p_drv)
+const static char*nm_minidriver_get_driver_url(nm_drv_t p_drv)
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
   puk_context_t context = p_minidriver_drv->context;
@@ -137,7 +137,7 @@ const static char*nm_minidriver_get_driver_url(struct nm_drv *p_drv)
 
 /* ** init & connection ************************************ */
 
-static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam)
+static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam)
 {
   int err = NM_ESUCCESS;
   puk_context_t context = NULL;
@@ -202,7 +202,7 @@ static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_para
   return err;
 }
 
-static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
+static int nm_minidriver_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
   struct nm_minidriver_context_s*p_minidriver_context = puk_context_get_status(p_minidriver_drv->context);
@@ -255,7 +255,7 @@ static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, 
   return NM_ESUCCESS;
 }
 
-static int nm_minidriver_close(struct nm_drv *p_drv)
+static int nm_minidriver_close(nm_drv_t p_drv)
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
   struct nm_minidriver_context_s*p_minidriver_context = puk_context_get_status(p_minidriver_drv->context);
@@ -281,7 +281,7 @@ static int nm_minidriver_close(struct nm_drv *p_drv)
 }
 
 
-static int nm_minidriver_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
+static int nm_minidriver_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
   struct nm_minidriver*status = _status;
   struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[trk_id].minidriver;
@@ -302,7 +302,7 @@ static int nm_minidriver_connect(void*_status, struct nm_gate*p_gate, struct nm_
   return NM_ESUCCESS;
 }
 
-static int nm_minidriver_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
+static int nm_minidriver_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
 {
   int err;
   

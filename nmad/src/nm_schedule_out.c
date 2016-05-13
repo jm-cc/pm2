@@ -195,7 +195,7 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
 /** Main scheduler func for outgoing requests on a specific driver.
    - this function must be called once for each driver on a regular basis
  */
-void nm_drv_post_send(struct nm_drv *p_drv)
+void nm_drv_post_send(nm_drv_t p_drv)
 {
   /* post new requests	*/
   nmad_lock_assert();
@@ -227,7 +227,7 @@ int nm_core_flush(nm_gate_t p_gate)
 void nm_out_prefetch(struct nm_core*p_core)
 {
   /* check whether all drivers are idle */
-  struct nm_drv*p_drv = NULL;
+  nm_drv_t p_drv = NULL;
   if(!tbx_fast_list_empty(&p_core->pending_send_list))
     {
       return;

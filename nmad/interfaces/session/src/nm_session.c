@@ -85,7 +85,7 @@ void nm_session_add_driver(puk_component_t component, int index)
 {
   assert(component != NULL);
   const char*driver_url = NULL;
-  struct nm_drv*p_drv = NULL;
+  nm_drv_t p_drv = NULL;
   struct nm_driver_query_param param = { .key = NM_DRIVER_QUERY_BY_NOTHING };
   if(index >= 0)
     {
@@ -269,7 +269,7 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
   if(strcmp(peer_url, nm_session.local_url) == 0)
     {
       /* ** loopback connect- use driver 'self' (hardwired) */
-      struct nm_drv*p_drv;
+      nm_drv_t p_drv;
       NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
 	{
 	  if(strcmp(p_drv->driver->name, "self") == 0)
@@ -282,7 +282,7 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
   else
     {
       /* ** remote connection- find common drivers */
-      struct nm_drv*p_drv;
+      nm_drv_t p_drv;
       NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
 	{
 	  char driver_name[256];
@@ -348,7 +348,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
   nm_drv_vect_itor_t i;
   puk_vect_foreach(i, nm_drv, v)
     {
-      struct nm_drv*p_drv = *i;
+      nm_drv_t p_drv = *i;
       char driver_name[256];
       snprintf(driver_name, 256, "%s#%d", p_drv->assembly->name, p_drv->index);
       const char*driver_url = puk_hashtable_lookup(url_table, driver_name);

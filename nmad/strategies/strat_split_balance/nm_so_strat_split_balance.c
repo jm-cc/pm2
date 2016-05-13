@@ -231,12 +231,12 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
   struct tbx_fast_list_head *out_list = &status->out_list;
   int nb_drivers = p_gate->p_core->nb_drivers;
   int n = 0;
-  struct nm_drv*const*p_drvs = NULL;
+  nm_drv_t const*p_drvs = NULL;
   nm_ns_inc_lats(p_gate->p_core, &p_drvs, &nb_drivers);
   assert(nb_drivers > 0);
   while(n < nb_drivers && !tbx_fast_list_empty(out_list))
     {
-      struct nm_drv*p_drv = p_drvs[n];
+      nm_drv_t p_drv = p_drvs[n];
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
       if(p_gdrv != NULL &&
 	 p_gdrv->active_send[NM_TRK_SMALL] == 0 &&
@@ -265,7 +265,7 @@ static void strat_split_balance_rdv_accept(void*_status, struct nm_gate*p_gate)
       int chunk_index = 0;
       struct nm_rdv_chunk chunks[nb_drivers];
       const nm_trk_id_t trk_id = NM_TRK_LARGE;
-      struct nm_drv*const*ordered_drv_id_by_bw = NULL;
+      nm_drv_t const*ordered_drv_id_by_bw = NULL;
       nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw, &nb_drivers);
       int i;
       for(i = 0; i < nb_drivers; i++)

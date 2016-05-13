@@ -37,9 +37,9 @@ public:
   ~TraceL();
 
   void addEvent(EventL e);
-  void flush(struct nm_drv* p_drv, string f_name);
+  void flush(nm_drv_t p_drv, string f_name);
   EventL* getCurrentEvent();
-  void finish(struct nm_drv* p_drv, string f_name);
+  void finish(nm_drv_t p_drv, string f_name);
   void to_string();
 };
 

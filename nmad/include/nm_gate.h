@@ -40,7 +40,7 @@ NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
 struct nm_gate_drv
 {
   /** NewMad driver reference . */
-  struct nm_drv *p_drv;
+  nm_drv_t p_drv;
   /** Receptacle for the current driver interface. */
   struct puk_receptacle_NewMad_Driver_s receptacle;
   /** Driver instance. */

@@ -45,8 +45,8 @@ int main(int argc, char**argv){
   nm_launcher_get_session(&p_session);
   nm_launcher_get_rank(&rank);
   nm_core_t p_core = p_session->p_core;
-  struct nm_drv* p_drv = NULL;
-  struct nm_drv* p_drv_ib = NULL;
+  nm_drv_t p_drv = NULL;
+  nm_drv_t p_drv_ib = NULL;
   string file_path;
   string prog_name;
   string file_name;

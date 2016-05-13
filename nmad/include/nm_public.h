@@ -38,6 +38,10 @@
 #define main __abt_app_main
 #endif /* PIOMAN_ABT */
 
+/* ** Driver *********************************************** */
+
+typedef struct nm_drv*nm_drv_t;
+
 /* ** Gates ************************************************ */
 
 typedef struct nm_gate*nm_gate_t;

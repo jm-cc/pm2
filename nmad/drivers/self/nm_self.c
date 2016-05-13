@@ -42,12 +42,12 @@ struct nm_self
 
 
 /** self NewMad Driver */
-static const char*nm_self_get_driver_url(struct nm_drv *p_drv);
-static int nm_self_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
-static int nm_self_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
-static int nm_self_exit(struct nm_drv* p_drv);
-static int nm_self_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
-static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
+static const char*nm_self_get_driver_url(nm_drv_t p_drv);
+static int nm_self_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_self_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+static int nm_self_exit(nm_drv_t p_drv);
+static int nm_self_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_self_poll_send(void*_status, struct nm_pkt_wrap *p_pw);
@@ -130,7 +130,7 @@ static void nm_self_destroy(void*_status)
 }
 
 /** Url function */
-static const char*nm_self_get_driver_url(struct nm_drv *p_drv)
+static const char*nm_self_get_driver_url(nm_drv_t p_drv)
 {
   static const char*url = NULL;
   if(url == NULL)
@@ -138,7 +138,7 @@ static const char*nm_self_get_driver_url(struct nm_drv *p_drv)
   return url;
 }
 
-static int nm_self_query(struct nm_drv *p_drv,
+static int nm_self_query(nm_drv_t p_drv,
 			 struct nm_driver_query_param *params TBX_UNUSED,
 			 int nparam TBX_UNUSED)
 {
@@ -148,7 +148,7 @@ static int nm_self_query(struct nm_drv *p_drv,
   return NM_ESUCCESS;
 }
 
-static int nm_self_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
+static int nm_self_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
   /* open the requested number of tracks */
   int i;
@@ -170,17 +170,17 @@ static int nm_self_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb
   return NM_ESUCCESS;
 }
 
-static int nm_self_exit(struct nm_drv*p_drv)
+static int nm_self_exit(nm_drv_t p_drv)
 {
   return NM_ESUCCESS;
 }
 
-static int nm_self_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
+static int nm_self_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
   return NM_ESUCCESS;
 }
 
-static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
+static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
 {
   return NM_ESUCCESS;
 }

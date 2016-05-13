@@ -153,7 +153,7 @@ static int nm_pw_post_recv(struct nm_pkt_wrap*p_pw)
   return err;
 }
 
-void nm_drv_refill_recv(struct nm_drv*p_drv)
+void nm_drv_refill_recv(nm_drv_t p_drv)
 {
   struct nm_core *p_core = p_drv->p_core;
 
@@ -191,7 +191,7 @@ void nm_drv_refill_recv(struct nm_drv*p_drv)
 }
 
 
-void nm_drv_post_recv(struct nm_drv*p_drv)
+void nm_drv_post_recv(nm_drv_t p_drv)
 {
   struct nm_pkt_wrap*p_pw = NULL;
   do

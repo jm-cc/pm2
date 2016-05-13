@@ -60,8 +60,6 @@ void nm_core_schedopt_disable(nm_core_t p_core);
 
 /* ** Drivers ********************************************** */
 
-typedef struct nm_drv*nm_drv_t;
-
 struct nm_driver_query_param
 {
   enum {

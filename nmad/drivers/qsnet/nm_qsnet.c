@@ -102,9 +102,9 @@ struct nm_qsnet_adm_pkt
 };
 
 /** Qsnet NewMad Driver */
-static int nm_qsnet_query(struct nm_drv *p_drv, struct nm_driver_query_param *params,int nparam);
-static int nm_qsnet_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
-static int nm_qsnet_close(struct nm_drv *p_drv);
+static int nm_qsnet_query(nm_drv_t p_drv, struct nm_driver_query_param *params,int nparam);
+static int nm_qsnet_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+static int nm_qsnet_close(nm_drv_t p_drv);
 static int nm_qsnet_connect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_qsnet_accept(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_qsnet_disconnect(void*_status, struct nm_cnx_rq *p_crq);
@@ -112,7 +112,7 @@ static int nm_qsnet_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_qsnet_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_qsnet_poll_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_qsnet_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static const char*nm_qsnet_get_driver_url(struct nm_drv *p_drv);
+static const char*nm_qsnet_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_qsnet_driver =
   {
@@ -161,7 +161,7 @@ static int nm_qsnet_load(void)
 PADICO_MODULE_BUILTIN(NewMad_Driver_qsnet, &nm_qsnet_load, NULL, NULL);
 
 /** Return url */
-static const char*nm_qsnet_get_driver_url(struct nm_drv *p_drv)
+static const char*nm_qsnet_get_driver_url(nm_drv_t p_drv)
 {
   struct nm_qsnet_drv*p_qsnet_drv = p_drv->priv;
   return p_qsnet_drv->url;
@@ -186,7 +186,7 @@ static int nm_qsnet_poll_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_qsnet_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 
 
-static int nm_qsnet_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam)
+static int nm_qsnet_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam)
 {
   int err;
   struct nm_qsnet_drv*p_qsnet_drv = NULL;
@@ -211,7 +211,7 @@ static int nm_qsnet_query(struct nm_drv *p_drv, struct nm_driver_query_param *pa
   return err;
 }
 
-static int nm_qsnet_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
+static int nm_qsnet_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
   ELAN_BASE		*base		= NULL;
   char			*node_string	= NULL;
@@ -308,7 +308,7 @@ static int nm_qsnet_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int n
   return err;
 }
 
-static int nm_qsnet_close(struct nm_drv *p_drv)
+static int nm_qsnet_close(nm_drv_t p_drv)
 {
   struct nm_qsnet_drv *p_qsnet_drv = p_drv->priv;
   int err = NM_ESUCCESS;

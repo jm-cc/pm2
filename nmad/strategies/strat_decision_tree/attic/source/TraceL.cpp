@@ -20,7 +20,7 @@ EventL* TraceL::getCurrentEvent() {
 }
 
 
-void TraceL::flush(struct nm_drv* p_drv, string f_name) {
+void TraceL::flush(nm_drv_t p_drv, string f_name) {
   EventL last_try_and_commit;
   EventL last_pw_submited;
   bool is_last_event_try_and_commit = false;
@@ -101,7 +101,7 @@ void TraceL::flush(struct nm_drv* p_drv, string f_name) {
 }
 
 
-void TraceL::finish(struct nm_drv* p_drv, string f_name) {
+void TraceL::finish(nm_drv_t p_drv, string f_name) {
   this->trace_list.unique();
   this->flush(p_drv, f_name);
 }

@@ -64,9 +64,9 @@ struct nm_dummy_pkt_wrap {
    Examples are availables in this file. */
 
 /** Dummy NewMad Driver */
-static int nm_dummy_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
-static int nm_dummy_init(struct nm_drv *p_drv);
-static int nm_dummy_exit(struct nm_drv *p_drv);
+static int nm_dummy_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_dummy_init(nm_drv_t p_drv);
+static int nm_dummy_exit(nm_drv_t p_drv);
 static int nm_dummy_open_track(struct nm_trk_rq*p_trk_rq);
 static int nm_dummy_close_track(struct nm_trk*p_trk);
 static int nm_dummy_connect(void*_status, struct nm_cnx_rq *p_crq);
@@ -76,7 +76,7 @@ static int nm_dummy_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_dummy_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_dummy_poll_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_dummy_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static const char*nm_dummy_get_driver_url(struct nm_drv *p_drv);
+static const char*nm_dummy_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_dummy_driver =
   {
@@ -135,7 +135,7 @@ static void nm_dummy_destroy(void*_status){
   TBX_FREE(_status);
 }
 
-const static char*nm_dummy_get_driver_url(struct nm_drv *p_drv){
+const static char*nm_dummy_get_driver_url(nm_drv_t p_drv){
   struct nm_dummy_drv *p_dummy_drv = p_drv->priv;
   return p_dummy_drv->url;
 }
@@ -145,7 +145,7 @@ const static char*nm_dummy_get_driver_url(struct nm_drv *p_drv){
 
 static
 int
-nm_dummy_query			(struct nm_drv *p_drv,
+nm_dummy_query			(nm_drv_t p_drv,
 				 struct nm_driver_query_param *params,
 				 int nparam) {
 	int err;
@@ -173,7 +173,7 @@ nm_dummy_query			(struct nm_drv *p_drv,
 
 static
 int
-nm_dummy_init			(struct nm_drv *p_drv) {
+nm_dummy_init			(nm_drv_t p_drv) {
         struct nm_dummy_drv *p_dummy_drv = p_drv->priv;
 	int err = NM_ESUCCESS;
 
@@ -186,7 +186,7 @@ nm_dummy_init			(struct nm_drv *p_drv) {
 
 static
 int
-nm_dummy_exit			(struct nm_drv *p_drv) {
+nm_dummy_exit			(nm_drv_t p_drv) {
 	int err;
         struct nm_dummy_drv *p_dummy_drv = p_drv->priv;
 

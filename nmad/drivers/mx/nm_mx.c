@@ -142,18 +142,18 @@ struct nm_mx_pkt_wrap
 
 /* MX 'NewMad_Driver' facet */
 
-static int nm_mx_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
-static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
-static int nm_mx_close(struct nm_drv *p_drv);
-static int nm_mx_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
-static int nm_mx_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
+static int nm_mx_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_mx_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+static int nm_mx_close(nm_drv_t p_drv);
+static int nm_mx_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_mx_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw, int block);
 static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static const char*nm_mx_get_driver_url(struct nm_drv *p_drv);
+static const char*nm_mx_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_mx_driver =
   {
@@ -215,7 +215,7 @@ static void nm_mx_destroy(void*_status){
   TBX_FREE(_status);
 }
 
-const static char*nm_mx_get_driver_url(struct nm_drv *p_drv)
+const static char*nm_mx_get_driver_url(nm_drv_t p_drv)
 {
   const struct nm_mx_drv* p_mx_drv = p_drv->priv;
   return p_mx_drv->url;
@@ -269,7 +269,7 @@ static int nm_mx_init_boards(void)
 }
 
 /** Query MX resources */
-static int nm_mx_query(struct nm_drv *p_drv,
+static int nm_mx_query(nm_drv_t p_drv,
 		       struct nm_driver_query_param *params,
 		       int nparam) 
 {
@@ -365,7 +365,7 @@ static int nm_mx_query(struct nm_drv *p_drv,
   return err;
 }
 
-static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
+static int nm_mx_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
   mx_endpoint_t		 ep;
   mx_endpoint_addr_t	 ep_addr;
@@ -456,7 +456,7 @@ static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_t
 }
 
 /** Finalize the MX driver */
-static int nm_mx_close(struct nm_drv *p_drv)
+static int nm_mx_close(nm_drv_t p_drv)
 {
   struct nm_mx_drv* p_mx_drv = p_drv->priv;
   mx_return_t	mx_ret	= MX_SUCCESS;
@@ -493,7 +493,7 @@ static int nm_mx_close(struct nm_drv *p_drv)
 
 
 /** Connect to a new MX peer */
-static int nm_mx_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
+static int nm_mx_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
 #ifdef PIOMAN
   piom_spin_lock(&nm_mx_lock);
@@ -585,7 +585,7 @@ static int nm_mx_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_dr
 }
 
 /** Disconnect from a new MX peer */
-static int nm_mx_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
+static int nm_mx_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
 {
   int err = NM_ESUCCESS;
   
@@ -599,7 +599,7 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
   piom_spin_lock(&nm_mx_lock);
 #endif /* PIOMAN */
   struct nm_mx *status = _status;
-  struct nm_drv *p_drv = p_pw->p_drv;
+  nm_drv_t p_drv = p_pw->p_drv;
   struct nm_mx_drv *p_mx_drv = p_drv->priv;
   struct nm_mx_cnx *p_mx_cnx = &status->cnx_array[p_pw->trk_id];
   struct nm_mx_pkt_wrap	*p_mx_pw = tbx_malloc(mx_pw_mem);
@@ -649,7 +649,7 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
   piom_spin_lock(&nm_mx_lock);
 #endif /* PIOMAN */
   struct nm_mx	*status	= _status;
-  struct nm_drv *p_drv = p_pw->p_drv;
+  nm_drv_t p_drv = p_pw->p_drv;
   struct nm_mx_drv *p_mx_drv = p_drv->priv;
   struct nm_mx_pkt_wrap	*p_mx_pw = tbx_malloc(mx_pw_mem);;
   uint64_t		 match_mask	= 0;

@@ -77,7 +77,7 @@ static inline nm_len_t strat_aggreg_max_small(struct nm_core*p_core)
   else
     {
       
-      struct nm_drv*p_drv;
+      nm_drv_t p_drv;
       NM_FOR_EACH_DRIVER(p_drv, p_core)
 	{
 	  if(nm_max_small <= 0 || (p_drv->driver->capabilities.max_unexpected > 0 && p_drv->driver->capabilities.max_unexpected < nm_max_small))

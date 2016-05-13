@@ -41,8 +41,8 @@ static unsigned char*data_recv = NULL;
 struct nm_sample_bench_s
 {
   const char*name;
-  void (*send)(struct nm_drv *p_drv, nm_gate_t p_gate, const void*message, size_t size);
-  void (*recv)(struct nm_drv *p_drv, nm_gate_t p_gate, void*message, size_t size);
+  void (*send)(nm_drv_t p_drv, nm_gate_t p_gate, const void*message, size_t size);
+  void (*recv)(nm_drv_t p_drv, nm_gate_t p_gate, void*message, size_t size);
 };
 
 struct nm_sample_s
@@ -85,7 +85,7 @@ static void nm_ns_fill_data(unsigned char * data)
 
 /* *** raw driver send/recv ******************************** */
 
-static void nm_ns_pw_send(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
+static void nm_ns_pw_send(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 {
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
@@ -113,7 +113,7 @@ static void nm_ns_pw_send(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr,
     }
 }
 
-static void nm_ns_pw_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+static void nm_ns_pw_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t len)
 {
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
@@ -142,7 +142,7 @@ static void nm_ns_pw_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_
 
 /* *** eager send/recv on trk #0 *************************** */
 
-static void nm_ns_eager_send_copy(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
+static void nm_ns_eager_send_copy(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 { 
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
@@ -174,7 +174,7 @@ static void nm_ns_eager_send_copy(struct nm_drv*p_drv, nm_gate_t p_gate, const v
   nm_so_pw_free(p_pw);
 }
 
-static void nm_ns_eager_send_iov(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
+static void nm_ns_eager_send_iov(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 { 
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
@@ -207,7 +207,7 @@ static void nm_ns_eager_send_iov(struct nm_drv*p_drv, nm_gate_t p_gate, const vo
 }
 
 
-static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+static void nm_ns_eager_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t len)
 {
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
@@ -262,7 +262,7 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
 
 /* *** eager, aggregation ********************************** */
 
-static void nm_ns_eager_send_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t _len)
+static void nm_ns_eager_send_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size_t _len)
 { 
   const size_t len = _len / 2;
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
@@ -291,7 +291,7 @@ static void nm_ns_eager_send_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, const
     }
 }
 
-static void nm_ns_eager_recv_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t _len)
+static void nm_ns_eager_recv_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t _len)
 {
   const size_t len = _len / 2;
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
@@ -348,7 +348,7 @@ static void nm_ns_eager_recv_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*
 
 /* *** rdv send/recv on trk #1 ***************************** */
 
-static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
+static void nm_ns_rdv_send(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 { 
   int rdv_req = 1, ok_to_send = 0;
   nm_ns_eager_send_copy(p_drv, p_gate, &rdv_req, sizeof(rdv_req));
@@ -373,7 +373,7 @@ static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr
   nm_so_pw_free(p_pw);
 }
 
-static void nm_ns_rdv_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+static void nm_ns_rdv_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t len)
 {
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
@@ -407,7 +407,7 @@ static struct
   size_t size;
 } workspace = { .buffer = NULL, .size = 0};
 
-static void nm_ns_copy_send(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
+static void nm_ns_copy_send(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 {
   if(workspace.size < len)
     {
@@ -416,7 +416,7 @@ static void nm_ns_copy_send(struct nm_drv*p_drv, nm_gate_t p_gate, const void*pt
     }
   memcpy(workspace.buffer, ptr, len);
 }
-static void nm_ns_copy_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+static void nm_ns_copy_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t len)
 {
   if(workspace.size < len)
     {
@@ -428,12 +428,12 @@ static void nm_ns_copy_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, siz
 
 /* *** eager x2 ******************************************** */
 
-static void nm_ns_eager_send_x2(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
+static void nm_ns_eager_send_x2(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 {
   nm_ns_eager_send_iov(p_drv, p_gate, ptr, len/2);
   nm_ns_eager_send_iov(p_drv, p_gate, ptr + len/2, len/2);
 }
-static void nm_ns_eager_recv_x2(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+static void nm_ns_eager_recv_x2(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t len)
 {
   nm_ns_eager_recv(p_drv, p_gate, ptr, len/2);
   nm_ns_eager_recv(p_drv, p_gate, ptr + len/2, len/2);
@@ -441,7 +441,7 @@ static void nm_ns_eager_recv_x2(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr,
 
 /* *** pingpong ******************************************** */
 
-static double nm_ns_ping_one(struct nm_drv *p_drv, struct nm_gate *p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
+static double nm_ns_ping_one(nm_drv_t p_drv, struct nm_gate *p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
 {
   const int roundtrips = nm_ns_nb_samples(size);
   double*time_array = malloc(sizeof(double)*roundtrips);
@@ -467,7 +467,7 @@ static double nm_ns_ping_one(struct nm_drv *p_drv, struct nm_gate *p_gate, const
   return min;
 }
 
-static void nm_ns_pong_one(struct nm_drv *p_drv, struct nm_gate *p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
+static void nm_ns_pong_one(nm_drv_t p_drv, struct nm_gate *p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
 {
   const int roundtrips = nm_ns_nb_samples(size);
   int i;
@@ -523,7 +523,7 @@ const static struct nm_sample_bench_s nm_sample_bench_trk0_aggreg =
     .recv = &nm_ns_eager_recv_aggreg
   };
 
-static void nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*sampling_file)
+static void nm_ns_ping(nm_drv_t p_drv, struct nm_gate *p_gate, FILE*sampling_file)
 {
   int size = 0;
 
@@ -559,7 +559,7 @@ static void nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*sampli
     }
 }
 
-static void nm_ns_pong(struct nm_drv *p_drv, struct nm_gate *p_gate)
+static void nm_ns_pong(nm_drv_t p_drv, struct nm_gate *p_gate)
 {
   int size = 0;
   for (size = param_min_size; size <= param_max_size; size*= 2)
@@ -655,7 +655,7 @@ int main(int argc, char **argv)
   is_server = !rank;
   peer = 1 - rank;
   nm_launcher_get_gate(peer, &p_gate);
-  struct nm_drv*p_drv = nm_drv_default(p_gate);
+  nm_drv_t p_drv = nm_drv_default(p_gate);
 
   assert(p_gate != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);

@@ -41,7 +41,7 @@ int main(int argc, char **argv)
   nm_gate_t p_gate = NULL;
   nm_launcher_get_gate(peer, &p_gate);
   assert(p_gate != NULL);
-  struct nm_drv*p_drv = nm_drv_default(p_gate);
+  nm_drv_t p_drv = nm_drv_default(p_gate);
   assert(p_drv != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 

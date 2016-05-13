@@ -118,10 +118,10 @@ TBX_INTERNAL int nm_core_driver_exit(struct nm_core *p_core);
 TBX_INTERNAL void nm_unexpected_clean(struct nm_core*p_core);
 
 TBX_INTERNAL void nm_strat_apply(struct nm_core*p_core);
-TBX_INTERNAL void nm_drv_post_send(struct nm_drv *p_drv);
+TBX_INTERNAL void nm_drv_post_send(nm_drv_t p_drv);
 
-TBX_INTERNAL void nm_drv_refill_recv(struct nm_drv* p_drv);
-TBX_INTERNAL void nm_drv_post_recv(struct nm_drv*p_drv);
+TBX_INTERNAL void nm_drv_refill_recv(nm_drv_t p_drv);
+TBX_INTERNAL void nm_drv_post_recv(nm_drv_t p_drv);
 
 TBX_INTERNAL void nm_pw_post_send(struct nm_pkt_wrap*p_pw);
 TBX_INTERNAL void nm_pw_poll_send(struct nm_pkt_wrap *p_pw);
@@ -129,7 +129,7 @@ TBX_INTERNAL int  nm_pw_poll_recv(struct nm_pkt_wrap*p_pw);
 
 TBX_INTERNAL void nm_out_prefetch(struct nm_core*p_core);
 
-TBX_INTERNAL void nm_drv_post_all(struct nm_drv*p_drv);
+TBX_INTERNAL void nm_drv_post_all(nm_drv_t p_drv);
 
 /** Process a complete successful outgoing request.
  */

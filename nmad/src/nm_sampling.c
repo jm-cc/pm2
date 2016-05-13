@@ -36,8 +36,8 @@ struct nm_sampling_set_s
 
 static struct
 {
-  struct nm_drv**p_drvs_by_lat;
-  struct nm_drv**p_drvs_by_bw;
+  nm_drv_t *p_drvs_by_lat;
+  nm_drv_t *p_drvs_by_bw;
   puk_hashtable_t sampling_sets;
   int nb_drvs;
 } nm_ns = {
@@ -53,7 +53,7 @@ static struct
 #  define MAXPATHLEN 1024
 #endif
 
-int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
+int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, nm_drv_t p_drv)
 {
   FILE *sampling_file;
   char sampling_file_path[MAXPATHLEN];
@@ -127,10 +127,10 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
 #ifdef NMAD_SAMPLING
 static int compare_lat(const void*_drv1, const void*_drv2)
 {
-  const struct nm_drv**pp_drv1 = (const struct nm_drv**)_drv1;
-  const struct nm_drv**pp_drv2 = (const struct nm_drv**)_drv2;
-  const struct nm_drv*p_drv1 = *pp_drv1;
-  const struct nm_drv*p_drv2 = *pp_drv2;
+  const nm_drv_t *pp_drv1 = (const nm_drv_t *)_drv1;
+  const nm_drv_t *pp_drv2 = (const nm_drv_t *)_drv2;
+  const nm_drv_t p_drv1 = *pp_drv1;
+  const nm_drv_t p_drv2 = *pp_drv2;
   const struct nm_sampling_set_s*p_set1  = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv1);
   const struct nm_sampling_set_s*p_set2  = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv2);
   if(p_set1->lat < p_set2->lat)
@@ -144,10 +144,10 @@ static int compare_lat(const void*_drv1, const void*_drv2)
 #ifdef NMAD_SAMPLING
 static int compare_bw(const void*_drv1, const void*_drv2)
 {
-  const struct nm_drv**pp_drv1 = (const struct nm_drv**)_drv1;
-  const struct nm_drv**pp_drv2 = (const struct nm_drv**)_drv2;
-  const struct nm_drv*p_drv1 = *pp_drv1;
-  const struct nm_drv*p_drv2 = *pp_drv2;
+  const nm_drv_t *pp_drv1 = (const nm_drv_t *)_drv1;
+  const nm_drv_t *pp_drv2 = (const nm_drv_t *)_drv2;
+  const nm_drv_t p_drv1 = *pp_drv1;
+  const nm_drv_t p_drv2 = *pp_drv2;
   const struct nm_sampling_set_s*p_set1  = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv1);
   const struct nm_sampling_set_s*p_set2  = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv2);
   if(p_set2->bw - p_set1->bw > 0)
@@ -169,7 +169,7 @@ static void nm_ns_cleanup(void)
     }
 }
 
-int nm_ns_update(struct nm_core*p_core, struct nm_drv*p_drv)
+int nm_ns_update(struct nm_core*p_core, nm_drv_t p_drv)
 {
   nm_ns_cleanup();
   nm_ns.nb_drvs = p_core->nb_drivers;
@@ -184,8 +184,8 @@ int nm_ns_update(struct nm_core*p_core, struct nm_drv*p_drv)
 #endif
 
   /* sort drivers by bandwidth and latency */
-  nm_ns.p_drvs_by_bw = TBX_MALLOC(nm_ns.nb_drvs * sizeof(struct nm_drv*));
-  nm_ns.p_drvs_by_lat = TBX_MALLOC(nm_ns.nb_drvs * sizeof(struct nm_drv*));
+  nm_ns.p_drvs_by_bw = TBX_MALLOC(nm_ns.nb_drvs * sizeof(nm_drv_t ));
+  nm_ns.p_drvs_by_lat = TBX_MALLOC(nm_ns.nb_drvs * sizeof(nm_drv_t ));
   int i = 0;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
@@ -194,8 +194,8 @@ int nm_ns_update(struct nm_core*p_core, struct nm_drv*p_drv)
       i++;
     }
 #ifdef NMAD_SAMPLING
-  qsort(nm_ns.p_drvs_by_bw, nm_ns.nb_drvs, sizeof(struct nm_drv*), compare_bw);
-  qsort(nm_ns.p_drvs_by_lat, nm_ns.nb_drvs, sizeof(struct nm_drv*), compare_lat);
+  qsort(nm_ns.p_drvs_by_bw, nm_ns.nb_drvs, sizeof(nm_drv_t ), compare_bw);
+  qsort(nm_ns.p_drvs_by_lat, nm_ns.nb_drvs, sizeof(nm_drv_t ), compare_lat);
 #endif
 
 #if 0
@@ -224,7 +224,7 @@ int nm_ns_exit(struct nm_core *p_core)
   return NM_ESUCCESS;
 }
 
-double nm_ns_evaluate_bw(struct nm_drv *p_drv, int length)
+double nm_ns_evaluate_bw(nm_drv_t p_drv, int length)
 {
   const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv);
   if(p_set->nb_samples > 0)
@@ -247,7 +247,7 @@ double nm_ns_evaluate_bw(struct nm_drv *p_drv, int length)
     }
 }
 
-double nm_ns_evaluate_transfer_time(struct nm_drv *driver, int length)
+double nm_ns_evaluate_transfer_time(nm_drv_t driver, int length)
 {
   const double bw = nm_ns_evaluate_bw(driver, length);
   return bw / length;
@@ -267,14 +267,14 @@ double nm_ns_remaining_transfer_time(struct nm_pkt_wrap *p_pw)
 }
 
 
-int nm_ns_dec_bws(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_drivers)
+int nm_ns_dec_bws(struct nm_core *p_core, nm_drv_t const**p_drvs, int*nb_drivers)
 {
   *p_drvs = nm_ns.p_drvs_by_bw;
   *nb_drivers = nm_ns.nb_drvs;
   return NM_ESUCCESS;
 }
 
-int nm_ns_inc_lats(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_drivers)
+int nm_ns_inc_lats(struct nm_core *p_core, nm_drv_t const**p_drvs, int*nb_drivers)
 {
   *p_drvs = nm_ns.p_drvs_by_lat;
   *nb_drivers = nm_ns.nb_drvs;

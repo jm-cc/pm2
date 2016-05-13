@@ -36,7 +36,7 @@ int nm_core_driver_load(nm_core_t p_core,
   NM_LOG_IN();
 
   assert(driver_assembly != NULL);
-  struct nm_drv*p_drv = TBX_MALLOC(sizeof(struct nm_drv));
+  nm_drv_t p_drv = TBX_MALLOC(sizeof(struct nm_drv));
   memset(p_drv, 0, sizeof(struct nm_drv));
   p_drv->p_core   = p_core;
   p_drv->assembly = driver_assembly;
@@ -231,7 +231,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
   int err = NM_ESUCCESS;
 
   nm_lock_interface(p_core);
-  struct nm_drv*p_drv = NULL;
+  nm_drv_t p_drv = NULL;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
 #ifdef PIOMAN_POLL
@@ -344,7 +344,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
       tbx_fast_list_del(&p_gate->_link);
       TBX_FREE(p_gate);
     }
-  struct nm_drv*tmp_drv = NULL;
+  nm_drv_t tmp_drv = NULL;
   tbx_fast_list_for_each_entry_safe(p_drv, tmp_drv, &p_core->driver_list, _link)
     {
       tbx_fast_list_del(&p_drv->_link);

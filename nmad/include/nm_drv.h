@@ -81,12 +81,12 @@ struct nm_drv_iface_s
 {
   const char*name;
 
-  int (*query)     (struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
-  int (*init)      (struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
-  int (*close)     (struct nm_drv *p_drv);
+  int (*query)     (nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
+  int (*init)      (nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+  int (*close)     (nm_drv_t p_drv);
 
-  int (*connect)   (void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
-  int (*disconnect)(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
+  int (*connect)   (void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
+  int (*disconnect)(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 
   int (*post_send_iov)(void*_status, struct nm_pkt_wrap *p_pw);
   int (*post_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);
@@ -104,7 +104,7 @@ struct nm_drv_iface_s
   int (*poll_send_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);
   int (*poll_recv_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);
 
-  const char* (*get_driver_url)(struct nm_drv *p_drv);
+  const char* (*get_driver_url)(nm_drv_t p_drv);
 
   const struct nm_drv_cap_s capabilities; /**< static capabilities */
 

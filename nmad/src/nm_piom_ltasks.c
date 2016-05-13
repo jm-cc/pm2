@@ -63,7 +63,7 @@ void nm_ltask_set_policy(void)
     }
 }
 
-static piom_topo_obj_t nm_piom_driver_binding(struct nm_drv*p_drv)
+static piom_topo_obj_t nm_piom_driver_binding(nm_drv_t p_drv)
 {
   piom_topo_obj_t binding = NULL;
 #if defined(PIOMAN_TOPOLOGY_HWLOC)
@@ -87,7 +87,7 @@ static piom_topo_obj_t nm_piom_driver_binding(struct nm_drv*p_drv)
   return binding;
 }
 
-static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
+static piom_topo_obj_t nm_get_binding_policy(nm_drv_t p_drv)
 {
   if(p_drv->ltask_binding == NULL)
     {
@@ -197,7 +197,7 @@ static int nm_task_block_send(void*_pw)
 
 static int nm_task_post_on_drv(void*_drv)
 {
-  struct nm_drv*p_drv = _drv;
+  nm_drv_t p_drv = _drv;
   int ret = NM_ESUCCESS;
   if(nmad_trylock())
     {
@@ -258,7 +258,7 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
   piom_ltask_submit(&p_pw->ltask);
 }
 
-void nm_ltask_submit_post_drv(struct nm_drv*p_drv)
+void nm_ltask_submit_post_drv(nm_drv_t p_drv)
 {
   piom_topo_obj_t ltask_binding = nm_get_binding_policy(p_drv);
   piom_ltask_create(&p_drv->p_ltask, &nm_task_post_on_drv, p_drv,

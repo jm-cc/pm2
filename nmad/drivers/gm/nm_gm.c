@@ -101,8 +101,8 @@ static
 const int nm_gm_nb_ports = 5;
 /* ********************************** */
 
-static int nm_gm_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
-static int nm_gm_init(struct nm_drv *p_drv);
+static int nm_gm_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_gm_init(nm_drv_t p_drv);
 static int nm_gm_open_track(struct nm_trk_rq*p_trk_rq);
 static int nm_gm_close_track(struct nm_trk*p_trk);
 static int nm_gm_connect(void*_status, struct nm_cnx_rq *p_crq);
@@ -112,7 +112,7 @@ static int nm_gm_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_gm_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_gm_poll_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_gm_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static const char*nm_gm_get_driver_url(struct nm_drv *p_drv);
+static const char*nm_gm_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_gm_driver =
   {
@@ -169,7 +169,7 @@ static void nm_gm_destroy(void*_status){
   TBX_FREE(_status);
 }
 
-const static char*nm_gm_get_driver_url(struct nm_drv *p_drv){
+const static char*nm_gm_get_driver_url(nm_drv_t p_drv){
   struct nm_gm_drv *p_gm_drv = p_drv->priv;
   return p_gm_drv->url;
 }
@@ -420,7 +420,7 @@ nm_gm_extract_info(char			 *trk_url,
 
 static
 int
-nm_gm_query			(struct nm_drv *p_drv,
+nm_gm_query			(nm_drv_t p_drv,
 				 struct nm_driver_query_param *params,
 				 int nparam) {
 	struct nm_gm_drv	*p_gm_drv	= NULL;
@@ -448,7 +448,7 @@ nm_gm_query			(struct nm_drv *p_drv,
 
 static
 int
-nm_gm_init			(struct nm_drv *p_drv) {
+nm_gm_init			(nm_drv_t p_drv) {
         gm_status_t		 gms		= GM_SUCCESS;
 	struct nm_gm_drv *p_gm_drv = p_drv->priv;
 	int err;
@@ -476,7 +476,7 @@ nm_gm_init			(struct nm_drv *p_drv) {
 
 static
 int
-nm_gm_exit			(struct nm_drv *p_drv) {
+nm_gm_exit			(nm_drv_t p_drv) {
 	int err;
 	struct nm_gm_drv *p_gm_drv = p_drv->priv;
 

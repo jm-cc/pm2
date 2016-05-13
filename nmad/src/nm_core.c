@@ -37,7 +37,7 @@ volatile piom_thread_t piom_big_lock_holder = PIOM_THREAD_NULL;
 #endif  /* PIOMAN */
 
 
-void nm_drv_post_all(struct nm_drv*p_drv)
+void nm_drv_post_all(nm_drv_t p_drv)
 { 
  /* schedule & post out requests */
   nm_drv_post_send(p_drv);
@@ -89,7 +89,7 @@ int nm_schedule(struct nm_core *p_core)
   nm_strat_apply(p_core);
 
   /* post new requests	*/
-  struct nm_drv*p_drv = NULL;
+  nm_drv_t p_drv = NULL;
   NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core)
   {
     nm_drv_post_all(p_drv);
@@ -426,7 +426,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 	}
     }
 #else /* NMAD_POLL */
-  struct nm_drv*p_drv;
+  nm_drv_t p_drv;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
       piom_ltask_cancel(&p_drv->p_ltask);
@@ -493,7 +493,7 @@ int nm_core_exit(nm_core_t p_core)
   nm_core_driver_exit(p_core);
 
   /* purge receive requests not posted yet to the driver */
-  struct nm_drv*p_drv = NULL;
+  nm_drv_t p_drv = NULL;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
       struct nm_pkt_wrap*p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);

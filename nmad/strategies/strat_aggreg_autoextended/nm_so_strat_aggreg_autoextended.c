@@ -29,12 +29,12 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg_autoextended, &nm_strat_aggreg_auto
 /* Components structures:
 */
 
-static int  strat_aggreg_autoextended_todo(void*, struct nm_gate*);
+static int  strat_aggreg_autoextended_todo(void*, nm_gate_t );
 static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_aggreg_autoextended_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
-static int  strat_aggreg_autoextended_try_and_commit(void*, struct nm_gate*);
-static void strat_aggreg_autoextended_rdv_accept(void*, struct nm_gate*);
-static int  strat_aggreg_autoextended_flush(void*, struct nm_gate*);
+static int  strat_aggreg_autoextended_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
+static int  strat_aggreg_autoextended_try_and_commit(void*, nm_gate_t );
+static void strat_aggreg_autoextended_rdv_accept(void*, nm_gate_t );
+static int  strat_aggreg_autoextended_flush(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_so_strat_aggreg_autoextended_driver =
   {
@@ -124,7 +124,7 @@ static void strat_aggreg_autoextended_destroy(void*status)
  *  @return The NM status.
  */
 static int strat_aggreg_autoextended_pack_ctrl(void*_status,
-                                               struct nm_gate *p_gate,
+                                               nm_gate_t p_gate,
                                                const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_pkt_wrap *p_so_pw = NULL;
@@ -161,7 +161,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
 }
 
 static int strat_aggreg_autoextended_flush(void*_status,
-                                           struct nm_gate *p_gate)
+                                           nm_gate_t p_gate)
 {
   struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
@@ -176,7 +176,7 @@ static int strat_aggreg_autoextended_flush(void*_status,
 }
 
 static int strat_aggreg_autoextended_todo(void*_status,
-					  struct nm_gate *p_gate)
+					  nm_gate_t p_gate)
 {
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
   struct tbx_fast_list_head *out_list = &(status)->out_list;
@@ -242,7 +242,7 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
  *  @return The NM status.
  */
 static int strat_aggreg_autoextended_try_and_commit(void*_status,
-                                                    struct nm_gate *p_gate)
+                                                    nm_gate_t p_gate)
 {
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
@@ -278,7 +278,7 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
 
 /** Emit RTR for received RDV requests
  */
-static void strat_aggreg_autoextended_rdv_accept(void*_status, struct nm_gate*p_gate)
+static void strat_aggreg_autoextended_rdv_accept(void*_status, nm_gate_t p_gate)
 {
   if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {

@@ -85,8 +85,8 @@ struct nm_drv_iface_s
   int (*init)      (nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
   int (*close)     (nm_drv_t p_drv);
 
-  int (*connect)   (void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
-  int (*disconnect)(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
+  int (*connect)   (void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
+  int (*disconnect)(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 
   int (*post_send_iov)(void*_status, struct nm_pkt_wrap *p_pw);
   int (*post_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);

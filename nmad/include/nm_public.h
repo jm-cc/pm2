@@ -51,10 +51,10 @@ typedef struct nm_gate*nm_gate_t;
 #define NM_ANY_GATE NM_GATE_NONE
 
 /** Get the user-registered per-gate data */
-void*nm_gate_ref_get(struct nm_gate*p_gate);
+void*nm_gate_ref_get(nm_gate_t p_gate);
 
 /** Set the user-registered per-gate data */
-void nm_gate_ref_set(struct nm_gate*p_gate, void*ref);
+void nm_gate_ref_set(nm_gate_t p_gate, void*ref);
 
 
 /* ** Tags ************************************************* */

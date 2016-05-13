@@ -52,7 +52,7 @@ void nm_drv_post_all(nm_drv_t p_drv)
  */
 void nm_strat_apply(struct nm_core*p_core)
 {
-  struct nm_gate*p_gate = NULL;
+  nm_gate_t p_gate = NULL;
   nmad_lock_assert();
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
@@ -441,7 +441,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 	    }
 	}
     }
-  struct nm_gate*p_gate;
+  nm_gate_t p_gate;
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       nm_gdrv_vect_itor_t i;
@@ -476,7 +476,7 @@ int nm_core_exit(nm_core_t p_core)
   while(!strat_done)
     {
       int todo = 0;
-      struct nm_gate*p_gate = NULL;
+      nm_gate_t p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
 	  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;

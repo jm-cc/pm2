@@ -21,7 +21,7 @@
 /* ** Driver management ************************************ */
 
 /** Get the driver-specific per-gate data */
-static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_t p_drv)
+static inline struct nm_gate_drv*nm_gate_drv_get(nm_gate_t p_gate, nm_drv_t p_drv)
 {
   nm_gdrv_vect_itor_t i;
   assert(p_drv != NULL);
@@ -37,7 +37,7 @@ static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_t
  *  available, but the strategy does not support multi-rail.
  *  Currently: the first available network
  */
-static inline nm_drv_t nm_drv_default(struct nm_gate*p_gate)
+static inline nm_drv_t nm_drv_default(nm_gate_t p_gate)
 {
   assert(!nm_gdrv_vect_empty(&p_gate->gdrv_array));
   nm_gdrv_vect_itor_t i = nm_gdrv_vect_begin(&p_gate->gdrv_array);
@@ -46,7 +46,7 @@ static inline nm_drv_t nm_drv_default(struct nm_gate*p_gate)
 
 /** Get a driver given its id.
  */
-static inline nm_drv_t nm_drv_get_by_index(struct nm_gate*p_gate, int index)
+static inline nm_drv_t nm_drv_get_by_index(nm_gate_t p_gate, int index)
 {
   assert(!nm_gdrv_vect_empty(&p_gate->gdrv_array));
   assert(index < nm_gdrv_vect_size(&p_gate->gdrv_array));
@@ -99,7 +99,7 @@ static inline void nm_pw_ref_dec(struct nm_pkt_wrap *p_pw)
  * maybe later with PIO-offloading, on next nm_schedule()
  * without PIOMan).
  */
-static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm_gate *p_gate, 
+static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, nm_gate_t p_gate, 
 					     nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
@@ -121,7 +121,7 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
  * maybe later with PIO-offloading, on next nm_schedule()
  * without PIOMan).
  */
-static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
+static __tbx_inline__ void nm_core_post_send(nm_gate_t p_gate,
 					     struct nm_pkt_wrap *p_pw,
 					     nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
@@ -136,7 +136,7 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
 
 /** Schedule and post new outgoing buffers
  */
-static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
+static inline int nm_strat_try_and_commit(nm_gate_t p_gate)
 {
   int err;
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
@@ -167,7 +167,7 @@ static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
 
 /** Post a ready-to-receive
  */
-static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_core_tag_t tag, nm_seq_t seq,
+static inline void nm_so_post_rtr(nm_gate_t p_gate,  nm_core_tag_t tag, nm_seq_t seq,
 				  nm_drv_t p_drv, nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   nm_header_ctrl_generic_t h;
@@ -190,7 +190,7 @@ static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_core_tag_t tag, nm_
 
 /** Post an ACK
  */
-static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_core_tag_t tag, nm_seq_t seq)
+static inline void nm_so_post_ack(nm_gate_t p_gate, nm_core_tag_t tag, nm_seq_t seq)
 {
   nm_header_ctrl_generic_t h;
   nm_header_init_ack(&h, tag, seq);

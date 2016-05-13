@@ -258,7 +258,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	  nm_pw_ref_dec(p_pw);
 	}
 
-      struct nm_gate*p_gate = NULL;
+      nm_gate_t p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
@@ -290,7 +290,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
     }
 
   /* disconnect all gates */
-  struct nm_gate*p_gate = NULL;
+  nm_gate_t p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       p_gate->status = NM_GATE_STATUS_DISCONNECTED;
@@ -338,7 +338,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
       puk_instance_destroy(p_gate->strategy_instance);
       nm_gdrv_vect_destroy(&p_gate->gdrv_array);
     }
-  struct nm_gate*tmp_gate = NULL;
+  nm_gate_t tmp_gate = NULL;
   tbx_fast_list_for_each_entry_safe(p_gate, tmp_gate, &p_core->gate_list, _link)
     {
       tbx_fast_list_del(&p_gate->_link);

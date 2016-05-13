@@ -156,8 +156,8 @@ PUK_VECT_TYPE(nm_tcp_pending, struct nm_tcp_pending_s);
 static int nm_tcp_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_tcp_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_tcp_exit(nm_drv_t p_drv);
-static int nm_tcp_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
-static int nm_tcp_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
+static int nm_tcp_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_tcp_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static const char*nm_tcp_get_driver_url(nm_drv_t p_drv);
@@ -429,7 +429,7 @@ extern int nm_tcp_exit(nm_drv_t p_drv)
  *  @param p_crq the connection request.
  *  @return The NM status code.
  */
-static int nm_tcp_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
+static int nm_tcp_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
   struct nm_tcp*status = _status;
   struct nm_tcp_drv*p_tcp_drv = p_drv->priv;
@@ -544,7 +544,7 @@ static int nm_tcp_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, n
  *  @param p_crq the connection request.
  *  @return The NM status code.
  */
-static int nm_tcp_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
+static int nm_tcp_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
 {
   struct nm_tcp*status = (struct nm_tcp*)_status;
   int fd = status->fd[trk_id];
@@ -648,7 +648,7 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   struct nm_tcp_drv     *p_tcp_drv      = p_drv->priv;
   struct nm_tcp_trk	*p_tcp_trk	= &p_tcp_drv->trks_array[p_pw->trk_id];
   struct pollfd		 pollfd;
-  struct nm_gate	*p_gate		= NULL;
+  nm_gate_t p_gate		= NULL;
   struct pollfd		*p_gate_pollfd	= NULL;
   int			 ret;
   int			 err;

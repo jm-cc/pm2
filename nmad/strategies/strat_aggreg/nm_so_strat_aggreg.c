@@ -28,11 +28,11 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg, &nm_strat_aggreg_load, NULL, NULL)
  */
 
 static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_aggreg_todo(void*, struct nm_gate*);
+static int  strat_aggreg_todo(void*, nm_gate_t );
 static void strat_aggreg_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_aggreg_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
-static int  strat_aggreg_try_and_commit(void*, struct nm_gate*);
-static void strat_aggreg_rdv_accept(void*, struct nm_gate*);
+static int  strat_aggreg_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
+static int  strat_aggreg_try_and_commit(void*, nm_gate_t );
+static void strat_aggreg_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_aggreg_driver =
   {
@@ -137,7 +137,7 @@ static void strat_aggreg_destroy(void*status)
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int strat_aggreg_pack_ctrl(void*_status, struct nm_gate *p_gate,
+static int strat_aggreg_pack_ctrl(void*_status, nm_gate_t p_gate,
 				  const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_strat_aggreg_gate *status = _status;
@@ -155,7 +155,7 @@ static int strat_aggreg_pack_ctrl(void*_status, struct nm_gate *p_gate,
 }
 
 
-static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
+static int strat_aggreg_todo(void*_status, nm_gate_t p_gate)
 {
   struct nm_strat_aggreg_gate *status = _status;
   return !(tbx_fast_list_empty(&status->out_list));
@@ -230,7 +230,7 @@ static void strat_aggreg_pack_chunk(void*_status, struct nm_req_s*p_pack, void*p
  *  @param p_gate a pointer to the gate object.
  *  @return The NM status.
  */
-static int strat_aggreg_try_and_commit(void *_status, struct nm_gate *p_gate)
+static int strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 {
   struct nm_strat_aggreg_gate *status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
@@ -249,7 +249,7 @@ static int strat_aggreg_try_and_commit(void *_status, struct nm_gate *p_gate)
 
 /** Emit RTR for received RDV requests
  */
-static void strat_aggreg_rdv_accept(void*_status, struct nm_gate *p_gate)
+static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
 {
   if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {

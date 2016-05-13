@@ -441,7 +441,7 @@ static void nm_ns_eager_recv_x2(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size
 
 /* *** pingpong ******************************************** */
 
-static double nm_ns_ping_one(nm_drv_t p_drv, struct nm_gate *p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
+static double nm_ns_ping_one(nm_drv_t p_drv, nm_gate_t p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
 {
   const int roundtrips = nm_ns_nb_samples(size);
   double*time_array = malloc(sizeof(double)*roundtrips);
@@ -467,7 +467,7 @@ static double nm_ns_ping_one(nm_drv_t p_drv, struct nm_gate *p_gate, const struc
   return min;
 }
 
-static void nm_ns_pong_one(nm_drv_t p_drv, struct nm_gate *p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
+static void nm_ns_pong_one(nm_drv_t p_drv, nm_gate_t p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
 {
   const int roundtrips = nm_ns_nb_samples(size);
   int i;
@@ -523,7 +523,7 @@ const static struct nm_sample_bench_s nm_sample_bench_trk0_aggreg =
     .recv = &nm_ns_eager_recv_aggreg
   };
 
-static void nm_ns_ping(nm_drv_t p_drv, struct nm_gate *p_gate, FILE*sampling_file)
+static void nm_ns_ping(nm_drv_t p_drv, nm_gate_t p_gate, FILE*sampling_file)
 {
   int size = 0;
 
@@ -559,7 +559,7 @@ static void nm_ns_ping(nm_drv_t p_drv, struct nm_gate *p_gate, FILE*sampling_fil
     }
 }
 
-static void nm_ns_pong(nm_drv_t p_drv, struct nm_gate *p_gate)
+static void nm_ns_pong(nm_drv_t p_drv, nm_gate_t p_gate)
 {
   int size = 0;
   for (size = param_min_size; size <= param_max_size; size*= 2)

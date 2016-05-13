@@ -103,7 +103,7 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 extern int nm_sr_flush(struct nm_core *p_core)
 {
   int ret = NM_EAGAIN;
-  struct nm_gate*p_gate = NULL;
+  nm_gate_t p_gate = NULL;
   nmad_lock();
   NM_FOR_EACH_GATE(p_gate, p_core)
     {

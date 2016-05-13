@@ -75,7 +75,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
     }
   else if(err == -NM_ECLOSED)
     {
-      struct nm_gate*p_gate = p_pw->p_gate;
+      nm_gate_t p_gate = p_pw->p_gate;
       p_gate->status = NM_GATE_STATUS_DISCONNECTING;
       if(p_pw->p_gdrv)
 	{
@@ -170,7 +170,7 @@ void nm_drv_refill_recv(nm_drv_t p_drv)
   else
     {
       /* no recv any- post a pw per gate */
-      struct nm_gate*p_gate = NULL;
+      nm_gate_t p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
 	  /* Make sure the gate is not being connected

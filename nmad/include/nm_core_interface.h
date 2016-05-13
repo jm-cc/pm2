@@ -297,7 +297,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);
 
 /** post an unpack request */
-int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
+int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate_t p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
 
 /** cancel a pending unpack
  * @note cancel may fail if matching was already done.
@@ -306,8 +306,8 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack);
 
 /** probe unexpected packet, check matching for (packet_tag & tag_mask) == tag */
 int nm_core_iprobe(struct nm_core*p_core,
-		   struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
-		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size);
+		   nm_gate_t p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
+		   nm_gate_t *pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size);
 
 /** Flush the given gate. */
 int nm_core_flush(nm_gate_t p_gate);

@@ -25,11 +25,11 @@
 /* Components structures:
  */
 
-static int  strat_immediate_todo(void*, struct nm_gate*);
+static int  strat_immediate_todo(void*, nm_gate_t );
 static void strat_immediate_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_immediate_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
-static int  strat_immediate_try_and_commit(void*, struct nm_gate*);
-static void strat_immediate_rdv_accept(void*, struct nm_gate*);
+static int  strat_immediate_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
+static int  strat_immediate_try_and_commit(void*, nm_gate_t );
+static void strat_immediate_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_immediate_driver =
   {
@@ -98,7 +98,7 @@ static void strat_immediate_destroy(void*status)
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int strat_immediate_pack_ctrl(void*_status, struct nm_gate*p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
+static int strat_immediate_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_strat_immediate*status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);
@@ -109,7 +109,7 @@ static int strat_immediate_pack_ctrl(void*_status, struct nm_gate*p_gate, const 
   return NM_ESUCCESS;
 }
 
-static int strat_immediate_todo(void* _status, struct nm_gate*p_gate)
+static int strat_immediate_todo(void* _status, nm_gate_t p_gate)
 {
   struct nm_strat_immediate*status = _status;
   return 0;
@@ -142,7 +142,7 @@ static void strat_immediate_pack_chunk(void*_status, struct nm_req_s*p_pack, voi
  *  @param p_gate a pointer to the gate object.
  *  @return The NM status.
  */
-static int strat_immediate_try_and_commit(void*_status, struct nm_gate *p_gate)
+static int strat_immediate_try_and_commit(void*_status, nm_gate_t p_gate)
 {
   struct nm_strat_immediate*status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);
@@ -152,7 +152,7 @@ static int strat_immediate_try_and_commit(void*_status, struct nm_gate *p_gate)
 
 /** Emit RTR for received RDV requests
  */
-static void strat_immediate_rdv_accept(void*_status, struct nm_gate*p_gate)
+static void strat_immediate_rdv_accept(void*_status, nm_gate_t p_gate)
 {
   if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {

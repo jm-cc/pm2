@@ -46,8 +46,8 @@ static const char*nm_self_get_driver_url(nm_drv_t p_drv);
 static int nm_self_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_self_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_self_exit(nm_drv_t p_drv);
-static int nm_self_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
-static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
+static int nm_self_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_self_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_self_poll_send(void*_status, struct nm_pkt_wrap *p_pw);
@@ -175,12 +175,12 @@ static int nm_self_exit(nm_drv_t p_drv)
   return NM_ESUCCESS;
 }
 
-static int nm_self_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
+static int nm_self_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
   return NM_ESUCCESS;
 }
 
-static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
+static int nm_self_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
 {
   return NM_ESUCCESS;
 }

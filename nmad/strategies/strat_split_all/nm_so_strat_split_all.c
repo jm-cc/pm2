@@ -51,19 +51,19 @@ static p_tbx_memory_t nm_ssa_pw_mem = NULL;
 /* Components structures:
  */
 
-static int strat_split_all_todo(void*, struct nm_gate*);
+static int strat_split_all_todo(void*, nm_gate_t );
 static int strat_split_all_pack(void*_status, struct nm_req_s*p_pack);
-static int strat_split_all_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
+static int strat_split_all_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int strat_split_all_pack_ctrl_chunk(void*, struct nm_pkt_wrap *, const union nm_header_ctrl_generic_s *);
-static int strat_split_all_pack_extended_ctrl(void*, struct nm_gate *, nm_len_t, const union nm_header_ctrl_generic_s *, struct nm_pkt_wrap **);
+static int strat_split_all_pack_extended_ctrl(void*, nm_gate_t , nm_len_t, const union nm_header_ctrl_generic_s *, struct nm_pkt_wrap **);
 static int strat_split_all_pack_extended_ctrl_end(void*,
-                                                struct nm_gate *p_gate,
+                                                nm_gate_t p_gate,
                                                 struct nm_pkt_wrap *p_so_pw);
-static int strat_split_all_try_and_commit(void*, struct nm_gate*);
-static int strat_split_all_rdv_accept(void*, struct nm_gate*, nm_drv_id_t*, nm_trk_id_t*);
-static int strat_split_all_extended_rdv_accept(void*, struct nm_gate *, nm_len_t, int *,
+static int strat_split_all_try_and_commit(void*, nm_gate_t );
+static int strat_split_all_rdv_accept(void*, nm_gate_t , nm_drv_id_t*, nm_trk_id_t*);
+static int strat_split_all_extended_rdv_accept(void*, nm_gate_t , nm_len_t, int *,
 						   nm_drv_id_t *, nm_len_t *);
-static int strat_split_all_split_small(void *_status, struct nm_gate *p_gate, void *link, int *nb_cores, struct nm_pkt_wrap **out_pw);
+static int strat_split_all_split_small(void *_status, nm_gate_t p_gate, void *link, int *nb_cores, struct nm_pkt_wrap **out_pw);
 
 static const struct nm_strategy_iface_s nm_so_strat_split_all_driver =
   {
@@ -141,7 +141,7 @@ static void strat_split_all_destroy(void*status)
 
 static int 
 strat_split_all_pack_extended_ctrl(void *_status,
-				       struct nm_gate *p_gate,
+				       nm_gate_t p_gate,
 				       nm_len_t cumulated_header_len,
 				       const union nm_header_ctrl_generic_s *p_ctrl,
 				       struct nm_pkt_wrap **pp_so_pw){
@@ -157,7 +157,7 @@ strat_split_all_pack_ctrl_chunk(void *_status,
 
 static int
 strat_split_all_pack_extended_ctrl_end(void *_status,
-					   struct nm_gate *p_gate,
+					   nm_gate_t p_gate,
 					   struct nm_pkt_wrap *p_so_pw){
 	return NM_ESUCCESS;
 }
@@ -165,7 +165,7 @@ strat_split_all_pack_extended_ctrl_end(void *_status,
 /* Add a new control "header" to the flow of outgoing packets */
 static int
 strat_split_all_pack_ctrl(void *_status,
-			      struct nm_gate *p_gate,
+			      nm_gate_t p_gate,
 			      const union nm_header_ctrl_generic_s *p_ctrl){
   struct nm_so_strat_split_all *status = _status;
   struct nm_ssa_pw *p_ssa_pw = NULL;
@@ -208,7 +208,7 @@ strat_split_all_pack_ctrl(void *_status,
 
 //static int
 //strat_split_all_process_large(void *_status,
-//                              struct nm_gate *p_gate,
+//                              nm_gate_t p_gate,
 //                              uint8_t tag, uint8_t seq,
 //                              void *data, nm_len_t len,
 //                              nm_len_t chunk_offset, uint8_t is_last_chunk){
@@ -258,7 +258,7 @@ strat_split_all_pack_ctrl(void *_status,
 
 
 static int strat_split_all_todo(void*_status,
-				struct nm_gate *p_gate)
+				nm_gate_t p_gate)
 {
   struct nm_so_strat_split_all *status = _status;
   struct tbx_fast_list_head *out_list = &(status)->out_list;
@@ -325,7 +325,7 @@ strat_split_all_pack(void *_status, struct nm_req_s*p_pack)
 }
 
 static int build_wrapper(struct nm_so_strat_split_all *status,
-                         struct nm_gate *p_gate,
+                         nm_gate_t p_gate,
                          struct nm_ssa_pw *p_ssa_pw,
                          nm_len_t threshold,
                          nm_len_t offset,
@@ -494,7 +494,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
    return next packet to send */
 static int
 strat_split_all_try_and_commit(void *_status,
-                               struct nm_gate *p_gate){
+                               nm_gate_t p_gate){
   struct nm_so_strat_split_all *status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
   struct nm_ssa_pw *p_ssa_pw = NULL;
@@ -548,7 +548,7 @@ strat_split_all_try_and_commit(void *_status,
 
 static int
 strat_split_all_split_small(void *_status,
-                            struct nm_gate *p_gate,
+                            nm_gate_t p_gate,
                             void *link,
                             int *nb_cores,
                             struct nm_pkt_wrap **out_pw){
@@ -599,7 +599,7 @@ strat_split_all_split_small(void *_status,
    hold values "suggested" by the caller. */
 static int
 strat_split_all_rdv_accept(void *_status,
-			   struct nm_gate *p_gate,
+			   nm_gate_t p_gate,
 			   nm_drv_id_t *drv_id,
 			   nm_trk_id_t *trk_id){
   int nb_drivers = p_gate->p_core->nb_drivers;
@@ -627,7 +627,7 @@ strat_split_all_rdv_accept(void *_status,
 //#warning ajouter le n° de la track a utiliser pour chaque driver
 static int
 strat_split_all_extended_rdv_accept(void *_status,
-					struct nm_gate *p_gate,
+					nm_gate_t p_gate,
 					nm_len_t len_to_send,
 					int * nb_drv,
 					nm_drv_id_t *drv_ids,

@@ -123,8 +123,8 @@ static const char*nm_cci_get_driver_url(nm_drv_t p_drv);
 static int nm_cci_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_cci_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_cci_exit(nm_drv_t p_drv);
-static int nm_cci_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
-static int nm_cci_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
+static int nm_cci_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_cci_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap *p_pw);
@@ -438,7 +438,7 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
     }
 }
 
-static int nm_cci_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
+static int nm_cci_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
   struct nm_cci_drv*p_cci_drv = p_drv->priv;
   struct nm_cci*status = (struct nm_cci*)_status;
@@ -485,7 +485,7 @@ static int nm_cci_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, n
   return NM_ESUCCESS;
 }
 
-static int nm_cci_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
+static int nm_cci_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
 {
   struct nm_cci*status = (struct nm_cci*)_status;
 #warning TODO-

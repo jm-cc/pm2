@@ -28,23 +28,23 @@ struct nm_strategy_iface_s
   void (*pack_chunk)(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 
   /** submit a chunk of control data */
-  int (*pack_ctrl)(void*_status, struct nm_gate*p_gate, const union nm_header_ctrl_generic_s*p_ctrl);
+  int (*pack_ctrl)(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s*p_ctrl);
   
   /** Compute and apply the best possible packet rearrangement, then
       return next packet to send */
-  int (*try_and_commit)(void*_status, struct nm_gate*p_gate);
+  int (*try_and_commit)(void*_status, nm_gate_t p_gate);
 
   /** Emit RTR series for received RDV requests. */
-  void (*rdv_accept)(void*_status, struct nm_gate*p_gate);
+  void (*rdv_accept)(void*_status, nm_gate_t p_gate);
 
   /** flush pending packs */
-  int (*flush)(void*_status, struct nm_gate*p_gate);
+  int (*flush)(void*_status, nm_gate_t p_gate);
 
   /** Returns 1 if there are packets to send */
-  int (*todo)(void* _status, struct nm_gate*p_gate);
+  int (*todo)(void* _status, nm_gate_t p_gate);
 
   /** process strat private protocol */
-  void (*proto)(void*_status, struct nm_gate*p_gate, struct nm_pkt_wrap*p_pw, const void*ptr, nm_len_t len);
+  void (*proto)(void*_status, nm_gate_t p_gate, struct nm_pkt_wrap*p_pw, const void*ptr, nm_len_t len);
 
 };
 

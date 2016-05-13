@@ -145,8 +145,8 @@ struct nm_mx_pkt_wrap
 static int nm_mx_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_mx_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_mx_close(nm_drv_t p_drv);
-static int nm_mx_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
-static int nm_mx_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
+static int nm_mx_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_mx_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
@@ -493,7 +493,7 @@ static int nm_mx_close(nm_drv_t p_drv)
 
 
 /** Connect to a new MX peer */
-static int nm_mx_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
+static int nm_mx_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
 #ifdef PIOMAN
   piom_spin_lock(&nm_mx_lock);
@@ -585,7 +585,7 @@ static int nm_mx_connect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm
 }
 
 /** Disconnect from a new MX peer */
-static int nm_mx_disconnect(void*_status, struct nm_gate*p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
+static int nm_mx_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id)
 {
   int err = NM_ESUCCESS;
   

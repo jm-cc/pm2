@@ -28,11 +28,11 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_split_balance, &nm_strat_split_balance_loa
 /* Components structures:
  */
 
-static int  strat_split_balance_todo(void*, struct nm_gate*);
+static int  strat_split_balance_todo(void*, nm_gate_t );
 static void strat_split_balance_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
-static int  strat_split_balance_try_and_commit(void*, struct nm_gate*);
-static void strat_split_balance_rdv_accept(void*, struct nm_gate*);
+static int  strat_split_balance_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
+static int  strat_split_balance_try_and_commit(void*, nm_gate_t );
+static void strat_split_balance_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_split_balance_driver =
   {
@@ -107,7 +107,7 @@ static void strat_split_balance_destroy(void*status)
 /* Add a new control "header" to the flow of outgoing packets */
 static int
 strat_split_balance_pack_ctrl(void *_status,
-			      struct nm_gate *p_gate,
+			      nm_gate_t p_gate,
 			      const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_pkt_wrap *p_so_pw = NULL;
@@ -198,7 +198,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_req_s*p_pack,
 }
 
 static int strat_split_balance_todo(void*_status,
-				    struct nm_gate *p_gate)
+				    nm_gate_t p_gate)
 {
   struct nm_strat_split_balance *status = _status;
   struct tbx_fast_list_head *out_list = &(status)->out_list;
@@ -225,7 +225,7 @@ static void strat_split_balance_pack_chunk(void*_status, struct nm_req_s*p_pack,
 
 /* Compute and apply the best possible packet rearrangement, then
    return next packet to send */
-static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_gate)
+static int strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 {
   struct nm_strat_split_balance*status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
@@ -256,7 +256,7 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
 
 /** Emit RTR for received RDV requests
  */
-static void strat_split_balance_rdv_accept(void*_status, struct nm_gate*p_gate)
+static void strat_split_balance_rdv_accept(void*_status, nm_gate_t p_gate)
 {
   if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {

@@ -22,13 +22,13 @@
 
 PADICO_MODULE_HOOK(NewMad_Core);
 
-static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_req_s**pp_unpack,
+static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
 				const struct nm_header_pkt_data_s*h, struct nm_pkt_wrap *p_pw);
-static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_req_s**pp_unpack,
+static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
 				  const nm_header_short_data_t*h, struct nm_pkt_wrap *p_pw);
-static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_req_s**pp_unpack,
+static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
 				  const nm_header_data_t*h, struct nm_pkt_wrap *p_pw);
-static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_req_s*p_unpack,
+static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s*p_unpack,
 			   const struct nm_header_ctrl_rdv_s*h, struct nm_pkt_wrap *p_pw);
 
 /* ********************************************************* */
@@ -142,7 +142,7 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
 struct nm_large_chunk_s
 {
   struct nm_req_s*p_unpack;
-  struct nm_gate*p_gate;
+  nm_gate_t p_gate;
   nm_len_t chunk_offset;
 };
 static void nm_large_chunk_store(void*ptr, nm_len_t len, void*_context)
@@ -211,7 +211,7 @@ static inline void nm_so_data_flags_decode(struct nm_req_s*p_unpack, uint8_t fla
 }
 
 /** store an unexpected chunk of data (data/short_data/rdv) */
-static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_gate, const void *header,
+static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, const void *header,
 				       nm_len_t chunk_offset, nm_len_t chunk_len, nm_core_tag_t tag, nm_seq_t seq,
 				       struct nm_pkt_wrap *p_pw)
 {
@@ -263,7 +263,7 @@ void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const 
 
 /** Handle an unpack request.
  */
-int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct nm_gate *p_gate,
+int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate_t p_gate,
 			nm_core_tag_t tag, nm_core_tag_t tag_mask)
 {
   nmad_lock();
@@ -324,8 +324,8 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, struct 
 }
 
 int nm_core_iprobe(struct nm_core*p_core,
-		   struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
-		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size)
+		   nm_gate_t p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
+		   nm_gate_t *pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size)
 {
   struct nm_unexpected_s*p_chunk;
   puk_list_foreach(p_chunk, &p_core->unexpected)
@@ -421,7 +421,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
 
 /** Process a packed data request (NM_PROTO_PKT_DATA)- p_unpack may be NULL (unexpected)
  */
-static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_req_s**pp_unpack,
+static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
 				const struct nm_header_pkt_data_s*h, struct nm_pkt_wrap *p_pw)
 {
   if(*pp_unpack)
@@ -448,7 +448,7 @@ static void nm_pkt_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, st
 
 /** Process a short data request (NM_PROTO_SHORT_DATA)- p_unpack may be NULL (unexpected)
  */
-static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_req_s**pp_unpack,
+static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
 				  const nm_header_short_data_t*h, struct nm_pkt_wrap *p_pw)
 {
   const void*ptr = ((void*)h) + NM_HEADER_SHORT_DATA_SIZE;
@@ -474,7 +474,7 @@ static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 
 /** Process a small data request (NM_PROTO_DATA)- p_unpack may be NULL (unexpected)
  */
-static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_req_s**pp_unpack,
+static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
 				  const nm_header_data_t*h, struct nm_pkt_wrap*p_pw)
 {
   const void*ptr = (h->skip == 0xFFFF) ? (((void*)h) + NM_HEADER_DATA_SIZE) :
@@ -503,7 +503,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 /** Process a received rendez-vous request (NM_PROTO_RDV)- 
  * either p_unpack may be NULL (storing unexpected) or p_pw (unpacking unexpected)
  */
-static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_req_s*p_unpack,
+static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s*p_unpack,
 			   const struct nm_header_ctrl_rdv_s*h, struct nm_pkt_wrap *p_pw)
 {
   const nm_len_t chunk_len = h->len;
@@ -529,7 +529,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
   const nm_seq_t seq          = header->seq;
   const nm_len_t chunk_offset = header->chunk_offset;
   const nm_len_t chunk_len    = header->chunk_len;
-  struct nm_gate *p_gate      = p_rtr_pw->p_gate;
+  nm_gate_t p_gate      = p_rtr_pw->p_gate;
   struct nm_pkt_wrap *p_large_pw = NULL;
   tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
@@ -628,7 +628,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
 /** decode one chunk of headers.
  * @returns the number of processed bytes in global header, 
  */
-int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap*p_pw, struct nm_gate*p_gate)
+int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap*p_pw, nm_gate_t p_gate)
 {
   int rc = 0;
   const nm_proto_t proto_id   = (*(const nm_proto_t*)ptr) & NM_PROTO_ID_MASK;
@@ -722,7 +722,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
  */
 int nm_so_process_complete_recv(struct nm_core*p_core,	struct nm_pkt_wrap*p_pw)
 {
-  struct nm_gate*const p_gate = p_pw->p_gate;
+  nm_gate_t const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);
 
   nm_lock_interface(p_core);

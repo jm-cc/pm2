@@ -28,11 +28,11 @@
 
 /* ********************************************************* */
 
-static int  strat_decision_tree_todo(void*, struct nm_gate*);/* todo: s/nm_gate/nm_pack/ ? */
+static int  strat_decision_tree_todo(void*, nm_gate_t );/* todo: s/nm_gate/nm_pack/ ? */
 static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_decision_tree_pack_ctrl(void*, struct nm_gate *, const union nm_header_ctrl_generic_s*);
-static int  strat_decision_tree_try_and_commit(void*, struct nm_gate*);
-static void strat_decision_tree_rdv_accept(void*, struct nm_gate*);
+static int  strat_decision_tree_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
+static int  strat_decision_tree_try_and_commit(void*, nm_gate_t );
+static void strat_decision_tree_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_decision_tree_driver =
   {
@@ -140,14 +140,14 @@ static void strat_decision_tree_destroy(void*_status)
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int strat_decision_tree_pack_ctrl(void*_status, struct nm_gate*p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
+static int strat_decision_tree_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_strat_decision_tree*status = _status;
   nm_tactic_pack_ctrl(p_ctrl, &status->out_list);
   return NM_ESUCCESS;
 }
 
-static int strat_decision_tree_todo(void* _status, struct nm_gate*p_gate)
+static int strat_decision_tree_todo(void* _status, nm_gate_t p_gate)
 {
   struct nm_strat_decision_tree*status = _status;
   return !(tbx_fast_list_empty(&status->out_list));
@@ -160,7 +160,7 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack,
 
   /* ******************************************************* */
   {
-    struct nm_gate*p_gate = p_pack->p_gate;
+    nm_gate_t p_gate = p_pack->p_gate;
     nm_drv_t p_drv = nm_drv_default(p_gate);
     struct tbx_fast_list_head *out_list = &status->out_list;
     nm_len_t size_outlist = 0;
@@ -220,7 +220,7 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack,
  *  @param p_gate a pointer to the gate object.
  *  @return The NM status.
  */
-static int strat_decision_tree_try_and_commit(void*_status, struct nm_gate *p_gate)
+static int strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 {
   struct nm_strat_decision_tree*status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
@@ -285,7 +285,7 @@ static int strat_decision_tree_try_and_commit(void*_status, struct nm_gate *p_ga
 
 /** Emit RTR for received RDV requests
  */
-static void strat_decision_tree_rdv_accept(void*_status, struct nm_gate*p_gate)
+static void strat_decision_tree_rdv_accept(void*_status, nm_gate_t p_gate)
 {
   if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {

@@ -31,7 +31,7 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 {
   int err = NM_ESUCCESS;
 
-  struct nm_gate *p_gate = TBX_MALLOC(sizeof(struct nm_gate));
+  nm_gate_t p_gate = TBX_MALLOC(sizeof(struct nm_gate));
 
   memset(p_gate, 0, sizeof(struct nm_gate));
 
@@ -124,13 +124,13 @@ int nm_core_gate_connect(struct nm_core	*p_core,
 
 
 /** Get the user-registered per-gate data */
-void*nm_gate_ref_get(struct nm_gate*p_gate)
+void*nm_gate_ref_get(nm_gate_t p_gate)
 {
   return p_gate->ref;
 }
 
 /** Set the user-registered per-gate data */
-void nm_gate_ref_set(struct nm_gate*p_gate, void*ref)
+void nm_gate_ref_set(nm_gate_t p_gate, void*ref)
 {
   p_gate->ref = ref;
 }

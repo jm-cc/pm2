@@ -31,18 +31,14 @@ int nm_core_driver_load(nm_core_t p_core,
 			puk_component_t driver_assembly,
 			nm_drv_t*pp_drv)
 {
-  int err;
-
-  NM_LOG_IN();
-
+  nm_drv_t p_drv = TBX_MALLOC(sizeof(struct nm_drv_s));
   assert(driver_assembly != NULL);
-  nm_drv_t p_drv = TBX_MALLOC(sizeof(struct nm_drv));
-  memset(p_drv, 0, sizeof(struct nm_drv));
   p_drv->p_core   = p_core;
   p_drv->assembly = driver_assembly;
   p_drv->driver   = puk_component_get_driver_NewMad_Driver(p_drv->assembly, NULL);
   p_drv->p_in_rq  = NULL;
   p_drv->index = -1;
+  p_drv->priv = NULL;
 #ifdef PM2_TOPOLOGY
   p_drv->profile.cpuset = NULL;
 #endif /* PM2_TOPOLOGY */
@@ -54,12 +50,7 @@ int nm_core_driver_load(nm_core_t p_core,
   p_core->nb_drivers++;
 
   *pp_drv = p_drv;
-
-  err = NM_ESUCCESS;
-
-  NM_LOG_OUT();
-
-  return err;
+  return NM_ESUCCESS;
 }
 
 

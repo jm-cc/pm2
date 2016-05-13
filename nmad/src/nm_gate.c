@@ -29,11 +29,7 @@ PADICO_MODULE_HOOK(NewMad_Core);
  */
 int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 {
-  int err = NM_ESUCCESS;
-
-  nm_gate_t p_gate = TBX_MALLOC(sizeof(struct nm_gate));
-
-  memset(p_gate, 0, sizeof(struct nm_gate));
+  nm_gate_t p_gate = TBX_MALLOC(sizeof(struct nm_gate_s));
 
   p_gate->status = NM_GATE_STATUS_INIT;
   p_gate->p_core = p_core;
@@ -58,7 +54,7 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 
   *pp_gate = p_gate;
   
-  return err;
+  return NM_ESUCCESS;
 }
 
 /** Connect the process through a gate using a specified driver.

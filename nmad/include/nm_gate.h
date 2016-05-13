@@ -69,7 +69,7 @@ typedef enum nm_gate_status_e nm_gate_status_t;
 
 /** Connection to another process.
  */
-struct nm_gate
+struct nm_gate_s
 {
   /** link to store gates in the core gate_list */
   struct tbx_fast_list_head _link;

@@ -23,7 +23,7 @@ PUK_LFQUEUE_TYPE(nm_pw_post, struct nm_pkt_wrap*, NULL, 1024);
 
 /** Driver.
  */
-struct nm_drv
+struct nm_drv_s
 {
   /** link to insert this driver into the driver_list in core */
   struct tbx_fast_list_head _link;

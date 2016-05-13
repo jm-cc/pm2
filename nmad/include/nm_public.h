@@ -40,11 +40,11 @@
 
 /* ** Driver *********************************************** */
 
-typedef struct nm_drv*nm_drv_t;
+typedef struct nm_drv_s*nm_drv_t;
 
 /* ** Gates ************************************************ */
 
-typedef struct nm_gate*nm_gate_t;
+typedef struct nm_gate_s*nm_gate_t;
 
 #define NM_GATE_NONE ((nm_gate_t)NULL)
 

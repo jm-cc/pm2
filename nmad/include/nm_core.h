@@ -42,7 +42,7 @@ struct nm_core
   struct tbx_fast_list_head gate_list;
 
   /** List of drivers. */
-  struct tbx_fast_list_head driver_list;
+  struct nm_drv_list_s driver_list;
 
   /** Number of drivers currently loaded. */
   int nb_drivers;

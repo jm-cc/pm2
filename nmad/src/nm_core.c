@@ -90,7 +90,7 @@ int nm_schedule(struct nm_core *p_core)
 
   /* post new requests	*/
   nm_drv_t p_drv = NULL;
-  NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core)
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
   {
     nm_drv_post_all(p_drv);
   }
@@ -351,7 +351,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   memset(p_core, 0, sizeof(struct nm_core));
 
   TBX_INIT_FAST_LIST_HEAD(&p_core->gate_list);
-  TBX_INIT_FAST_LIST_HEAD(&p_core->driver_list);
+  nm_drv_list_init(&p_core->driver_list);
   p_core->nb_drivers = 0;
 
   /* Initialize "Lightning Fast" Packet Wrappers Manager */

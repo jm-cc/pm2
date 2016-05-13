@@ -31,7 +31,7 @@ int nm_core_driver_load(nm_core_t p_core,
 			puk_component_t driver_assembly,
 			nm_drv_t*pp_drv)
 {
-  nm_drv_t p_drv = TBX_MALLOC(sizeof(struct nm_drv_s));
+  nm_drv_t p_drv = nm_drv_new();
   assert(driver_assembly != NULL);
   p_drv->p_core   = p_core;
   p_drv->assembly = driver_assembly;
@@ -46,7 +46,7 @@ int nm_core_driver_load(nm_core_t p_core,
   nm_pw_post_lfqueue_init(&p_drv->post_recv);
   nm_pw_post_lfqueue_init(&p_drv->post_send);
 
-  tbx_fast_list_add_tail(&p_drv->_link, &p_core->driver_list);
+  nm_drv_list_push_back(&p_core->driver_list, p_drv);
   p_core->nb_drivers++;
 
   *pp_drv = p_drv;
@@ -335,12 +335,13 @@ int nm_core_driver_exit(struct nm_core *p_core)
       tbx_fast_list_del(&p_gate->_link);
       TBX_FREE(p_gate);
     }
-  nm_drv_t tmp_drv = NULL;
-  tbx_fast_list_for_each_entry_safe(p_drv, tmp_drv, &p_core->driver_list, _link)
+  do
     {
-      tbx_fast_list_del(&p_drv->_link);
-      TBX_FREE(p_drv);
+      p_drv = nm_drv_list_pop_front(&p_core->driver_list);
+      if(p_drv)
+	nm_drv_delete(p_drv);
     }
+  while(p_drv);
 
   nm_unlock_interface(p_core);
 

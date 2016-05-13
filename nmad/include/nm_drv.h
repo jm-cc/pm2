@@ -26,13 +26,10 @@ PUK_LFQUEUE_TYPE(nm_pw_post, struct nm_pkt_wrap*, NULL, 1024);
 struct nm_drv_s
 {
   /** link to insert this driver into the driver_list in core */
-  struct tbx_fast_list_head _link;
-
+  PUK_LIST_LINK(nm_drv);
+  
   /** Assembly associated to the driver */
   puk_component_t assembly;
-
-  /** track capabilities */
-  struct nm_trk_cap trk_caps[NM_SO_MAX_TRACKS];
   
   /** Driver interface, for use when no instance is needed */
   const struct nm_drv_iface_s*driver;
@@ -51,6 +48,9 @@ struct nm_drv_s
 
   /** Number of tracks opened on this driver. */
   int nb_tracks;
+
+  /** track capabilities */
+  struct nm_trk_cap trk_caps[NM_SO_MAX_TRACKS];
   
   /** Index of the board managed by this instance of driver */
   int index;
@@ -68,11 +68,11 @@ struct nm_drv_s
   struct nm_core *p_core;
 };
 
-#define NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core) \
-  tbx_fast_list_for_each_entry(p_drv, &(p_core)->driver_list, _link)
-#define NM_FOR_EACH_DRIVER(p_drv, p_core) \
-  tbx_fast_list_for_each_entry(p_drv, &(p_core)->driver_list, _link)
+PUK_LIST_DECLARE_TYPE(nm_drv);
+PUK_LIST_CREATE_FUNCS(nm_drv);
 
+#define NM_FOR_EACH_DRIVER(p_drv, p_core)		\
+  puk_list_foreach(p_drv, &(p_core)->driver_list)
 
 
 /** Driver for 'NewMad_Driver' component interface.

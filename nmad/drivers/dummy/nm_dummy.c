@@ -253,7 +253,7 @@ nm_dummy_connect		(void*_status,
 				 struct nm_cnx_rq *p_crq) {
         struct nm_dummy	*status	= NULL;
         struct nm_gate		*p_gate		= NULL;
-        struct nm_drv		*p_drv		= NULL;
+        nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_dummy_trk	*p_dummy_trk	= NULL;
 	int err;
@@ -277,7 +277,7 @@ nm_dummy_accept			(void*_status,
 				 struct nm_cnx_rq *p_crq) {
         struct nm_dummy	*status	= NULL;
         struct nm_gate		*p_gate		= NULL;
-        struct nm_drv		*p_drv		= NULL;
+        nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_dummy_trk	*p_dummy_trk	= NULL;
 	int err;

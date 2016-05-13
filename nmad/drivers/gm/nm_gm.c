@@ -618,7 +618,7 @@ nm_gm_connect		(void*_status,
 			 struct nm_cnx_rq *p_crq) {
         struct nm_gm	*status	= NULL;
         struct nm_gate		*p_gate		= NULL;
-        struct nm_drv		*p_drv		= NULL;
+        nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_gm_trk	*p_gm_trk	= NULL;
         struct nm_gm_cnx	*p_gm_cnx	= NULL;
@@ -698,7 +698,7 @@ nm_gm_accept			(void*_status,
 				 struct nm_cnx_rq *p_crq) {
         struct nm_gm	*status	= NULL;
         struct nm_gate		*p_gate		= NULL;
-        struct nm_drv		*p_drv		= NULL;
+        nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_gm_trk	*p_gm_trk	= NULL;
         struct nm_gm_cnx	*p_gm_cnx	= NULL;
@@ -805,7 +805,7 @@ int
 nm_gm_post_send_iov		(void*_status,
 				 struct nm_pkt_wrap *p_pw) {
         struct nm_gate		*p_gate		= NULL;
-        struct nm_drv		*p_drv		= NULL;
+        nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_gm	*status	= NULL;
         struct nm_gm_trk	*p_gm_trk	= NULL;
@@ -868,7 +868,7 @@ int
 nm_gm_post_recv_iov		(void*_status,
 				 struct nm_pkt_wrap *p_pw) {
         struct nm_gate		*p_gate		= NULL;
-        struct nm_drv		*p_drv		= NULL;
+        nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_gm_trk	*p_gm_trk	= NULL;
         struct nm_gm_pkt_wrap	*p_gm_pw	= NULL;
@@ -960,7 +960,7 @@ static
 int
 nm_gm_poll_recv_iov    	(void*_status,
 			 struct nm_pkt_wrap *p_pw) {
-        struct nm_drv		*p_drv		= NULL;
+        nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_gm_pkt_wrap	*p_gm_pw	= NULL;
         struct gm_port		*p_gm_port	= NULL;

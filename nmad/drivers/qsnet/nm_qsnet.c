@@ -320,7 +320,7 @@ static int nm_qsnet_connect(void*_status, struct nm_cnx_rq *p_crq)
 {
   struct nm_qsnet	*status	        = _status;
   struct nm_gate	*p_gate 	= p_crq->p_gate;
-  struct nm_drv		*p_drv		= p_crq->p_drv;
+  nm_drv_t p_drv		= p_crq->p_drv;
   struct nm_qsnet_drv   *p_qsnet_drv    = p_drv->priv;
   struct nm_qsnet_trk	*p_qsnet_trk	= &p_qsnet_drv->trks_array[p_crq->trk_id];
   struct nm_qsnet_cnx	*p_qsnet_cnx	= &status->cnx_array[p_crq->trk_id];
@@ -382,7 +382,7 @@ static int nm_qsnet_accept(void*_status, struct nm_cnx_rq *p_crq)
 {
   struct nm_qsnet	*status	        =  _status;
   struct nm_gate	*p_gate		= p_crq->p_gate;
-  struct nm_drv		*p_drv		= p_crq->p_drv;
+  nm_drv_t p_drv		= p_crq->p_drv;
   struct nm_qsnet_drv   *p_qsnet_drv    = p_drv->priv;
   struct nm_qsnet_trk	*p_qsnet_trk	= &p_qsnet_drv->trks_array[p_crq->trk_id];
   struct nm_qsnet_cnx	*p_qsnet_cnx	= &status->cnx_array[p_crq->trk_id];
@@ -437,7 +437,7 @@ static int nm_qsnet_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_qsnet	*status	        = _status;
   struct nm_gate	*p_gate		= p_pw->p_gate;
-  struct nm_drv		*p_drv		= p_pw->p_drv;
+  nm_drv_t p_drv		= p_pw->p_drv;
   struct nm_qsnet_drv   *p_qsnet_drv    = p_drv->priv;
   struct nm_qsnet_trk	*p_qsnet_trk	= &p_qsnet_drv->trks_array[p_pw->trk_id];
   struct nm_qsnet_cnx	*p_qsnet_cnx	= &status->cnx_array[p_pw->trk_id];
@@ -465,7 +465,7 @@ static int nm_qsnet_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 
 static int nm_qsnet_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
-  struct nm_drv			*p_drv		= p_pw->p_drv;
+  nm_drv_t p_drv		= p_pw->p_drv;
   struct nm_qsnet_drv           *p_qsnet_drv    = p_drv->priv;
   struct nm_qsnet_trk		*p_qsnet_trk	= &p_qsnet_drv->trks_array[p_pw->trk_id];
   struct nm_qsnet_pkt_wrap	*p_qsnet_pw	= tbx_malloc(p_qsnet_drv->qsnet_pw_mem);

@@ -59,10 +59,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   p_pack->seq    = seq;
   p_pack->tag    = tag;
   p_pack->p_gate = p_gate;
-  if(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)
-    {
-      nm_req_list_push_back(&p_core->pending_packs, p_pack);
-    }
+  nm_req_list_push_back(&p_core->pending_packs, p_pack);
 
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
   if(r->driver->pack_data != NULL)
@@ -103,6 +100,10 @@ int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw
 	      ( ((!(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)) || nm_status_test(p_pack, NM_STATUS_ACK_RECEIVED)) ? NM_STATUS_FINALIZED : 0),
 	      .p_req = p_pack
 	    };
+	  if(event.status & NM_STATUS_FINALIZED)
+	    {
+	      nm_req_list_erase(&p_core->pending_packs, p_pack);
+	    }
 	  nm_core_status_event(p_pw->p_gate->p_core, &event, p_pack);
 	}
       else if(p_pack->pack.done > p_pack->pack.len)

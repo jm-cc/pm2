@@ -72,7 +72,7 @@ typedef enum nm_gate_status_e nm_gate_status_t;
 struct nm_gate_s
 {
   /** link to store gates in the core gate_list */
-  struct tbx_fast_list_head _link;
+  PUK_LIST_LINK(nm_gate);
 
   /** current status of the gate (connected / not connected) */
   nm_gate_status_t status;
@@ -103,8 +103,10 @@ struct nm_gate_s
 #endif /* NMAD_TRACE */
 };
 
+PUK_LIST_DECLARE_TYPE(nm_gate);
+PUK_LIST_CREATE_FUNCS(nm_gate);
 
 #define NM_FOR_EACH_GATE(P_GATE, P_CORE) \
-  tbx_fast_list_for_each_entry(P_GATE, &(P_CORE)->gate_list, _link)
+  puk_list_foreach(P_GATE, &(P_CORE)->gate_list)
 
 #endif /* NM_GATE_H */

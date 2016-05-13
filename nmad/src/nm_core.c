@@ -350,7 +350,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   struct nm_core *p_core = TBX_MALLOC(sizeof(struct nm_core));
   memset(p_core, 0, sizeof(struct nm_core));
 
-  TBX_INIT_FAST_LIST_HEAD(&p_core->gate_list);
+  nm_gate_list_init(&p_core->gate_list);
   nm_drv_list_init(&p_core->driver_list);
   p_core->nb_drivers = 0;
 

@@ -329,12 +329,13 @@ int nm_core_driver_exit(struct nm_core *p_core)
       puk_instance_destroy(p_gate->strategy_instance);
       nm_gdrv_vect_destroy(&p_gate->gdrv_array);
     }
-  nm_gate_t tmp_gate = NULL;
-  tbx_fast_list_for_each_entry_safe(p_gate, tmp_gate, &p_core->gate_list, _link)
+  do
     {
-      tbx_fast_list_del(&p_gate->_link);
-      TBX_FREE(p_gate);
+      p_gate = nm_gate_list_pop_front(&p_core->gate_list);
+      if(p_gate)
+	nm_gate_delete(p_gate);
     }
+  while(p_gate);
   do
     {
       p_drv = nm_drv_list_pop_front(&p_core->driver_list);

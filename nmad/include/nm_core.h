@@ -39,7 +39,7 @@ PUK_LIST_CREATE_FUNCS(nm_unexpected);
 struct nm_core
 {
   /** List of gates. */
-  struct tbx_fast_list_head gate_list;
+  struct nm_gate_list_s gate_list;
 
   /** List of drivers. */
   struct nm_drv_list_s driver_list;

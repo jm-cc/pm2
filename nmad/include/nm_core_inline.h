@@ -259,5 +259,14 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
     }
 }
 
+/** dynamically adapt pioman polling frequency level depending on the number of pending requests */
+static inline void nm_core_polling_level(struct nm_core*p_core)
+{
+#ifdef PIOMAN_POLL
+  const int high = (!nm_req_list_empty(&p_core->unpacks)) || (!nm_req_list_empty(&p_core->pending_packs));
+  piom_ltask_poll_level_set(high);
+#endif /* PIOMAN_POLL */
+}
+
 
 #endif /* NM_CORE_INLINE_H */

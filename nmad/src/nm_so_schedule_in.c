@@ -167,6 +167,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
     {
       nmad_lock_assert();
       nm_req_list_erase(&p_core->unpacks, p_unpack);
+      nm_core_polling_level(p_core);
       if((p_pw != NULL) && (p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
 	{
 	  nm_data_copy_to(p_unpack->p_data, 0 /* offset */, chunk_len, p_pw->v[0].iov_base);
@@ -277,6 +278,7 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate
   p_unpack->seq = NM_SEQ_NONE;
   /* store the unpack request */
   nm_req_list_push_back(&p_core->unpacks, p_unpack);
+  nm_core_polling_level(p_core);
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
   while(p_unexpected)
     {
@@ -407,6 +409,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
   else if(p_unpack->seq == NM_SEQ_NONE)
     {
       nm_req_list_erase(&p_core->unpacks, p_unpack);
+      nm_core_polling_level(p_core);
       const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNPACK_CANCELLED | NM_STATUS_FINALIZED,
@@ -614,6 +617,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
 	{
 	  nmad_lock_assert();
 	  nm_req_list_erase(&p_core->pending_packs, p_pack);
+	  nm_core_polling_level(p_core);
 	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_ACK_RECEIVED | (nm_status_test(p_pack, NM_STATUS_PACK_COMPLETED) ? NM_STATUS_FINALIZED : 0),

@@ -27,14 +27,15 @@
 /** block of static state for pioman ltask */
 static struct
 {
-    /** refcounter on piom_ltask */
-    int initialized;
-    struct piom_ltask_queue**all_queues;
-    int n_queues;
+    int initialized;                 /**< refcounter on piom_ltask */
+    int poll_level;                  /**< 0: low; 1: high (pending req needs progression) */
+    piom_ltask_queue_t**all_queues;  /**< all ltask queues, for global polling */
+    int n_queues;                    /**< size of array 'all_queues' */
 } __piom_ltask =
     {
 	.initialized = 0,
-	.n_queues = 0
+	.n_queues    = 0,
+	.poll_level  = 0
     };
 
 /* ********************************************************* */
@@ -265,6 +266,12 @@ void piom_exit_ltasks(void)
 int piom_ltask_test_activity(void)
 {
     return (__piom_ltask.initialized != 0);
+}
+
+void piom_ltask_poll_level_set(int level)
+{
+    /* no need for atomic here- polling level is a hint */
+    __piom_ltask.poll_level = level;
 }
 
 void piom_ltask_submit(struct piom_ltask*task)

@@ -16,9 +16,9 @@
 
 #include "piom_private.h"
 
+#ifdef PIOMAN_PTHREAD
 static struct
 {
-#ifdef PIOMAN_PTHREAD
     /** number of spare LWPs running */
     int lwps_num;
     /** number of available LWPs */
@@ -27,8 +27,8 @@ static struct
     sem_t lwps_ready;
     /** ltasks queue to feed LWPs */
     struct piom_ltask_lfqueue_s lwps_queue;
-#endif /* PIOMAN_PTHREAD */
 } __piom_pthread;
+#endif /* PIOMAN_PTHREAD */
 
     
 #ifdef PIOMAN_PTHREAD

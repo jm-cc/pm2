@@ -446,19 +446,20 @@ static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, 
     }
 }
 
-static void nm_sr_event_handler(const struct nm_core_event_s*const event, void*_ref)
+static void nm_sr_event_handler(const struct nm_core_event_s*const p_event, void*_ref)
 {
   struct nm_sr_monitor_s*p_monitor = _ref;
-  const uint32_t hashcode = nm_tag_get_hashcode(event->tag);
+  const uint32_t hashcode = nm_tag_get_hashcode(p_event->tag);
   nm_session_t p_session = nm_session_lookup(hashcode);
   assert(p_session != NULL);
-  const nm_tag_t sr_tag = nm_tag_get(event->tag);
+  const nm_tag_t sr_tag = nm_tag_get(p_event->tag);
   const nm_sr_event_info_t info =
     { 
-      .recv_unexpected.p_gate    = event->p_gate,
+      .recv_unexpected.p_gate    = p_event->p_gate,
       .recv_unexpected.tag       = sr_tag,
-      .recv_unexpected.len       = event->len,
-      .recv_unexpected.p_session = p_session
+      .recv_unexpected.len       = p_event->len,
+      .recv_unexpected.p_session = p_session,
+      .recv_unexpected.p_core_event = p_event
     };
   nmad_unlock();
   (*p_monitor->p_notifier)(NM_SR_EVENT_RECV_UNEXPECTED, &info, p_monitor->ref);

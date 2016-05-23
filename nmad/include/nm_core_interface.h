@@ -299,6 +299,9 @@ void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const 
 /** post an unpack request */
 int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate_t p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
 
+/** post an unpack request */
+int nm_core_unpack_matched(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event);
+
 /** cancel a pending unpack
  * @note cancel may fail if matching was already done.
  */

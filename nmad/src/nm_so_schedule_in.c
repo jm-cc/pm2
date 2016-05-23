@@ -236,6 +236,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
   if(*proto_id & NM_PROTO_FLAG_LASTCHUNK)
     {
       p_chunk->msg_len = chunk_offset + chunk_len;
+    
       const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNEXPECTED,
@@ -262,21 +263,19 @@ void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const 
   p_unpack->monitor       = NM_MONITOR_NULL;
 }
 
-/** Handle an unpack request.
- */
-int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate_t p_gate,
-			nm_core_tag_t tag, nm_core_tag_t tag_mask)
+static inline int nm_core_unpack_common(struct nm_core*p_core, struct nm_req_s*p_unpack,
+					nm_gate_t p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask, nm_seq_t seq)
 {
-  nmad_lock();
-  nm_lock_interface(p_core);
   /* fill-in the unpack request */
   nm_status_assert(p_unpack, NM_STATUS_UNPACK_INIT);
   nm_status_add(p_unpack, NM_STATUS_UNPACK_POSTED);
   p_unpack->p_gate = p_gate;
-  p_unpack->tag = tag;
+  p_unpack->seq    = seq;
+  p_unpack->tag    = tag;
   p_unpack->unpack.tag_mask = tag_mask;
-  p_unpack->seq = NM_SEQ_NONE;
   /* store the unpack request */
+  nmad_lock();
+  nm_lock_interface(p_core);
   nm_req_list_push_back(&p_core->unpacks, p_unpack);
   nm_core_polling_level(p_core);
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
@@ -323,6 +322,19 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate
   nmad_unlock();
   nm_unlock_interface(p_core);
   return NM_ESUCCESS;
+}
+
+int nm_core_unpack_matched(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event)
+{
+  return nm_core_unpack_common(p_core, p_unpack, p_event->p_gate, p_event->tag, NM_CORE_TAG_MASK_FULL, p_event->seq);
+}
+
+/** Handle an unpack request.
+ */
+int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate_t p_gate,
+			nm_core_tag_t tag, nm_core_tag_t tag_mask)
+{
+  return nm_core_unpack_common(p_core, p_unpack, p_gate, tag, tag_mask, NM_SEQ_NONE);
 }
 
 int nm_core_iprobe(struct nm_core*p_core,

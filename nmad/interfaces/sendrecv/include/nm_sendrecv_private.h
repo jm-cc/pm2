@@ -229,6 +229,13 @@ static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_re
   return err;
 }
 
+static inline int  nm_sr_recv_irecv_event(nm_session_t p_session, nm_sr_request_t*p_request,
+					  const nm_sr_event_info_t*p_event)
+{
+  nm_core_t p_core = p_session->p_core;
+  const int err = nm_core_unpack_matched(p_core, &p_request->req, p_event->recv_unexpected.p_core_event);
+  return err;
+}
 
 #endif /* NM_SENDRECV_PRIVATE_H*/
 

@@ -253,6 +253,13 @@ static inline void nm_core_status_event(nm_core_t p_core, const struct nm_core_e
 	{
 	  if(nm_event_matches(*i, p_event))
 	    {
+	      if(p_event->status & NM_STATUS_UNEXPECTED)
+		{
+		  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_event->p_gate->tags, p_event->tag);
+		  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+		  assert(p_event->seq == next_seq);
+#warning TODO- consume packet
+		}	      
 	      ((*i)->monitor.notifier)(p_event, (*i)->monitor.ref);
 	    }
 	}

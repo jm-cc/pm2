@@ -113,35 +113,54 @@ typedef uint16_t nm_drv_id_t;
 
 #include "nm_sampling.h"
 
-TBX_INTERNAL int nm_core_driver_exit(struct nm_core *p_core);
+__PUK_SYM_INTERNAL
+int nm_core_driver_exit(struct nm_core *p_core);
 
-TBX_INTERNAL void nm_unexpected_clean(struct nm_core*p_core);
+__PUK_SYM_INTERNAL
+void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_req_s*p_req);
 
-TBX_INTERNAL void nm_strat_apply(struct nm_core*p_core);
-TBX_INTERNAL void nm_drv_post_send(nm_drv_t p_drv);
+__PUK_SYM_INTERNAL
+void nm_unexpected_clean(struct nm_core*p_core);
 
-TBX_INTERNAL void nm_drv_refill_recv(nm_drv_t p_drv);
-TBX_INTERNAL void nm_drv_post_recv(nm_drv_t p_drv);
+__PUK_SYM_INTERNAL
+void nm_strat_apply(struct nm_core*p_core);
 
-TBX_INTERNAL void nm_pw_post_send(struct nm_pkt_wrap*p_pw);
-TBX_INTERNAL void nm_pw_poll_send(struct nm_pkt_wrap *p_pw);
-TBX_INTERNAL int  nm_pw_poll_recv(struct nm_pkt_wrap*p_pw);
+__PUK_SYM_INTERNAL
+void nm_drv_post_send(nm_drv_t p_drv);
 
-TBX_INTERNAL void nm_out_prefetch(struct nm_core*p_core);
+__PUK_SYM_INTERNAL
+void nm_drv_refill_recv(nm_drv_t p_drv);
+__PUK_SYM_INTERNAL
+void nm_drv_post_recv(nm_drv_t p_drv);
 
-TBX_INTERNAL void nm_drv_post_all(nm_drv_t p_drv);
+__PUK_SYM_INTERNAL
+void nm_pw_post_send(struct nm_pkt_wrap*p_pw);
+__PUK_SYM_INTERNAL
+void nm_pw_poll_send(struct nm_pkt_wrap *p_pw);
+__PUK_SYM_INTERNAL
+int  nm_pw_poll_recv(struct nm_pkt_wrap*p_pw);
+
+__PUK_SYM_INTERNAL
+void nm_out_prefetch(struct nm_core*p_core);
+
+__PUK_SYM_INTERNAL
+void nm_drv_post_all(nm_drv_t p_drv);
 
 /** Process a complete successful outgoing request.
  */
-TBX_INTERNAL int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw);
+__PUK_SYM_INTERNAL
+int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw);
 
 /** Process complete incoming request.
  */
-TBX_INTERNAL int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap *p_pw);
+__PUK_SYM_INTERNAL
+int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap *p_pw);
 
+__PUK_SYM_INTERNAL
 void nm_data_pkt_pack(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 		      const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len, uint8_t flags);
 
+__PUK_SYM_INTERNAL
 void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap*p_pw,
 			nm_len_t chunk_offset, nm_len_t chunk_len);
 

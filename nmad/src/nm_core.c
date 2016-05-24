@@ -186,6 +186,63 @@ void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m)
     }
 }
 
+/** Fires an event
+ */
+void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_req_s*p_req)
+{
+  if(p_req)
+    {
+      if(p_event->status & NM_STATUS_FINALIZED)
+	{
+	  /* signal event if finalized */
+	  if(p_req->monitor.mask & NM_STATUS_FINALIZED)
+	    {
+	      /* a monitor is listening to FINALIZED events- signal without FINALIZED, then notify monitor */
+	      nm_status_signal(p_req, p_event->status & ~NM_STATUS_FINALIZED);
+	      (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	    }
+	  else
+	    {
+	      /* no monitor on FINALIZED- add bitmask, notify, then signal */
+	      nm_status_add(p_req, p_event->status & ~NM_STATUS_FINALIZED);
+	      if(p_req->monitor.mask & p_event->status)
+		{
+		  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+		}
+	      nm_status_signal(p_req, p_event->status);
+	    }
+	}
+      else
+	{
+	  /* not finalized, only add bitmask */
+	  nm_status_add(p_req, p_event->status);
+	  if(p_req->monitor.mask & p_event->status)
+	    {
+	      (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	    }
+	}
+    }
+  else
+    {
+      /* fire global monitors */
+      nm_core_monitor_vect_itor_t i;
+      puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)
+	{
+	  if(nm_event_matches(*i, p_event))
+	    {
+	      if(p_event->status & NM_STATUS_UNEXPECTED)
+		{
+		  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_event->p_gate->tags, p_event->tag);
+		  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+		  assert(p_event->seq == next_seq);
+#warning TODO- consume packet
+		}	      
+	      ((*i)->monitor.notifier)(p_event, (*i)->monitor.ref);
+	    }
+	}
+    }
+}
+
 /** Load a newmad component from disk. The actual component is
  * NewMad_<entity>_<name> where <entity> is either 'driver' or 'strategy'.
  */

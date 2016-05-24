@@ -23,6 +23,7 @@ static void monitor_unexpected_notifier(nm_sr_event_t event, const nm_sr_event_i
 static const nm_tag_t data_tag = DATA_TAG;
 
 static int received = 0;
+static nm_sr_request_t unexpected_request;
 static int init_done = 0;
 static void*_buf = NULL;
 static nm_len_t _len = 0;
@@ -48,9 +49,8 @@ static void monitor_unexpected_init(void*buf, nm_len_t len)
 
 static void monitor_unexpected_notifier(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
 {
-  nm_sr_request_t request;
-  nm_sr_irecv(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, _buf, _len, &request);
-  nm_sr_rwait(nm_bench_common.p_session, &request);
+  /* poste recv in monitor; don't wait: rwait may block for large messages (rdv) */
+  nm_sr_irecv(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, _buf, _len, &unexpected_request);
   __sync_fetch_and_add(&received, 1);
 }
 
@@ -62,6 +62,7 @@ static void monitor_unexpected_server(void*buf, nm_len_t len)
       __sync_synchronize();
     }
   received = 0;
+  nm_sr_rwait(nm_bench_common.p_session, &unexpected_request);
   nm_sr_request_t request;
   nm_sr_isend(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, buf, len, &request);
   nm_sr_swait(nm_bench_common.p_session, &request);
@@ -78,6 +79,7 @@ static void monitor_unexpected_client(void*buf, nm_len_t len)
       __sync_synchronize();
     }
   received = 0;
+  nm_sr_rwait(nm_bench_common.p_session, &unexpected_request);
 }
 
 const struct nm_bench_s nm_bench =

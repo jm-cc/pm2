@@ -5,7 +5,7 @@ include @abs_top_builddir@/common_vars.mk
 
 TARGET_BIN_UNIT = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/sr_*.c))
 
-TARGET_BIN_BENCH = nm_bench_sendrecv nm_bench_bidir nm_bench_anygate nm_bench_anytag nm_bench_jumbo nm_bench_dynmem nm_bench_noncontig nm_bench_ssend nm_bench_success nm_bench_manpack nm_bench_flypack nm_bench_flypack_local nm_bench_flypack_copy nm_bench_dataprop nm_bench_flypack_slicer nm_bench_flypack_generator
+TARGET_BIN_BENCH = nm_bench_sendrecv nm_bench_bidir nm_bench_anygate nm_bench_anytag nm_bench_jumbo nm_bench_dynmem nm_bench_noncontig nm_bench_ssend nm_bench_split nm_bench_success nm_bench_manpack nm_bench_flypack nm_bench_flypack_local nm_bench_flypack_copy nm_bench_dataprop nm_bench_flypack_slicer nm_bench_flypack_generator
 
 TARGET_BIN = $(TARGET_BIN_UNIT) $(TARGET_BIN_BENCH)
 TARGET_LIB =

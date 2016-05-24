@@ -119,6 +119,9 @@ static inline int nm_sr_request_get_tag(nm_sr_request_t*p_request, nm_tag_t*tag)
 /** Returns the received size of the message with the specified request. */
 static inline int nm_sr_request_get_size(nm_sr_request_t *request, nm_len_t*size);
 
+/** Returns the session this request belongs to. */
+static inline int nm_sr_request_get_session(nm_sr_request_t*p_request, nm_session_t*pp_session);
+
 /** legacy symbol name */
 #define nm_sr_get_stag(SESSION, REQ, TAG)  nm_sr_request_get_tag(REQ, TAG)
 /** legacy symbol name */

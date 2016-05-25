@@ -31,11 +31,11 @@ static char *buf = NULL;
 static int n_unexpected = 0;
 static nm_sr_request_t unexpected_requests[MAX_UNEXPECTED];
 
-static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info, void*_ref)
+static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
 {
   if(event &  NM_SR_EVENT_RECV_COMPLETED)
     {
-      nm_sr_request_t*p_request = info->req.p_request;
+      nm_sr_request_t*p_request = p_info->req.p_request;
       nm_gate_t from = NM_GATE_NONE;
       nm_sr_request_get_gate(p_request, &from);
       size_t size;
@@ -51,9 +51,9 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info,
     }
   if(event &  NM_SR_EVENT_RECV_UNEXPECTED)
     {
-      const nm_gate_t from = info->recv_unexpected.p_gate;
-      const nm_tag_t tag = info->recv_unexpected.tag;
-      const size_t len = info->recv_unexpected.len;
+      const nm_gate_t from = p_info->recv_unexpected.p_gate;
+      const nm_tag_t tag = p_info->recv_unexpected.tag;
+      const size_t len = p_info->recv_unexpected.len;
       printf("# event NM_SR_EVENT_RECV_UNEXPECTED- tag = %d; len = %d; from gate = %s\n",
 	     (int)tag, (int)len, from?(from == p_gate ? "peer":"unknown"):"(nil)");
       if(tag == 1)
@@ -61,8 +61,10 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info,
 	  printf(":: event NM_SR_EVENT_RECV_UNEXPECTED- tag = %d; len = %d; from gate = %s\n",
 		 (int)tag, (int)len, from?(from == p_gate ? "peer":"unknown"):"(nil)");
 	  printf("   receiving tag = %d; len = %d in event handler...\n", (int)tag, (int)len);
-	  nm_sr_request_t*request = &unexpected_requests[n_unexpected++];
-	  nm_sr_irecv(p_session, from, tag, buf, len, request);
+	  nm_sr_request_t*p_request = &unexpected_requests[n_unexpected++];
+	  nm_sr_recv_init(p_session, p_request);
+	  nm_sr_recv_unpack_contiguous(p_session, p_request, buf, len);
+	  nm_sr_recv_irecv_event(p_session, p_request, p_info);
 	}
     }
   if(event & NM_SR_EVENT_FINALIZED)
@@ -76,8 +78,8 @@ static const struct nm_sr_monitor_s monitor =
     .p_notifier = &request_notifier,
     .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
     .p_gate     = NM_GATE_NONE,
-    .tag        = 0,
-    .tag_mask   = NM_TAG_MASK_NONE
+    .tag        = 1,
+    .tag_mask   = NM_TAG_MASK_FULL
   };
 
 int main(int argc, char **argv)

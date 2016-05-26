@@ -145,6 +145,8 @@ typedef uint16_t nm_req_flag_t;
 #define NM_FLAG_PACK                 ((nm_req_flag_t)0x2000)
 /** flag request as an unpack */
 #define NM_FLAG_UNPACK               ((nm_req_flag_t)0x4000)
+/** flag unpack request as partial */
+#define NM_FLAG_PARTIAL_UNPACK       ((nm_req_flag_t)0x8000)
 
 /** Sequence number */
 typedef uint16_t nm_seq_t;
@@ -277,9 +279,10 @@ struct nm_req_s
     } pack;
     struct
     {
-      nm_len_t expected_len;
-      nm_len_t cumulated_len;
-      nm_core_tag_t tag_mask;
+      nm_len_t expected_len;  /**< length of posted recv (truncated to actual packet size if received data is shorter) */
+      nm_len_t cumulated_len; /**< amount of data unpacked so far */
+      nm_len_t received_len;  /**< length of received packet that matched this unpack */
+      nm_core_tag_t tag_mask; /**< mask applied to tag for matching (only bits in mask need to match) */
     } unpack;
   };
 };

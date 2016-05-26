@@ -209,6 +209,8 @@ static inline void nm_so_data_flags_decode(struct nm_req_s*p_unpack, uint8_t fla
     {
       nm_so_post_ack(p_unpack->p_gate, p_unpack->tag, p_unpack->seq);
     }
+  assert(chunk_offset + chunk_len <= p_unpack->unpack.expected_len);
+  assert(p_unpack->unpack.cumulated_len + chunk_len <= p_unpack->unpack.expected_len);
 }
 
 /** store an unexpected chunk of data (data/short_data/rdv) */
@@ -260,6 +262,7 @@ void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const 
   p_unpack->p_data        = p_data;
   p_unpack->unpack.cumulated_len = 0;
   p_unpack->unpack.expected_len  = nm_data_size(p_data);
+  p_unpack->unpack.received_len = -1;
   p_unpack->monitor       = NM_MONITOR_NULL;
 }
 
@@ -268,7 +271,6 @@ static inline void nm_core_unpack_match(struct nm_core*p_core, struct nm_req_s*p
 {
   /* fill-in the unpack request */
   nm_status_assert(p_unpack, NM_STATUS_UNPACK_INIT);
-  nm_status_add(p_unpack, NM_STATUS_UNPACK_POSTED);
   p_unpack->p_gate = p_gate;
   p_unpack->seq    = seq;
   p_unpack->tag    = tag;
@@ -290,6 +292,7 @@ void nm_core_unpack_match_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, 
 int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
   /* store the unpack request */
+  nm_status_add(p_unpack, NM_STATUS_UNPACK_POSTED);
   nmad_lock();
   nm_lock_interface(p_core);
   nm_req_list_push_back(&p_core->unpacks, p_unpack);
@@ -450,17 +453,13 @@ static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct 
 	  const nm_len_t chunk_len = h->data_len;
 	  const nm_len_t chunk_offset = h->chunk_offset;
 	  nm_so_data_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-	  assert(chunk_offset + chunk_len <= (*pp_unpack)->unpack.expected_len);
-	  assert((*pp_unpack)->unpack.cumulated_len + chunk_len <= (*pp_unpack)->unpack.expected_len);
 	  nm_data_pkt_unpack((*pp_unpack)->p_data, h, p_pw, chunk_offset, chunk_len);
 	  nm_so_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
 	}
     }
   else
     {
-      const nm_core_tag_t tag = h->tag_id;
-      const nm_seq_t seq = h->seq;
-      nm_unexpected_store(p_core, p_gate, h, h->chunk_offset, h->data_len, tag, seq, p_pw);
+      nm_unexpected_store(p_core, p_gate, h, h->chunk_offset, h->data_len, h->tag_id, h->seq, p_pw);
     }
 }
 
@@ -478,8 +477,6 @@ static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
 	{
 	  const uint8_t flags = NM_PROTO_FLAG_LASTCHUNK;
 	  nm_so_data_flags_decode(*pp_unpack, flags, chunk_offset, len);
-	  assert(chunk_offset + len <= (*pp_unpack)->unpack.expected_len);
-	  assert((*pp_unpack)->unpack.cumulated_len + len <= (*pp_unpack)->unpack.expected_len);
 	  nm_data_copy_to((*pp_unpack)->p_data, chunk_offset, len, ptr);
 	  nm_so_unpack_check_completion(p_core, p_pw, pp_unpack, len);
 	}
@@ -506,8 +503,6 @@ static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
       if(!nm_status_test(*pp_unpack, NM_STATUS_UNPACK_CANCELLED))
 	{
 	  nm_so_data_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-	  assert(chunk_offset + chunk_len <= (*pp_unpack)->unpack.expected_len);
-	  assert((*pp_unpack)->unpack.cumulated_len + chunk_len <= (*pp_unpack)->unpack.expected_len);
 	  nm_data_copy_to((*pp_unpack)->p_data, chunk_offset, chunk_len, ptr);
 	  nm_so_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
 	}

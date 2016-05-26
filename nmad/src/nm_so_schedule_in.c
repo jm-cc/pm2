@@ -263,7 +263,7 @@ void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const 
   p_unpack->monitor       = NM_MONITOR_NULL;
 }
 
-static inline int nm_core_unpack_common(struct nm_core*p_core, struct nm_req_s*p_unpack,
+static inline void nm_core_unpack_match(struct nm_core*p_core, struct nm_req_s*p_unpack,
 					nm_gate_t p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask, nm_seq_t seq)
 {
   /* fill-in the unpack request */
@@ -273,6 +273,22 @@ static inline int nm_core_unpack_common(struct nm_core*p_core, struct nm_req_s*p
   p_unpack->seq    = seq;
   p_unpack->tag    = tag;
   p_unpack->unpack.tag_mask = tag_mask;
+}
+void nm_core_unpack_match_event(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event)
+{
+  nm_core_unpack_match(p_core, p_unpack, p_event->p_gate, p_event->tag, NM_CORE_TAG_MASK_FULL, p_event->seq);
+}
+
+/** Handle an unpack request.
+ */
+void nm_core_unpack_match_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate_t p_gate,
+			       nm_core_tag_t tag, nm_core_tag_t tag_mask)
+{
+  nm_core_unpack_match(p_core, p_unpack, p_gate, tag, tag_mask, NM_SEQ_NONE);
+}
+
+int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack)
+{
   /* store the unpack request */
   nmad_lock();
   nm_lock_interface(p_core);
@@ -322,19 +338,6 @@ static inline int nm_core_unpack_common(struct nm_core*p_core, struct nm_req_s*p
   nmad_unlock();
   nm_unlock_interface(p_core);
   return NM_ESUCCESS;
-}
-
-int nm_core_unpack_matched(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event)
-{
-  return nm_core_unpack_common(p_core, p_unpack, p_event->p_gate, p_event->tag, NM_CORE_TAG_MASK_FULL, p_event->seq);
-}
-
-/** Handle an unpack request.
- */
-int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate_t p_gate,
-			nm_core_tag_t tag, nm_core_tag_t tag_mask)
-{
-  return nm_core_unpack_common(p_core, p_unpack, p_gate, tag, tag_mask, NM_SEQ_NONE);
 }
 
 int nm_core_iprobe(struct nm_core*p_core,

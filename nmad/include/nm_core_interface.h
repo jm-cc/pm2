@@ -296,11 +296,14 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
 /** build an unpack request from data descriptor */
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);
 
-/** post an unpack request */
-int nm_core_unpack_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate_t p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
+/** match an unpack request with given gate/tag, next sequence number assumed */
+void nm_core_unpack_match_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_gate_t p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
 
-/** post an unpack request */
-int nm_core_unpack_matched(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event);
+/** match an unpack request with a packet that triggered an event */
+void nm_core_unpack_match_event(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event);
+
+/** submit an unpack request */
+int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack);
 
 /** cancel a pending unpack
  * @note cancel may fail if matching was already done.

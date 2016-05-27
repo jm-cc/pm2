@@ -134,7 +134,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
   /* We first try to find an existing packet to form an aggregate */
   tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link)
     {
-      if(nm_so_pw_remaining_header_area(p_so_pw) < NM_HEADER_CTRL_SIZE) 
+      if(nm_so_pw_remaining_buf(p_so_pw) < NM_HEADER_CTRL_SIZE) 
 	{
 	  /* There's not enough room to add our ctrl header to this paquet */
 	  nm_so_pw_finalize(p_so_pw);
@@ -196,16 +196,15 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
       /* small packet */
       tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
 	{
-	  const nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
-	  const nm_len_t d_rlen = nm_so_pw_remaining_data(p_pw);
+	  const nm_len_t rlen = nm_so_pw_remaining_buf(p_pw);
 	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_so_aligned(len);
-	  if(size > d_rlen || NM_HEADER_DATA_SIZE > h_rlen)
+	  if(size > rlen)
 	    {
 	      nm_so_pw_finalize(p_pw);
 	    }
 	  else
 	    {
-	      if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen)
+	      if(len <= status->nm_so_copy_on_send_threshold && size <= rlen)
 		{
 		  flags = NM_PW_DATA_USE_COPY;
 		}

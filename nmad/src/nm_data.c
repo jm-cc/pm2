@@ -707,10 +707,9 @@ static void nm_data_pkt_pack_apply(void*ptr, nm_len_t len, void*_context)
   else
     {
       /* data in iovec */
-      uint16_t*p_len = v0->iov_base + v0->iov_len;
-      uint16_t*p_skip = p_len + 1;
+      struct nm_header_pkt_data_chunk_s*p_chunk_header = v0->iov_base + v0->iov_len;
       assert(len <= UINT16_MAX);
-      *p_len = len;
+      p_chunk_header->len = len;
       if(p_context->skip == 0)
 	{
 	  nm_len_t skip = 0;
@@ -721,12 +720,13 @@ static void nm_data_pkt_pack_apply(void*ptr, nm_len_t len, void*_context)
 	    }
 	  p_context->skip = skip;
 	}
+      assert(p_context->skip < UINT16_MAX);
       struct iovec*v = nm_pw_grow_iovec(p_context->p_pw);
       v->iov_base = ptr;
       v->iov_len = len;
-      *p_skip = p_context->skip;
-      p_pw->v[0].iov_len += 2 * sizeof(uint16_t);
-      p_pw->length += len + 2 * sizeof(uint16_t);
+      p_chunk_header->skip = p_context->skip;
+      p_pw->v[0].iov_len += sizeof(struct nm_header_pkt_data_chunk_s);
+      p_pw->length += len + sizeof(struct nm_header_pkt_data_chunk_s);
       p_context->skip += len;
       p_context->p_prev_len = NULL;
     }

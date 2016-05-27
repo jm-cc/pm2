@@ -127,6 +127,10 @@ static __tbx_inline__ void nm_core_post_send(nm_gate_t p_gate,
 {
   /* Packet is assigned to given track, driver, and gate */
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
+  if(trk_id == NM_TRK_SMALL)
+    {
+      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
+    }
   /* append pkt to scheduler post list */
   nm_pw_post_lfqueue_enqueue(&p_drv->post_send, p_pw);
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;

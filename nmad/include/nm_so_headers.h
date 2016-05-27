@@ -78,6 +78,12 @@ struct nm_header_pkt_data_s
   nm_len_t      chunk_offset; /**< offset of the enclosed chunk */
   uint16_t      hlen;         /**< length in header (header + data in header) */
 } __attribute__((packed));
+/** sub-header for pkt_data chunks */
+struct nm_header_pkt_data_chunk_s
+{
+  uint16_t len;  /**< chunk len */
+  uint16_t skip; /**< skip value for iovec */
+} __attribute__((packed));
 
 struct nm_header_data_s
 {

@@ -169,7 +169,9 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
   if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       /* ** small send */
-      struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_HEADER_DATA_SIZE, len);
+      /* maximum header length- real length depends on block size */
+      const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
+      struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, max_header_len, len);
       if(!p_pw)
 	{
 	  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
@@ -179,7 +181,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
 #warning TODO- select pack strategy depending on data sparsity
       
       nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, chunk_offset, NM_PW_DATA_ITERATOR);
-	
+      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
     }
   else
     {

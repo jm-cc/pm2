@@ -16,16 +16,10 @@
 #ifndef NM_TACTICS_H
 #define NM_TACTICS_H
 
-/** remaining space in pw header */
-static nm_len_t nm_so_pw_remaining_header_area(struct nm_pkt_wrap *p_pw)
+/** remaining space in pw buffer */
+static nm_len_t nm_so_pw_remaining_buf(struct nm_pkt_wrap *p_pw)
 {
-  const struct iovec *vec = &p_pw->v[0];
-  return NM_SO_MAX_UNEXPECTED - ((vec->iov_base + vec->iov_len) - (void *)p_pw->buf);
-}
-
-/** remaining space for data in pw */
-static nm_len_t nm_so_pw_remaining_data(struct nm_pkt_wrap *p_pw)
-{
+  assert(((p_pw->v[0].iov_base + p_pw->v[0].iov_len) - (void*)p_pw->buf) == p_pw->length);
   return NM_SO_MAX_UNEXPECTED - p_pw->length;
 }
 
@@ -88,12 +82,9 @@ static inline struct nm_pkt_wrap*nm_tactic_try_to_aggregate(struct tbx_fast_list
   struct nm_pkt_wrap*p_pw = NULL;
   tbx_fast_list_for_each_entry(p_pw, out_list, link)
     {
-      const nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
-      const nm_len_t d_rlen = nm_so_pw_remaining_data(p_pw);
-      if(header_len + data_len + NM_SO_ALIGN_FRONTIER < d_rlen)
+      const nm_len_t rlen = nm_so_pw_remaining_buf(p_pw);
+      if(header_len + data_len + NM_SO_ALIGN_FRONTIER < rlen)
 	{
-	  if(header_len + NM_SO_ALIGN_FRONTIER >= h_rlen)
-	    abort();
 	  return p_pw;
 	}
     }

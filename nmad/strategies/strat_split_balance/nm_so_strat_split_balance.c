@@ -119,7 +119,7 @@ strat_split_balance_pack_ctrl(void *_status,
     p_so_pw = nm_l2so(status->out_list.next);
 
     /* If the paquet is reasonably small, we can form an aggregate */
-    if(NM_HEADER_CTRL_SIZE <= nm_so_pw_remaining_header_area(p_so_pw)){
+    if(NM_HEADER_CTRL_SIZE <= nm_so_pw_remaining_buf(p_so_pw)){
 
       struct nm_pkt_wrap TBX_UNUSED dummy_p_so_pw;
       err = nm_so_pw_add_control(p_so_pw, p_ctrl);
@@ -173,7 +173,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_req_s*p_pack,
       /* We first try to find an existing packet to form an aggregate */
       tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
 	{
-	  const nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
+	  const nm_len_t h_rlen = nm_so_pw_remaining_buf(p_pw);
 	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_so_aligned(len);
 	  if(size <= h_rlen)
 	    {

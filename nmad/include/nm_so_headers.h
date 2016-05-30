@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2015 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -130,19 +130,29 @@ struct nm_header_ctrl_ack_s
   nm_seq_t seq;
 } __attribute__((packed));
 
-/** a unified control header type (except strat)
- */
+/** generic header that match all data/ctrl headers first fields (except header_strat) */
+struct nm_header_generic_s
+{
+  nm_proto_t proto_id;
+  nm_core_tag_t tag_id;
+  nm_seq_t seq;
+} __attribute__((packed));
+
+/** a unified control header type  */
 union nm_header_ctrl_generic_s
 {
   struct nm_header_ctrl_rdv_s rdv;
   struct nm_header_ctrl_rtr_s rtr;
   struct nm_header_ctrl_ack_s ack;
-  struct
-  {
-    nm_proto_t proto_id;
-    nm_core_tag_t tag_id;
-    nm_seq_t seq;
-  } generic;
+  struct nm_header_generic_s generic;
+};
+/** a unified data header type */
+union nm_header_data_generic_s
+{
+  struct nm_header_pkt_data_s pkt_data;
+  struct nm_header_short_data_s short_data;
+  struct nm_header_data_s data;
+  struct nm_header_generic_s generic;
 };
 
 /** header for strategy private packets */
@@ -153,8 +163,7 @@ struct nm_header_strat_s
 };
 
 typedef union nm_header_ctrl_generic_s nm_header_ctrl_generic_t;
-typedef struct nm_header_data_s nm_header_data_t;
-typedef struct nm_header_short_data_s nm_header_short_data_t;
+typedef union nm_header_data_generic_s nm_header_data_generic_t;
 
 #define NM_HEADER_PKT_DATA_SIZE			\
   sizeof(struct nm_header_pkt_data_s)
@@ -180,7 +189,7 @@ static inline void nm_header_init_pkt_data(struct nm_header_pkt_data_s*p_header,
   p_header->hlen = NM_HEADER_PKT_DATA_SIZE;
 }
 
-static inline void nm_header_init_data(nm_header_data_t*p_header, nm_core_tag_t tag_id, nm_seq_t seq, uint8_t flags,
+static inline void nm_header_init_data(struct nm_header_data_s*p_header, nm_core_tag_t tag_id, nm_seq_t seq, uint8_t flags,
 				       uint16_t skip, nm_len_t len, nm_len_t chunk_offset)
 { 
   assert((flags & NM_PROTO_ID_MASK) == 0x00);
@@ -192,7 +201,7 @@ static inline void nm_header_init_data(nm_header_data_t*p_header, nm_core_tag_t 
   p_header->chunk_offset = chunk_offset;
 }
 
-static inline void nm_header_init_short_data(nm_header_short_data_t*p_header, nm_core_tag_t tag_id, 
+static inline void nm_header_init_short_data(struct nm_header_short_data_s*p_header, nm_core_tag_t tag_id, 
 					     nm_seq_t seq, nm_len_t len)
 {
   p_header->proto_id = NM_PROTO_SHORT_DATA | NM_PROTO_FLAG_LASTCHUNK;

@@ -139,6 +139,8 @@ typedef uint16_t nm_req_flag_t;
 /** mask to catch all bits of status */
 #define NM_STATUS_MASK_FULL                ((nm_status_t)-1)
 
+/** no flag set */
+#define NM_FLAG_NONE                 ((nm_req_flag_t)0x0000)
 /** flag pack as synchronous (i.e. request the receiver to send an ack) */
 #define NM_FLAG_PACK_SYNCHRONOUS     ((nm_req_flag_t)0x1000)
 /** flag request as a pack */
@@ -279,9 +281,8 @@ struct nm_req_s
     } pack;
     struct
     {
-      nm_len_t expected_len;  /**< length of posted recv (truncated to actual packet size if received data is shorter) */
+      nm_len_t expected_len;  /**< length of posted recv (may be updated if matched packet is shorter) */
       nm_len_t cumulated_len; /**< amount of data unpacked so far */
-      nm_len_t received_len;  /**< length of received packet that matched this unpack */
       nm_core_tag_t tag_mask; /**< mask applied to tag for matching (only bits in mask need to match) */
     } unpack;
   };
@@ -296,6 +297,9 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
 /** post a pack request */
 int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_req_flag_t flags);
 
+/** initializes an empty unpack request */
+void nm_core_unpack_init(struct nm_core*p_core, struct nm_req_s*p_unpack);
+
 /** build an unpack request from data descriptor */
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);
 
@@ -306,7 +310,10 @@ void nm_core_unpack_match_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, 
 void nm_core_unpack_match_event(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event);
 
 /** submit an unpack request */
-int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack);
+int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_req_flag_t flags);
+
+/** peeks unexpected data without consumming it */
+int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);
 
 /** cancel a pending unpack
  * @note cancel may fail if matching was already done.

@@ -69,9 +69,10 @@ int main(int argc, char **argv)
 	    nm_schedule(p_core);
 	  struct nm_req_s unpack;
 	  nm_data_contiguous_set(&data, (struct nm_data_contiguous_s){ .ptr = &buffer, .len = sizeof(buffer) });
+	  nm_core_unpack_init(p_core, &unpack);
 	  nm_core_unpack_data(p_core, &unpack, &data);
 	  nm_core_unpack_match_recv(p_core, &unpack, p_gate, tag, NM_CORE_TAG_MASK_FULL);
-	  nm_core_unpack_submit(p_core, &unpack);
+	  nm_core_unpack_submit(p_core, &unpack, NM_FLAG_NONE);
 	  while(nm_status_test(&unpack, NM_STATUS_UNPACK_COMPLETED) == 0)
 	    nm_schedule(p_core);
 	  TBX_GET_TICK(t2);
@@ -89,9 +90,10 @@ int main(int argc, char **argv)
 	{
 	  struct nm_req_s unpack;
 	  nm_data_contiguous_set(&data, (struct nm_data_contiguous_s){ .ptr = &buffer, .len = sizeof(buffer) });
+	  nm_core_unpack_init(p_core, &unpack);
 	  nm_core_unpack_data(p_core, &unpack, &data);
 	  nm_core_unpack_match_recv(p_core, &unpack, p_gate, tag, NM_CORE_TAG_MASK_FULL);
-	  nm_core_unpack_submit(p_core, &unpack);
+	  nm_core_unpack_submit(p_core, &unpack, NM_FLAG_NONE);
 	  while(nm_status_test(&unpack, NM_STATUS_UNPACK_COMPLETED) == 0)
 	    nm_schedule(p_core);
 	  struct nm_req_s pack;

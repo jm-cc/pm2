@@ -201,6 +201,7 @@ static inline void nm_sr_recv_unpack_contiguous(nm_session_t p_session, nm_sr_re
 {
   nm_core_t p_core = p_session->p_core;
   nm_data_contiguous_set(&p_request->data, (struct nm_data_contiguous_s){ .ptr = (void*)data, .len = len });
+  nm_core_unpack_init(p_core, &p_request->req);
   nm_core_unpack_data(p_core, &p_request->req, &p_request->data);
 }
 
@@ -209,6 +210,7 @@ static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t
 {
   nm_core_t p_core = p_session->p_core;
   nm_data_iov_set(&p_request->data, (struct nm_data_iov_s){ .v = (struct iovec*)iov, .n = num_entries });
+  nm_core_unpack_init(p_core, &p_request->req);
   nm_core_unpack_data(p_core, &p_request->req, &p_request->data);
 }
 
@@ -216,6 +218,7 @@ static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_
 {
   nm_core_t p_core = p_session->p_core;
   p_request->data = *p_data;
+  nm_core_unpack_init(p_core, &p_request->req);
   nm_core_unpack_data(p_core, &p_request->req, &p_request->data);
 }
 
@@ -226,7 +229,7 @@ static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_re
   const nm_core_tag_t core_tag = nm_tag_build(p_session->hash_code, tag);
   const nm_core_tag_t core_mask = nm_tag_build(p_session->hash_code, mask);
   nm_core_unpack_match_recv(p_core, &p_request->req, p_gate, core_tag, core_mask);
-  const int err = nm_core_unpack_submit(p_core, &p_request->req);
+  const int err = nm_core_unpack_submit(p_core, &p_request->req, NM_FLAG_NONE);
   return err;
 }
 
@@ -235,7 +238,7 @@ static inline int  nm_sr_recv_irecv_event(nm_session_t p_session, nm_sr_request_
 {
   nm_core_t p_core = p_session->p_core;
   nm_core_unpack_match_event(p_core, &p_request->req, p_event->recv_unexpected.p_core_event);
-  const int err = nm_core_unpack_submit(p_core, &p_request->req);
+  const int err = nm_core_unpack_submit(p_core, &p_request->req, NM_FLAG_NONE);
   return err;
 }
 

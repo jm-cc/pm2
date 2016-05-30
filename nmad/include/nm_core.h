@@ -23,7 +23,7 @@ PUK_VECT_TYPE(nm_core_monitor, const struct nm_core_monitor_s*);
 struct nm_unexpected_s
 {
   PUK_LIST_LINK(nm_unexpected);
-  void*header;
+  const struct nm_header_generic_s*p_header;
   struct nm_pkt_wrap*p_pw;
   nm_gate_t p_gate;
   nm_seq_t seq;

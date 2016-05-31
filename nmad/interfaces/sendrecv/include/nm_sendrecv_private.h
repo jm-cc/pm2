@@ -222,8 +222,8 @@ static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_
   nm_core_unpack_data(p_core, &p_request->req, &p_request->data);
 }
 
-static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
-				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask)
+static inline int nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
+				   nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask)
 {
   nm_core_t p_core = p_session->p_core;
   const nm_core_tag_t core_tag = nm_tag_build(p_session->hash_code, tag);
@@ -233,12 +233,20 @@ static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_re
   return err;
 }
 
-static inline int  nm_sr_recv_irecv_event(nm_session_t p_session, nm_sr_request_t*p_request,
-					  const nm_sr_event_info_t*p_event)
+static inline int nm_sr_recv_irecv_event(nm_session_t p_session, nm_sr_request_t*p_request,
+					 const nm_sr_event_info_t*p_event)
 {
   nm_core_t p_core = p_session->p_core;
   nm_core_unpack_match_event(p_core, &p_request->req, p_event->recv_unexpected.p_core_event);
   const int err = nm_core_unpack_submit(p_core, &p_request->req, NM_FLAG_NONE);
+  return err;
+}
+
+static inline int nm_sr_recv_peek(nm_session_t p_session, nm_sr_request_t*p_request,
+				  const struct nm_data_s*p_data)
+{
+  nm_core_t p_core = p_session->p_core;
+  int err = nm_core_unpack_peek(p_core, &p_request->req, p_data);
   return err;
 }
 

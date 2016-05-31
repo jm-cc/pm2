@@ -379,8 +379,14 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 		    done += chunk_len;
 		  }
 	      }
+	      break;	      
+	    case NM_PROTO_RDV:
+	      {
+		fprintf(stderr, "# nmad: nm_core_unpack_peek()- not implemented yet for large messages.\n");
+		abort();
+	      }
 	      break;
-	      
+
 	    default:
 	      abort();
 	    }

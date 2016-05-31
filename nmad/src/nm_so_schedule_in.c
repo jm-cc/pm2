@@ -348,6 +348,23 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 		  }
 	      }
 	      break;
+	    case NM_PROTO_DATA:
+	      {
+		nm_len_t chunk_len    = p_header->data.len;
+		nm_len_t chunk_offset = p_header->data.chunk_offset;
+		const void*ptr = (p_header->data.skip == 0xFFFF) ? (((void*)p_header) + NM_HEADER_DATA_SIZE) :
+		  p_chunk->p_pw->v[0].iov_base + (p_header->data.skip + nm_header_global_v0len(p_chunk->p_pw));
+		if(chunk_offset < peek_len)
+		  {
+		    if(chunk_offset + chunk_len > peek_len)
+		      {
+			chunk_len = peek_len - chunk_offset;
+		      }
+		    nm_data_copy_to(p_unpack->p_data, chunk_offset, chunk_len, ptr);
+		    done += chunk_len;
+		  }
+	      }
+	      break;
 	      
 	    default:
 	      abort();

@@ -279,6 +279,7 @@ static inline void nm_core_unpack_match(struct nm_core*p_core, struct nm_req_s*p
   p_unpack->seq    = seq;
   p_unpack->tag    = tag;
   p_unpack->unpack.tag_mask = tag_mask;
+  p_unpack->flags |= NM_FLAG_UNPACK_MATCHED;
 }
 void nm_core_unpack_match_event(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event)
 {
@@ -293,16 +294,30 @@ void nm_core_unpack_match_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, 
   nm_core_unpack_match(p_core, p_unpack, p_gate, tag, tag_mask, NM_SEQ_NONE);
 }
 
+/** probes whether an incoming packet matched this request */
+int nm_core_unpack_iprobe(struct nm_core*p_core, struct nm_req_s*p_unpack)
+{
+  if(!(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
+    {
+      fprintf(stderr, "# nmad: WARNING- cannot probe unmatched request.\n");
+      return -NM_EINVAL;
+    }
+  struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
+  if(p_unexpected == NULL)
+    return -NM_EAGAIN;
+  else
+    return NM_ESUCCESS;
+}
+
 int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data)
 {
+  if(!(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
+    {
+      fprintf(stderr, "# nmad: WARNING- cannot peek unmatched request.\n");
+      return -NM_EINVAL;
+    }
   nm_len_t peek_len = nm_data_size(p_data);
   nm_len_t done = 0;
-  fprintf(stderr, "# nm_core_unpack_peek()\n");
-  if(p_unpack->unpack.expected_len == NM_LEN_UNDEFINED)
-    {
-      fprintf(stderr, "# nm_core_unpack_peek()- len = undefined\n");
-      return -NM_EAGAIN;
-    }
   nmad_lock();
   struct nm_unexpected_s*p_chunk;
   puk_list_foreach(p_chunk, &p_core->unexpected)
@@ -327,7 +342,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 		      {
 			chunk_len = peek_len - chunk_offset;
 		      }
-		    nm_data_pkt_unpack(p_unpack->p_data, &p_header->pkt_data, p_chunk->p_pw, chunk_offset, chunk_len);
+		    nm_data_pkt_unpack(p_data, &p_header->pkt_data, p_chunk->p_pw, chunk_offset, chunk_len);
 		    done += chunk_len;
 		  }
 	      }
@@ -343,7 +358,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 		      {
 			chunk_len = peek_len - chunk_offset;
 		      }
-		    nm_data_copy_to(p_unpack->p_data, chunk_offset, chunk_len, ptr);
+		    nm_data_copy_to(p_data, chunk_offset, chunk_len, ptr);
 		    done += chunk_len;
 		  }
 	      }
@@ -360,7 +375,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 		      {
 			chunk_len = peek_len - chunk_offset;
 		      }
-		    nm_data_copy_to(p_unpack->p_data, chunk_offset, chunk_len, ptr);
+		    nm_data_copy_to(p_data, chunk_offset, chunk_len, ptr);
 		    done += chunk_len;
 		  }
 	      }
@@ -374,7 +389,10 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 	break;
     }
   nmad_unlock();
-  return NM_ESUCCESS;
+  if(done == peek_len)
+    return NM_ESUCCESS;
+  else
+    return -NM_EAGAIN;
 }
 
 int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_req_flag_t flags)

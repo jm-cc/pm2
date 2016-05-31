@@ -147,8 +147,8 @@ typedef uint16_t nm_req_flag_t;
 #define NM_FLAG_PACK                 ((nm_req_flag_t)0x2000)
 /** flag request as an unpack */
 #define NM_FLAG_UNPACK               ((nm_req_flag_t)0x4000)
-/** flag unpack request as partial */
-#define NM_FLAG_PARTIAL_UNPACK       ((nm_req_flag_t)0x8000)
+/** flag unpack request as matched */
+#define NM_FLAG_UNPACK_MATCHED       ((nm_req_flag_t)0x8000)
 
 /** Sequence number */
 typedef uint16_t nm_seq_t;

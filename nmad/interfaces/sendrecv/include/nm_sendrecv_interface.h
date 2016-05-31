@@ -119,6 +119,8 @@ static inline int nm_sr_request_get_tag(nm_sr_request_t*p_request, nm_tag_t*tag)
 /** Returns the received size of the message with the specified request. */
 static inline int nm_sr_request_get_size(nm_sr_request_t *request, nm_len_t*size);
 
+static inline int nm_sr_request_get_gate(nm_sr_request_t*p_request, nm_gate_t*pp_gate);
+
 /** Returns the session this request belongs to. */
 static inline int nm_sr_request_get_session(nm_sr_request_t*p_request, nm_session_t*pp_session);
 

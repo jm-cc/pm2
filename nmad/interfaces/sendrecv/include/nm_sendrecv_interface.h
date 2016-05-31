@@ -159,12 +159,19 @@ static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_
 					  const struct nm_data_s*p_data);
 static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
 				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask);
-/** post a recv for a pre-matched message (gate/tag/seq from event) */
-static inline int  nm_sr_recv_match_event(nm_session_t p_session, nm_sr_request_t*p_request,
+/** match the request with given gate/tag/mask */
+static inline void nm_sr_recv_match(nm_session_t p_session, nm_sr_request_t*p_request,
+				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask);
+/** match the request with event */
+static inline void nm_sr_recv_match_event(nm_session_t p_session, nm_sr_request_t*p_request,
 					  const nm_sr_event_info_t*p_event);
 /** peek for already received (unexpected) data */
 static inline int  nm_sr_recv_peek(nm_session_t p_session, nm_sr_request_t*p_request,
 				   const struct nm_data_s*p_data);
+/** probes whether an incoming packet matched this request */
+static inline int  nm_sr_recv_iprobe(nm_session_t p_session, nm_sr_request_t*p_request);
+/** posts the receive request to the scheduler */
+static inline int  nm_sr_recv_post(nm_session_t p_session, nm_sr_request_t*p_request);
 
 /* ** High level / legacy send ***************************** */
 

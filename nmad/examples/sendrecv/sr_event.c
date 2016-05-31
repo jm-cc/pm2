@@ -65,6 +65,7 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*p_inf
 	  nm_sr_recv_init(p_session, p_request);
 	  nm_sr_recv_unpack_contiguous(p_session, p_request, buf, len);
 	  nm_sr_recv_match_event(p_session, p_request, p_info);
+	  nm_sr_recv_post(p_session, p_request);
 	}
     }
   if(event & NM_SR_EVENT_FINALIZED)

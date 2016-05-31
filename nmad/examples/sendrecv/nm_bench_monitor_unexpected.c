@@ -53,6 +53,7 @@ static void monitor_unexpected_notifier(nm_sr_event_t event, const nm_sr_event_i
   nm_sr_recv_init(nm_bench_common.p_session, &unexpected_request);
   nm_sr_recv_unpack_contiguous(nm_bench_common.p_session, &unexpected_request, _buf, _len);
   nm_sr_recv_match_event(nm_bench_common.p_session, &unexpected_request, p_info);
+  nm_sr_recv_post(nm_bench_common.p_session, &unexpected_request);
   __sync_fetch_and_add(&received, 1);
 }
 

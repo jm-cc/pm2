@@ -315,6 +315,9 @@ int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_re
 /** peeks unexpected data without consumming it */
 int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);
 
+/** probe unexpected packet, using matching from unpack request */
+int nm_core_unpack_iprobe(struct nm_core*p_core, struct nm_req_s*p_unpack);
+
 /** cancel a pending unpack
  * @note cancel may fail if matching was already done.
  */

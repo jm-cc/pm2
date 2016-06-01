@@ -311,7 +311,7 @@ int nm_core_unpack_iprobe(struct nm_core*p_core, struct nm_req_s*p_unpack)
 
 int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data)
 {
-  if((p_unpack->seq == NM_SEQ_NONE) || !(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
+  if((p_unpack->seq == NM_SEQ_NONE) || (p_unpack->p_gate == NM_GATE_NONE) || !(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
     {
       fprintf(stderr, "# nmad: WARNING- cannot peek unmatched request.\n");
       return -NM_EINVAL;
@@ -322,11 +322,9 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
   struct nm_unexpected_s*p_chunk;
   puk_list_foreach(p_chunk, &p_core->unexpected)
     {
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_chunk->p_gate->tags, p_chunk->tag);
-      const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-      if(((p_unpack->p_gate == p_chunk->p_gate) || (p_unpack->p_gate == NM_ANY_GATE)) && /* gate matches */
+      if((p_unpack->p_gate == p_chunk->p_gate) && /* gate matches */
 	 nm_tag_match(p_chunk->tag, p_unpack->tag, p_unpack->unpack.tag_mask) && /* tag matches */
-	 ((p_unpack->seq == p_chunk->seq) || ((p_unpack->seq == NM_SEQ_NONE) && (p_chunk->seq == next_seq))) /* seq number matches */ )
+	 (p_unpack->seq == p_chunk->seq) /* seq number matches */ )
 	{
 	  const nm_header_data_generic_t*p_header = (const nm_header_data_generic_t*)p_chunk->p_header;
 	  const nm_proto_t proto_id = p_chunk->p_header->proto_id & NM_PROTO_ID_MASK;

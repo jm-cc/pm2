@@ -311,7 +311,7 @@ int nm_core_unpack_iprobe(struct nm_core*p_core, struct nm_req_s*p_unpack)
 
 int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data)
 {
-  if(!(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
+  if((p_unpack->seq == NM_SEQ_NONE) || !(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
     {
       fprintf(stderr, "# nmad: WARNING- cannot peek unmatched request.\n");
       return -NM_EINVAL;

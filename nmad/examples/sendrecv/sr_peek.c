@@ -36,16 +36,16 @@ int main(int argc, char**argv)
       nm_sr_recv_match(p_session, &request, NM_ANY_GATE, 0, NM_TAG_MASK_FULL );
       struct nm_data_s data;
       nm_data_contiguous_set(&data, (struct nm_data_contiguous_s){ .ptr = buf, .len = sizeof(int) });
-      int rc = 0;
-      do
+      while(nm_sr_recv_iprobe(p_session, &request) == -NM_EAGAIN)
 	{
-	  rc = nm_sr_recv_peek(p_session, &request, &data);
 	  nm_sr_progress(p_session);
 	}
-      while(rc == -NM_EAGAIN);
+      int rc = nm_sr_recv_peek(p_session, &request, &data);
+      assert(rc == NM_ESUCCESS);
       int*p_len = buf;
-      fprintf(stderr, "# SUCCESS- rc = %d; header len = %d\n", rc, *p_len);
-      nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, len, &request);
+      printf("SUCCESS- rc = %d; header len = %d\n", rc, *p_len);
+      nm_sr_recv_unpack_contiguous(p_session, &request, buf, len);
+      nm_sr_recv_post(p_session, &request);
       nm_sr_rwait(p_session, &request);
       printf("buffer contents: %s\n", buf + sizeof(int));
     }

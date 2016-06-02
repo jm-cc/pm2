@@ -17,9 +17,9 @@
 #define NM_TACTICS_H
 
 /** remaining space in pw buffer */
-static nm_len_t nm_so_pw_remaining_buf(struct nm_pkt_wrap *p_pw)
+static inline nm_len_t nm_so_pw_remaining_buf(struct nm_pkt_wrap *p_pw)
 {
-  assert(((p_pw->v[0].iov_base + p_pw->v[0].iov_len) - (void*)p_pw->buf) == p_pw->length);
+  assert(((p_pw->v[0].iov_base + p_pw->v[0].iov_len) - (void*)p_pw->buf) <= p_pw->length);
   return NM_SO_MAX_UNEXPECTED - p_pw->length;
 }
 

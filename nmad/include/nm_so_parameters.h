@@ -21,9 +21,11 @@
 /** Maximum size of unexpected packets. Used for preallocated header zone within packet wrappers */
 #define NM_SO_MAX_UNEXPECTED  (16 * 1024)
 
-/* Number of preallocated iovec entries within packet wrappers */
+/** Number of preallocated iovec entries within packet wrappers */
 #define NM_SO_PREALLOC_IOV_LEN 32
 
+/** threshold to switch from plain copy to iovec send */
+#define NM_DATA_IOV_THRESHOLD 64
 
 #define NM_SO_ALIGN_TYPE      uint32_t
 #define NM_SO_ALIGN_FRONTIER  sizeof(NM_SO_ALIGN_TYPE)

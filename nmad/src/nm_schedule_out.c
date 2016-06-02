@@ -70,7 +70,7 @@ void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
     {
       const nm_len_t size = nm_data_size(p_pack->p_data);
       assert(hlen <= size);
-      if(hlen < size)
+      if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
 	(*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
     }
   else

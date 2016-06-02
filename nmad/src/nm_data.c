@@ -668,8 +668,6 @@ void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t 
 
 /* ********************************************************* */
 
-#define NM_DATA_IOV_THRESHOLD 64
-
 /** pack iterator-based data to pw with global header
  */
 struct nm_data_pkt_packer_s

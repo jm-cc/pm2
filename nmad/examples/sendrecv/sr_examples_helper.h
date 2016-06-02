@@ -94,14 +94,20 @@ static inline nm_len_t _next(nm_len_t len, double multiplier, nm_len_t increment
 
 static void fill_buffer(char*buffer, nm_len_t len) __attribute__((unused));
 static void clear_buffer(char*buffer, nm_len_t len) __attribute__((unused));
-static void control_buffer(const char*msg, const char*buffer, nm_len_t len) __attribute__((unused));
+static void control_buffer(const char*buffer, nm_len_t len) __attribute__((unused));
+
+
+static inline char buffer_content(nm_len_t offset)
+{
+  return 'a' + (offset % 26);
+}
 
 static void fill_buffer(char*buffer, nm_len_t len)
 {
   nm_len_t i = 0;
   for(i = 0; i < len; i++)
     {
-      buffer[i] = 'a' + (i % 26);
+      buffer[i] = buffer_content(i);
     }
 }
 
@@ -110,29 +116,17 @@ static void clear_buffer(char*buffer, nm_len_t len)
   memset(buffer, 0, len);
 }
 
-static void control_buffer(const char*msg, const char*buffer, nm_len_t len)
+static void control_buffer(const char*buffer, nm_len_t len)
 {
-  tbx_bool_t   ok = tbx_true;
-  unsigned char expected_char;
-  unsigned int          i  = 0;
-
-  for(i = 0; i < len; i++){
-    expected_char = 'a'+(i%26);
-
-    if(buffer[i] != expected_char){
-      printf("Bad data at byte %d: expected %c, received %c\n",
-             i, expected_char, buffer[i]);
-      ok = tbx_false;
+  int i = 0;
+  for(i = 0; i < len; i++)
+    {
+      const char expected = buffer_content(i);
+      if(buffer[i] != expected)
+	{
+	  fprintf(stderr, "Bad data at byte %d: expected %c, received %c\n",
+		  i, expected, buffer[i]);
+	  abort();
+	}
     }
-  }
-
-  printf("Controle de %s - ", msg);
-
-  if (!ok) {
-    printf("%d bytes reception failed\n", (int)len);
-
-    TBX_FAILURE("data corruption");
-  } else {
-    printf("ok\n");
-  }
 }

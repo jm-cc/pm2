@@ -178,6 +178,9 @@ int main(int argc, char	**argv)
 	      const double delay = TBX_TIMING_DELAY(t1, t2);
 	      const double t = delay / 2;
 	      lats[k] = t;
+#ifdef DEBUG
+	      control_buffer(buf, len);
+#endif
 	      nm_examples_barrier(sync_tag);
 	    }
 	  qsort(lats, iterations, sizeof(double), &comp_double);

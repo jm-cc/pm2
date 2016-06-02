@@ -294,8 +294,12 @@ PUK_LIST_CREATE_FUNCS(nm_req);
 /** build a pack request from data descriptor */
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data);
 
+void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen);
+
 /** post a pack request */
 int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_req_flag_t flags);
+
+void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack);
 
 /** initializes an empty unpack request */
 void nm_core_unpack_init(struct nm_core*p_core, struct nm_req_s*p_unpack);

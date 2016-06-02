@@ -48,7 +48,6 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
 {
   int err = NM_ESUCCESS;
   nmad_lock();
-  nm_lock_interface(p_core);
   assert(p_gate != NULL);
   nm_status_assert(p_pack, NM_STATUS_PACK_INIT);
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
@@ -59,20 +58,45 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   p_pack->seq    = seq;
   p_pack->tag    = tag;
   p_pack->p_gate = p_gate;
-  nm_req_list_push_back(&p_core->pending_packs, p_pack);
-  nm_core_polling_level(p_core);
+  nmad_unlock();
+  return err;
+}
+
+void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen)
+{
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
+  nmad_lock();
   if(r->driver->pack_data != NULL)
     {
-      (*r->driver->pack_data)(r->_status, p_pack, nm_data_size(p_pack->p_data), 0);
+      const nm_len_t size = nm_data_size(p_pack->p_data);
+      assert(hlen <= size);
+      if(hlen < size)
+	(*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
+    }
+  else
+    {
+      fprintf(stderr, "# nmad: nm_core_pack_header not support with selected strategy (need pack_data).\n");
+      abort();
+    }
+  nmad_unlock();
+}
+
+void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
+{
+  const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
+  nmad_lock();
+  nm_req_list_push_back(&p_core->pending_packs, p_pack);
+  nm_core_polling_level(p_core);
+  if(r->driver->pack_data != NULL)
+    {
+      const nm_len_t size = nm_data_size(p_pack->p_data) - p_pack->pack.scheduled;
+      (*r->driver->pack_data)(r->_status, p_pack, size, p_pack->pack.scheduled);
     }
   else
     {
       nm_data_aggregator_traversal(p_pack->p_data, &nm_core_pack_chunk, p_pack);
     }
-  nm_unlock_interface(p_core);
   nmad_unlock();
-  return err;
 }
 
 

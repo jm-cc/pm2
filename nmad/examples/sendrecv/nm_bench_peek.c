@@ -36,7 +36,8 @@ static void sr_peek_header_traversal(const void*_content, nm_data_apply_t apply,
   const struct sr_peek_header_content_s*p_content = _content;
   int len = p_content->len;
   (*apply)(&len, sizeof(len), _context);
-  (*apply)(p_content->ptr, p_content->len, _context);
+  if(len > 0)
+    (*apply)(p_content->ptr, p_content->len, _context);
 }
 
 static void sr_peek_send(void*buf, nm_len_t len)
@@ -46,7 +47,9 @@ static void sr_peek_send(void*buf, nm_len_t len)
   nm_data_sr_peek_header_set(&data, (struct sr_peek_header_content_s){ .ptr = buf, .len = len });
   nm_sr_send_init(nm_bench_common.p_session, &request);
   nm_sr_send_pack_data(nm_bench_common.p_session, &request, &data);
-  nm_sr_send_isend(nm_bench_common.p_session, &request, nm_bench_common.p_gate, data_tag);
+  nm_sr_send_dest(nm_bench_common.p_session, &request, nm_bench_common.p_gate, data_tag);
+  nm_sr_send_header(nm_bench_common.p_session, &request, sizeof(int));
+  nm_sr_send_submit(nm_bench_common.p_session, &request);
   nm_sr_swait(nm_bench_common.p_session, &request);
 }
 

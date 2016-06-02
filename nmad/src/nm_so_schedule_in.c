@@ -60,7 +60,9 @@ void nm_unexpected_clean(struct nm_core*p_core)
   while(p_chunk)
     {
 #ifdef DEBUG
-      fprintf(stderr, "nmad: WARNING- chunk %p is still in use\n", p_chunk);
+      fprintf(stderr, "nmad: WARNING- chunk %p is still in use (gate = %p; seq = %d; tag = %llx:%llx)\n",
+	      p_chunk, p_chunk->p_gate, p_chunk->seq,
+	      (unsigned long long)nm_tag_get_hashcode(p_chunk->tag), (unsigned long long)nm_tag_get(p_chunk->tag));
 #endif /* DEBUG */
       if(p_chunk->p_pw)
 	{

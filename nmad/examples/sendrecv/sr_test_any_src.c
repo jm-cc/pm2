@@ -42,6 +42,7 @@ static void store_big_string(char *big_buf, unsigned max)
   src = msg_end;
   while(*src)
     *dst++ = *src++;
+  big_buf[max-1] = '\0';
 }
 
 int

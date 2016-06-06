@@ -66,32 +66,39 @@ AC_PADICO_OPTIMIZE
 dnl -- tag container
 dnl --
 AC_MSG_CHECKING([for tag container])
-tag_container="TAG_AS_HASHTABLE"
+tag_container="TAG_HUGE"
 AC_ARG_ENABLE(taghuge,
-	      [  --enable-taghuge   Enable 64 bit tags ],
+	      [AS_HELP_STRING([--enable-taghuge], [Enable 64 bit tags @<:@default@:>@]) ],
               [ if test $enableval = yes; then
                     tag_container="TAG_HUGE";
                 fi
               ],
 	      [])
 AC_ARG_ENABLE(tagarray,
-	      [  --enable-tagarray  Enable 8 bit tags in flat array ],
+	      [AS_HELP_STRING([--enable-tagarray], [Enable 8 bit tags in flat array]) ],
               [ if test $enableval = yes; then
                     tag_container="TAG_AS_FLAT_ARRAY";
                 fi
               ],
 	      [])
+AC_ARG_ENABLE(taghashtable,
+	      [AS_HELP_STRING([--enable-taghashtable], [Enable 32 bit tags in hashtable]) ],
+              [ if test $enableval = yes; then
+                    tag_container="TAG_AS_HASHTABLE";
+                fi
+              ],
+	      [])
 case ${tag_container} in
-     TAG_AS_HASHTABLE)  AC_DEFINE([CONFIG_TAG_AS_HASHTABLE], [1], [use 32 bits tags in hashtable]);;
-     TAG_HUGE)          AC_DEFINE([CONFIG_TAG_HUGE], [1], [use 64 bits tags in hashtable]);;
      TAG_AS_FLAT_ARRAY) AC_DEFINE([CONFIG_TAG_AS_FLAT_ARRAY], [1], [use 8 bits tags in arrays]);;
+     TAG_AS_HASHTABLE)  AC_DEFINE([CONFIG_TAG_AS_HASHTABLE],  [1], [use 32 bits tags in hashtable]);;
+     TAG_HUGE)          AC_DEFINE([CONFIG_TAG_HUGE],          [1], [use 64 bits tags in hashtable]);;
 esac
 AC_MSG_RESULT([${tag_container}])
 
 dnl -- sampling
 dnl --
 AC_ARG_ENABLE(sampling,
-	      [  --enable-sampling  Enable network sampling],
+	      [AS_HELP_STRING([--enable-sampling], [Enable network sampling]) ],
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([NMAD_SAMPLING], 1, [enable sampling])
 		    nmad_interfaces="${nmad_interfaces} sampling"
@@ -101,7 +108,7 @@ AC_ARG_ENABLE(sampling,
 
 dnl -- NMAD_TRACE
 AC_ARG_ENABLE(trace,
-	      [  --enable-trace  Enable PAJE trace],
+	      [AS_HELP_STRING([--enable-trace], [Enable PAJE trace]) ],
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([NMAD_TRACE], 1, [enable trace])
 		    nmad_interfaces="${nmad_interfaces} trace"
@@ -139,7 +146,7 @@ AC_PADICO_PUK_ROOT
 
 dnl -- PukABI
 AC_ARG_WITH([pukabi],
-	    [AS_HELP_STRING([--with-pukabi], [use PukABI ABI interceptor @<:@default=yes@>@] )])
+	    [AS_HELP_STRING([--with-pukabi], [use PukABI ABI interceptor @<:@default=yes@:>@] )])
 AC_MSG_CHECKING([for PukABI])
 if test "x${with_pukabi}" = "xno"; then
   AC_MSG_RESULT([no])
@@ -340,7 +347,7 @@ dnl -- TODO- check whether tbx and nmad FC match, don't know about F77
 dnl -- Mad-MPI
 dnl --
 AC_ARG_ENABLE(mpi,
-	      [  --enable-mpi       Enable builtin MPI implementation Mad-MPI],
+	      [AS_HELP_STRING([--enable-mpi], [Enable builtin MPI implementation Mad-MPI]) ],
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
                     nmad_enable_mpi=yes
@@ -358,7 +365,7 @@ AC_ARG_ENABLE(mpi,
 AC_SUBST([nmad_enable_mpi])
 
 AC_ARG_ENABLE(romio,
-	      [  --enable-romio   Enable ROMIO MPI I/O implementation ],
+	      [AS_HELP_STRING([--enable-romio], [Enable ROMIO MPI I/O implementation]) ],
               [ if test $enableval = yes; then
 	      	    nmad_mpi_romio_libs="-lmpio"
                     AC_SUBST([nmad_mpi_romio_libs])

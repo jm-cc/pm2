@@ -33,7 +33,8 @@ static const nm_tag_t sync_tag = 0x02;
 enum nm_example_topo_e
   {
     NM_EXAMPLES_TOPO_RING,
-    NM_EXAMPLES_TOPO_PAIRS
+    NM_EXAMPLES_TOPO_PAIRS,
+    NM_EXAMPLES_TOPO_STAR
   };
 
 static void nm_examples_init_topo(int*argc, char*argv[], enum nm_example_topo_e topo)
@@ -53,6 +54,10 @@ static void nm_examples_init_topo(int*argc, char*argv[], enum nm_example_topo_e 
       assert(size % 2 == 0);
       is_server = ((rank % 2) == 0);
       peer = is_server ? (rank + 1) : (rank - 1);
+      break;
+    case NM_EXAMPLES_TOPO_STAR:
+      is_server = (rank == 0);
+      peer = 0;
       break;
     }
   nm_launcher_get_gate(peer, &p_gate);

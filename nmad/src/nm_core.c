@@ -69,6 +69,16 @@ void nm_strat_apply(struct nm_core*p_core)
 
 	}
     }
+  if(!nm_core_event_vect_empty(&p_core->pending_events))
+    {
+      /* schedule front event */
+      nm_core_event_vect_itor_t p_event = nm_core_event_vect_begin(&p_core->pending_events);
+      const struct nm_core_event_s event = *p_event;
+      nm_core_event_vect_erase(&p_core->pending_events, p_event);
+      fprintf(stderr, "# nmad: WARNING- invoking pending event... seq = %d; pending count = %d\n",
+	      event.seq, nm_core_event_vect_size(&p_core->pending_events));
+      nm_core_status_event(p_core, &event, NULL);
+    }
 }
 
 /** Main function of the core scheduler loop.
@@ -234,10 +244,21 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
 		{
 		  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_event->p_gate->tags, p_event->tag);
 		  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-		  assert(p_event->seq == next_seq);
-		  p_so_tag->recv_seq_number = next_seq;
+		  if(p_event->seq == next_seq)
+		    {
+		      p_so_tag->recv_seq_number = next_seq;
+		    }
+		  else
+		    {
+		      fprintf(stderr, "# nmad: WARNING- delaying event dispatch; got seq = %d; expected = %d\n",
+			      p_event->seq, next_seq);
+		      nm_core_event_vect_push_back(&p_core->pending_events, *p_event);
+		      sleep(1);
+		      break;
+		    }
 		}	      
 	      ((*i)->monitor.notifier)(p_event, (*i)->monitor.ref);
+	      break;
 	    }
 	}
     }
@@ -419,7 +440,8 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_req_list_init(&p_core->unpacks);
   nm_req_list_init(&p_core->pending_packs);
   nm_unexpected_list_init(&p_core->unexpected);
-
+  nm_core_event_vect_init(&p_core->pending_events);
+  
 #ifdef NMAD_POLL
   TBX_INIT_FAST_LIST_HEAD(&p_core->pending_recv_list);
   TBX_INIT_FAST_LIST_HEAD(&p_core->pending_send_list);

@@ -441,7 +441,7 @@ static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, 
       )
     {
       nmad_unlock();
-      (*p_request->monitor.notifier)(NM_SR_EVENT_FINALIZED, &info, p_request->ref);
+      (*p_request->monitor.notifier)(masked_status, &info, p_request->ref);
       nmad_lock();
     }
 }

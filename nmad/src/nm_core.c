@@ -77,6 +77,7 @@ void nm_strat_apply(struct nm_core*p_core)
       nm_core_event_vect_erase(&p_core->pending_events, p_event);
       fprintf(stderr, "# nmad: WARNING- invoking pending event... seq = %d; pending count = %d\n",
 	      event.seq, nm_core_event_vect_size(&p_core->pending_events));
+      assert( nm_core_event_vect_size(&p_core->pending_events) < 16);
       nm_core_status_event(p_core, &event, NULL);
     }
 }

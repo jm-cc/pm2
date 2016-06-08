@@ -858,8 +858,8 @@ int nm_so_process_complete_recv(struct nm_core*p_core,	struct nm_pkt_wrap*p_pw)
     {
       /* request was posted on a given gate */
       p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
-      assert(p_pw->p_gdrv->active_recv[p_pw->trk_id] == 1);
-      p_pw->p_gdrv->active_recv[p_pw->trk_id] = 0;
+      p_pw->p_gdrv->active_recv[p_pw->trk_id]--;
+      assert(p_pw->p_gdrv->active_recv[p_pw->trk_id] == 0);
     }
   else if((!p_pw->p_gdrv) && p_pw->p_drv->p_in_rq == p_pw)
     {

@@ -108,7 +108,8 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, nm_gate_t
   if(p_gdrv)
     {
       assert(p_gdrv->active_recv[trk_id] == 0);
-      p_gdrv->active_recv[trk_id] = 1;
+      p_gdrv->active_recv[trk_id]++;
+      assert(p_gdrv->active_recv[trk_id] == 1);
     }
 }
 
@@ -121,9 +122,8 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, nm_gate_t
  * maybe later with PIO-offloading, on next nm_schedule()
  * without PIOMan).
  */
-static __tbx_inline__ void nm_core_post_send(nm_gate_t p_gate,
-					     struct nm_pkt_wrap *p_pw,
-					     nm_trk_id_t trk_id, nm_drv_t p_drv)
+static inline void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap*p_pw,
+				     nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
   /* Packet is assigned to given track, driver, and gate */
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
@@ -135,6 +135,7 @@ static __tbx_inline__ void nm_core_post_send(nm_gate_t p_gate,
   nm_pw_post_lfqueue_enqueue(&p_drv->post_send, p_pw);
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
   p_gdrv->active_send[trk_id]++;
+  assert(p_gdrv->active_send[trk_id] == 1);
 }
 
 

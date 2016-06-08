@@ -109,6 +109,7 @@ int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw
   NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
   p_pw->p_gdrv->active_send[p_pw->trk_id]--;
+  assert(p_pw->p_gdrv->active_send[p_pw->trk_id] == 0);
   int i;
   for(i = 0; i < p_pw->n_completions; i++)
     {

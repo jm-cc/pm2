@@ -254,7 +254,6 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
 		      fprintf(stderr, "# nmad: WARNING- delaying event dispatch; got seq = %d; expected = %d\n",
 			      p_event->seq, next_seq);
 		      nm_core_event_vect_push_back(&p_core->pending_events, *p_event);
-		      sleep(1);
 		      break;
 		    }
 		}	      

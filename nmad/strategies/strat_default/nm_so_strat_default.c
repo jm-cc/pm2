@@ -30,7 +30,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_default, &nm_strat_default_load, NULL, NUL
  */
 
 static int  strat_default_todo(void*, nm_gate_t );/* todo: s/nm_gate/nm_pack/ ? */
-static void strat_default_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
+static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset);
 static int  strat_default_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_default_try_and_commit(void*, nm_gate_t );
 static void strat_default_rdv_accept(void*, nm_gate_t );
@@ -38,7 +38,8 @@ static void strat_default_rdv_accept(void*, nm_gate_t );
 static const struct nm_strategy_iface_s nm_strat_default_driver =
   {
     .todo               = &strat_default_todo,
-    .pack_chunk         = &strat_default_pack_chunk,
+    .pack_data          = &strat_default_pack_data,
+    .pack_chunk         = NULL,
     .pack_ctrl          = &strat_default_pack_ctrl,
     .try_and_commit     = &strat_default_try_and_commit,
     .rdv_accept         = &strat_default_rdv_accept,
@@ -57,10 +58,9 @@ static const struct puk_component_driver_s nm_strat_default_component_driver =
 
 /** Per-gate status for strat default instances
  */
-struct nm_strat_default
+struct nm_strat_default_s
 {
-  /** List of raw outgoing packets. */
-  struct tbx_fast_list_head out_list;
+  struct tbx_fast_list_head out_list;  /**< List of raw outgoing packets. */
   int nm_max_small;
   int nm_copy_on_send_threshold;
 };
@@ -81,20 +81,20 @@ static int nm_strat_default_load(void)
  */
 static void*strat_default_instantiate(puk_instance_t ai, puk_context_t context)
 {
-  struct nm_strat_default *status = TBX_MALLOC(sizeof(struct nm_strat_default));
-  TBX_INIT_FAST_LIST_HEAD(&status->out_list);
+  struct nm_strat_default_s*p_status = TBX_MALLOC(sizeof(struct nm_strat_default_s));
+  TBX_INIT_FAST_LIST_HEAD(&p_status->out_list);
   const char*nm_max_small = puk_instance_getattr(ai, "nm_max_small");
-  status->nm_max_small = atoi(nm_max_small);
+  p_status->nm_max_small = atoi(nm_max_small);
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
-  status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
-  return (void*)status;
+  p_status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
+  return (void*)p_status;
 }
 
 /** Cleanup the gate storage for default strategy.
  */
-static void strat_default_destroy(void*status)
+static void strat_default_destroy(void*_status)
 {
-  TBX_FREE(status);
+  TBX_FREE(_status);
 }
 
 
@@ -104,33 +104,36 @@ static void strat_default_destroy(void*status)
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int strat_default_pack_ctrl(void*_status,
-                                   nm_gate_t p_gate,
-				   const union nm_header_ctrl_generic_s *p_ctrl)
+static int strat_default_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
 {
-  struct nm_strat_default*status = _status;
-  nm_tactic_pack_ctrl(p_ctrl, &status->out_list);
+  struct nm_strat_default_s*p_status = _status;
+  nm_tactic_pack_ctrl(p_ctrl, &p_status->out_list);
   return NM_ESUCCESS;
 }
 
 static int strat_default_todo(void* _status, nm_gate_t p_gate)
 {
-  struct nm_strat_default*status = _status;
-  return !(tbx_fast_list_empty(&status->out_list));
+  struct nm_strat_default_s*p_status = _status;
+  return !(tbx_fast_list_empty(&p_status->out_list));
 }
 
 /** push a message chunk */
-static void strat_default_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
+static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset)
 {
-  struct nm_strat_default*status = _status;
-  if(len <= status->nm_max_small)
+  struct nm_strat_default_s*p_status = _status;
+  const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pack->p_data);
+  const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
+  if(chunk_len + max_header_len <= p_status->nm_max_small)
     {
-      nm_tactic_pack_small_new_pw(p_pack, ptr, len, chunk_offset, 
-				  status->nm_copy_on_send_threshold, &status->out_list);
+      struct nm_pkt_wrap*p_pw = NULL;
+      nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
+      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
+      tbx_fast_list_add_tail(&p_pw->link, &p_status->out_list);
     }
   else
     {
-      nm_tactic_pack_rdv(p_pack, ptr, len, chunk_offset);
+      nm_tactic_pack_data_rdv(p_pack, chunk_len, chunk_offset);
     }
 }
 
@@ -149,8 +152,8 @@ static int strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
   static long long int send_size = 0;
   static tbx_tick_t t_orig;
 #endif /* PROFILE_NMAD */
-  struct nm_strat_default*status = _status;
-  struct tbx_fast_list_head *out_list = &status->out_list;
+  struct nm_strat_default_s*p_status = _status;
+  struct tbx_fast_list_head *out_list = &p_status->out_list;
 
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);

@@ -21,6 +21,9 @@
 /** Maximum size of unexpected packets. Used for preallocated header zone within packet wrappers */
 #define NM_SO_MAX_UNEXPECTED  (16 * 1024)
 
+/** minimum density to consider chunks as large */
+#define NM_LARGE_MIN_DENSITY  1024
+
 /** Number of preallocated iovec entries within packet wrappers */
 #define NM_SO_PREALLOC_IOV_LEN 32
 

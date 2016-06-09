@@ -141,7 +141,7 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
 
 /** register a large pending pw for each chunk in the rdv
  */
-struct nm_large_chunk_s
+struct nm_large_chunk_context_s
 {
   struct nm_req_s*p_unpack;
   nm_gate_t p_gate;
@@ -149,7 +149,7 @@ struct nm_large_chunk_s
 };
 static void nm_large_chunk_store(void*ptr, nm_len_t len, void*_context)
 {
-  struct nm_large_chunk_s*p_large_chunk = _context;
+  struct nm_large_chunk_context_s*p_large_chunk = _context;
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
   p_pw->p_unpack = p_large_chunk->p_unpack;
@@ -636,9 +636,29 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
   if(p_unpack)
     {
       assert(p_unpack->p_gate != NULL);
+      assert(p_unpack->p_data != NULL);
+      nm_drv_t p_drv = nm_drv_default(p_gate);
+      const struct nm_data_properties_s*p_props = nm_data_properties_get(p_unpack->p_data);
+      const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : p_props->size; /* average block size */
       nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-      struct nm_large_chunk_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
-      nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+      if(p_drv->trk_caps[NM_TRK_LARGE].supports_data || density < NM_LARGE_MIN_DENSITY)
+	{
+	  /* iterator-based data & driver supports data natively || low-density -> send all & copy */
+	  struct nm_pkt_wrap*p_large_pw = NULL;
+	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw);
+	  p_large_pw->p_unpack     = p_unpack;
+	  p_large_pw->length       = chunk_len;
+	  p_large_pw->chunk_offset = chunk_offset;
+	  p_large_pw->p_data       = p_unpack->p_data;
+	  p_large_pw->p_gate       = p_gate;
+	  tbx_fast_list_add_tail(&p_large_pw->link, &p_gate->pending_large_recv);
+	}
+      else
+	{
+	  /* one rdv per chunk */
+	  struct nm_large_chunk_context_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
+	  nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+	}
     }
   else
     {

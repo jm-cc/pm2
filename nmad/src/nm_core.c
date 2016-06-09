@@ -158,6 +158,31 @@ void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor)
     }
 }
 
+static inline void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*const p_event, const struct nm_core_monitor_s*p_core_monitor)
+{
+  if(nm_event_matches(p_core_monitor, p_event))
+    {
+      if(p_event->status & NM_STATUS_UNEXPECTED)
+	{
+	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_event->p_gate->tags, p_event->tag);
+	  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+	  if(p_event->seq == next_seq)
+	    {
+	      p_so_tag->recv_seq_number = next_seq;
+	    }
+	  else
+	    {
+	      fprintf(stderr, "# nmad: WARNING- delaying event dispatch; got seq = %d; expected = %d; tag = %lx:%lx\n",
+		      p_event->seq, next_seq, nm_tag_get_hashcode(p_event->tag), nm_tag_get(p_event->tag));
+	      nm_core_event_vect_push_back(&p_core->pending_events, *p_event);
+	      sleep(1);
+	      return;
+	    }
+	}	      
+      (p_core_monitor->monitor.notifier)(p_event, p_core_monitor->monitor.ref);
+    }
+}
+
 /** Add an event monitor to the list */
 void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*p_core_monitor)
 {
@@ -177,10 +202,7 @@ void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*p_core
 		  .seq    = p_chunk->seq,
 		  .len    = p_chunk->msg_len
 		};
-	      if(nm_event_matches(p_core_monitor, &event))
-		{
-		  (p_core_monitor->monitor.notifier)(&event, p_core_monitor->monitor.ref);
-		}
+	      nm_core_event_notify(p_core, &event, p_core_monitor);
 	    }
 	}
     }
@@ -239,27 +261,7 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
       nm_core_monitor_vect_itor_t i;
       puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)
 	{
-	  if(nm_event_matches(*i, p_event))
-	    {
-	      if(p_event->status & NM_STATUS_UNEXPECTED)
-		{
-		  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_event->p_gate->tags, p_event->tag);
-		  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-		  if(p_event->seq == next_seq)
-		    {
-		      p_so_tag->recv_seq_number = next_seq;
-		    }
-		  else
-		    {
-		      fprintf(stderr, "# nmad: WARNING- delaying event dispatch; got seq = %d; expected = %d\n",
-			      p_event->seq, next_seq);
-		      nm_core_event_vect_push_back(&p_core->pending_events, *p_event);
-		      break;
-		    }
-		}	      
-	      ((*i)->monitor.notifier)(p_event, (*i)->monitor.ref);
-	      break;
-	    }
+	  nm_core_event_notify(p_core, p_event, *i);
 	}
     }
 }

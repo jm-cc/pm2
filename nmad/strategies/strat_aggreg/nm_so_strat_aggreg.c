@@ -174,7 +174,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
       struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, max_header_len, len);
       if(!p_pw)
 	{
-	  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+	  p_pw = nm_pw_alloc_global_header();
 	  tbx_fast_list_add_tail(&p_pw->link, &p_status->out_list);
 	}
       
@@ -191,8 +191,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
 	{
 	  flags |= NM_PW_DATA_USE_COPY;
 	}
-      struct nm_pkt_wrap *p_pw = NULL;
-      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
       nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, chunk_offset, flags);
       tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
       union nm_header_ctrl_generic_s ctrl;

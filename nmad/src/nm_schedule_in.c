@@ -160,10 +160,9 @@ void nm_drv_refill_recv(nm_drv_t p_drv)
   if(p_drv->driver->capabilities.has_recv_any)
     {
       /* recv any available- single pw with no gate */
-      struct nm_pkt_wrap *p_pw;
       if(p_drv->p_in_rq == NULL)
 	{
-	  nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
+	  struct nm_pkt_wrap*p_pw = nm_pw_alloc_buffer();
 	  nm_core_post_recv(p_pw, NM_GATE_NONE, NM_TRK_SMALL, p_drv);
 	}
     }
@@ -181,8 +180,7 @@ void nm_drv_refill_recv(nm_drv_t p_drv)
 	      struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
 	      if(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL])
 		{
-		  struct nm_pkt_wrap *p_pw;
-		  nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
+		  struct nm_pkt_wrap*p_pw = nm_pw_alloc_buffer();
 		  nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
 		}
 	    }

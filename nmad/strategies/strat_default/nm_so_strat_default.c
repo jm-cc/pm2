@@ -125,8 +125,7 @@ static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len
   const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
   if(chunk_len + max_header_len <= p_status->nm_max_small)
     {
-      struct nm_pkt_wrap*p_pw = NULL;
-      nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+      struct nm_pkt_wrap*p_pw = nm_pw_alloc_global_header();
       nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
       assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
       tbx_fast_list_add_tail(&p_pw->link, &p_status->out_list);

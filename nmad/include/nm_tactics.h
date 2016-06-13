@@ -28,8 +28,7 @@ static inline nm_len_t nm_so_pw_remaining_buf(struct nm_pkt_wrap *p_pw)
 static inline void nm_tactic_pack_ctrl(const union nm_header_ctrl_generic_s*p_ctrl,
 				       struct tbx_fast_list_head*out_list)
 {
-  struct nm_pkt_wrap*p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+  struct nm_pkt_wrap*p_pw = nm_pw_alloc_global_header();
   nm_so_pw_add_control(p_pw, p_ctrl);
   tbx_fast_list_add_tail(&p_pw->link, out_list);
 }
@@ -50,8 +49,7 @@ static inline void nm_tactic_pack_small_into_pw(struct nm_req_s*p_pack, const ch
 static inline void nm_tactic_pack_small_new_pw(struct nm_req_s*p_pack, const char*data, int len, int offset,
 					       int copy_threshold, struct tbx_fast_list_head*out_list)
 { 
-  struct nm_pkt_wrap *p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+  struct nm_pkt_wrap*p_pw = nm_pw_alloc_global_header();
   nm_tactic_pack_small_into_pw(p_pack, data, len, offset, copy_threshold, p_pw);
   tbx_fast_list_add_tail(&p_pw->link, out_list);
 }
@@ -61,8 +59,7 @@ static inline void nm_tactic_pack_small_new_pw(struct nm_req_s*p_pack, const cha
  */
 static inline void nm_tactic_pack_rdv(struct nm_req_s*p_pack, const char*data, nm_len_t len, nm_len_t offset)
 {
-  struct nm_pkt_wrap *p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
   nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_NOHEADER);
   tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_header_ctrl_generic_s ctrl;
@@ -73,8 +70,7 @@ static inline void nm_tactic_pack_rdv(struct nm_req_s*p_pack, const char*data, n
 
 static inline void nm_tactic_pack_data_rdv(struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset)
 {
-  struct nm_pkt_wrap*p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
   nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset, NM_PW_NOHEADER | NM_PW_DATA_ITERATOR);
   tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_header_ctrl_generic_s ctrl;
@@ -123,13 +119,13 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap*p_pw, int nb_chunks, co
   const nm_seq_t seq = p_pw->p_unpack->seq;
   const nm_core_tag_t tag = p_pw->p_unpack->tag;
   nm_gate_t p_gate = p_pw->p_gate;
-  struct nm_pkt_wrap*p_pw2 = NULL;
   for(i = 0; i < nb_chunks; i++)
     {
+      struct nm_pkt_wrap*p_pw2 = NULL;
       if(chunks[i].len < p_pw->length)
 	{
 	  /* create a new pw with the remaining data */
-	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
+	  p_pw2 = nm_pw_alloc_noheader();
 	  p_pw2->p_drv    = p_pw->p_drv;
 	  p_pw2->trk_id   = p_pw->trk_id;
 	  p_pw2->p_gate   = p_pw->p_gate;
@@ -161,7 +157,7 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap*p_pw, int nb_chunks, co
 	}
       else
 	{
-	  nm_so_pw_free(p_pw);
+	  nm_pw_free(p_pw);
 	}
       nm_so_post_rtr(p_gate, tag, seq, chunks[i].p_drv, chunks[i].trk_id, chunk_offset, chunks[i].len);
       chunk_offset += chunks[i].len;

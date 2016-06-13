@@ -86,7 +86,7 @@ static inline void nm_pw_ref_dec(struct nm_pkt_wrap *p_pw)
   assert(count >= 0);
   if(count == 0)
     {
-      nm_so_pw_free(p_pw);
+      nm_pw_free(p_pw);
     }
 }
 

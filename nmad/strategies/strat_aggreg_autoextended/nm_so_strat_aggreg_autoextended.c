@@ -148,7 +148,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
     }
 
   /* Simply form a new packet wrapper */
-  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_so_pw);
+  p_so_pw = nm_pw_alloc_global_header();
   err = nm_so_pw_add_control(p_so_pw, p_ctrl);
   if(err != NM_ESUCCESS)
     goto out;
@@ -190,6 +190,8 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
   struct nm_so_strat_aggreg_autoextended_gate*status = _status;
   struct nm_pkt_wrap *p_pw = NULL;
   int flags = 0;
+  if(len <= status->nm_so_copy_on_send_threshold)
+    flags |= NM_PW_DATA_USE_COPY;
 
   if(len <= status->nm_so_max_small)
     {
@@ -204,27 +206,20 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
 	    }
 	  else
 	    {
-	      if(len <= status->nm_so_copy_on_send_threshold && size <= rlen)
-		{
-		  flags = NM_PW_DATA_USE_COPY;
-		}
 	      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
 	      nb_data_aggregation ++;
 	      return;
 	    }
 	}
       /* cannot aggregate- create a new pw */
-      flags = NM_PW_GLOBAL_HEADER;
-      if(len <= status->nm_so_copy_on_send_threshold)
-	flags |= NM_PW_DATA_USE_COPY;
-      nm_so_pw_alloc(flags, &p_pw);
+      p_pw = nm_pw_alloc_global_header();
       nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
       tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
     }
   else
     {
       /* large packet */
-      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      p_pw = nm_pw_alloc_noheader();
       nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
       nm_so_pw_finalize(p_pw);
       tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);

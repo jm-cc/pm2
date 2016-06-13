@@ -135,9 +135,13 @@ int nm_so_pw_init(struct nm_core *p_core);
 
 int nm_so_pw_exit(void);
 
-int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw);
+struct nm_pkt_wrap*nm_pw_alloc_buffer(void);
 
-int nm_so_pw_free(struct nm_pkt_wrap *p_pw);
+struct nm_pkt_wrap*nm_pw_alloc_noheader(void);
+
+struct nm_pkt_wrap*nm_pw_alloc_global_header(void);
+
+int nm_pw_free(struct nm_pkt_wrap*p_pw);
 
 int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
 			struct nm_pkt_wrap *pp_pw2,

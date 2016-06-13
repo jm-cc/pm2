@@ -150,8 +150,7 @@ struct nm_large_chunk_context_s
 static void nm_large_chunk_store(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_large_chunk_context_s*p_large_chunk = _context;
-  struct nm_pkt_wrap *p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
   p_pw->p_unpack = p_large_chunk->p_unpack;
   nm_so_pw_add_raw(p_pw, ptr, len, p_large_chunk->chunk_offset);
   assert(p_pw->p_drv == NULL);
@@ -644,8 +643,7 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
       if(p_drv->trk_caps[NM_TRK_LARGE].supports_data || density < NM_LARGE_MIN_DENSITY)
 	{
 	  /* iterator-based data & driver supports data natively || low-density -> send all & copy */
-	  struct nm_pkt_wrap*p_large_pw = NULL;
-	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw);
+	  struct nm_pkt_wrap*p_large_pw = nm_pw_alloc_noheader();
 	  p_large_pw->p_unpack     = p_unpack;
 	  p_large_pw->length       = chunk_len;
 	  p_large_pw->chunk_offset = chunk_offset;
@@ -693,8 +691,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
 	      /* assert ack is partial */
 	      assert(chunk_len > 0 && chunk_len < p_large_pw->length);
 	      /* create a new pw with the remaining data */
-	      struct nm_pkt_wrap *p_pw2 = NULL;
-	      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
+	      struct nm_pkt_wrap*p_pw2 = nm_pw_alloc_noheader();
 	      p_pw2->p_drv    = p_large_pw->p_drv;
 	      p_pw2->trk_id   = p_large_pw->trk_id;
 	      p_pw2->p_gate   = p_gate;
@@ -731,7 +728,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
 		  /* repack chunk on trk#0 */
 		  (*r->driver->pack_data)(r->_status, p_pack, chunk_len, chunk_offset);
 		}
-	      nm_so_pw_free(p_large_pw);
+	      nm_pw_free(p_large_pw);
 	    }
 	  return;
 	}

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2014 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -128,7 +128,7 @@ strat_split_balance_pack_ctrl(void *_status,
   }
 
   /* Otherwise, simply form a new packet wrapper */
-  nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_so_pw);
+  p_so_pw = nm_pw_alloc_global_header();
   err = nm_so_pw_add_control(p_so_pw, p_ctrl);
   if(err != NM_ESUCCESS)
     goto out;
@@ -146,10 +146,8 @@ static void
 strat_split_balance_launch_large_chunk(void *_status, struct nm_req_s*p_pack,
 				       const void *data, nm_len_t len, nm_len_t chunk_offset, uint8_t is_last_chunk)
 {
-  int flags = NM_PW_NOHEADER;
-  struct nm_pkt_wrap *p_pw = NULL;
-  nm_so_pw_alloc(flags, &p_pw);
-  nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, flags);
+  struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
+  nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, 0);
   p_pw->chunk_offset = chunk_offset;
   tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_header_ctrl_generic_s ctrl;
@@ -162,8 +160,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_req_s*p_pack,
 					  const void *data, nm_len_t len, nm_len_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_strat_split_balance*status = _status;
-  struct nm_pkt_wrap *p_pw;
-  int flags = 0;
+  struct nm_pkt_wrap*p_pw;
 
   /* We aggregate ONLY if data are very small OR if there are
      already two ready packets */
@@ -178,20 +175,16 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_req_s*p_pack,
 	  if(size <= h_rlen)
 	    {
 	      /* We can copy data into the header zone */
-	      flags = NM_PW_DATA_USE_COPY;
-	      struct nm_pkt_wrap TBX_UNUSED dummy_p_pw;
-	      nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, flags);
+	      nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, NM_PW_DATA_USE_COPY);
 	      return;
 	    }
 	}
     }
 
-  flags = NM_PW_GLOBAL_HEADER | NM_PW_DATA_USE_COPY;
-
   /* We didn't have a chance to form an aggregate, so simply form a
      new packet wrapper and add it to the out_list */
-  nm_so_pw_alloc(flags, &p_pw);
-  nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, flags);
+  p_pw = nm_pw_alloc_global_header();
+  nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, chunk_offset, NM_PW_DATA_USE_COPY);
   p_pw->chunk_offset = chunk_offset;
   tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
   status->nb_packets++;

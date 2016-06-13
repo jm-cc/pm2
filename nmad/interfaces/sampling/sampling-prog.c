@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -94,7 +94,7 @@ static void nm_ns_pw_send(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size
   /* cache and reuse the same packet wrapper */
   if(p_pw == NULL)
     {  
-      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      p_pw = nm_pw_alloc_noheader();
       nm_so_pw_add_raw(p_pw, ptr, param_min_size, 0);
       nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
     }
@@ -121,7 +121,7 @@ static void nm_ns_pw_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t len
   static struct nm_pkt_wrap*p_pw = NULL;
   if(p_pw == NULL)
     {  
-      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      p_pw = nm_pw_alloc_noheader();
       nm_so_pw_add_raw(p_pw, ptr, param_min_size, 0);
       nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
     }
@@ -151,12 +151,12 @@ static void nm_ns_eager_send_copy(nm_drv_t p_drv, nm_gate_t p_gate, const void*p
   struct nm_pkt_wrap*p_pw = NULL;
   if(len <= NM_MAX_SMALL)
     {
-      nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+      p_pw = nm_pw_alloc_global_header();
       nm_so_pw_add_data_in_header(p_pw, tag, seq, ptr, len, 0, 0);
     }
   else
     {
-      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      p_pw = nm_pw_alloc_noheader();
       nm_so_pw_add_raw(p_pw, ptr, len, 0);
     }
   nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
@@ -171,7 +171,7 @@ static void nm_ns_eager_send_copy(nm_drv_t p_drv, nm_gate_t p_gate, const void*p
       fprintf(stderr, "sampling: error %d while sending [eager send].\n", err);
       abort();
     }
-  nm_so_pw_free(p_pw);
+  nm_pw_free(p_pw);
 }
 
 static void nm_ns_eager_send_iov(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
@@ -183,12 +183,12 @@ static void nm_ns_eager_send_iov(nm_drv_t p_drv, nm_gate_t p_gate, const void*pt
   struct nm_pkt_wrap*p_pw = NULL;
   if(len <= NM_MAX_SMALL)
     {
-      nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+      p_pw = nm_pw_alloc_global_header();
       nm_so_pw_add_data_in_iovec(p_pw, tag, seq, (void*)ptr, len, 0, 0);
     }
   else
     {
-      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      p_pw = nm_pw_alloc_noheader();
       nm_so_pw_add_raw(p_pw, (void*)ptr, len, 0);
     }
   nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
@@ -203,7 +203,7 @@ static void nm_ns_eager_send_iov(nm_drv_t p_drv, nm_gate_t p_gate, const void*pt
       fprintf(stderr, "sampling: error %d while sending [eager send].\n", err);
       abort();
     }
-  nm_so_pw_free(p_pw);
+  nm_pw_free(p_pw);
 }
 
 
@@ -215,12 +215,12 @@ static void nm_ns_eager_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t 
   char*buf = NULL;
   if(len <= NM_MAX_SMALL)
     {
-      nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
+      p_pw = nm_pw_alloc_buffer();
     }
   else
     {
       buf = malloc(len);
-      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      p_pw = nm_pw_alloc_noheader();
       nm_so_pw_add_raw(p_pw, buf, len, 0);
     }
   nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
@@ -257,7 +257,7 @@ static void nm_ns_eager_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t 
       memcpy(ptr, buf, len);
       free(buf);
     }
-  nm_so_pw_free(p_pw);
+  nm_pw_free(p_pw);
 }
 
 /* *** eager, aggregation ********************************** */
@@ -272,7 +272,7 @@ static void nm_ns_eager_send_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, const void
   struct nm_pkt_wrap*p_pw = NULL;
   if(_len <= NM_MAX_SMALL)
     {
-      nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+      p_pw = nm_pw_alloc_global_header();
       nm_so_pw_add_data_in_header(p_pw, tag, seq, (void*)ptr, len, 0, 0);
       nm_so_pw_add_data_in_header(p_pw, tag, seq, (void*)ptr + len, len, 0, 0);
       nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
@@ -287,7 +287,7 @@ static void nm_ns_eager_send_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, const void
 	  fprintf(stderr, "sampling: error %d while sending [eager send].\n", err);
 	  abort();
 	}
-      nm_so_pw_free(p_pw);
+      nm_pw_free(p_pw);
     }
 }
 
@@ -299,7 +299,7 @@ static void nm_ns_eager_recv_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, 
   struct nm_pkt_wrap*p_pw = NULL;
   if(_len <= NM_MAX_SMALL)
     {
-      nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
+      p_pw = nm_pw_alloc_buffer();
       nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
       int err = r->driver->post_recv_iov(r->_status, p_pw);
       while(err == -NM_EAGAIN)
@@ -341,7 +341,7 @@ static void nm_ns_eager_recv_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, 
 	    TBX_FAILUREF("unexpected proto %x; len = %d (%d)\n", proto_id, (int)len, (int)_len);
 	}
       while(ptr <  p_pw->v[0].iov_base + nm_header_global_v0len(p_pw));
-      nm_so_pw_free(p_pw);
+      nm_pw_free(p_pw);
     }
 }
 
@@ -356,8 +356,7 @@ static void nm_ns_rdv_send(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, siz
   
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  struct nm_pkt_wrap*p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
   nm_so_pw_add_raw(p_pw, (void*)ptr, len, 0);
   nm_so_pw_assign(p_pw, NM_TRK_LARGE, p_drv, p_gate);
   int err = r->driver->post_send_iov(r->_status, p_pw);
@@ -370,15 +369,14 @@ static void nm_ns_rdv_send(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, siz
       fprintf(stderr, "sampling: error %d while sending [rdv send].\n", err);
       abort();
     }
-  nm_so_pw_free(p_pw);
+  nm_pw_free(p_pw);
 }
 
 static void nm_ns_rdv_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t len)
 {
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  struct nm_pkt_wrap*p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
   nm_so_pw_add_raw(p_pw, ptr, len, 0);
   nm_so_pw_assign(p_pw, NM_TRK_LARGE, p_drv, p_gate);
   int err = r->driver->post_recv_iov(r->_status, p_pw);
@@ -396,7 +394,7 @@ static void nm_ns_rdv_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t le
       fprintf(stderr, "sampling: error %d while receiving.\n", err);
       abort();
     }
-  nm_so_pw_free(p_pw);
+  nm_pw_free(p_pw);
 }
 
 /* *** memcpy ********************************************** */

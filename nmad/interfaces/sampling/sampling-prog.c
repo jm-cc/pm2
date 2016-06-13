@@ -660,7 +660,7 @@ int main(int argc, char **argv)
 
 #ifndef PIOMAN
   /* flush pending recv requests posted by nmrefill_in_drv() */
-  if(!nm_pkt_wrap__list_empty(&p_drv->p_core->pending_recv_list))
+  if(!nm_pkt_wrap_list_empty(&p_drv->p_core->pending_recv_list))
     {
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
       struct nm_pkt_wrap_s*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];

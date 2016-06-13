@@ -72,10 +72,10 @@ static int nm_dummy_close_track(struct nm_trk*p_trk);
 static int nm_dummy_connect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_dummy_accept(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_dummy_disconnect(void*_status, struct nm_cnx_rq *p_crq);
-static int nm_dummy_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_dummy_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_dummy_poll_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_dummy_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_dummy_post_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_dummy_post_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_dummy_poll_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_dummy_poll_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
 static const char*nm_dummy_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_dummy_driver =
@@ -309,7 +309,7 @@ nm_dummy_disconnect		(void*_status,
 static
 int
 nm_dummy_post_send_iov		(void*_status,
-				 struct nm_pkt_wrap *p_pw) {
+				 struct nm_pkt_wrap_s *p_pw) {
 	int err;
 
 	err = NM_ESUCCESS;
@@ -320,7 +320,7 @@ nm_dummy_post_send_iov		(void*_status,
 static
 int
 nm_dummy_post_recv_iov		(void*_status,
-				 struct nm_pkt_wrap *p_pw) {
+				 struct nm_pkt_wrap_s *p_pw) {
 	int err;
 
 	err = NM_ESUCCESS;
@@ -331,7 +331,7 @@ nm_dummy_post_recv_iov		(void*_status,
 static
 int
 nm_dummy_poll_send_iov    	(void*_status,
-				 struct nm_pkt_wrap *p_pw) {
+				 struct nm_pkt_wrap_s *p_pw) {
 	int err;
 
 	err = NM_ESUCCESS;
@@ -342,7 +342,7 @@ nm_dummy_poll_send_iov    	(void*_status,
 static
 int
 nm_dummy_poll_recv_iov    	(void*_status,
-				 struct nm_pkt_wrap *p_pw) {
+				 struct nm_pkt_wrap_s *p_pw) {
 	int err;
 
 	err = NM_ESUCCESS;

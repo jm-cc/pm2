@@ -108,10 +108,10 @@ static int nm_gm_close_track(struct nm_trk*p_trk);
 static int nm_gm_connect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_gm_accept(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_gm_disconnect(void*_status, struct nm_cnx_rq *p_crq);
-static int nm_gm_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_gm_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_gm_poll_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_gm_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_gm_post_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_gm_post_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_gm_poll_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_gm_poll_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
 static const char*nm_gm_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_gm_driver =
@@ -803,7 +803,7 @@ nm_gm_disconnect		(void*_status,
 static
 int
 nm_gm_post_send_iov		(void*_status,
-				 struct nm_pkt_wrap *p_pw) {
+				 struct nm_pkt_wrap_s *p_pw) {
         nm_gate_t p_gate		= NULL;
         nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
@@ -866,7 +866,7 @@ nm_gm_post_send_iov		(void*_status,
 static
 int
 nm_gm_post_recv_iov		(void*_status,
-				 struct nm_pkt_wrap *p_pw) {
+				 struct nm_pkt_wrap_s *p_pw) {
         nm_gate_t p_gate		= NULL;
         nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
@@ -917,7 +917,7 @@ nm_gm_post_recv_iov		(void*_status,
 static
 int
 nm_gm_poll_send_iov    	(void*_status,
-			 struct nm_pkt_wrap *p_pw) {
+			 struct nm_pkt_wrap_s *p_pw) {
         struct nm_gm_pkt_wrap	*p_gm_pw	= NULL;
         struct gm_port		*p_gm_port	= NULL;
         gm_status_t		 gms		= GM_SUCCESS;
@@ -959,7 +959,7 @@ nm_gm_poll_send_iov    	(void*_status,
 static
 int
 nm_gm_poll_recv_iov    	(void*_status,
-			 struct nm_pkt_wrap *p_pw) {
+			 struct nm_pkt_wrap_s *p_pw) {
         nm_drv_t p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_gm_pkt_wrap	*p_gm_pw	= NULL;

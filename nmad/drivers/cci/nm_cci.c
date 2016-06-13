@@ -73,14 +73,14 @@ struct nm_cci_connection_s
     struct
     {
       /** pw posted for short recv */
-      struct nm_pkt_wrap*p_pw;
+      struct nm_pkt_wrap_s*p_pw;
       /** unexpected chunks of data */
       nm_cci_unexpected_list_t unexpected;
     } trk_small;
     struct
     {
       /** pw posted for large recv */
-      struct nm_pkt_wrap*p_recv_pw;
+      struct nm_pkt_wrap_s*p_recv_pw;
 #ifdef NM_CCI_RCACHE
       /** rcache entry for large send */
       const struct puk_mem_reg_s*send_rcache;
@@ -125,10 +125,10 @@ static int nm_cci_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_cci_exit(nm_drv_t p_drv);
 static int nm_cci_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
 static int nm_cci_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
-static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_cci_poll_recv(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_cci_poll_recv(void*_status, struct nm_pkt_wrap_s *p_pw);
 
 static const struct nm_drv_iface_s nm_cci_driver =
   {
@@ -312,7 +312,7 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 	{
 	case CCI_EVENT_SEND:
 	  {
-	    struct nm_pkt_wrap*p_pw = event->send.context;
+	    struct nm_pkt_wrap_s*p_pw = event->send.context;
 	    if(p_pw != NULL)
 	      {
 		if(p_pw->trk_id == NM_TRK_LARGE)
@@ -341,7 +341,7 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 	    const size_t size = event->recv.len;
 	    if(conn->peer.trk_id == NM_TRK_SMALL)
 	      {
-		struct nm_pkt_wrap*p_pw = conn->info.trk_small.p_pw;
+		struct nm_pkt_wrap_s*p_pw = conn->info.trk_small.p_pw;
 		if(p_pw == NULL)
 		  {
 		    if(conn->info.trk_small.unexpected == NULL)
@@ -378,7 +378,7 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 		    break;
 		  case NM_CCI_OP_COMPLETE:
 		    {
-		      struct nm_pkt_wrap*p_pw = conn->info.trk_large.p_recv_pw;
+		      struct nm_pkt_wrap_s*p_pw = conn->info.trk_large.p_recv_pw;
 		      p_pw->drv_priv = (void*)0x00;
 #ifdef NM_CCI_RCACHE
 		      puk_mem_unreg(conn->info.trk_large.recv_rcache);
@@ -492,7 +492,7 @@ static int nm_cci_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_
   return NM_ESUCCESS;
 }
 
-static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   struct nm_cci*status = (struct nm_cci*)_status;
   struct nm_cci_connection_s*conn = status->conns[p_pw->trk_id];
@@ -525,7 +525,7 @@ static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
   return nm_cci_poll_send(_status, p_pw);
 }
 
-static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   struct nm_cci*status = (struct nm_cci*)_status;
   struct nm_cci_drv*p_cci_drv = p_pw->p_drv->priv;
@@ -557,7 +557,7 @@ static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap *p_pw)
   return (p_pw->drv_priv == NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
-static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   struct nm_cci*status = (struct nm_cci*)_status;
   struct nm_cci_connection_s*conn = status->conns[p_pw->trk_id];
@@ -611,7 +611,7 @@ static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 }
 
 
-static int nm_cci_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_cci_poll_recv(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   struct nm_cci*status = (struct nm_cci*)_status;
   struct nm_cci_connection_s*conn = status->conns[p_pw->trk_id];

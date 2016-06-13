@@ -70,7 +70,7 @@ struct nm_pw_completion_s
 
 /** Internal packet wrapper.
  */
-struct nm_pkt_wrap
+struct nm_pkt_wrap_s
 {
   /** link to insert the pw into a tbx_fast_list. A pw may be stored either in:
    * out_list in strategy, pending_large_send in sender, pending_large_recv in receiver,
@@ -78,7 +78,9 @@ struct nm_pkt_wrap
    * post_sched_out_list, post_recv_list in driver
    */
   struct tbx_fast_list_head link;
-  
+
+  PUK_LIST_LINK(nm_pkt_wrap);
+
   /* ** scheduler fields */
   
 #ifdef PIOMAN_POLL
@@ -101,9 +103,9 @@ struct nm_pkt_wrap
   struct iovec prealloc_v[NM_SO_PREALLOC_IOV_LEN];  /**< pre-allcoated iovec */
 
   /* ** lifecycle */
-  int ref_count;                                /**< number of references pointing to the header */
-  void (*destructor)(struct nm_pkt_wrap*p_pw);  /**< destructor called uppon packet destroy */
-  void*destructor_key;                          /**< key for destructor to store private data */
+  int ref_count;                                 /**< number of references pointing to the header */
+  void (*destructor)(struct nm_pkt_wrap_s*p_pw); /**< destructor called uppon packet destroy */
+  void*destructor_key;                           /**< key for destructor to store private data */
 
   /* ** fields used when sending */
 
@@ -128,49 +130,51 @@ struct nm_pkt_wrap
   NM_SO_ALIGN_TYPE buf[1];
 };
 
+PUK_LIST_DECLARE_TYPE(nm_pkt_wrap);
+PUK_LIST_CREATE_FUNCS(nm_pkt_wrap);
 
-#define nm_l2so(l) tbx_fast_list_entry(l, struct nm_pkt_wrap, link)
+#define nm_l2so(l) tbx_fast_list_entry(l, struct nm_pkt_wrap_s, link)
 
 int nm_so_pw_init(struct nm_core *p_core);
 
 int nm_so_pw_exit(void);
 
-struct nm_pkt_wrap*nm_pw_alloc_buffer(void);
+struct nm_pkt_wrap_s*nm_pw_alloc_buffer(void);
 
-struct nm_pkt_wrap*nm_pw_alloc_noheader(void);
+struct nm_pkt_wrap_s*nm_pw_alloc_noheader(void);
 
-struct nm_pkt_wrap*nm_pw_alloc_global_header(void);
+struct nm_pkt_wrap_s*nm_pw_alloc_global_header(void);
 
-int nm_pw_free(struct nm_pkt_wrap*p_pw);
+int nm_pw_free(struct nm_pkt_wrap_s*p_pw);
 
-int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
-			struct nm_pkt_wrap *pp_pw2,
+int nm_so_pw_split_data(struct nm_pkt_wrap_s *p_pw,
+			struct nm_pkt_wrap_s *pp_pw2,
 			nm_len_t offset);
 
-void nm_so_pw_add_data_chunk(struct nm_pkt_wrap *p_pw, struct nm_req_s*p_pack,
+void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack,
 			     const void *data, nm_len_t len, nm_len_t offset, int flags);
 
-void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_so_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 			     const void*data, nm_len_t len);
 
-void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_so_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 				 const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t flags);
 
-void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 				const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t proto_flags);
 
-void nm_so_pw_add_raw(struct nm_pkt_wrap*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset);
+void nm_so_pw_add_raw(struct nm_pkt_wrap_s*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset);
 
-struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw);
+struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap_s*p_pw);
 
 /* forward declaration to resolve dependancy */
 union nm_header_ctrl_generic_s;
 
-int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_header_ctrl_generic_s*p_ctrl);
+int nm_so_pw_add_control(struct nm_pkt_wrap_s*p_pw, const union nm_header_ctrl_generic_s*p_ctrl);
 
-int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
+int nm_so_pw_finalize(struct nm_pkt_wrap_s *p_pw);
 
-void nm_pw_completion_add(struct nm_pkt_wrap*p_pw, struct nm_req_s*p_pack, nm_len_t len);
+void nm_pw_completion_add(struct nm_pkt_wrap_s*p_pw, struct nm_req_s*p_pack, nm_len_t len);
 
 
 #endif /* NM_PKT_WRAP_H */

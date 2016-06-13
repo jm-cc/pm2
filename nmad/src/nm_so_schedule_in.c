@@ -23,13 +23,13 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
-				const struct nm_header_pkt_data_s*h, struct nm_pkt_wrap *p_pw);
+				const struct nm_header_pkt_data_s*h, struct nm_pkt_wrap_s *p_pw);
 static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
-				  const struct nm_header_short_data_s*h, struct nm_pkt_wrap *p_pw);
+				  const struct nm_header_short_data_s*h, struct nm_pkt_wrap_s *p_pw);
 static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
-				  const struct nm_header_data_s*h, struct nm_pkt_wrap *p_pw);
+				  const struct nm_header_data_s*h, struct nm_pkt_wrap_s *p_pw);
 static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s*p_unpack,
-			   const struct nm_header_ctrl_rdv_s*h, struct nm_pkt_wrap *p_pw);
+			   const struct nm_header_ctrl_rdv_s*h, struct nm_pkt_wrap_s *p_pw);
 
 /* ********************************************************* */
 /* ** unexpected/matching */
@@ -150,17 +150,17 @@ struct nm_large_chunk_context_s
 static void nm_large_chunk_store(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_large_chunk_context_s*p_large_chunk = _context;
-  struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
+  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
   p_pw->p_unpack = p_large_chunk->p_unpack;
   nm_so_pw_add_raw(p_pw, ptr, len, p_large_chunk->chunk_offset);
   assert(p_pw->p_drv == NULL);
   p_pw->p_gate = p_large_chunk->p_gate;
-  tbx_fast_list_add_tail(&p_pw->link, &p_large_chunk->p_gate->pending_large_recv);
+  nm_pkt_wrap_list_push_back(&p_large_chunk->p_gate->pending_large_recv, p_pw);
   p_large_chunk->chunk_offset += len;
 }
 
 /** mark 'chunk_len' data as received in the given unpack, and check for unpack completion, sets pp_unpack to NULL if finalized */
-static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_pkt_wrap*p_pw, struct nm_req_s**pp_unpack, nm_len_t chunk_len)
+static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw, struct nm_req_s**pp_unpack, nm_len_t chunk_len)
 {
   struct nm_req_s*p_unpack = *pp_unpack;
   p_unpack->unpack.cumulated_len += chunk_len;
@@ -216,7 +216,7 @@ static inline void nm_so_data_flags_decode(struct nm_req_s*p_unpack, uint8_t fla
 /** store an unexpected chunk of data (data/short_data/rdv) */
 static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, const struct nm_header_generic_s*p_header,
 				       nm_len_t chunk_offset, nm_len_t chunk_len, nm_core_tag_t tag, nm_seq_t seq,
-				       struct nm_pkt_wrap *p_pw)
+				       struct nm_pkt_wrap_s *p_pw)
 {
   struct nm_unexpected_s*p_chunk = nm_unexpected_alloc();
   p_chunk->p_header = p_header;
@@ -554,7 +554,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
 /** Process a packed data request (NM_PROTO_PKT_DATA)- p_unpack may be NULL (unexpected)
  */
 static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
-				const struct nm_header_pkt_data_s*h, struct nm_pkt_wrap *p_pw)
+				const struct nm_header_pkt_data_s*h, struct nm_pkt_wrap_s *p_pw)
 {
   const nm_len_t chunk_len = h->data_len;
   const nm_len_t chunk_offset = h->chunk_offset;
@@ -577,7 +577,7 @@ static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct 
 /** Process a short data request (NM_PROTO_SHORT_DATA)- p_unpack may be NULL (unexpected)
  */
 static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
-				  const struct nm_header_short_data_s*h, struct nm_pkt_wrap *p_pw)
+				  const struct nm_header_short_data_s*h, struct nm_pkt_wrap_s *p_pw)
 {
   const nm_len_t chunk_len = h->len;
   const nm_len_t chunk_offset = 0;
@@ -601,7 +601,7 @@ static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
 /** Process a small data request (NM_PROTO_DATA)- p_unpack may be NULL (unexpected)
  */
 static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
-				  const struct nm_header_data_s*h, struct nm_pkt_wrap*p_pw)
+				  const struct nm_header_data_s*h, struct nm_pkt_wrap_s*p_pw)
 {
   const void*ptr = (h->skip == 0xFFFF) ? (((void*)h) + NM_HEADER_DATA_SIZE) :
     p_pw->v[0].iov_base + (h->skip + nm_header_global_v0len(p_pw));
@@ -628,7 +628,7 @@ static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
  * either p_unpack may be NULL (storing unexpected) or p_pw (unpacking unexpected)
  */
 static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s*p_unpack,
-			   const struct nm_header_ctrl_rdv_s*h, struct nm_pkt_wrap *p_pw)
+			   const struct nm_header_ctrl_rdv_s*h, struct nm_pkt_wrap_s *p_pw)
 {
   const nm_len_t chunk_len = h->len;
   const nm_len_t chunk_offset = h->chunk_offset;
@@ -643,13 +643,13 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
       if(p_drv->trk_caps[NM_TRK_LARGE].supports_data || density < NM_LARGE_MIN_DENSITY)
 	{
 	  /* iterator-based data & driver supports data natively || low-density -> send all & copy */
-	  struct nm_pkt_wrap*p_large_pw = nm_pw_alloc_noheader();
+	  struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
 	  p_large_pw->p_unpack     = p_unpack;
 	  p_large_pw->length       = chunk_len;
 	  p_large_pw->chunk_offset = chunk_offset;
 	  p_large_pw->p_data       = p_unpack->p_data;
 	  p_large_pw->p_gate       = p_gate;
-	  tbx_fast_list_add_tail(&p_large_pw->link, &p_gate->pending_large_recv);
+	  nm_pkt_wrap_list_push_back(&p_gate->pending_large_recv, p_large_pw);
 	}
       else
 	{
@@ -666,15 +666,15 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
 
 /** Process a complete rendez-vous ready-to-receive request.
  */
-static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_ctrl_rtr_s*header)
+static void nm_rtr_handler(struct nm_pkt_wrap_s *p_rtr_pw, const struct nm_header_ctrl_rtr_s*header)
 {
   const nm_core_tag_t tag     = header->tag_id;
   const nm_seq_t seq          = header->seq;
   const nm_len_t chunk_offset = header->chunk_offset;
   const nm_len_t chunk_len    = header->chunk_len;
   nm_gate_t p_gate      = p_rtr_pw->p_gate;
-  struct nm_pkt_wrap *p_large_pw = NULL;
-  tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
+  struct nm_pkt_wrap_s*p_large_pw = NULL, *p_pw_save;
+  puk_list_foreach_safe(p_large_pw, p_pw_save, &p_gate->pending_large_send)
     {
       assert(p_large_pw->n_completions == 1);
       const struct nm_pw_completion_s*p_completion = &p_large_pw->completions[0];
@@ -684,14 +684,14 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
       if((p_pack->seq == seq) && nm_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
 	{
 	  nmad_lock_assert();
-	  tbx_fast_list_del(&p_large_pw->link);
+	  nm_pkt_wrap_list_erase(&p_gate->pending_large_send, p_large_pw);
 	  if(chunk_len < p_large_pw->length)
 	    {
 	      /* ** partial RTR- split the packet  */
 	      /* assert ack is partial */
 	      assert(chunk_len > 0 && chunk_len < p_large_pw->length);
 	      /* create a new pw with the remaining data */
-	      struct nm_pkt_wrap*p_pw2 = nm_pw_alloc_noheader();
+	      struct nm_pkt_wrap_s*p_pw2 = nm_pw_alloc_noheader();
 	      p_pw2->p_drv    = p_large_pw->p_drv;
 	      p_pw2->trk_id   = p_large_pw->trk_id;
 	      p_pw2->p_gate   = p_gate;
@@ -704,7 +704,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
 	      /* populate p_pw2 iovec */
 	      nm_so_pw_split_data(p_large_pw, p_pw2, chunk_len);
 	      nmad_lock_assert();
-	      tbx_fast_list_add(&p_pw2->link, &p_gate->pending_large_send);
+	      nm_pkt_wrap_list_push_front(&p_gate->pending_large_send, p_pw2);
 	    }
 	  /* send the data */
 	  nm_drv_t p_drv = nm_drv_get_by_index(p_gate, header->drv_index);
@@ -734,7 +734,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
 	}
     }
   fprintf(stderr, "nmad: FATAL- cannot find matching packet for received RTR: seq = %d; offset = %lu- dumping pending large packets\n", seq, chunk_offset);
-  tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
+  puk_list_foreach(p_large_pw, &p_gate->pending_large_send)
     {
       const struct nm_req_s*p_pack = p_large_pw->completions[0].p_pack;
       fprintf(stderr, "  packet- seq = %d; chunk_offset = %lu\n", p_pack->seq, p_large_pw->chunk_offset);
@@ -743,7 +743,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, const struct nm_header_
 }
 /** Process an acknowledgement.
  */
-static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_ctrl_ack_s*header)
+static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_header_ctrl_ack_s*header)
 {
   struct nm_core*p_core = p_ack_pw->p_gate->p_core;
   const nm_core_tag_t tag = header->tag_id;
@@ -771,7 +771,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_header_
 /** decode one chunk of headers.
  * @returns the number of processed bytes in global header, 
  */
-int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap*p_pw, nm_gate_t p_gate)
+int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate)
 {
   int rc = 0;
   const nm_proto_t proto_id   = (*(const nm_proto_t*)ptr) & NM_PROTO_ID_MASK;
@@ -863,7 +863,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 
 /** Process a complete incoming request.
  */
-int nm_so_process_complete_recv(struct nm_core*p_core,	struct nm_pkt_wrap*p_pw)
+int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
   nm_gate_t const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);
@@ -885,7 +885,7 @@ int nm_so_process_complete_recv(struct nm_core*p_core,	struct nm_pkt_wrap*p_pw)
     }
 
 #ifdef NMAD_POLL
-  tbx_fast_list_del(&p_pw->link);
+  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #endif /* NMAD_POLL */
 
   nm_unlock_interface(p_core);

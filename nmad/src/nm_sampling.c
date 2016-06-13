@@ -253,7 +253,7 @@ double nm_ns_evaluate_transfer_time(nm_drv_t driver, int length)
   return bw / length;
 }
 
-double nm_ns_remaining_transfer_time(struct nm_pkt_wrap *p_pw)
+double nm_ns_remaining_transfer_time(struct nm_pkt_wrap_s *p_pw)
 {
   double estimate_transfer_time;
   tbx_tick_t start_transfer_time;

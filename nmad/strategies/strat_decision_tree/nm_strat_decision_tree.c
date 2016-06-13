@@ -167,7 +167,7 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack,
     int nb_pw = 0;
     int smaller_pw_size = NM_SO_MAX_UNEXPECTED;
     int max_reamaining_data_area = 0;
-    struct nm_pkt_wrap *p_pw_trace = NULL;
+    struct nm_pkt_wrap_s *p_pw_trace = NULL;
     
     if(!tbx_fast_list_empty(out_list))
       {
@@ -238,7 +238,7 @@ static int strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
   
   if((p_gdrv->active_send[NM_TRK_SMALL] == 0) && !(tbx_fast_list_empty(out_list)))
     {
-      struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
+      struct nm_pkt_wrap_s *p_so_pw = nm_l2so(out_list->next);
 #ifdef PROFILE_NMAD
       static long double wait_time = 0.0;
       static int count = 0, send_count = 0;
@@ -287,9 +287,9 @@ static int strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
  */
 static void strat_decision_tree_rdv_accept(void*_status, nm_gate_t p_gate)
 {
-  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
+  struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_gate->pending_large_recv);
+  if(p_pw != NULL)
     {
-      struct nm_pkt_wrap*p_pw = nm_l2so(p_gate->pending_large_recv.next);
       nm_drv_t p_drv = nm_drv_default(p_gate);
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
       if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
@@ -297,7 +297,7 @@ static void strat_decision_tree_rdv_accept(void*_status, nm_gate_t p_gate)
 	  /* The large-packet track is available- post recv and RTR */
 	  struct nm_rdv_chunk chunk = 
 	    { .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_LARGE };
-	  tbx_fast_list_del(p_gate->pending_large_recv.next);
+	  nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	}
     }

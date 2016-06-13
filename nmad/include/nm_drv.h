@@ -16,10 +16,10 @@
 #ifndef NM_DRV_H
 #define NM_DRV_H
 
-struct nm_pkt_wrap;
+struct nm_pkt_wrap_s;
 
 /** LF queue type for post send/recv lists */
-PUK_LFQUEUE_TYPE(nm_pw_post, struct nm_pkt_wrap*, NULL, 1024);
+PUK_LFQUEUE_TYPE(nm_pw_post, struct nm_pkt_wrap_s*, NULL, 1024);
 
 /** Driver.
  */
@@ -35,7 +35,7 @@ struct nm_drv_s
   const struct nm_drv_iface_s*driver;
     
   /** recv request for trk#0 if driver supports recv_any */
-  struct nm_pkt_wrap*p_in_rq;
+  struct nm_pkt_wrap_s*p_in_rq;
 
   /** Post-scheduler outgoing lists, to be posted to the driver. */
   struct nm_pw_post_lfqueue_s post_send;
@@ -88,21 +88,21 @@ struct nm_drv_iface_s
   int (*connect)   (void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
   int (*disconnect)(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
 
-  int (*post_send_iov)(void*_status, struct nm_pkt_wrap *p_pw);
-  int (*post_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);
+  int (*post_send_iov)(void*_status, struct nm_pkt_wrap_s *p_pw);
+  int (*post_recv_iov)(void*_status, struct nm_pkt_wrap_s *p_pw);
 
-  int (*poll_send_iov)(void*_status, struct nm_pkt_wrap *p_pw);
-  int (*poll_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);
+  int (*poll_send_iov)(void*_status, struct nm_pkt_wrap_s *p_pw);
+  int (*poll_recv_iov)(void*_status, struct nm_pkt_wrap_s *p_pw);
 
-  int (*wait_recv_iov)(void*_status, struct nm_pkt_wrap*p_pw);
-  int (*wait_send_iov)(void*_status, struct nm_pkt_wrap*p_pw);
+  int (*wait_recv_iov)(void*_status, struct nm_pkt_wrap_s*p_pw);
+  int (*wait_send_iov)(void*_status, struct nm_pkt_wrap_s*p_pw);
 
-  int (*prefetch_send)(void*_status, struct nm_pkt_wrap *p_pw);
+  int (*prefetch_send)(void*_status, struct nm_pkt_wrap_s *p_pw);
 
-  int (*cancel_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);
+  int (*cancel_recv_iov)(void*_status, struct nm_pkt_wrap_s *p_pw);
 
-  int (*poll_send_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);
-  int (*poll_recv_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);
+  int (*poll_send_any_iov)(void*_status, struct nm_pkt_wrap_s **p_pw);
+  int (*poll_recv_any_iov)(void*_status, struct nm_pkt_wrap_s **p_pw);
 
   const char* (*get_driver_url)(nm_drv_t p_drv);
 

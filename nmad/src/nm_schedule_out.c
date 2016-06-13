@@ -102,7 +102,7 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
 
 /** Process a complete successful outgoing request.
  */
-int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw)
+int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
 {
   nm_gate_t const p_gate = p_pw->p_gate;
   nmad_lock_assert();
@@ -145,8 +145,9 @@ int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw
 
 /** Poll an active outgoing request.
  */
-__inline__ void nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
+void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 {
+  struct nm_core*p_core = p_pw->p_gate->p_core;
   nmad_lock_assert();
   assert(p_pw->flags & NM_PW_FINALIZED || p_pw->flags & NM_PW_NOHEADER);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
@@ -157,9 +158,9 @@ __inline__ void nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
       piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
 #ifdef NMAD_POLL
-      tbx_fast_list_del(&p_pw->link);
+      nm_pkt_wrap_list_erase(&p_core->pending_send_list, p_pw);
 #endif /* NMAD_POLL */
-      nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
+      nm_so_process_complete_send(p_core, p_pw);
     }
   else if(err != -NM_EAGAIN)
     {
@@ -170,8 +171,9 @@ __inline__ void nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
 /** Post a new outgoing request.
     - this function must handle immediately completed requests properly
 */
-void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
+void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 {
+  struct nm_core*p_core = p_pw->p_drv->p_core;
   nmad_lock_assert();
 
 #ifdef PIO_OFFLOAD
@@ -202,7 +204,7 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
     {
 #ifdef NMAD_POLL
       /* put the request in the list of pending requests */
-      tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->p_core->pending_send_list);
+      nm_pkt_wrap_list_push_back(&p_core->pending_send_list, p_pw);
 #else /* NMAD_POLL */
       nm_ltask_submit_poll_send(p_pw);
 #endif /* NMAD_POLL */
@@ -210,7 +212,7 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
   else if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
-      nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
+      nm_so_process_complete_send(p_core, p_pw);
     }
   else
     {
@@ -226,7 +228,7 @@ void nm_drv_post_send(nm_drv_t p_drv)
 {
   /* post new requests	*/
   nmad_lock_assert();
-  struct nm_pkt_wrap*p_pw = NULL;
+  struct nm_pkt_wrap_s*p_pw = NULL;
   do
     {
       NM_TRACEF("posting outbound requests");
@@ -255,7 +257,7 @@ void nm_out_prefetch(struct nm_core*p_core)
 {
   /* check whether all drivers are idle */
   nm_drv_t p_drv = NULL;
-  if(!tbx_fast_list_empty(&p_core->pending_send_list))
+  if(!nm_pkt_wrap_list_empty(&p_core->pending_send_list))
     {
       return;
     }
@@ -263,18 +265,15 @@ void nm_out_prefetch(struct nm_core*p_core)
   nm_gate_t p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      if(!tbx_fast_list_empty(&p_gate->pending_large_send))
+      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_gate->pending_large_send);
+      if((p_pw != NULL) && (p_pw->p_data == NULL) && !(p_pw->flags & NM_PW_PREFETCHED))
 	{
-	  struct nm_pkt_wrap *p_pw = nm_l2so(p_gate->pending_large_send.next);
-	  if((p_pw->p_data == NULL) && !(p_pw->flags & NM_PW_PREFETCHED))
+	  p_drv = nm_drv_default(p_gate);
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+	  if(p_gdrv->receptacle.driver->prefetch_send)
 	    {
-	      p_drv = nm_drv_default(p_gate);
-	      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	      if(p_gdrv->receptacle.driver->prefetch_send)
-		{
-		  (p_gdrv->receptacle.driver->prefetch_send)(p_gdrv->receptacle._status, p_pw);
-		  p_pw->flags |= NM_PW_PREFETCHED;
-		}
+	      (p_gdrv->receptacle.driver->prefetch_send)(p_gdrv->receptacle._status, p_pw);
+	      p_pw->flags |= NM_PW_PREFETCHED;
 	    }
 	}
     }  

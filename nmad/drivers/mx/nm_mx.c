@@ -147,12 +147,12 @@ static int nm_mx_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_mx_close(nm_drv_t p_drv);
 static int nm_mx_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
 static int nm_mx_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
-static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw, int block);
-static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap_s *p_pw, int block);
+static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
 static const char*nm_mx_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_mx_driver =
@@ -593,7 +593,7 @@ static int nm_mx_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_t
 }
 
 /** Post a iov send request to MX */
-static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
 #ifdef PIOMAN
   piom_spin_lock(&nm_mx_lock);
@@ -643,7 +643,7 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 }
 
 /** Post a iov receive request to MX */
-static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
 #ifdef PIOMAN
   piom_spin_lock(&nm_mx_lock);
@@ -700,7 +700,7 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
   return err;
 }
 
-static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
+static int nm_mx_get_err(struct nm_pkt_wrap_s *p_pw,
 			 mx_status_t        status,
 			 mx_return_t         mx_ret)
 {
@@ -777,13 +777,13 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
   return err;
 }
 
-static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   return nm_mx_poll_iov_locked(_status, p_pw, 1);
 }
 
 /** Load MX operations */
-static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw, int block)
+static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap_s *p_pw, int block)
 {
   struct nm_mx_pkt_wrap	*p_mx_pw = p_pw->drv_priv;;
   mx_status_t	status;
@@ -812,7 +812,7 @@ static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw, int blo
   return nm_mx_get_err(p_pw, status, mx_ret);
 }
 
-static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
 #ifdef PIOMAN
   piom_spin_lock(&nm_mx_lock);
@@ -825,7 +825,7 @@ static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw)
 }
 
 /** cancel a recv operation */
-static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   int err = -NM_ENOTIMPL;
   struct nm_mx_pkt_wrap	*p_mx_pw = p_pw->drv_priv;

@@ -237,12 +237,12 @@ int nm_core_driver_exit(struct nm_core *p_core)
 
       if(p_drv->p_in_rq)
 	{
-	  struct nm_pkt_wrap*p_pw = p_drv->p_in_rq;
+	  struct nm_pkt_wrap_s*p_pw = p_drv->p_in_rq;
 	  p_drv->p_in_rq = NULL;
 	  if(p_drv->driver->cancel_recv_iov)
 	    p_drv->driver->cancel_recv_iov(NULL, p_pw);
 #if defined(NMAD_POLL)
-	  tbx_fast_list_del(&p_pw->link);
+	  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #else
 	  piom_ltask_cancel(&p_pw->ltask);
 #endif
@@ -255,7 +255,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
 	  if(p_gdrv != NULL)
 	    {
-	      struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
+	      struct nm_pkt_wrap_s*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
 	      if(p_pw)
 		{
 		  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
@@ -264,7 +264,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 
 #if defined(NMAD_POLL)
-		  tbx_fast_list_del(&p_pw->link);
+		  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #else
 		  piom_ltask_cancel(&p_pw->ltask);
 #endif

@@ -127,7 +127,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
                                                nm_gate_t p_gate,
                                                const union nm_header_ctrl_generic_s *p_ctrl)
 {
-  struct nm_pkt_wrap *p_so_pw = NULL;
+  struct nm_pkt_wrap_s *p_so_pw = NULL;
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
   int err;
 
@@ -163,7 +163,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
 static int strat_aggreg_autoextended_flush(void*_status,
                                            nm_gate_t p_gate)
 {
-  struct nm_pkt_wrap *p_so_pw = NULL;
+  struct nm_pkt_wrap_s *p_so_pw = NULL;
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
   NM_LOG_IN();
   tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link) 
@@ -188,7 +188,7 @@ static int strat_aggreg_autoextended_todo(void*_status,
 static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
   struct nm_so_strat_aggreg_autoextended_gate*status = _status;
-  struct nm_pkt_wrap *p_pw = NULL;
+  struct nm_pkt_wrap_s *p_pw = NULL;
   int flags = 0;
   if(len <= status->nm_so_copy_on_send_threshold)
     flags |= NM_PW_DATA_USE_COPY;
@@ -251,7 +251,7 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
     goto out;
 
   /* Simply take the head of the list */
-  struct nm_pkt_wrap *p_pw = nm_l2so(out_list->next);
+  struct nm_pkt_wrap_s *p_pw = nm_l2so(out_list->next);
   if((p_pw->flags & NM_PW_FINALIZED) != 0)
     {
       NM_TRACEF("pw %p is completed\n", p_pw);
@@ -274,9 +274,9 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
  */
 static void strat_aggreg_autoextended_rdv_accept(void*_status, nm_gate_t p_gate)
 {
-  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
+  struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_gate->pending_large_recv);
+  if(p_pw != NULL)
     {
-      struct nm_pkt_wrap*p_pw = nm_l2so(p_gate->pending_large_recv.next);
       nm_drv_t p_drv = nm_drv_default(p_gate);
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
       if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
@@ -284,7 +284,7 @@ static void strat_aggreg_autoextended_rdv_accept(void*_status, nm_gate_t p_gate)
 	  /* The large-packet track is available- post recv and RTR */
 	  struct nm_rdv_chunk chunk = 
 	    { .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_LARGE };
-	  tbx_fast_list_del(p_gate->pending_large_recv.next);
+	  nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	}
     }

@@ -46,7 +46,7 @@ struct nm_gate_drv
   puk_instance_t instance;
   
   /** Array of reference to current incoming requests, (indexed by trk_id). */
-  struct nm_pkt_wrap *p_in_rq_array[NM_SO_MAX_TRACKS];
+  struct nm_pkt_wrap_s *p_in_rq_array[NM_SO_MAX_TRACKS];
   
   tbx_bool_t active_recv[NM_SO_MAX_TRACKS];
   tbx_bool_t active_send[NM_SO_MAX_TRACKS];
@@ -80,9 +80,9 @@ struct nm_gate_s
   struct nm_so_tag_table_s tags;
 
   /** large messages waiting for Track 1 (or 2) to be free- list of pw */
-  struct tbx_fast_list_head pending_large_recv;
+  struct nm_pkt_wrap_list_s pending_large_recv;
   /** large messages waiting for RTRs- list of pw, lookup by [gate,tag,seq,chunk_offset] */
-  struct tbx_fast_list_head pending_large_send;       
+  struct nm_pkt_wrap_list_s pending_large_send;       
 
   /* Strategy components elements */
   struct puk_receptacle_NewMad_Strategy_s strategy_receptacle;

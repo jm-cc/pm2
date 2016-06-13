@@ -141,7 +141,7 @@ static int strat_aggreg_pack_ctrl(void*_status, nm_gate_t p_gate,
 				  const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_strat_aggreg_s*p_status = _status;
-  struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_CTRL_SIZE, 0);
+  struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_CTRL_SIZE, 0);
   if(p_pw)
     {
       nm_so_pw_add_control(p_pw, p_ctrl);
@@ -171,7 +171,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
   if(len + max_header_len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       /* ** small send */
-      struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, max_header_len, len);
+      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, max_header_len, len);
       if(!p_pw)
 	{
 	  p_pw = nm_pw_alloc_global_header();
@@ -191,9 +191,9 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
 	{
 	  flags |= NM_PW_DATA_USE_COPY;
 	}
-      struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
+      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
       nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, chunk_offset, flags);
-      tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
+      nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_pw);
       union nm_header_ctrl_generic_s ctrl;
       nm_header_init_rdv(&ctrl, p_pack, len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
       struct puk_receptacle_NewMad_Strategy_s*strategy = &p_pack->p_gate->strategy_receptacle;
@@ -208,7 +208,7 @@ static void strat_aggreg_pack_chunk(void*_status, struct nm_req_s*p_pack, void*p
   struct nm_strat_aggreg_s*p_status = _status;
   if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
-      struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_DATA_SIZE, len);
+      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_DATA_SIZE, len);
       if(p_pw)
 	{
 	  nb_data_aggregation++;
@@ -240,7 +240,7 @@ static int strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
   if( (p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
       (!tbx_fast_list_empty(out_list)))
     {
-      struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
+      struct nm_pkt_wrap_s *p_so_pw = nm_l2so(out_list->next);
       tbx_fast_list_del(out_list->next);
       /* Post packet on track 0 */
       nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, p_drv);
@@ -252,9 +252,9 @@ static int strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
  */
 static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
 {
-  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
+  struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_gate->pending_large_recv);
+  if(p_pw != NULL)
     {
-      struct nm_pkt_wrap*p_pw = nm_l2so(p_gate->pending_large_recv.next);
       nm_drv_t p_drv = nm_drv_default(p_gate);
       if(p_pw->length > strat_aggreg_max_small(p_drv->p_core))
 	{
@@ -264,7 +264,7 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
 	      /* The large-packet track is available- post recv and RTR */
 	      struct nm_rdv_chunk chunk = 
 		{ .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_LARGE };
-	      tbx_fast_list_del(p_gate->pending_large_recv.next);
+	      nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
 	      nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	    }
 	}
@@ -273,7 +273,7 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
 	  /* small chunk in a large packet- send on trk#0 */
 	  struct nm_rdv_chunk chunk = 
 	    { .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_SMALL };
-	  tbx_fast_list_del(p_gate->pending_large_recv.next);
+	  nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	}
     }

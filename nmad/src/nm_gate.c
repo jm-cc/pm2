@@ -37,8 +37,8 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   nm_gdrv_vect_init(&p_gate->gdrv_array);
   nm_so_tag_table_init(&p_gate->tags);
 
-  TBX_INIT_FAST_LIST_HEAD(&p_gate->pending_large_recv);
-  TBX_INIT_FAST_LIST_HEAD(&p_gate->pending_large_send);
+  nm_pkt_wrap_list_init(&p_gate->pending_large_recv);
+  nm_pkt_wrap_list_init(&p_gate->pending_large_send);
 
 
   p_gate->strategy_instance = puk_component_instantiate(p_core->strategy_component);

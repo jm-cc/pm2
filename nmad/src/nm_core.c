@@ -61,7 +61,7 @@ void nm_strat_apply(struct nm_core*p_core)
 	  /* schedule new requests on all gates */
 	  nm_strat_try_and_commit(p_gate);
 	  /* process postponed recv requests */
-	  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
+	  if(!nm_pkt_wrap_list_empty(&p_gate->pending_large_recv))
 	    {
 	      const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
 	      strategy->driver->rdv_accept(strategy->_status, p_gate);
@@ -107,21 +107,21 @@ int nm_schedule(struct nm_core *p_core)
   }
 
   /* poll pending recv requests */
-  if (!tbx_fast_list_empty(&p_core->pending_recv_list))
+  if(!nm_pkt_wrap_list_empty(&p_core->pending_recv_list))
     {
       NM_TRACEF("polling inbound requests");
-      struct nm_pkt_wrap*p_pw, *p_pw2;
-      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_core->pending_recv_list, link)
+      struct nm_pkt_wrap_s*p_pw, *p_pw2;
+      puk_list_foreach_safe(p_pw, p_pw2, &p_core->pending_recv_list)
 	{
 	  nm_pw_poll_recv(p_pw);
 	}
     }
   /* poll pending out requests */
-  if (!tbx_fast_list_empty(&p_core->pending_send_list))
+  if(!nm_pkt_wrap_list_empty(&p_core->pending_send_list))
     {
       NM_TRACEF("polling outbound requests");
-      struct nm_pkt_wrap*p_pw, *p_pw2;
-      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_core->pending_send_list, link)
+      struct nm_pkt_wrap_s*p_pw, *p_pw2;
+      puk_list_foreach_safe(p_pw, p_pw2, &p_core->pending_send_list)
 	{
 	  nm_pw_poll_send(p_pw);
 	}
@@ -445,8 +445,8 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_core_event_vect_init(&p_core->pending_events);
   
 #ifdef NMAD_POLL
-  TBX_INIT_FAST_LIST_HEAD(&p_core->pending_recv_list);
-  TBX_INIT_FAST_LIST_HEAD(&p_core->pending_send_list);
+  nm_pkt_wrap_list_init(&p_core->pending_recv_list);
+  nm_pkt_wrap_list_init(&p_core->pending_send_list);
 #endif /* NMAD_POLL*/
   p_core->enable_schedopt = 1;
 
@@ -486,10 +486,9 @@ void nm_core_schedopt_disable(nm_core_t p_core)
   p_core->enable_schedopt = 0;
 #ifdef NMAD_POLL
   /* flush pending recv requests posted by nm_drv_refill_recv() */
-  while(!tbx_fast_list_empty(&p_core->pending_recv_list))
+  while(!nm_pkt_wrap_list_empty(&p_core->pending_recv_list))
     {
-      struct nm_pkt_wrap*p_pw = nm_l2so(p_core->pending_recv_list.next);
-      tbx_fast_list_del(&p_pw->link);
+      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_core->pending_recv_list);
       if(p_pw->p_gdrv)
 	{
 	  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
@@ -513,7 +512,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
       piom_ltask_cancel(&p_drv->p_ltask);
       if(p_drv->p_in_rq)
 	{
-	  struct nm_pkt_wrap*p_pw = p_drv->p_in_rq;
+	  struct nm_pkt_wrap_s*p_pw = p_drv->p_in_rq;
 	  piom_ltask_cancel(&p_pw->ltask);
 	  if(p_pw->p_drv->driver->cancel_recv_iov)
 	    {
@@ -529,7 +528,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
       puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
 	{
 	  struct nm_gate_drv*p_gdrv = *i;
-	  struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
+	  struct nm_pkt_wrap_s*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
 	  if(p_pw != NULL)
 	    {
 	      piom_ltask_cancel(&p_pw->ltask);
@@ -577,7 +576,7 @@ int nm_core_exit(nm_core_t p_core)
   nm_drv_t p_drv = NULL;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      struct nm_pkt_wrap*p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
+      struct nm_pkt_wrap_s*p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
       while(p_pw != NULL)
 	{
 	  NM_TRACEF("extracting pw from post_recv_list\n");
@@ -588,8 +587,8 @@ int nm_core_exit(nm_core_t p_core)
 
 #ifdef NMAD_POLL
   /* Sanity check- everything is supposed to be empty here */
-  struct nm_pkt_wrap*p_pw, *p_pw2;
-  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_core->pending_recv_list, link)
+  struct nm_pkt_wrap_s*p_pw, *p_pw2;
+  puk_list_foreach_safe(p_pw, p_pw2, &p_core->pending_recv_list)
     {
       NM_WARN("purging pw from pending_recv_list\n");
       nm_pw_ref_dec(p_pw);

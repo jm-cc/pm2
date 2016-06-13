@@ -134,11 +134,11 @@ __PUK_SYM_INTERNAL
 void nm_drv_post_recv(nm_drv_t p_drv);
 
 __PUK_SYM_INTERNAL
-void nm_pw_post_send(struct nm_pkt_wrap*p_pw);
+void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw);
 __PUK_SYM_INTERNAL
-void nm_pw_poll_send(struct nm_pkt_wrap *p_pw);
+void nm_pw_poll_send(struct nm_pkt_wrap_s *p_pw);
 __PUK_SYM_INTERNAL
-int  nm_pw_poll_recv(struct nm_pkt_wrap*p_pw);
+int  nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw);
 
 __PUK_SYM_INTERNAL
 void nm_out_prefetch(struct nm_core*p_core);
@@ -149,19 +149,19 @@ void nm_drv_post_all(nm_drv_t p_drv);
 /** Process a complete successful outgoing request.
  */
 __PUK_SYM_INTERNAL
-int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw);
+int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw);
 
 /** Process complete incoming request.
  */
 __PUK_SYM_INTERNAL
-int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap *p_pw);
+int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s *p_pw);
 
 __PUK_SYM_INTERNAL
-void nm_data_pkt_pack(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_data_pkt_pack(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 		      const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len, uint8_t flags);
 
 __PUK_SYM_INTERNAL
-void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap*p_pw,
+void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap_s*p_pw,
 			nm_len_t chunk_offset, nm_len_t chunk_len);
 
 #endif /* NM_PRIVATE_H */

@@ -22,7 +22,7 @@ struct nm_header_global_s
   uint16_t v0len; /**< size of v0 actually used ( == offset value to reach v[1] ) */
 } __attribute__((packed));
 
-static inline void nm_header_global_finalize(struct nm_pkt_wrap*p_pw)
+static inline void nm_header_global_finalize(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_header_global_s*h = p_pw->v[0].iov_base;
   const int v0len = p_pw->v[0].iov_len;
@@ -30,7 +30,7 @@ static inline void nm_header_global_finalize(struct nm_pkt_wrap*p_pw)
   h->v0len = v0len;
 }
 
-static inline uint16_t nm_header_global_v0len(const struct nm_pkt_wrap*p_pw)
+static inline uint16_t nm_header_global_v0len(const struct nm_pkt_wrap_s*p_pw)
 {
   assert(p_pw->flags & (NM_PW_GLOBAL_HEADER | NM_PW_BUFFER));
   const struct nm_header_global_s*h = p_pw->v[0].iov_base;

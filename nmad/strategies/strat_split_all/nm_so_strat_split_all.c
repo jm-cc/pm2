@@ -54,16 +54,16 @@ static p_tbx_memory_t nm_ssa_pw_mem = NULL;
 static int strat_split_all_todo(void*, nm_gate_t );
 static int strat_split_all_pack(void*_status, struct nm_req_s*p_pack);
 static int strat_split_all_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
-static int strat_split_all_pack_ctrl_chunk(void*, struct nm_pkt_wrap *, const union nm_header_ctrl_generic_s *);
-static int strat_split_all_pack_extended_ctrl(void*, nm_gate_t , nm_len_t, const union nm_header_ctrl_generic_s *, struct nm_pkt_wrap **);
+static int strat_split_all_pack_ctrl_chunk(void*, struct nm_pkt_wrap_s *, const union nm_header_ctrl_generic_s *);
+static int strat_split_all_pack_extended_ctrl(void*, nm_gate_t , nm_len_t, const union nm_header_ctrl_generic_s *, struct nm_pkt_wrap_s **);
 static int strat_split_all_pack_extended_ctrl_end(void*,
                                                 nm_gate_t p_gate,
-                                                struct nm_pkt_wrap *p_so_pw);
+                                                struct nm_pkt_wrap_s *p_so_pw);
 static int strat_split_all_try_and_commit(void*, nm_gate_t );
 static int strat_split_all_rdv_accept(void*, nm_gate_t , nm_drv_id_t*, nm_trk_id_t*);
 static int strat_split_all_extended_rdv_accept(void*, nm_gate_t , nm_len_t, int *,
 						   nm_drv_id_t *, nm_len_t *);
-static int strat_split_all_split_small(void *_status, nm_gate_t p_gate, void *link, int *nb_cores, struct nm_pkt_wrap **out_pw);
+static int strat_split_all_split_small(void *_status, nm_gate_t p_gate, void *link, int *nb_cores, struct nm_pkt_wrap_s **out_pw);
 
 static const struct nm_strategy_iface_s nm_so_strat_split_all_driver =
   {
@@ -144,13 +144,13 @@ strat_split_all_pack_extended_ctrl(void *_status,
 				       nm_gate_t p_gate,
 				       nm_len_t cumulated_header_len,
 				       const union nm_header_ctrl_generic_s *p_ctrl,
-				       struct nm_pkt_wrap **pp_so_pw){
+				       struct nm_pkt_wrap_s **pp_so_pw){
   return NM_ESUCCESS;
 }
 
 static int
 strat_split_all_pack_ctrl_chunk(void *_status,
-				struct nm_pkt_wrap *p_so_pw,
+				struct nm_pkt_wrap_s *p_so_pw,
 				const union nm_header_ctrl_generic_s *p_ctrl){
   return NM_ESUCCESS;
 }
@@ -158,7 +158,7 @@ strat_split_all_pack_ctrl_chunk(void *_status,
 static int
 strat_split_all_pack_extended_ctrl_end(void *_status,
 					   nm_gate_t p_gate,
-					   struct nm_pkt_wrap *p_so_pw){
+					   struct nm_pkt_wrap_s *p_so_pw){
 	return NM_ESUCCESS;
 }
 
@@ -214,7 +214,7 @@ strat_split_all_pack_ctrl(void *_status,
 //                              nm_len_t chunk_offset, uint8_t is_last_chunk){
 //  struct nm_so_strat_split_all*status = _status;
 //  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->p_so_gate;
-//  struct nm_pkt_wrap *p_so_pw = NULL;
+//  struct nm_pkt_wrap_s *p_so_pw = NULL;
 //  int err;
 //
 //  /* First allocate a packet wrapper */
@@ -331,11 +331,11 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
                          nm_len_t offset,
                          tbx_bool_t need_split,
                          int drv_id,
-                         struct nm_pkt_wrap **pp_so_pw){
+                         struct nm_pkt_wrap_s **pp_so_pw){
 #if 0
 
   struct nm_ssa_data_req *p_req = NULL, *p_req_next;
-  struct nm_pkt_wrap *p_so_pw = NULL;
+  struct nm_pkt_wrap_s *p_so_pw = NULL;
   struct tbx_fast_list_head* reqs_list = &p_ssa_pw->reqs;
   nm_len_t proto_id = 0;
   struct nm_header_data_s *h = NULL;
@@ -359,7 +359,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 	len_to_send=threshold;
 	h->len-=threshold;
       }
-      struct nm_pkt_wrap *p_data_pw = NULL;
+      struct nm_pkt_wrap_s *p_data_pw = NULL;
       nm_so_pw_alloc_and_fill_with_data(h->proto_id, 
 					h->seq,
 					p_req->data+offset, 
@@ -528,7 +528,7 @@ strat_split_all_try_and_commit(void *_status,
   p_ssa_pw = ssa_pw2pw(out_list->next);
   tbx_fast_list_del(out_list->next);
   int idle_cores=3;
-  struct nm_pkt_wrap *pws[8];
+  struct nm_pkt_wrap_s *pws[8];
   int i;
 
   int err = strat_split_all_split_small(p_gate->strategy_receptacle._status,
@@ -551,13 +551,13 @@ strat_split_all_split_small(void *_status,
                             nm_gate_t p_gate,
                             void *link,
                             int *nb_cores,
-                            struct nm_pkt_wrap **out_pw){
+                            struct nm_pkt_wrap_s **out_pw){
   /* only split in 2 chunks for the moment */
   struct nm_so_strat_split_all *status = _status;
   struct nm_ssa_pw *p_ssa_pw = link;
   int drv_id = -1;
   nm_len_t split_ratio = 0;
-  struct nm_pkt_wrap *p_so_pw1 = NULL, *p_so_pw2 = NULL;
+  struct nm_pkt_wrap_s *p_so_pw1 = NULL, *p_so_pw2 = NULL;
   int cumulated_len = p_ssa_pw->cumulated_len;
   tbx_tick_t t1,t2;
 

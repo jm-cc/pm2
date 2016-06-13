@@ -158,11 +158,11 @@ static int nm_tcp_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_tcp_exit(nm_drv_t p_drv);
 static int nm_tcp_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
 static int nm_tcp_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
-static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
 static const char*nm_tcp_get_driver_url(nm_drv_t p_drv);
-static int nm_tcp_wait_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_tcp_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_tcp_wait_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_tcp_wait_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
 
 static const struct nm_drv_iface_s nm_tcp_driver =
   {
@@ -577,7 +577,7 @@ static int nm_tcp_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_
 }
 
 
-static int nm_tcp_poll_out(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
+static int nm_tcp_poll_out(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout)
 {
   struct nm_tcp	*status	= _status;
   int			 ret;
@@ -641,7 +641,7 @@ static int nm_tcp_poll_out(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
  *  @param p_pw the pkt wrapper.
  *  @return The NM status code.
  */
-static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
+static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout)
 {
   struct nm_tcp	        *status	        = _status;
   nm_drv_t p_drv		= p_pw->p_drv;
@@ -825,7 +825,7 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
 static
 int
 nm_tcp_send 	(void*_status,
-		 struct nm_pkt_wrap *p_pw,
+		 struct nm_pkt_wrap_s *p_pw,
 		 int timeout) {
         struct nm_tcp		*status	= _status;
         struct nm_tcp_pkt_wrap	*p_tcp_pw	= NULL;
@@ -1027,19 +1027,19 @@ nm_tcp_send 	(void*_status,
         goto out;
 }
 
-static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap *p_pw) 
+static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw) 
 {
   return nm_tcp_send(_status, p_pw, 0);
 }
 
-static int nm_tcp_wait_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_tcp_wait_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   return nm_tcp_send(_status, p_pw, 1000);
 }
 
 /** Post a new receive request or try to make a pending request progress.
  */
-static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
+static int nm_tcp_recv(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout)
 {
   struct nm_tcp		*status	= _status;
   struct nm_tcp_pkt_wrap	*p_tcp_pw = p_pw->drv_priv;
@@ -1286,12 +1286,12 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   goto out;
 }
 
-static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   return nm_tcp_recv(_status, p_pw, 0);
 }
 
-static int nm_tcp_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_tcp_wait_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   return nm_tcp_recv(_status, p_pw, 500);
 }

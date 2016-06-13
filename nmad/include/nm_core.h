@@ -26,7 +26,7 @@ struct nm_unexpected_s
 {
   PUK_LIST_LINK(nm_unexpected);
   const struct nm_header_generic_s*p_header;
-  struct nm_pkt_wrap*p_pw;
+  struct nm_pkt_wrap_s*p_pw;
   nm_gate_t p_gate;
   nm_seq_t seq;
   nm_core_tag_t tag;
@@ -50,14 +50,9 @@ struct nm_core
   int nb_drivers;
 
 #ifdef NMAD_POLL
-  /* if PIOMan is enabled, it already manages a 
-     list of requests to poll */
-
-  /** Outgoing active pw. */
-  struct tbx_fast_list_head pending_send_list;
-
-  /** recv pw */
-  struct tbx_fast_list_head pending_recv_list;
+  /* if PIOMan is enabled, it already manages a list of requests to poll */
+  struct nm_pkt_wrap_list_s pending_send_list;  /** Outgoing active pw. */
+  struct nm_pkt_wrap_list_s pending_recv_list;  /** recv pw */
 #endif /* NMAD_POLL */
 
   /** whether schedopt is enabled atop drivers */

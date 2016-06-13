@@ -30,7 +30,7 @@
 #include <Padico/Module.h>
 
 
-PUK_LFQUEUE_TYPE(nm_pw, struct nm_pkt_wrap*, NULL, 1024);
+PUK_LFQUEUE_TYPE(nm_pw, struct nm_pkt_wrap_s*, NULL, 1024);
 
 
 /** 'self' per-gate data (singleton, actually)
@@ -48,13 +48,13 @@ static int nm_self_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 static int nm_self_exit(nm_drv_t p_drv);
 static int nm_self_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
 static int nm_self_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
-static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_self_poll_send(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_self_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_self_poll_send(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap_s *p_pw);
 #ifdef PIOM_BLOCKING_CALLS
-static int nm_self_wait_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_self_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_self_wait_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_self_wait_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
 #endif
 
 static const struct nm_drv_iface_s nm_self_driver =
@@ -185,7 +185,7 @@ static int nm_self_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm
   return NM_ESUCCESS;
 }
 
-static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_self_send_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   struct nm_self*status = (struct nm_self*)_status;
   nm_pw_ref_inc(p_pw);
@@ -197,12 +197,12 @@ static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
   return NM_ESUCCESS;
 }
 
-static int nm_self_poll_send(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_self_poll_send(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   return NM_ESUCCESS;
 }
 
-static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   struct nm_self*status = (struct nm_self*)_status;
   if(p_pw->v_nb != 1)
@@ -213,10 +213,10 @@ static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
   return nm_self_poll_recv(_status, p_pw);
 }
 
-static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   struct nm_self*status = (struct nm_self*)_status;
-  struct nm_pkt_wrap*p_send_pw = nm_pw_lfqueue_dequeue(&status->queues[p_pw->trk_id]);
+  struct nm_pkt_wrap_s*p_send_pw = nm_pw_lfqueue_dequeue(&status->queues[p_pw->trk_id]);
   if(p_send_pw == NULL)
     {
       return -NM_EAGAIN;

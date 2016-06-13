@@ -54,12 +54,12 @@ static int nm_minidriver_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb
 static int nm_minidriver_close(nm_drv_t p_drv);
 static int nm_minidriver_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
 static int nm_minidriver_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
-static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
-static int nm_minidriver_poll_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
-static int nm_minidriver_send_prefetch(void*_status,  struct nm_pkt_wrap *p_pw);
-static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
-static int nm_minidriver_poll_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
-static int nm_minidriver_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap_s*p_pw);
+static int nm_minidriver_poll_send_iov(void*_status, struct nm_pkt_wrap_s*p_pw);
+static int nm_minidriver_send_prefetch(void*_status,  struct nm_pkt_wrap_s *p_pw);
+static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap_s*p_pw);
+static int nm_minidriver_poll_recv_iov(void*_status, struct nm_pkt_wrap_s*p_pw);
+static int nm_minidriver_cancel_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
 static const char* nm_minidriver_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_minidriver_driver =
@@ -317,7 +317,7 @@ static int nm_minidriver_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_d
 
 /* ** driver I/O functions ********************************* */
 
-static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
+static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap_s*__restrict__ p_pw)
 {
   struct nm_minidriver*status = _status;
   struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
@@ -334,7 +334,7 @@ static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap*__restri
   return err;
 }
 
-static int nm_minidriver_poll_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
+static int nm_minidriver_poll_send_iov(void*_status, struct nm_pkt_wrap_s*__restrict__ p_pw)
 {
   struct nm_minidriver*status = _status;
   struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
@@ -342,7 +342,7 @@ static int nm_minidriver_poll_send_iov(void*_status, struct nm_pkt_wrap*__restri
   return err;
 }
 
-static int nm_minidriver_send_prefetch(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_minidriver_send_prefetch(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   const nm_trk_id_t trk_id = NM_TRK_LARGE;
   struct nm_minidriver*status = _status;
@@ -354,7 +354,7 @@ static int nm_minidriver_send_prefetch(void*_status, struct nm_pkt_wrap *p_pw)
   return NM_ESUCCESS;
 }
 
-static int nm_minidriver_poll_recv_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
+static int nm_minidriver_poll_recv_iov(void*_status, struct nm_pkt_wrap_s*__restrict__ p_pw)
 {
   int err = -NM_EAGAIN;
   if(_status)
@@ -370,7 +370,7 @@ static int nm_minidriver_poll_recv_iov(void*_status, struct nm_pkt_wrap*__restri
   return err;
 }
 
-static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
+static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap_s*__restrict__ p_pw)
 {
   int err = NM_ESUCCESS;
   if(_status)
@@ -391,7 +391,7 @@ static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap*__restri
   return err;
 }
 
-static int nm_minidriver_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_minidriver_cancel_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
 {
   int err = -NM_ENOTIMPL;
   struct nm_minidriver*status = _status;

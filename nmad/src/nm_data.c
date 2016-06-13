@@ -672,14 +672,14 @@ void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t 
  */
 struct nm_data_pkt_packer_s
 {
-  struct nm_pkt_wrap*p_pw; /**< the pw to fill */
+  struct nm_pkt_wrap_s*p_pw; /**< the pw to fill */
   nm_len_t skip;
   uint16_t*p_prev_len;     /**< previous block */
 };
 static void nm_data_pkt_pack_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_data_pkt_packer_s*p_context = _context;
-  struct nm_pkt_wrap*p_pw = p_context->p_pw;
+  struct nm_pkt_wrap_s*p_pw = p_context->p_pw;
   struct iovec*v0 = &p_pw->v[0];
   if(len < NM_DATA_IOV_THRESHOLD)
     {
@@ -730,7 +730,7 @@ static void nm_data_pkt_pack_apply(void*ptr, nm_len_t len, void*_context)
     }
 }
 
-void nm_data_pkt_pack(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_data_pkt_pack(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 		      const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len, uint8_t flags)
 {
   struct iovec*v0 = &p_pw->v[0];
@@ -813,7 +813,7 @@ static void nm_data_pkt_unpack_apply(void*ptr, nm_len_t len, void*_context)
 }
 
 /** unpack from pkt format to data format */
-void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap*p_pw,
+void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap_s*p_pw,
 			nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_data_pkt_unpacker_s data_unpacker =

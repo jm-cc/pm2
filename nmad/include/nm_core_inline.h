@@ -59,7 +59,7 @@ static inline nm_drv_t nm_drv_get_by_index(nm_gate_t p_gate, int index)
 /* ** Packet wrapper management **************************** */
 
 /** assign packet to given driver, gate, and track */
-static inline void nm_so_pw_assign(struct nm_pkt_wrap*p_pw, nm_trk_id_t trk_id, nm_drv_t p_drv, nm_gate_t p_gate)
+static inline void nm_so_pw_assign(struct nm_pkt_wrap_s*p_pw, nm_trk_id_t trk_id, nm_drv_t p_drv, nm_gate_t p_gate)
 {
   p_pw->p_drv = p_drv;
   p_pw->trk_id = trk_id;
@@ -76,11 +76,11 @@ static inline void nm_so_pw_assign(struct nm_pkt_wrap*p_pw, nm_trk_id_t trk_id, 
     }
 }
 
-static inline void nm_pw_ref_inc(struct nm_pkt_wrap *p_pw)
+static inline void nm_pw_ref_inc(struct nm_pkt_wrap_s *p_pw)
 {
   __sync_fetch_and_add(&p_pw->ref_count, 1);
 }
-static inline void nm_pw_ref_dec(struct nm_pkt_wrap *p_pw)
+static inline void nm_pw_ref_dec(struct nm_pkt_wrap_s *p_pw)
 {
   const int count = __sync_sub_and_fetch(&p_pw->ref_count, 1);
   assert(count >= 0);
@@ -99,7 +99,7 @@ static inline void nm_pw_ref_dec(struct nm_pkt_wrap *p_pw)
  * maybe later with PIO-offloading, on next nm_schedule()
  * without PIOMan).
  */
-static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, nm_gate_t p_gate, 
+static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap_s *p_pw, nm_gate_t p_gate, 
 					     nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
@@ -122,7 +122,7 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, nm_gate_t
  * maybe later with PIO-offloading, on next nm_schedule()
  * without PIOMan).
  */
-static inline void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap*p_pw,
+static inline void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw,
 				     nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
   /* Packet is assigned to given track, driver, and gate */

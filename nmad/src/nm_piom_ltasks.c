@@ -120,7 +120,7 @@ static piom_topo_obj_t nm_get_binding_policy(nm_drv_t p_drv)
 
 static int nm_task_poll_recv(void*_pw)
 {
-  struct nm_pkt_wrap*p_pw = _pw;
+  struct nm_pkt_wrap_s*p_pw = _pw;
   int ret = -NM_EUNKNOWN;
   /* todo: lock something when using fine-grain locks */
   if(nmad_trylock())
@@ -133,7 +133,7 @@ static int nm_task_poll_recv(void*_pw)
 
 static int nm_task_block_recv(void*_pw)
 {
-  struct nm_pkt_wrap*p_pw = _pw;
+  struct nm_pkt_wrap_s*p_pw = _pw;
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err = r->driver->wait_recv_iov(r->_status, p_pw);
   if(err == NM_ESUCCESS)
@@ -161,7 +161,7 @@ static int nm_task_block_recv(void*_pw)
 
 static int nm_task_poll_send(void*_pw)
 {
-  struct nm_pkt_wrap*p_pw = _pw;
+  struct nm_pkt_wrap_s*p_pw = _pw;
   if(nmad_trylock())
     {
       nm_pw_poll_send(p_pw);
@@ -172,7 +172,7 @@ static int nm_task_poll_send(void*_pw)
 
 static int nm_task_block_send(void*_pw)
 {
-  struct nm_pkt_wrap*p_pw = _pw;
+  struct nm_pkt_wrap_s*p_pw = _pw;
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err;
   do
@@ -210,7 +210,7 @@ static int nm_task_post_on_drv(void*_drv)
 
 static int nm_task_offload(void* args)
 {
-  struct nm_pkt_wrap * p_pw=args;
+  struct nm_pkt_wrap_s * p_pw=args;
   nmad_lock();
   nm_pw_post_send(p_pw);
   nmad_unlock();
@@ -219,11 +219,11 @@ static int nm_task_offload(void* args)
 
 static void nm_ltask_destructor(struct piom_ltask*p_ltask)
 {
-  struct nm_pkt_wrap*p_pw = tbx_container_of(p_ltask, struct nm_pkt_wrap, ltask);
+  struct nm_pkt_wrap_s*p_pw = tbx_container_of(p_ltask, struct nm_pkt_wrap_s, ltask);
   nm_pw_ref_dec(p_pw);
 }
 
-void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
+void nm_ltask_submit_poll_recv(struct nm_pkt_wrap_s *p_pw)
 {
   piom_topo_obj_t ltask_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_recv,  p_pw,
@@ -240,7 +240,7 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
   piom_ltask_submit(&p_pw->ltask);	
 }
 
-void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
+void nm_ltask_submit_poll_send(struct nm_pkt_wrap_s *p_pw)
 {
   piom_topo_obj_t ltask_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw, 
@@ -268,7 +268,7 @@ void nm_ltask_submit_post_drv(nm_drv_t p_drv)
   piom_ltask_submit(&p_drv->p_ltask);
 }
 
-void nm_ltask_submit_offload(struct piom_ltask*p_ltask, struct nm_pkt_wrap *p_pw)
+void nm_ltask_submit_offload(struct piom_ltask*p_ltask, struct nm_pkt_wrap_s *p_pw)
 {
   piom_topo_obj_t ltask_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(p_ltask, &nm_task_offload, p_pw,

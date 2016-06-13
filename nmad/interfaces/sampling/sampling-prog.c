@@ -90,7 +90,7 @@ static void nm_ns_pw_send(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, size
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   int err;
-  static struct nm_pkt_wrap*p_pw = NULL;
+  static struct nm_pkt_wrap_s*p_pw = NULL;
   /* cache and reuse the same packet wrapper */
   if(p_pw == NULL)
     {  
@@ -118,7 +118,7 @@ static void nm_ns_pw_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t len
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   int err;
-  static struct nm_pkt_wrap*p_pw = NULL;
+  static struct nm_pkt_wrap_s*p_pw = NULL;
   if(p_pw == NULL)
     {  
       p_pw = nm_pw_alloc_noheader();
@@ -148,7 +148,7 @@ static void nm_ns_eager_send_copy(nm_drv_t p_drv, nm_gate_t p_gate, const void*p
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   const nm_core_tag_t tag = nm_tag_build(0, 0);
   const uint8_t seq  = 0;
-  struct nm_pkt_wrap*p_pw = NULL;
+  struct nm_pkt_wrap_s*p_pw = NULL;
   if(len <= NM_MAX_SMALL)
     {
       p_pw = nm_pw_alloc_global_header();
@@ -180,7 +180,7 @@ static void nm_ns_eager_send_iov(nm_drv_t p_drv, nm_gate_t p_gate, const void*pt
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   const nm_core_tag_t tag = nm_tag_build(0, 0);
   const uint8_t seq  = 0;
-  struct nm_pkt_wrap*p_pw = NULL;
+  struct nm_pkt_wrap_s*p_pw = NULL;
   if(len <= NM_MAX_SMALL)
     {
       p_pw = nm_pw_alloc_global_header();
@@ -211,7 +211,7 @@ static void nm_ns_eager_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t 
 {
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  struct nm_pkt_wrap*p_pw = NULL;
+  struct nm_pkt_wrap_s*p_pw = NULL;
   char*buf = NULL;
   if(len <= NM_MAX_SMALL)
     {
@@ -269,7 +269,7 @@ static void nm_ns_eager_send_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, const void
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   const nm_core_tag_t tag = nm_tag_build(0, 0);
   const uint8_t seq  = 0;
-  struct nm_pkt_wrap*p_pw = NULL;
+  struct nm_pkt_wrap_s*p_pw = NULL;
   if(_len <= NM_MAX_SMALL)
     {
       p_pw = nm_pw_alloc_global_header();
@@ -296,7 +296,7 @@ static void nm_ns_eager_recv_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, 
   const size_t len = _len / 2;
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  struct nm_pkt_wrap*p_pw = NULL;
+  struct nm_pkt_wrap_s*p_pw = NULL;
   if(_len <= NM_MAX_SMALL)
     {
       p_pw = nm_pw_alloc_buffer();
@@ -356,7 +356,7 @@ static void nm_ns_rdv_send(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, siz
   
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
+  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
   nm_so_pw_add_raw(p_pw, (void*)ptr, len, 0);
   nm_so_pw_assign(p_pw, NM_TRK_LARGE, p_drv, p_gate);
   int err = r->driver->post_send_iov(r->_status, p_pw);
@@ -376,7 +376,7 @@ static void nm_ns_rdv_recv(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, size_t le
 {
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  struct nm_pkt_wrap*p_pw = nm_pw_alloc_noheader();
+  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
   nm_so_pw_add_raw(p_pw, ptr, len, 0);
   nm_so_pw_assign(p_pw, NM_TRK_LARGE, p_drv, p_gate);
   int err = r->driver->post_recv_iov(r->_status, p_pw);
@@ -660,16 +660,16 @@ int main(int argc, char **argv)
 
 #ifndef PIOMAN
   /* flush pending recv requests posted by nmrefill_in_drv() */
-  if(!tbx_fast_list_empty(&p_drv->p_core->pending_recv_list))
+  if(!nm_pkt_wrap__list_empty(&p_drv->p_core->pending_recv_list))
     {
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-      struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
+      struct nm_pkt_wrap_s*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
       struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
       int err = r->driver->cancel_recv_iov(r->_status, p_pw);
       assert(err == NM_ESUCCESS);
       p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
       p_gdrv->active_recv[NM_TRK_SMALL] = 0;
-      tbx_fast_list_del(&p_pw->link);
+      nm_pkt_wrap_list_erase(&p_drv->p_core->pending_recv_list, p_pw);
     }
 #endif
 

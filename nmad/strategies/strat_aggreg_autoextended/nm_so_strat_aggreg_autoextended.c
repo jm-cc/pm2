@@ -222,7 +222,7 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
       p_pw = nm_pw_alloc_noheader();
       nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
       nm_so_pw_finalize(p_pw);
-      tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
+      nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_pw);
       union nm_header_ctrl_generic_s ctrl;
       nm_header_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
       strat_aggreg_autoextended_pack_ctrl(status, p_pack->p_gate, &ctrl);

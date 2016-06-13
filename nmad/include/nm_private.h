@@ -148,7 +148,6 @@ void nm_drv_post_all(nm_drv_t p_drv);
 
 /** Process a complete successful outgoing request.
  */
-__PUK_SYM_INTERNAL
 int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw);
 
 /** Process complete incoming request.

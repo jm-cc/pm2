@@ -17,14 +17,34 @@
 
 #define BLOCKSIZE 32
 
+static int blocksize = 0;
+
+static const struct mpi_bench_param_bounds_s param_bounds =
+  {
+    .min  = 4,
+    .max  = 1024,
+    .mult = 2,
+    .incr = 0
+  };
+
 static void*sparse_buf = NULL;
 static MPI_Datatype dtype = MPI_DATATYPE_NULL;
 
+static const struct mpi_bench_param_bounds_s*mpi_bench_noncontig_getparams(void)
+{
+  return &param_bounds;
+}
+
+static void mpi_bench_noncontig_setparam(int param)
+{
+  blocksize = param;
+}
 
 static void mpi_bench_noncontig_init(void*buf, size_t len, int count)
 {
-  const int blocksize = BLOCKSIZE;
-  sparse_buf = malloc(len * 2 + blocksize);
+  const int sparse_size = len * 2 + blocksize;
+  sparse_buf = malloc(sparse_size);
+  memset(sparse_buf, 0, sparse_size);
   MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &dtype);
   MPI_Type_commit(&dtype);
 }
@@ -59,6 +79,8 @@ const struct mpi_bench_s mpi_bench_noncontig =
     .init       = &mpi_bench_noncontig_init,
     .finalize   = &mpi_bench_noncontig_finalize,
     .server     = &mpi_bench_noncontig_server,
-    .client     = &mpi_bench_noncontig_client
+    .client     = &mpi_bench_noncontig_client,
+    .setparam   = &mpi_bench_noncontig_setparam,
+    .getparams  = &mpi_bench_noncontig_getparams
   };
 

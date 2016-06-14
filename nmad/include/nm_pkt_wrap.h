@@ -72,13 +72,11 @@ struct nm_pw_completion_s
  */
 struct nm_pkt_wrap_s
 {
-  /** link to insert the pw into a tbx_fast_list. A pw may be stored either in:
+  /** link to insert the pw into a nm_pkt_wrap_list. A pw may be stored either in:
    * out_list in strategy, pending_large_send in sender, pending_large_recv in receiver,
    * pending_send_list, pending_recv_list in driver,
    * post_sched_out_list, post_recv_list in driver
    */
-  struct tbx_fast_list_head link;
-
   PUK_LIST_LINK(nm_pkt_wrap);
 
   /* ** scheduler fields */
@@ -133,9 +131,7 @@ struct nm_pkt_wrap_s
 PUK_LIST_DECLARE_TYPE(nm_pkt_wrap);
 PUK_LIST_CREATE_FUNCS(nm_pkt_wrap);
 
-#define nm_l2so(l) tbx_fast_list_entry(l, struct nm_pkt_wrap_s, link)
-
-int nm_so_pw_init(struct nm_core *p_core);
+int nm_so_pw_init(struct nm_core*p_core);
 
 int nm_so_pw_exit(void);
 

@@ -86,7 +86,7 @@ struct nm_strat_decision_tree_sample_s
 struct nm_strat_decision_tree
 {
   /** List of raw outgoing packets. */
-  struct tbx_fast_list_head out_list;
+  struct nm_pkt_wrap_list_s out_list;
   int nm_max_small;
   int nm_copy_on_send_threshold;
   tbx_tick_t time_orig;
@@ -98,39 +98,39 @@ struct nm_strat_decision_tree
  */
 static void*strat_decision_tree_instantiate(puk_instance_t ai, puk_context_t context)
 {
-  struct nm_strat_decision_tree *status = TBX_MALLOC(sizeof(struct nm_strat_decision_tree));
-  TBX_INIT_FAST_LIST_HEAD(&status->out_list);
+  struct nm_strat_decision_tree*p_status = TBX_MALLOC(sizeof(struct nm_strat_decision_tree));
+  nm_pkt_wrap_list_init(&p_status->out_list);
   const char*nm_max_small = puk_instance_getattr(ai, "nm_max_small");
-  status->nm_max_small = atoi(nm_max_small);
+  p_status->nm_max_small = atoi(nm_max_small);
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
-  status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
-  status->n_samples = 0;
-  TBX_GET_TICK(status->time_orig);
-  return (void*)status;
+  p_status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
+  p_status->n_samples = 0;
+  TBX_GET_TICK(p_status->time_orig);
+  return (void*)p_status;
 }
 
 /** Cleanup the gate storage for strategy.
  */
 static void strat_decision_tree_destroy(void*_status)
 {
-  struct nm_strat_decision_tree*status = _status;
+  struct nm_strat_decision_tree*p_status = _status;
   char template[64] = "/tmp/nmad-decision-tree-XXXXXX";
   int fd = mkstemp(template);
   FILE*f = fdopen(fd, "w");
-  fprintf(stderr, "# strat_decision_tree- flushing %d samples to %s\n", status->n_samples, template);
+  fprintf(stderr, "# strat_decision_tree- flushing %d samples to %s\n", p_status->n_samples, template);
   fprintf(f, "# ## %s\n", program_invocation_name);
   fprintf(f, "# timestamp         size  nb_pw   size_outlist\n");
   int i;
-  for(i = 0; i < status->n_samples; i++)
+  for(i = 0; i < p_status->n_samples; i++)
     {
-      const struct nm_strat_decision_tree_sample_s*sample = &status->samples[i];
-      const double t = TBX_TIMING_DELAY(status->time_orig, sample->timestamp);
+      const struct nm_strat_decision_tree_sample_s*sample = &p_status->samples[i];
+      const double t = TBX_TIMING_DELAY(p_status->time_orig, sample->timestamp);
       const double t_end = (sample->profile_bandwidth > 0) ? t + sample->profile_latency + (sample->submitted_size / sample->profile_bandwidth) : t;
       fprintf(f, "%16.2f %16.2f %10ld %4d %10ld\n", t, t_end, sample->submitted_size, sample->nb_pw, sample->size_outlist);
     }
   fclose(f);
   close(fd);
-  TBX_FREE(_status);
+  TBX_FREE(p_status);
 }
 
 
@@ -142,48 +142,45 @@ static void strat_decision_tree_destroy(void*_status)
  */
 static int strat_decision_tree_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
 {
-  struct nm_strat_decision_tree*status = _status;
-  nm_tactic_pack_ctrl(p_ctrl, &status->out_list);
+  struct nm_strat_decision_tree*p_status = _status;
+  nm_tactic_pack_ctrl(p_ctrl, &p_status->out_list);
   return NM_ESUCCESS;
 }
 
 static int strat_decision_tree_todo(void* _status, nm_gate_t p_gate)
 {
-  struct nm_strat_decision_tree*status = _status;
-  return !(tbx_fast_list_empty(&status->out_list));
+  struct nm_strat_decision_tree*p_status = _status;
+  return !(nm_pkt_wrap_list_empty(&p_status->out_list));
 }
 
 /** push a message chunk */
 static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
-  struct nm_strat_decision_tree*status = _status;
+  struct nm_strat_decision_tree*p_status = _status;
 
   /* ******************************************************* */
   {
     nm_gate_t p_gate = p_pack->p_gate;
     nm_drv_t p_drv = nm_drv_default(p_gate);
-    struct tbx_fast_list_head *out_list = &status->out_list;
     nm_len_t size_outlist = 0;
     int nb_pw = 0;
     int smaller_pw_size = NM_SO_MAX_UNEXPECTED;
     int max_reamaining_data_area = 0;
     struct nm_pkt_wrap_s *p_pw_trace = NULL;
     
-    if(!tbx_fast_list_empty(out_list))
+    if(!nm_pkt_wrap_list_empty(&p_status->out_list))
       {
-	struct tbx_fast_list_head*pos;
-	tbx_fast_list_for_each(pos, out_list)
+	puk_list_foreach(p_pw_trace, &p_status->out_list)
 	  {
-	    p_pw_trace = nm_l2so(pos);	  
 	    size_outlist = size_outlist + p_pw_trace->length;
-	    const int aux = nm_so_pw_remaining_data(p_pw_trace);
+	    const int aux = nm_so_pw_remaining_buf(p_pw_trace);
 	    if (aux > max_reamaining_data_area )
 	      max_reamaining_data_area = aux;
 	    if (p_pw_trace->length < smaller_pw_size)
 	      smaller_pw_size = p_pw_trace->length ;
 	    nb_pw++;
 	  }
-	p_pw_trace = nm_l2so(out_list->next);
+	p_pw_trace = nm_pkt_wrap_list_begin(&p_status->out_list);
       }
     struct nm_strat_decision_tree_sample_s sample =
       {
@@ -191,21 +188,21 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack,
 	.nb_pw             = nb_pw,
 	.size_outlist      = size_outlist,
 	.pw_length         = p_pw_trace ? p_pw_trace->length : 0,
-	.pw_remaining_data = p_pw_trace ? nm_so_pw_remaining_data(p_pw_trace) : 0,
+	.pw_remaining_data = p_pw_trace ? nm_so_pw_remaining_buf(p_pw_trace) : 0,
 	.profile_latency   = p_drv->profile.latency,
 	.profile_bandwidth = p_drv->profile.bandwidth
       };
     TBX_GET_TICK(sample.timestamp);
-    status->samples[status->n_samples] = sample;
-    if(status->n_samples < NM_STRAT_DECISION_TREE_SAMPLES_MAX - 1)
-      status->n_samples++;
+    p_status->samples[p_status->n_samples] = sample;
+    if(p_status->n_samples < NM_STRAT_DECISION_TREE_SAMPLES_MAX - 1)
+      p_status->n_samples++;
   }
   /* ******************************************************* */
   
-  if(len <= status->nm_max_small)
+  if(len <= p_status->nm_max_small)
     {
       nm_tactic_pack_small_new_pw(p_pack, ptr, len, chunk_offset, 
-				  status->nm_copy_on_send_threshold, &status->out_list);
+				  p_status->nm_copy_on_send_threshold, &p_status->out_list);
     }
   else
     {
@@ -222,8 +219,7 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack,
  */
 static int strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 {
-  struct nm_strat_decision_tree*status = _status;
-  struct tbx_fast_list_head *out_list = &status->out_list;
+  struct nm_strat_decision_tree*p_status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
 
@@ -236,9 +232,9 @@ static int strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
   nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area, nm_so_pw_remaining_data(p_pw_trace), trace_co_id);
 #endif
   
-  if((p_gdrv->active_send[NM_TRK_SMALL] == 0) && !(tbx_fast_list_empty(out_list)))
+  if((p_gdrv->active_send[NM_TRK_SMALL] == 0) && !(nm_pkt_wrap_list_empty(&p_status->out_list)))
     {
-      struct nm_pkt_wrap_s *p_so_pw = nm_l2so(out_list->next);
+      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_status->out_list);
 #ifdef PROFILE_NMAD
       static long double wait_time = 0.0;
       static int count = 0, send_count = 0;
@@ -257,20 +253,20 @@ static int strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 	}
       count = 0;
       send_count++;
-      send_size += p_so_pw->length;
+      send_size += p_pw->length;
 #endif /* PROFILE_NMAD */
-      tbx_fast_list_del(out_list->next);
+      nm_pkt_wrap_list_pop_front(&p_status->out_list);
       /* Post packet on track 0 */
-      nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, p_drv);
+      nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
 
 #ifdef NMAD_TRACE
       nm_trace_event(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_Pw_Submited, NULL, trace_co_id);
-      nm_trace_var(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Pw_Submitted_Size, p_so_pw->length, trace_co_id);
+      nm_trace_var(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Pw_Submitted_Size, p_pw->length, trace_co_id);
       nm_trace_var(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Gdrv_Profile_Latency, p_gdrv->p_drv->profile.latency, trace_co_id);
       nm_trace_var(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Gdrv_Profile_Bandwidth, p_gdrv->p_drv->profile.bandwidth, trace_co_id);
 #endif /* NMAD_TRACE */
     }
-  else if((p_gdrv->active_send[NM_TRK_SMALL] != 0) && !(tbx_fast_list_empty(out_list)))
+  else if((p_gdrv->active_send[NM_TRK_SMALL] != 0) && !(nm_pkt_wrap_list_empty(&p_status->out_list)))
     {
 #ifdef PROFILE_NMAD
       if(count == 0)

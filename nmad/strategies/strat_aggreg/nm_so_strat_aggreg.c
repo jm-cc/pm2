@@ -59,7 +59,7 @@ static const struct puk_component_driver_s nm_strat_aggreg_component_driver =
 struct nm_strat_aggreg_s
 {
   /** List of raw outgoing packets. */
-  struct tbx_fast_list_head out_list;
+  struct nm_pkt_wrap_list_s out_list;
   int nm_copy_on_send_threshold;
 };
 
@@ -111,7 +111,7 @@ static void*strat_aggreg_instantiate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_strat_aggreg_s*p_status = TBX_MALLOC(sizeof(struct nm_strat_aggreg_s));
   num_instances++;
-  TBX_INIT_FAST_LIST_HEAD(&p_status->out_list);
+  nm_pkt_wrap_list_init(&p_status->out_list);
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
   p_status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
   return p_status;
@@ -158,7 +158,7 @@ static int strat_aggreg_pack_ctrl(void*_status, nm_gate_t p_gate,
 static int strat_aggreg_todo(void*_status, nm_gate_t p_gate)
 {
   struct nm_strat_aggreg_s*p_status = _status;
-  return !(tbx_fast_list_empty(&p_status->out_list));
+  return !(nm_pkt_wrap_list_empty(&p_status->out_list));
 }
 
 static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t len, nm_len_t chunk_offset)
@@ -175,7 +175,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
       if(!p_pw)
 	{
 	  p_pw = nm_pw_alloc_global_header();
-	  tbx_fast_list_add_tail(&p_pw->link, &p_status->out_list);
+	  nm_pkt_wrap_list_push_back(&p_status->out_list, p_pw);
 	}
       
 #warning TODO- select pack strategy depending on data sparsity
@@ -234,16 +234,13 @@ static void strat_aggreg_pack_chunk(void*_status, struct nm_req_s*p_pack, void*p
 static int strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 {
   struct nm_strat_aggreg_s*p_status = _status;
-  struct tbx_fast_list_head *out_list = &p_status->out_list;
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  if( (p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
-      (!tbx_fast_list_empty(out_list)))
+  if((p_gdrv->active_send[NM_TRK_SMALL] == 0) && (!nm_pkt_wrap_list_empty(&p_status->out_list)))
     {
-      struct nm_pkt_wrap_s *p_so_pw = nm_l2so(out_list->next);
-      tbx_fast_list_del(out_list->next);
+      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_status->out_list);
       /* Post packet on track 0 */
-      nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, p_drv);
+      nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
     }
   return NM_ESUCCESS;
 }

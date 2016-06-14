@@ -169,6 +169,8 @@ int nm_so_pw_add_control(struct nm_pkt_wrap_s*p_pw, const union nm_header_ctrl_g
 
 static inline void nm_pw_init(struct nm_pkt_wrap_s *p_pw)
 {
+  PUK_LIST_CELL_CLEAR(p_pw);
+
   p_pw->p_drv  = NULL;
   p_pw->trk_id = NM_TRK_NONE;
   p_pw->p_gate = NULL;
@@ -195,9 +197,7 @@ static inline void nm_pw_init(struct nm_pkt_wrap_s *p_pw)
 
   p_pw->ref_count = 0;
   nm_pw_ref_inc(p_pw);
-
-  TBX_INIT_FAST_LIST_HEAD(&p_pw->link);
-
+  
 #ifdef PIOMAN_POLL
   piom_ltask_init(&p_pw->ltask);
 #endif

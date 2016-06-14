@@ -141,7 +141,7 @@ static int strat_aggreg_pack_ctrl(void*_status, nm_gate_t p_gate,
 				  const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_strat_aggreg_s*p_status = _status;
-  struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_CTRL_SIZE, 0);
+  struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_CTRL_SIZE, NM_SO_DEFAULT_WINDOW);
   if(p_pw)
     {
       nm_so_pw_add_control(p_pw, p_ctrl);
@@ -171,7 +171,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
   if(len + max_header_len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       /* ** small send */
-      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, max_header_len, len);
+      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, max_header_len + len, NM_SO_DEFAULT_WINDOW);
       if(!p_pw)
 	{
 	  p_pw = nm_pw_alloc_global_header();
@@ -208,7 +208,7 @@ static void strat_aggreg_pack_chunk(void*_status, struct nm_req_s*p_pack, void*p
   struct nm_strat_aggreg_s*p_status = _status;
   if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
-      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_DATA_SIZE, len);
+      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_DATA_SIZE + len, NM_SO_DEFAULT_WINDOW);
       if(p_pw)
 	{
 	  nb_data_aggregation++;

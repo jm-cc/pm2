@@ -81,21 +81,24 @@ static inline void nm_tactic_pack_data_rdv(struct nm_req_s*p_pack, nm_len_t chun
 }
 
 /** Find in the given outlist a packet wrapper with
- * at least 'header_len' available as header and
- * 'data_len' available as data.
+ * at least 'message_len' available, with a visibility window of length 'window'
  * return NULL if none found.
  */
 static inline struct nm_pkt_wrap_s*nm_tactic_try_to_aggregate(struct tbx_fast_list_head*out_list,
-							    int header_len, int data_len)
+							      nm_len_t message_len, int window)
 {
+  int i = 0;
   struct nm_pkt_wrap_s*p_pw = NULL;
   tbx_fast_list_for_each_entry(p_pw, out_list, link)
     {
       const nm_len_t rlen = nm_so_pw_remaining_buf(p_pw);
-      if(header_len + data_len + NM_SO_ALIGN_FRONTIER < rlen)
+      if(message_len + NM_SO_ALIGN_FRONTIER < rlen)
 	{
 	  return p_pw;
 	}
+      i++;
+      if(i > window)
+	return NULL;
     }
   return NULL;
 }

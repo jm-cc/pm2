@@ -24,6 +24,9 @@
 /** minimum density to consider chunks as large */
 #define NM_LARGE_MIN_DENSITY  1024
 
+/** default window size for aggregation */
+#define NM_SO_DEFAULT_WINDOW  16
+
 /** Number of preallocated iovec entries within packet wrappers */
 #define NM_SO_PREALLOC_IOV_LEN 32
 

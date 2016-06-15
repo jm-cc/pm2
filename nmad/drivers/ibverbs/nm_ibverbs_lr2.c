@@ -387,7 +387,7 @@ static void nm_ibverbs_lr2_recv_data(void*_status, const struct nm_data_s*p_data
   lr2->recv.nbuffer = 0;
   nm_data_slicer_init(&lr2->recv.slicer, p_data);
   if(chunk_offset > 0)
-    nm_data_slicer_forward(&lr2->send.slicer, chunk_offset);
+    nm_data_slicer_forward(&lr2->recv.slicer, chunk_offset);
 }
 
 static int nm_ibverbs_lr2_poll_one(void*_status)

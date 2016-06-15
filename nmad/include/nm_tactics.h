@@ -35,22 +35,24 @@ static inline void nm_tactic_pack_ctrl(const union nm_header_ctrl_generic_s*p_ct
 
 /** Pack small data into an existing packet wrapper on track #0
  */
-static inline void nm_tactic_pack_small_into_pw(struct nm_req_s*p_pack, const char*data, nm_len_t len, nm_len_t offset,
+static inline void nm_tactic_pack_small_into_pw(struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset,
 						nm_len_t copy_threshold, struct nm_pkt_wrap_s*p_pw)
 {
-  if(len < copy_threshold)
-    nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER | NM_PW_DATA_USE_COPY);
+  if(chunk_len < copy_threshold)
+    nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset,
+			    NM_PW_DATA_ITERATOR | NM_PW_DATA_USE_COPY);
   else
-    nm_so_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER);
+    nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
 }
 
 /** Pack small data into a new packet wrapper on track #0
  */
-static inline void nm_tactic_pack_small_new_pw(struct nm_req_s*p_pack, const char*data, int len, int offset,
-					       int copy_threshold, struct nm_pkt_wrap_list_s*p_out_list)
+static inline void nm_tactic_pack_small_new_pw(struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset,
+					       struct nm_pkt_wrap_list_s*p_out_list)
 { 
   struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
-  nm_tactic_pack_small_into_pw(p_pack, data, len, offset, copy_threshold, p_pw);
+  nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
+  assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
   nm_pkt_wrap_list_push_back(p_out_list, p_pw);
 }
 

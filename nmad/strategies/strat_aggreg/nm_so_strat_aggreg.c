@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2015 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg, &nm_strat_aggreg_load, NULL, NULL)
 
 static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_aggreg_todo(void*, nm_gate_t );
-static void strat_aggreg_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_aggreg_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_aggreg_try_and_commit(void*, nm_gate_t );
 static void strat_aggreg_rdv_accept(void*, nm_gate_t );
@@ -37,7 +36,7 @@ static void strat_aggreg_rdv_accept(void*, nm_gate_t );
 static const struct nm_strategy_iface_s nm_strat_aggreg_driver =
   {
     .pack_data          = &strat_aggreg_pack_data,
-    .pack_chunk         = &strat_aggreg_pack_chunk,
+    .pack_chunk         = NULL,
     .pack_ctrl          = &strat_aggreg_pack_ctrl,
     .try_and_commit     = &strat_aggreg_try_and_commit,
     .rdv_accept         = &strat_aggreg_rdv_accept,
@@ -161,17 +160,17 @@ static int strat_aggreg_todo(void*_status, nm_gate_t p_gate)
   return !(nm_pkt_wrap_list_empty(&p_status->out_list));
 }
 
-static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t len, nm_len_t chunk_offset)
+static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset)
 {
   struct nm_strat_aggreg_s*p_status = _status;
   const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pack->p_data);
   /* maximum header length- real length depends on block size */
   const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
   const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : 0; /* average block size */
-  if(len + max_header_len < strat_aggreg_max_small(p_pack->p_gate->p_core))
+  if(chunk_len + max_header_len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       /* ** small send */
-      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, max_header_len + len, NM_SO_DEFAULT_WINDOW);
+      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, max_header_len + chunk_len, NM_SO_DEFAULT_WINDOW);
       if(!p_pw)
 	{
 	  p_pw = nm_pw_alloc_global_header();
@@ -180,49 +179,26 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
       
 #warning TODO- select pack strategy depending on data sparsity
       
-      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, chunk_offset, NM_PW_DATA_ITERATOR);
+      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
       assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
     }
   else
     {
       /* ** large send */
       nm_pw_flag_t flags = NM_PW_NOHEADER | NM_PW_DATA_ITERATOR;
-      if((!p_props->is_contig) && (density < 1024) && (p_pack->p_data->ops.p_generator == NULL))
+      if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->p_data->ops.p_generator == NULL))
 	{
 	  flags |= NM_PW_DATA_USE_COPY;
 	}
       struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
-      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, len, chunk_offset, flags);
+      nm_so_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset, flags);
       nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_pw);
       union nm_header_ctrl_generic_s ctrl;
-      nm_header_init_rdv(&ctrl, p_pack, len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
+      nm_header_init_rdv(&ctrl, p_pack, chunk_len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
       struct puk_receptacle_NewMad_Strategy_s*strategy = &p_pack->p_gate->strategy_receptacle;
       (*strategy->driver->pack_ctrl)(strategy->_status, p_pack->p_gate, &ctrl);
     }
   
-}
-
-/** push message chunk */
-static void strat_aggreg_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
-{
-  struct nm_strat_aggreg_s*p_status = _status;
-  if(len < strat_aggreg_max_small(p_pack->p_gate->p_core))
-    {
-      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_DATA_SIZE + len, NM_SO_DEFAULT_WINDOW);
-      if(p_pw)
-	{
-	  nb_data_aggregation++;
-	  nm_tactic_pack_small_into_pw(p_pack, ptr, len, chunk_offset, p_status->nm_copy_on_send_threshold, p_pw);
-	}
-      else
-	{
-	  nm_tactic_pack_small_new_pw(p_pack, ptr, len, chunk_offset, p_status->nm_copy_on_send_threshold, &p_status->out_list);
-	}
-    }
-  else
-    {
-      nm_tactic_pack_rdv(p_pack, ptr, len, chunk_offset);
-    }
 }
 
 /** Compute and apply the best possible packet rearrangement, then
@@ -253,7 +229,7 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
   if(p_pw != NULL)
     {
       nm_drv_t p_drv = nm_drv_default(p_gate);
-      if(p_pw->length > strat_aggreg_max_small(p_drv->p_core))
+      if(p_pw->length > NM_LARGE_MIN_DENSITY)
 	{
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
 	  if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)

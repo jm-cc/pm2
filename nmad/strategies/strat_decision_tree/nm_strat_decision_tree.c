@@ -29,7 +29,7 @@
 /* ********************************************************* */
 
 static int  strat_decision_tree_todo(void*, nm_gate_t );/* todo: s/nm_gate/nm_pack/ ? */
-static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
+static void strat_decision_tree_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_decision_tree_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_decision_tree_try_and_commit(void*, nm_gate_t );
 static void strat_decision_tree_rdv_accept(void*, nm_gate_t );
@@ -37,7 +37,8 @@ static void strat_decision_tree_rdv_accept(void*, nm_gate_t );
 static const struct nm_strategy_iface_s nm_strat_decision_tree_driver =
   {
     .todo               = &strat_decision_tree_todo,
-    .pack_chunk         = &strat_decision_tree_pack_chunk,
+    .pack_chunk         = NULL,
+    .pack_data          = &strat_decision_tree_pack_data,
     .pack_ctrl          = &strat_decision_tree_pack_ctrl,
     .try_and_commit     = &strat_decision_tree_try_and_commit,
     .rdv_accept         = &strat_decision_tree_rdv_accept,
@@ -154,7 +155,7 @@ static int strat_decision_tree_todo(void* _status, nm_gate_t p_gate)
 }
 
 /** push a message chunk */
-static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
+static void strat_decision_tree_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset)
 {
   struct nm_strat_decision_tree*p_status = _status;
 
@@ -184,7 +185,7 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack,
       }
     struct nm_strat_decision_tree_sample_s sample =
       {
-	.submitted_size    = len,
+	.submitted_size    = chunk_len,
 	.nb_pw             = nb_pw,
 	.size_outlist      = size_outlist,
 	.pw_length         = p_pw_trace ? p_pw_trace->length : 0,
@@ -199,14 +200,13 @@ static void strat_decision_tree_pack_chunk(void*_status, struct nm_req_s*p_pack,
   }
   /* ******************************************************* */
   
-  if(len <= p_status->nm_max_small)
+  if(chunk_len <= p_status->nm_max_small)
     {
-      nm_tactic_pack_small_new_pw(p_pack, ptr, len, chunk_offset, 
-				  p_status->nm_copy_on_send_threshold, &p_status->out_list);
+      nm_tactic_pack_small_new_pw(p_pack, chunk_len, chunk_offset, &p_status->out_list);
     }
   else
     {
-      nm_tactic_pack_rdv(p_pack, ptr, len, chunk_offset);
+      nm_tactic_pack_data_rdv(p_pack, chunk_len, chunk_offset);
     }
 }
 

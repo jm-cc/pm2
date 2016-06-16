@@ -66,18 +66,15 @@ void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
 {
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
   nmad_lock();
-  if(r->driver->pack_data != NULL)
-    {
-      const nm_len_t size = nm_data_size(p_pack->p_data);
-      assert(hlen <= size);
-      if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
-	(*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
-    }
-  else
+  if(r->driver->pack_data == NULL)
     {
       fprintf(stderr, "# nmad: nm_core_pack_header not support with selected strategy (need pack_data).\n");
       abort();
     }
+  const nm_len_t size = nm_data_size(p_pack->p_data);
+  assert(hlen <= size);
+  if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
+    (*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
   nmad_unlock();
 }
 

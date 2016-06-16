@@ -39,10 +39,7 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
 PUK_ALLOCATOR_TYPE(nm_unexpected, struct nm_unexpected_s);
 static nm_unexpected_allocator_t nm_unexpected_allocator = NULL;
 
-/** size of memory used by unexpected */
-static size_t nm_unexpected_mem_size = 0;
-
-#define NM_UNEXPECTED_PREALLOC (NM_TAGS_PREALLOC * 256)
+#define NM_UNEXPECTED_PREALLOC 256
 
 static inline struct nm_unexpected_s*nm_unexpected_alloc(void)
 {
@@ -225,13 +222,15 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
   p_chunk->seq    = seq;
   p_chunk->tag    = tag;
   nm_pw_ref_inc(p_pw);
-  nm_unexpected_mem_size++;
+#ifdef DEBUG
+  const int nm_unexpected_mem_size = nm_unexpected_list_size(&p_core->unexpected);
   if(nm_unexpected_mem_size > 32*1024)
     {
       fprintf(stderr, "nmad: WARNING- %lu unexpected chunks allocated.\n", nm_unexpected_mem_size);
       if(nm_unexpected_mem_size > 64*1024)
 	TBX_FAILUREF("nmad: FATAL- %lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
     }
+#endif /* DEBUG */
   nmad_lock_assert();
   nm_unexpected_list_push_back(&p_core->unexpected, p_chunk);
   const nm_proto_t proto_id = p_header->proto_id;
@@ -305,7 +304,10 @@ int nm_core_unpack_iprobe(struct nm_core*p_core, struct nm_req_s*p_unpack)
     }
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
   if(p_unexpected == NULL)
-    return -NM_EAGAIN;
+    {
+      nm_schedule(p_core);
+      return -NM_EAGAIN;
+    }
   else
     return NM_ESUCCESS;
 }
@@ -446,7 +448,6 @@ int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_re
       nm_pw_ref_dec(p_unexpected->p_pw);
       nm_unexpected_list_erase(&p_core->unexpected, p_unexpected);
       nm_unexpected_free(nm_unexpected_allocator, p_unexpected);
-      nm_unexpected_mem_size--;
       p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
     }
   nmad_unlock();

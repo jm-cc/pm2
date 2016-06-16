@@ -107,6 +107,11 @@ struct nm_data_properties_s
   int is_contig; /**< is data contiguous */
 };
 
+/** @internal compute data properties; not for enduser, exported for use by inline function
+ */
+void nm_data_properties_compute(struct nm_data_s*p_data);
+
+
 /** a data descriptor, used to pack/unpack data from app layout to/from contiguous buffers */
 struct nm_data_s
 {
@@ -126,10 +131,11 @@ struct nm_data_s
 	p_data->ops.p_next      = nm_data_default_next;			\
 	p_data->ops.p_generator_destroy = nm_data_default_generator_destroy; \
       }									\
-    p_data->props.blocks = -1;						\
     assert(sizeof(CONTENT_TYPE) <= _NM_DATA_CONTENT_SIZE);		\
     CONTENT_TYPE*p_content = (CONTENT_TYPE*)&p_data->_content[0];	\
     *p_content = value;							\
+    p_data->props.blocks = -1;						\
+    nm_data_properties_compute(p_data);					\
   }									\
   static inline CONTENT_TYPE*nm_data_##ENAME##_content(const struct nm_data_s*p_data) \
   {									\
@@ -193,7 +199,10 @@ void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t c
 void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t apply, void*_context);
 
 /** returns the properties for the data */
-const struct nm_data_properties_s*nm_data_properties_get(const struct nm_data_s*p_data);
+static inline const struct nm_data_properties_s*nm_data_properties_get(const struct nm_data_s*p_data)
+{
+  return &p_data->props;
+}
 
 static inline nm_len_t nm_data_size(const struct nm_data_s*p_data)
 {

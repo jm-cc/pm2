@@ -858,7 +858,11 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
   nm_mpi_handle_datatype_free(&nm_mpi_datatypes, p_datatype);
 }
 
-
+static inline int nm_mpi_datatype_traversal_may_unroll(const struct nm_mpi_datatype_s*const p_datatype, int count)
+{
+  return ((p_datatype->is_contig && (p_datatype->size == p_datatype->extent) && (p_datatype->lb == 0)) || (count == 0));
+}
+						   
 /** apply a function to every chunk of data in datatype */
 static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_apply_t apply, void*_context)
 {
@@ -867,7 +871,7 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
   const int count = p_data->count;
   void*ptr = p_data->ptr;
   assert(p_datatype->refcount > 0);
-  if((p_datatype->is_contig && (p_datatype->size == p_datatype->extent) && (p_datatype->lb == 0)) || (count == 0))
+  if(nm_mpi_datatype_traversal_may_unroll(p_datatype, count))
     {
       (*apply)((void*)ptr, count * p_datatype->size, _context);
     }
@@ -907,24 +911,46 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 	      break;
 	      
 	    case MPI_COMBINER_VECTOR:
-	      for(j = 0; j < p_datatype->count; j++)
+	      if(nm_mpi_datatype_traversal_may_unroll(p_datatype->VECTOR.p_old_type, p_datatype->VECTOR.blocklength))
 		{
-		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->extent,
-		      .p_datatype = p_datatype->VECTOR.p_old_type,
-		      .count      = p_datatype->VECTOR.blocklength };
-		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+		  for(j = 0; j < p_datatype->count; j++)
+		    {
+		      void*const lptr = ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->extent;
+		      (*apply)(lptr, p_datatype->VECTOR.blocklength * p_datatype->VECTOR.p_old_type->size, _context);
+		    }
+		}
+	      else
+		{
+		  for(j = 0; j < p_datatype->count; j++)
+		    {
+		      const struct nm_data_mpi_datatype_s sub = 
+			{ .ptr        = ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->extent,
+			  .p_datatype = p_datatype->VECTOR.p_old_type,
+			  .count      = p_datatype->VECTOR.blocklength };
+		      nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+		    }
 		}
 	      break;
 
 	    case MPI_COMBINER_HVECTOR:
-	      for(j = 0; j < p_datatype->count; j++)
+	      if(nm_mpi_datatype_traversal_may_unroll(p_datatype->HVECTOR.p_old_type, p_datatype->HVECTOR.blocklength))
 		{
-		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + j * p_datatype->HVECTOR.hstride, 
-		      .p_datatype = p_datatype->HVECTOR.p_old_type,
-		      .count      = p_datatype->HVECTOR.blocklength };
-		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+		  for(j = 0; j < p_datatype->count; j++)
+		    {
+		      void*const lptr = ptr + j * p_datatype->HVECTOR.hstride;
+		      (*apply)(lptr, p_datatype->HVECTOR.blocklength * p_datatype->HVECTOR.p_old_type->size, _context);
+		    }
+		}
+	      else
+		{
+		  for(j = 0; j < p_datatype->count; j++)
+		    {
+		      const struct nm_data_mpi_datatype_s sub = 
+			{ .ptr        = ptr + j * p_datatype->HVECTOR.hstride, 
+			  .p_datatype = p_datatype->HVECTOR.p_old_type,
+			  .count      = p_datatype->HVECTOR.blocklength };
+		      nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+		    }
 		}
 	      break;
 	      

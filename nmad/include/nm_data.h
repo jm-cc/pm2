@@ -111,7 +111,7 @@ struct nm_data_ops_s
 
 /** @internal compute data properties; not for enduser, exported for use by inline function
  */
-void nm_data_properties_compute(struct nm_data_s*p_data);
+void nm_data_default_properties_compute(struct nm_data_s*p_data);
 
 /** a data descriptor, used to pack/unpack data from app layout to/from contiguous buffers */
 struct nm_data_s
@@ -132,11 +132,15 @@ struct nm_data_s
 	p_data->ops.p_next      = nm_data_default_next;			\
 	p_data->ops.p_generator_destroy = nm_data_default_generator_destroy; \
       }									\
+    if(p_data->ops.p_properties_compute == NULL)			\
+      {									\
+	p_data->ops.p_properties_compute = nm_data_default_properties_compute; \
+      }									\
     assert(sizeof(CONTENT_TYPE) <= _NM_DATA_CONTENT_SIZE);		\
     CONTENT_TYPE*p_content = (CONTENT_TYPE*)&p_data->_content[0];	\
     *p_content = value;							\
     p_data->props.blocks = -1;						\
-    nm_data_properties_compute(p_data);					\
+    (*p_data->ops.p_properties_compute)(p_data);			\
   }									\
   static inline CONTENT_TYPE*nm_data_##ENAME##_content(const struct nm_data_s*p_data) \
   {									\

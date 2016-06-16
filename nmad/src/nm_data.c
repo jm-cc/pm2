@@ -608,10 +608,17 @@ static void nm_data_properties_apply(void*ptr, nm_len_t len, void*_context)
 void nm_data_properties_compute(struct nm_data_s*p_data)
 {
   assert(p_data->props.blocks == -1);
-  struct nm_data_properties_context_s context = { .blockend = NULL,
-						  .props = { .size = 0, .blocks = 0, .is_contig = 1 }  };
-  nm_data_traversal_apply(p_data, &nm_data_properties_apply, &context);
-  p_data->props = context.props;
+  if(p_data->ops.p_properties_compute)
+    {
+      (*p_data->ops.p_properties_compute)(p_data);
+    }
+  else
+    {
+      struct nm_data_properties_context_s context = { .blockend = NULL,
+						      .props = { .size = 0, .blocks = 0, .is_contig = 1 }  };
+      nm_data_traversal_apply(p_data, &nm_data_properties_apply, &context);
+      p_data->props = context.props;
+    }
 }
 
 struct nm_data_baseptr_context_s

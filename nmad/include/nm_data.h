@@ -34,7 +34,7 @@ typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
  * @param apply function to apply to all chunks
  * @param _context context pointer given to apply function
  */
-typedef void (*nm_data_traversal_t)(const void*_content, nm_data_apply_t apply, void*_context);
+typedef void (*nm_data_traversal_t)(const void*_content, const nm_data_apply_t apply, void*_context);
 
 struct nm_data_generator_s
 {
@@ -88,17 +88,6 @@ void                   nm_data_coroutine_generator_destroy(const struct nm_data_
 #define nm_data_default_generator_destroy NULL
 #endif
 
-/** set of operations available on data type.
- * either p_traversal or p_generator may be NULL (not both)
- */
-struct nm_data_ops_s
-{
-  nm_data_traversal_t         p_traversal;
-  nm_data_generator_init_t    p_generator;
-  nm_data_generator_next_t    p_next;
-  nm_data_generator_destroy_t p_generator_destroy;
-};
-
 /** block of static properties for a given data descriptor */
 struct nm_data_properties_s
 {
@@ -107,10 +96,22 @@ struct nm_data_properties_s
   int is_contig; /**< is data contiguous */
 };
 
+typedef void (*nm_data_properties_compute_t)(struct nm_data_s*p_data);
+
+/** set of operations available on data type.
+ */
+struct nm_data_ops_s
+{
+  nm_data_traversal_t          p_traversal; /**< operation to apply a given function to all chunks of data (required) */
+  nm_data_generator_init_t     p_generator; /**< initializes a new generator (chunks enumerator) (optionnal) */
+  nm_data_generator_next_t     p_next;      /**< get next chunk from generator (optionnal) */
+  nm_data_generator_destroy_t  p_generator_destroy; /**< destroy a generator after use (optionnal, may be NULL even if p_generator != NULL) */
+  nm_data_properties_compute_t p_properties_compute;
+};
+
 /** @internal compute data properties; not for enduser, exported for use by inline function
  */
 void nm_data_properties_compute(struct nm_data_s*p_data);
-
 
 /** a data descriptor, used to pack/unpack data from app layout to/from contiguous buffers */
 struct nm_data_s

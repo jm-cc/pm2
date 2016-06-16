@@ -366,15 +366,12 @@ int nm_so_pw_split_data(struct nm_pkt_wrap_s *p_pw,
  *  @param tag the tag id which generated the fragment.
  *  @param seq the sequence number of the fragment.
  *  @param data the data fragment pointer.
- *  @param len the data fragment length.
+ *  @param chunk_len the data fragment length.
+ *  @param chunk_offset offset of the chunk in the full message
  *  @param flags the flags controlling the way the fragment is appended.
  *  @return The NM status.
  */
-void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw,
-			     struct nm_req_s*p_pack,
-			     const void*ptr, nm_len_t len,
-			     nm_len_t offset,
-			     int flags)
+void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack, const void*ptr, nm_len_t chunk_len, nm_len_t chunk_offset, int flags)
 {
   const nm_core_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;
@@ -382,9 +379,9 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw,
   assert(!p_pw->p_unpack);
 
   /* add the contrib ref to the pw */
-  nm_pw_completion_add(p_pw, p_pack, len);
-  assert(offset + len <= p_pack->pack.len);
-  if(offset + len == p_pack->pack.len)
+  nm_pw_completion_add(p_pw, p_pack, chunk_len);
+  assert(chunk_offset + chunk_len <= p_pack->pack.len);
+  if(chunk_offset + chunk_len == p_pack->pack.len)
     {
       proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
     }
@@ -399,40 +396,40 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw,
 	{
 	  /* data defined with iterator */
 	  const struct nm_data_s*p_data = ptr;
-	  if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
+	  if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0))
 	    {
 	      /* short data with iterator */
 	      struct iovec*hvec = &p_pw->v[0];
 	      struct nm_header_short_data_s *h = hvec->iov_base + hvec->iov_len;
 	      hvec->iov_len += NM_HEADER_SHORT_DATA_SIZE;
-	      nm_header_init_short_data(h, tag, seq, len);
-	      if(len)
+	      nm_header_init_short_data(h, tag, seq, chunk_len);
+	      if(chunk_len)
 		{
-		  nm_data_copy_from(p_data, 0, len, hvec->iov_base + hvec->iov_len);
-		  hvec->iov_len += len;
+		  nm_data_copy_from(p_data, chunk_offset /* = 0 */, chunk_len, hvec->iov_base + hvec->iov_len);
+		  hvec->iov_len += chunk_len;
 		}
-	      p_pw->length += NM_HEADER_SHORT_DATA_SIZE + len;
+	      p_pw->length += NM_HEADER_SHORT_DATA_SIZE + chunk_len;
 	    }
 	  else
 	    {
 	      /* long data with iterator */
-	      nm_data_pkt_pack(p_pw, tag, seq, p_data, offset, len, proto_flags);
+	      nm_data_pkt_pack(p_pw, tag, seq, p_data, chunk_offset, chunk_len, proto_flags);
 	    }
 	}
-      else if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
+      else if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0))
 	{
 	  /* Small data case */
-	  nm_so_pw_add_short_data(p_pw, tag, seq, ptr, len);
+	  nm_so_pw_add_short_data(p_pw, tag, seq, ptr, chunk_len);
 	}
       else if(flags & NM_PW_DATA_USE_COPY)
 	{
 	  /* Data immediately follows its header */
-	  nm_so_pw_add_data_in_header(p_pw, tag, seq, ptr, len, offset, proto_flags);
+	  nm_so_pw_add_data_in_header(p_pw, tag, seq, ptr, chunk_len, chunk_offset, proto_flags);
 	}
       else 
 	{
 	  /* Data handled by a separate iovec entry */
-	  nm_so_pw_add_data_in_iovec(p_pw, tag, seq, ptr, len, offset, proto_flags);
+	  nm_so_pw_add_data_in_iovec(p_pw, tag, seq, ptr, chunk_len, chunk_offset, proto_flags);
 	}
     }
   else if(p_pw->flags & NM_PW_NOHEADER)
@@ -440,14 +437,14 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw,
       if(flags & NM_PW_DATA_ITERATOR)
 	{
 	  const struct nm_data_s*p_data = ptr;
-	  p_pw->length = nm_data_size(p_data);
-	  p_pw->chunk_offset = offset;
+	  p_pw->length = chunk_len;
+	  p_pw->chunk_offset = chunk_offset;
 	  p_pw->p_data = p_data;
 	}
       else
 	{
 	  /* ** Add raw data to pw, without header */
-	  nm_so_pw_add_raw(p_pw, ptr, len, offset);
+	  nm_so_pw_add_raw(p_pw, ptr, chunk_len, chunk_offset);
 	}
     }
 }

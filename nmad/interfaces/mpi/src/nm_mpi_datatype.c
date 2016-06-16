@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014 (see AUTHORS file)
+ * Copyright (C) 2014-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,10 +31,12 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
 static void nm_mpi_datatype_properties_compute(nm_mpi_datatype_t*p_datatype);
 static void nm_mpi_datatype_update_bounds(int blocklength, MPI_Aint displacement, nm_mpi_datatype_t*p_oldtype, nm_mpi_datatype_t*p_newtype);
 static void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context);
+static void nm_mpi_datatype_data_properties_compute(struct nm_data_s*p_data);
 
 const struct nm_data_ops_s nm_mpi_datatype_ops =
   {
-    .p_traversal = &nm_mpi_datatype_traversal_apply
+    .p_traversal          = &nm_mpi_datatype_traversal_apply,
+    .p_properties_compute = &nm_mpi_datatype_data_properties_compute
   };
 
 
@@ -169,6 +171,7 @@ void nm_mpi_datatype_exit(void)
 static void nm_mpi_datatype_store(int id, size_t size, int count, const char*name)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_handle_datatype_store(&nm_mpi_datatypes, id);
+  /* initialize known properties */
   p_datatype->committed = 1;
   p_datatype->is_contig = 1;
   p_datatype->combiner = MPI_COMBINER_NAMED;
@@ -181,6 +184,12 @@ static void nm_mpi_datatype_store(int id, size_t size, int count, const char*nam
   p_datatype->name = strdup(name);
   p_datatype->true_lb = 0;
   p_datatype->true_extent = size;
+  /* compute properties through traversal */
+  nm_mpi_datatype_properties_compute(p_datatype);
+  /* check computed values consistency*/
+  assert(p_datatype->is_contig);
+  assert(p_datatype->props.size == size);
+  assert(p_datatype->props.blocks == 1);
 }
 
 /** allocate a new datatype and init with default values */
@@ -851,7 +860,7 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
 
 
 /** apply a function to every chunk of data in datatype */
-static void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context)
+static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_apply_t apply, void*_context)
 {
   const struct nm_data_mpi_datatype_s*const p_data = _content;
   const struct nm_mpi_datatype_s*const p_datatype = p_data->p_datatype;
@@ -1070,24 +1079,41 @@ static void nm_mpi_datatype_update_bounds(int blocklength, MPI_Aint displacement
     }
 }
 
+static void nm_mpi_datatype_data_properties_compute(struct nm_data_s*p_data)
+{
+  const struct nm_data_mpi_datatype_s*const p_data_mpi = nm_data_mpi_datatype_content(p_data);
+  const struct nm_mpi_datatype_s*const p_datatype = p_data_mpi->p_datatype;
+  const int count = p_data_mpi->count;
+  const struct nm_data_properties_s props =
+    {
+      .blocks = count * p_datatype->props.blocks,
+      .size   = count * p_datatype->props.size,
+      .is_contig = p_datatype->props.is_contig && ((count < 2) ||
+						   (p_datatype->lb == 0 && p_datatype->extent == p_datatype->size))
+    };
+  p_data->props = props;
+}
+
 struct nm_mpi_datatype_properties_context_s
 {
   void*baseptr;
   void*blockend; /**< end of previous block */
   struct nm_mpi_datatype_properties_s
   {
-    int is_contig; /**< is contiguous up to current position */
     intptr_t true_lb;
     intptr_t true_ub;
   } props;
+  struct nm_data_properties_s nm_data_props;
 };
 static void nm_mpi_datatype_properties_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_mpi_datatype_properties_context_s*p_context = _context;
-  if(p_context->props.is_contig)
+  p_context->nm_data_props.size += len;
+  p_context->nm_data_props.blocks += 1;
+  if(p_context->nm_data_props.is_contig)
     {
       if((p_context->blockend != NULL) && (ptr != p_context->blockend))
-	p_context->props.is_contig = 0;
+	p_context->nm_data_props.is_contig = 0;
     }
   p_context->blockend = ptr + len;
   const intptr_t local_lb = ptr - p_context->baseptr;
@@ -1103,15 +1129,18 @@ static void nm_mpi_datatype_properties_compute(nm_mpi_datatype_t*p_datatype)
     {
       .baseptr = NULL,
       .blockend = NULL,
-      .props.is_contig = 1,
       .props.true_lb = MPI_UNDEFINED,
-      .props.true_ub = MPI_UNDEFINED
+      .props.true_ub = MPI_UNDEFINED,
+      .nm_data_props.is_contig = 1,
+      .nm_data_props.blocks    = 0,
+      .nm_data_props.size      = 0
     };
   const struct nm_data_mpi_datatype_s content = { .ptr = NULL, .p_datatype = p_datatype, .count = 1 };
   nm_mpi_datatype_traversal_apply(&content, &nm_mpi_datatype_properties_apply, &context);
-  p_datatype->is_contig   = context.props.is_contig;
+  p_datatype->is_contig   = context.nm_data_props.is_contig;
   p_datatype->true_lb     = context.props.true_lb;
   p_datatype->true_extent = context.props.true_ub - context.props.true_lb;
+  p_datatype->props       = context.nm_data_props;
 }
 
 /** status for nm_mpi_datatype_*_memcpy */

@@ -255,6 +255,8 @@ typedef struct nm_mpi_datatype_s
   MPI_Count true_extent;
   /** size of type */
   size_t size;
+  /** pre-computed data properties */
+  struct nm_data_properties_s props;
   /** number of references pointing to this type (active communications, handle) */
   int refcount;
   /** whether committed or not */

@@ -148,7 +148,8 @@ void nm_data_aggregator_traversal(const struct nm_data_s*p_data, nm_data_apply_t
   const struct nm_data_properties_s*p_props = nm_data_properties_get(p_data);
   if(p_props->is_contig)
     {
-      (*apply)(p_props->base_ptr, p_props->size, _context);
+      void*base_ptr = nm_data_baseptr_get(p_data);
+      (*apply)(base_ptr, p_props->size, _context);
     }
   else
     {
@@ -594,8 +595,6 @@ struct nm_data_properties_context_s
 static void nm_data_properties_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_data_properties_context_s*p_context = _context;
-  if(p_context->props.base_ptr == NULL)
-    p_context->props.base_ptr = ptr;
   p_context->props.size += len;
   p_context->props.blocks += 1;
   if(p_context->props.is_contig)
@@ -611,11 +610,32 @@ const struct nm_data_properties_s*nm_data_properties_get(const struct nm_data_s*
   if(p_data->props.blocks == -1)
     {
       struct nm_data_properties_context_s context = { .blockend = NULL,
-						      .props = { .size = 0, .blocks = 0, .is_contig = 1, .base_ptr = NULL }  };
+						      .props = { .size = 0, .blocks = 0, .is_contig = 1 }  };
       nm_data_traversal_apply(p_data, &nm_data_properties_apply, &context);
       memcpy((void*)&p_data->props, &context.props, sizeof(context.props)); /* write in a 'const' variable... */
     }
   return &p_data->props;
+}
+
+struct nm_data_baseptr_context_s
+{
+  void*base_ptr; /**< base pointer, NULL if not known yet */
+};
+static void nm_data_baseptr_apply(void*ptr, nm_len_t len, void*_context)
+{
+  struct nm_data_baseptr_context_s*p_context = _context;
+  if(p_context->base_ptr == NULL)
+    p_context->base_ptr = ptr;
+}
+void*nm_data_baseptr_get(const struct nm_data_s*p_data)
+{
+#ifdef DEBUG
+  const struct nm_data_properties_s*p_props = nm_data_properties_get(p_data);
+  assert(p_props->is_contig);
+#endif /* DEBUG */
+  struct nm_data_baseptr_context_s context = { .base_ptr = NULL };
+  nm_data_traversal_apply(p_data, &nm_data_baseptr_apply, &context);
+  return context.base_ptr;
 }
 
 /* ********************************************************* */

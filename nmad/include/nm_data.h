@@ -105,7 +105,6 @@ struct nm_data_properties_s
   int blocks;    /**< number of blocks; -1 if properties ar not initialized */
   nm_len_t size; /**< total size in bytes (accumulator) */
   int is_contig; /**< is data contiguous */
-  void*base_ptr; /**< base pointer, in case data is contiguous */
 };
 
 /** a data descriptor, used to pack/unpack data from app layout to/from contiguous buffers */
@@ -201,6 +200,9 @@ static inline nm_len_t nm_data_size(const struct nm_data_s*p_data)
   const struct nm_data_properties_s*p_props = nm_data_properties_get((struct nm_data_s*)p_data);
   return p_props->size;
 }
+
+/** find base pointer for a data known to be contiguous */
+void*nm_data_baseptr_get(const struct nm_data_s*p_data);
 
 /** copy chunk of data from user layout to contiguous buffer */
 void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t len, void*destbuf);

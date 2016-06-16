@@ -148,7 +148,7 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap_s*p_pw, int nb_chunks, 
 	      struct iovec*vec = nm_pw_grow_iovec(p_pw);
 	      if(p_props->is_contig)
 		{
-		  vec->iov_base = p_props->base_ptr + p_pw->chunk_offset;
+		  vec->iov_base = nm_data_baseptr_get(p_pw->p_data) + p_pw->chunk_offset;
 		}
 	      else
 		{

@@ -31,7 +31,7 @@
 #define NM_SO_PREALLOC_IOV_LEN 32
 
 /** threshold to switch from plain copy to iovec send */
-#define NM_DATA_IOV_THRESHOLD 256
+#define NM_DATA_IOV_THRESHOLD 512
 
 #define NM_SO_ALIGN_TYPE      uint32_t
 #define NM_SO_ALIGN_FRONTIER  sizeof(NM_SO_ALIGN_TYPE)

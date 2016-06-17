@@ -243,8 +243,8 @@ typedef struct nm_mpi_datatype_s
   nm_mpi_type_combiner_t combiner;
   /** number of blocks in type map */
   MPI_Count count;
-  /** total number of basic elements contained in type*/
-  MPI_Count elements;
+  /** whether contiguous && lb == 0 && extent == size */
+  int is_compact;
   /** whether entirely contiguous */
   int is_contig;
   /** lower bound of type */
@@ -259,6 +259,8 @@ typedef struct nm_mpi_datatype_s
   struct nm_data_properties_s props;
   /** number of references pointing to this type (active communications, handle) */
   int refcount;
+  /** total number of basic elements contained in type*/
+  MPI_Count elements;
   /** whether committed or not */
   int committed;
   union

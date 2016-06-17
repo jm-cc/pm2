@@ -172,8 +172,9 @@ static void nm_mpi_datatype_store(int id, size_t size, int count, const char*nam
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_handle_datatype_store(&nm_mpi_datatypes, id);
   /* initialize known properties */
-  p_datatype->committed = 1;
-  p_datatype->is_contig = 1;
+  p_datatype->committed = 0;
+  p_datatype->is_compact = 0;
+  p_datatype->is_contig = 0;
   p_datatype->combiner = MPI_COMBINER_NAMED;
   p_datatype->refcount = 2;
   p_datatype->lb = 0;
@@ -198,6 +199,7 @@ static nm_mpi_datatype_t*nm_mpi_datatype_alloc(nm_mpi_type_combiner_t combiner, 
   nm_mpi_datatype_t*p_newtype = nm_mpi_handle_datatype_alloc(&nm_mpi_datatypes);
   p_newtype->combiner = combiner;
   p_newtype->committed = 0;
+  p_newtype->is_compact = 0;
   p_newtype->size = size;
   p_newtype->count = count;
   p_newtype->elements = count;
@@ -858,31 +860,38 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
   nm_mpi_handle_datatype_free(&nm_mpi_datatypes, p_datatype);
 }
 
-static inline int nm_mpi_datatype_traversal_may_unroll(const struct nm_mpi_datatype_s*const p_datatype, int count)
-{
-  return ((p_datatype->is_contig && (p_datatype->size == p_datatype->extent) && (p_datatype->lb == 0)) || (count == 0));
-}
+/** recursively call traversal function on all sub data; slow (regular) version
+ */
+#define NM_MPI_DATATYPE_TRAVERSAL_LOOP_PLAIN(P_OLD_TYPE, BLOCKLENGTH, LPTR) \
+  {									\
+    int j;								\
+    for(j = 0; j < p_datatype->count; j++)				\
+      {									\
+	const struct nm_data_mpi_datatype_s sub =			\
+	  { .ptr        = (LPTR),					\
+	    .p_datatype = (P_OLD_TYPE),					\
+	    .count      = (BLOCKLENGTH) };				\
+	nm_mpi_datatype_traversal_apply(&sub, apply, _context);		\
+      }									\
+  }
 
+/** recursively call traversal function on all sub data;
+ * fast version optimized for terminal recursions whith same type for all blocks
+ */
 #define NM_MPI_DATATYPE_TRAVERSAL_LOOP(P_OLD_TYPE, BLOCKLENGTH, LPTR)	\
-  if(nm_mpi_datatype_traversal_may_unroll(P_OLD_TYPE, (BLOCKLENGTH)))	\
+  if((P_OLD_TYPE)->is_compact)						\
     {									\
+      int j;								\
       for(j = 0; j < p_datatype->count; j++)				\
 	{								\
-	  const nm_len_t chunk_size = (BLOCKLENGTH) * (P_OLD_TYPE)->size; \
 	  void*const lptr = (LPTR);					\
+	  const nm_len_t chunk_size = (BLOCKLENGTH) * (P_OLD_TYPE)->size; \
 	  (*apply)(lptr, chunk_size, _context);				\
 	}								\
     }									\
   else									\
     {									\
-      for(j = 0; j < p_datatype->count; j++)				\
-	{								\
-	  const struct nm_data_mpi_datatype_s sub =			\
-	    { .ptr        = (LPTR),					\
-	      .p_datatype = (P_OLD_TYPE),				\
-	      .count      = (BLOCKLENGTH) };				\
-	  nm_mpi_datatype_traversal_apply(&sub, apply, _context);	\
-	}								\
+      NM_MPI_DATATYPE_TRAVERSAL_LOOP_PLAIN(P_OLD_TYPE, BLOCKLENGTH, LPTR); \
     }
 	  
 /** apply a function to every chunk of data in datatype */
@@ -893,21 +902,17 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
   const int count = p_data->count;
   void*ptr = p_data->ptr;
   assert(p_datatype->refcount > 0);
-  if(nm_mpi_datatype_traversal_may_unroll(p_datatype, count))
+  if(p_datatype->is_compact || (count == 0))
     {
       (*apply)((void*)ptr, count * p_datatype->size, _context);
     }
   else
     {
-      int i, j;
+      int i;
       for(i = 0; i < count; i++)
 	{
 	  switch(p_datatype->combiner)
 	    {
-	    case MPI_COMBINER_NAMED:
-	      (*apply)(ptr, p_datatype->size, _context);
-	      break;
-
 	    case MPI_COMBINER_CONTIGUOUS:
 	      {
 		const struct nm_data_mpi_datatype_s sub = 
@@ -934,58 +939,45 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 	      
 	    case MPI_COMBINER_VECTOR:
 	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->VECTOR.p_old_type,
-					     p_datatype->VECTOR.blocklength, 
-					     (ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->extent));
+					     p_datatype->VECTOR.blocklength,
+					     ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->extent);
 	      break;
 
 	    case MPI_COMBINER_HVECTOR:
 	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->HVECTOR.p_old_type,
 					     p_datatype->HVECTOR.blocklength, 
-					     (ptr + j * p_datatype->HVECTOR.hstride));
+					     ptr + j * p_datatype->HVECTOR.hstride);
 	      break;
 	      
 	    case MPI_COMBINER_INDEXED:
-	      for(j = 0; j < p_datatype->count; j++)
-		{
-		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + p_datatype->INDEXED.p_map[j].displacement * p_datatype->INDEXED.p_old_type->extent,
-		      .p_datatype = p_datatype->INDEXED.p_old_type,
-		      .count      = p_datatype->INDEXED.p_map[j].blocklength };
-		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
-		}
+	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->INDEXED.p_old_type,
+					     p_datatype->INDEXED.p_map[j].blocklength,
+					     ptr + p_datatype->INDEXED.p_map[j].displacement * p_datatype->INDEXED.p_old_type->extent);
 	      break;
 
 	    case MPI_COMBINER_HINDEXED:
-	      for(j = 0; j < p_datatype->count; j++)
-		{
-		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + p_datatype->HINDEXED.p_map[j].displacement,
-		      .p_datatype = p_datatype->HINDEXED.p_old_type,
-		      .count      = p_datatype->HINDEXED.p_map[j].blocklength };
-		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
-		}
+	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->HINDEXED.p_old_type,
+					     p_datatype->HINDEXED.p_map[j].blocklength,
+					     ptr + p_datatype->HINDEXED.p_map[j].displacement);
 	      break;
 
 	    case MPI_COMBINER_INDEXED_BLOCK:
-	      for(j = 0; j < p_datatype->count; j++)
-		{
-		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + p_datatype->INDEXED_BLOCK.array_of_displacements[j] * p_datatype->INDEXED_BLOCK.p_old_type->extent,
-		      .p_datatype = p_datatype->INDEXED_BLOCK.p_old_type,
-		      .count      = p_datatype->INDEXED_BLOCK.blocklength };
-		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
-		}
+	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->INDEXED_BLOCK.p_old_type,
+					     p_datatype->INDEXED_BLOCK.blocklength,
+					     ptr + p_datatype->INDEXED_BLOCK.array_of_displacements[j] * p_datatype->INDEXED_BLOCK.p_old_type->extent);
 	      break;
 	      
 	    case MPI_COMBINER_HINDEXED_BLOCK:
-	      for(j = 0; j < p_datatype->count; j++)
-		{
-		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + p_datatype->HINDEXED_BLOCK.array_of_displacements[j],
-		      .p_datatype = p_datatype->HINDEXED_BLOCK.p_old_type,
-		      .count      = p_datatype->HINDEXED_BLOCK.blocklength };
-		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
-		}
+	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->HINDEXED_BLOCK.p_old_type,
+					     p_datatype->HINDEXED_BLOCK.blocklength,
+					     ptr + p_datatype->HINDEXED_BLOCK.array_of_displacements[j]);
+	      break;
+
+	    case MPI_COMBINER_STRUCT:
+	      /* different oldtype for each field; cannot call optimized loop */
+	      NM_MPI_DATATYPE_TRAVERSAL_LOOP_PLAIN(p_datatype->STRUCT.p_map[j].p_old_type,
+						   p_datatype->STRUCT.p_map[j].blocklength,
+						   ptr + p_datatype->STRUCT.p_map[j].displacement);
 	      break;
 
 	    case MPI_COMBINER_SUBARRAY:
@@ -1032,18 +1024,17 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 		  }
 	      }
 	      break;
-
-	    case MPI_COMBINER_STRUCT:
-	      for(j = 0; j < p_datatype->count; j++)
+	      
+	    case MPI_COMBINER_NAMED:
+	      /* we should not be there: NAMED types are supposed to be contiguous/copmpact and caught by optimized path */
+	      (*apply)(ptr, p_datatype->size, _context);
+	      if(p_datatype->committed)
 		{
-		  const struct nm_data_mpi_datatype_s sub = 
-		    { .ptr        = ptr + p_datatype->STRUCT.p_map[j].displacement,
-		      .p_datatype = p_datatype->STRUCT.p_map[j].p_old_type,
-		      .count      = p_datatype->STRUCT.p_map[j].blocklength };
-		  nm_mpi_datatype_traversal_apply(&sub, apply, _context);
+		  fprintf(stderr, "# MadMPI: internal error- NAMED datatype %s not contiguous.\n", p_datatype->name);
+		  abort();
 		}
 	      break;
-	      
+
 	    default:
 	      ERROR("madmpi: cannot filter datatype with combiner %d\n", p_datatype->combiner);
 	    }
@@ -1157,6 +1148,8 @@ static void nm_mpi_datatype_properties_compute(nm_mpi_datatype_t*p_datatype)
   p_datatype->true_lb     = context.props.true_lb;
   p_datatype->true_extent = context.props.true_ub - context.props.true_lb;
   p_datatype->props       = context.nm_data_props;
+  p_datatype->is_compact  = (p_datatype->is_contig && (p_datatype->size == p_datatype->extent) && (p_datatype->lb == 0));
+  p_datatype->committed = 1;
 }
 
 /** status for nm_mpi_datatype_*_memcpy */

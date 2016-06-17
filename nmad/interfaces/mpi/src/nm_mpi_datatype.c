@@ -862,7 +862,29 @@ static inline int nm_mpi_datatype_traversal_may_unroll(const struct nm_mpi_datat
 {
   return ((p_datatype->is_contig && (p_datatype->size == p_datatype->extent) && (p_datatype->lb == 0)) || (count == 0));
 }
-						   
+
+#define NM_MPI_DATATYPE_TRAVERSAL_LOOP(P_OLD_TYPE, BLOCKLENGTH, LPTR)	\
+  if(nm_mpi_datatype_traversal_may_unroll(P_OLD_TYPE, (BLOCKLENGTH)))	\
+    {									\
+      for(j = 0; j < p_datatype->count; j++)				\
+	{								\
+	  const nm_len_t chunk_size = (BLOCKLENGTH) * (P_OLD_TYPE)->size; \
+	  void*const lptr = (LPTR);					\
+	  (*apply)(lptr, chunk_size, _context);				\
+	}								\
+    }									\
+  else									\
+    {									\
+      for(j = 0; j < p_datatype->count; j++)				\
+	{								\
+	  const struct nm_data_mpi_datatype_s sub =			\
+	    { .ptr        = (LPTR),					\
+	      .p_datatype = (P_OLD_TYPE),				\
+	      .count      = (BLOCKLENGTH) };				\
+	  nm_mpi_datatype_traversal_apply(&sub, apply, _context);	\
+	}								\
+    }
+	  
 /** apply a function to every chunk of data in datatype */
 static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_apply_t apply, void*_context)
 {
@@ -883,7 +905,7 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 	  switch(p_datatype->combiner)
 	    {
 	    case MPI_COMBINER_NAMED:
-	      (*apply)((void*)ptr, p_datatype->size, _context);
+	      (*apply)(ptr, p_datatype->size, _context);
 	      break;
 
 	    case MPI_COMBINER_CONTIGUOUS:
@@ -911,47 +933,15 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 	      break;
 	      
 	    case MPI_COMBINER_VECTOR:
-	      if(nm_mpi_datatype_traversal_may_unroll(p_datatype->VECTOR.p_old_type, p_datatype->VECTOR.blocklength))
-		{
-		  for(j = 0; j < p_datatype->count; j++)
-		    {
-		      void*const lptr = ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->extent;
-		      (*apply)(lptr, p_datatype->VECTOR.blocklength * p_datatype->VECTOR.p_old_type->size, _context);
-		    }
-		}
-	      else
-		{
-		  for(j = 0; j < p_datatype->count; j++)
-		    {
-		      const struct nm_data_mpi_datatype_s sub = 
-			{ .ptr        = ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->extent,
-			  .p_datatype = p_datatype->VECTOR.p_old_type,
-			  .count      = p_datatype->VECTOR.blocklength };
-		      nm_mpi_datatype_traversal_apply(&sub, apply, _context);
-		    }
-		}
+	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->VECTOR.p_old_type,
+					     p_datatype->VECTOR.blocklength, 
+					     (ptr + j * p_datatype->VECTOR.stride * p_datatype->VECTOR.p_old_type->extent));
 	      break;
 
 	    case MPI_COMBINER_HVECTOR:
-	      if(nm_mpi_datatype_traversal_may_unroll(p_datatype->HVECTOR.p_old_type, p_datatype->HVECTOR.blocklength))
-		{
-		  for(j = 0; j < p_datatype->count; j++)
-		    {
-		      void*const lptr = ptr + j * p_datatype->HVECTOR.hstride;
-		      (*apply)(lptr, p_datatype->HVECTOR.blocklength * p_datatype->HVECTOR.p_old_type->size, _context);
-		    }
-		}
-	      else
-		{
-		  for(j = 0; j < p_datatype->count; j++)
-		    {
-		      const struct nm_data_mpi_datatype_s sub = 
-			{ .ptr        = ptr + j * p_datatype->HVECTOR.hstride, 
-			  .p_datatype = p_datatype->HVECTOR.p_old_type,
-			  .count      = p_datatype->HVECTOR.blocklength };
-		      nm_mpi_datatype_traversal_apply(&sub, apply, _context);
-		    }
-		}
+	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->HVECTOR.p_old_type,
+					     p_datatype->HVECTOR.blocklength, 
+					     (ptr + j * p_datatype->HVECTOR.hstride));
 	      break;
 	      
 	    case MPI_COMBINER_INDEXED:

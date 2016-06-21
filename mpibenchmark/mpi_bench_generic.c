@@ -220,7 +220,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
       if(mpi_bench->setparam)
 	{
 	  if(!mpi_bench_common.is_server)
-	    printf("# bench: %s+%d begin\n", mpi_bench->label, p);
+	    printf("# bench: %s%%%d begin\n", mpi_bench->label, p);
 	  fflush(stdout);
 	  (*mpi_bench->setparam)(p);
 	}
@@ -318,7 +318,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      MPI_Barrier(mpi_bench_common.comm);
 	    }
 	  if(mpi_bench->setparam)
-	    printf("# bench: %s+%d end\n", mpi_bench->label, p);
+	    printf("# bench: %s%%%d end\n", mpi_bench->label, p);
 	}
       if(param_bounds)
 	{

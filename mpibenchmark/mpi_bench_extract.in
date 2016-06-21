@@ -129,7 +129,7 @@ for b in ${bench_list}; do
 	    lat0=0
 	    ;;
 	*noncontig*)
-	    benchref=mpi_bench_noncontig/32
+	    benchref=mpi_bench_noncontig+32
 	    lat0=$( mpi_bench_extract_line mpi_bench_sendrecv 0 | cut -f 2 )
 	    ;;
 	*Nload*)

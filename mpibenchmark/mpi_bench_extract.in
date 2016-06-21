@@ -2,7 +2,7 @@
 # -*- mode: Sh;-*-
 
 #  NewMadeleine
-#  Copyright (C) 2015 (see AUTHORS file)
+#  Copyright (C) 2015-2016 (see AUTHORS file)
 # 
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -100,13 +100,13 @@ mpi_bench_extract_line_param() {
     s=$2
     p=$3
     benchfile=${outdir}/${b}.dat
-    sed -e "/${b}\/${p} begin/,/${b}\/${p} end/ !d;/^#/ d;/^${s}\t/ !d" ${benchfile}
+    sed -e "/${b}+${p} begin/,/${b}\/${p} end/ !d;/^#/ d;/^${s}\t/ !d" ${benchfile}
 }
 
 mpi_bench_extract_params() {
     b=$1
     benchfile=${outdir}/${b}.dat
-    sed -e "s+^# bench: ${b}/\(.*\) begin+\1+p;d" ${benchfile} | tr '\n' ' '
+    sed -e "s+^# bench: ${b}+(.*\) begin+\1+p;d" ${benchfile} | tr '\n' ' '
 }
 
 mpi_bench_extract_sizes() {
@@ -129,7 +129,7 @@ for b in ${bench_list}; do
 	    lat0=0
 	    ;;
 	*noncontig*)
-	    benchref=mpi_bench_noncontig
+	    benchref=mpi_bench_noncontig/32
 	    lat0=$( mpi_bench_extract_line mpi_bench_sendrecv 0 | cut -f 2 )
 	    ;;
 	*Nload*)

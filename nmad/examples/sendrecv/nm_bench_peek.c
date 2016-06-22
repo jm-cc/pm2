@@ -56,8 +56,6 @@ static void sr_peek_send(void*buf, nm_len_t len)
 static void sr_peek_recv(void*buf, nm_len_t len)
 {
   nm_sr_request_t request;
-  struct nm_data_s data;
-  nm_data_sr_peek_header_set(&data, (struct sr_peek_header_content_s){ .ptr = buf, .len = len });
   nm_sr_recv_init(nm_bench_common.p_session, &request);
   nm_sr_recv_match(nm_bench_common.p_session, &request, nm_bench_common.p_gate, data_tag, NM_TAG_MASK_FULL);
   while(nm_sr_recv_iprobe(nm_bench_common.p_session, &request) == -NM_EAGAIN)
@@ -78,6 +76,8 @@ static void sr_peek_recv(void*buf, nm_len_t len)
       fprintf(stderr, "# sr_peek_header: wrong len received in header (hlen = %d; expected = %d)\n", hlen, (int)len);
       abort();
     }
+  struct nm_data_s data;
+  nm_data_sr_peek_header_set(&data, (struct sr_peek_header_content_s){ .ptr = buf, .len = hlen });
   nm_sr_recv_unpack_data(nm_bench_common.p_session, &request, &data);
   nm_sr_recv_post(nm_bench_common.p_session, &request);
   nm_sr_rwait(nm_bench_common.p_session, &request);

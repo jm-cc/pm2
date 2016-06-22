@@ -223,7 +223,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
   p_chunk->tag    = tag;
   nm_pw_ref_inc(p_pw);
 #ifdef DEBUG
-  const int nm_unexpected_mem_size = nm_unexpected_list_size(&p_core->unexpected);
+  const long unsigned int nm_unexpected_mem_size = nm_unexpected_list_size(&p_core->unexpected);
   if(nm_unexpected_mem_size > 32*1024)
     {
       fprintf(stderr, "nmad: WARNING- %lu unexpected chunks allocated.\n", nm_unexpected_mem_size);
@@ -383,8 +383,17 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 	      break;	      
 	    case NM_PROTO_RDV:
 	      {
-		fprintf(stderr, "# nmad: nm_core_unpack_peek()- not implemented yet for large messages.\n");
-		abort();
+		const nm_header_ctrl_generic_t*p_ctrl_header = (const nm_header_ctrl_generic_t*)p_chunk->p_header;
+		const nm_len_t chunk_offset = p_ctrl_header->rdv.chunk_offset;
+		if(chunk_offset < peek_len)
+		  {
+		    fprintf(stderr, "# nmad: nm_core_unpack_peek()- not implemented for large messages. Use nm_sr_send_header() to send header eagerly.\n");
+		    abort();
+		  }
+		else
+		  {
+		    /* rdv chunk not in peeked heder- ignore */
+		  }
 	      }
 	      break;
 

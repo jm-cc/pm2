@@ -91,6 +91,7 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
     }
   else
     {
+      assert(p_pack->pack.scheduled == 0);
       nm_data_aggregator_traversal(p_pack->p_data, &nm_core_pack_chunk, p_pack);
     }
   nmad_unlock();

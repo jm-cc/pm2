@@ -149,6 +149,10 @@ static inline int  nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_r
 static inline int  nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_request,
 				    nm_gate_t p_gate, nm_tag_t tag);
 			    
+static inline int nm_sr_send_dest(nm_session_t p_session, nm_sr_request_t*p_request,
+				  nm_gate_t p_gate, nm_tag_t tag);
+static inline int nm_sr_send_header(nm_session_t p_session, nm_sr_request_t*p_request, nm_len_t hlen);
+static inline int nm_sr_send_submit(nm_session_t p_session, nm_sr_request_t*p_request);
 
 /* ** Building blocks for recv ***************************** */
 

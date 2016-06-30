@@ -17,7 +17,7 @@
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
 #include <tbx.h>
-#include <nm_coll.h>
+#include <nm_coll_interface.h>
 
 
 /* ********************************************************* */

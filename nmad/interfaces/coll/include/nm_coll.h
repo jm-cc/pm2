@@ -13,21 +13,36 @@
  * General Public License for more details.
  */
 
-#ifndef NM_COLL_H
-#define NM_COLL_H
-
 #include <nm_public.h>
 #include <nm_sendrecv_interface.h>
 #include <Padico/Puk.h>
 
-/** @defgroup coll_interface Collective interface
- * This is the collective interface, with group, communicators, and collective operations.
+/** @ingroup coll_interface
+ * @{
  */
 
-#include "nm_group.h"
-#include "nm_comm.h"
-#include "nm_coll_ops.h"
-#include "nm_coll_inline.h"
+/* ** group-based collectives */
 
-#endif /* NM_COLL_H */
+extern void nm_coll_group_barrier(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_self_gate, nm_tag_t tag);
+
+extern void nm_coll_group_bcast(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
+				void*buffer, nm_len_t len, nm_tag_t tag);
+
+extern void nm_coll_group_scatter(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
+				  const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
+
+extern void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
+				 const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
+
+/* ** communicator_based collectives */
+
+extern void nm_coll_barrier(nm_comm_t comm, nm_tag_t tag);
+
+extern void nm_coll_bcast(nm_comm_t comm, int root, void*buffer, nm_len_t len, nm_tag_t tag);
+
+extern void nm_coll_scatter(nm_comm_t comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
+
+extern void nm_coll_gather(nm_comm_t comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
+
+/** @} */
 

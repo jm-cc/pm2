@@ -16,8 +16,8 @@
 #include <nm_public.h>
 #include <nm_sendrecv_interface.h>
 #include <Padico/Puk.h>
-#include "nm_coll.h"
 #include <nm_launcher.h>
+#include "nm_coll_private.h"
 
 /* ********************************************************* */
 

@@ -35,7 +35,7 @@
 #include <nm_pack_interface.h>
 #include <tbx.h>
 #include <nm_launcher.h>
-#include <nm_coll.h>
+#include <nm_coll_interface.h>
 
 #ifdef PIOMAN
 #include <pioman.h>

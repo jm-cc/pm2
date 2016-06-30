@@ -15,7 +15,7 @@
 
 #include <nm_public.h>
 #include <nm_session_interface.h>
-#include <nm_coll.h>
+#include <nm_coll_interface.h>
 
 #ifndef NM_BENCH_GENERIC_H
 #define NM_BENCH_GENERIC_H

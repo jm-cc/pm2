@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "nm_coll.h"
+#include "nm_coll_interface.h"
 
 
 /* ********************************************************* */

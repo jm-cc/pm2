@@ -17,6 +17,10 @@
 #include <nm_sendrecv_interface.h>
 #include <Padico/Puk.h>
 
+/** @ingroup coll_interface
+ * @{
+ */
+
 /* ** group-based collectives */
 
 extern void nm_coll_group_barrier(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_self_gate, nm_tag_t tag);
@@ -39,4 +43,6 @@ extern void nm_coll_bcast(nm_comm_t comm, int root, void*buffer, nm_len_t len, n
 extern void nm_coll_scatter(nm_comm_t comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
 
 extern void nm_coll_gather(nm_comm_t comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
+
+/** @} */
 

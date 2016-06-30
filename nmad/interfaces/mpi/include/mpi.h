@@ -17,7 +17,7 @@
 #ifndef MPI_H
 #define MPI_H
 
-/** \defgroup mpi_interface MadMPI: MPI Interface
+/** @defgroup mpi_interface MadMPI: MPI Interface
  *
  * MadMPI is the MPI interface for NewMadeleine. It is a lightweight
  * implementation of the MPI standard. It allows MPI applications to

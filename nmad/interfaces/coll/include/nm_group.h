@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014 (see AUTHORS file)
+ * Copyright (C) 2014-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,13 @@
 
 /* ********************************************************* */
 
+/** @ingroup coll_interface
+ * @{
+ */
+
 PUK_VECT_TYPE(nm_gate, nm_gate_t)
 
+/** type for groups; in practice, a vector of gates */
 typedef nm_gate_vect_t nm_group_t;
 
 #define NM_GROUP_NULL ((nm_group_t)NULL)
@@ -49,6 +54,7 @@ typedef nm_gate_vect_t nm_group_t;
  MPI_GROUP_EMPTY
 */
 
+/** create a new empty group */
 #define nm_group_new nm_gate_vect_new
 
 #define nm_group_add_node(GROUP, GATE) nm_gate_vect_push_back((GROUP), (GATE))
@@ -79,3 +85,6 @@ extern nm_group_t nm_group_intersection(nm_group_t group1, nm_group_t group2);
 extern nm_group_t nm_group_difference(nm_group_t group1, nm_group_t group2);
 
 extern int nm_group_translate_ranks(nm_group_t p_group1, int n, int*ranks1, nm_group_t p_group2, int*ranks2); 
+
+/** @} */
+

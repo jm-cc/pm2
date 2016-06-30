@@ -17,6 +17,10 @@
 #include <nm_sendrecv_interface.h>
 #include <Padico/Puk.h>
 
+/** @ingroup coll_interface
+ * @{
+ */
+
 /** NewMadeleine communicator opaque type */
 typedef struct nm_comm_s*nm_comm_t;
 
@@ -59,3 +63,4 @@ static nm_session_t nm_comm_get_session(nm_comm_t p_comm);
 /** get the group of nodes in the communicator- real group, not a duplicate */
 static nm_group_t   nm_comm_group(nm_comm_t comm);
 
+/** @} */

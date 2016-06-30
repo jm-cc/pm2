@@ -31,13 +31,17 @@ User APIs
 ---------
 
 Several APIs are provided to NewMadeleine users:
-  - The \ref mpi_interface known as Mad-MPI, which is a regular MPI implementation
+  - the @ref mpi_interface known as MadMPI, which is a regular MPI implementation
 
-or the low-level APIs:
-  - The \ref sr_interface as general purpose send receive
-  - The \ref launcher_interface to interface with launcher to initialize sessions
-  - The \ref pack_interface for compatibility with legacy Mad3
+or the native NewMadeleine APIs:
+  - the @ref sr_interface as general purpose messaging interface based on send/receive.
+  - the @ref session_interface to init NewMadeleine and open sessions.
+  - the @ref coll_interface for collective operations
 
+the internal interfaces no designed for end-users:
+  - the @ref core_interface for direct access to nmad packet scheduler. This is the interface upon all other interfaces rely.
+  - the @ref launcher_interface to explictely interface with launcher. This is normally not needed by end-users which should use sessions instead.
+  - the @ref pack_interface for compatibility with legacy Mad3 interface. This has been obsoleted for a long time.
 
 Getting the source code
 -----------------------

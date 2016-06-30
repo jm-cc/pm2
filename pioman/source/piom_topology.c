@@ -193,8 +193,9 @@ void piom_topo_exit_ltasks(void)
 	  piom_ltask_queue_t*queue = local->queue;
 	  piom_trace_remote_state(queue->binding, PIOM_TRACE_STATE_NONE);
 	  piom_ltask_queue_exit(queue);
-	  TBX_FREE(queue);
 	  o->userdata = NULL;
+	  free(queue);
+	  free(local);
 	}
     }
 #endif /* PIOMAN_TOPOLOGY_* */

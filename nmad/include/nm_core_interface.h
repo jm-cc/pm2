@@ -22,12 +22,16 @@
  */
 #include <nm_public.h>
 #include <Padico/Puk.h>
+#include <sys/uio.h>
 
 #ifdef PIOMAN
 #include <pioman.h>
+/** @internal use pioman as a progression engine */
+#define PIOMAN_POLL 1
+#else
+/** @internal use nmad progression */
+#define NMAD_POLL 1
 #endif
-
-#include <sys/uio.h>
 
 /** @defgroup core_interface nmad core interface
  * This is the interface of the NewMad core. All other
@@ -87,14 +91,6 @@ int nm_core_gate_connect(nm_core_t p_core, nm_gate_t gate, nm_drv_t  p_drv, cons
 /* ** Progression ****************************************** */
 
 int nm_schedule(nm_core_t p_core);
-
-#if(!defined(PIOMAN))
-/* use nmad progression */
-#define NMAD_POLL 1
-#else
-/* use pioman as a progression engine */
-#define PIOMAN_POLL 1
-#endif
 
 /* ** Status *********************************************** */
 

@@ -190,12 +190,18 @@ void piom_topo_exit_ltasks(void)
 	{
 	  hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_topology.topology, d, i);
 	  const struct piom_ltask_locality_s*local = o->userdata;
-	  piom_ltask_queue_t*queue = local->queue;
-	  piom_trace_remote_state(queue->binding, PIOM_TRACE_STATE_NONE);
-	  piom_ltask_queue_exit(queue);
-	  o->userdata = NULL;
-	  free(queue);
-	  free(local);
+	  if(local)
+	      {
+		  piom_ltask_queue_t*queue = local->queue;
+		  if(queue)
+		      {
+			  piom_trace_remote_state(queue->binding, PIOM_TRACE_STATE_NONE);
+			  piom_ltask_queue_exit(queue);
+			  o->userdata = NULL;
+			  free(queue);
+		      }
+		  free(local);
+	      }
 	}
     }
 #endif /* PIOMAN_TOPOLOGY_* */

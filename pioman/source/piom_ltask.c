@@ -253,11 +253,20 @@ void piom_init_ltasks(void)
 void piom_exit_ltasks(void)
 {
     __piom_ltask.initialized--;
+    assert(__piom_ltask.initialized >= 0);
     if(__piom_ltask.initialized == 0)
 	{
+	    int i;
+	    for(i = 0; i < __piom_ltask.n_queues; i++)
+		{
+		    piom_ltask_queue_exit(__piom_ltask.all_queues[i]);
+		}
 #ifdef PIOMAN_TRACE
 	    piom_trace_flush();
 #endif /* PIOMAN_TRACE */
+#ifdef PIOMAN_PTHREAD 
+	    piom_pthread_exit_ltasks();
+#endif /* PIOMAN_PTHREAD */
 	    piom_topo_exit_ltasks();
 	}
 

@@ -16,6 +16,8 @@
 
 #include "piom_private.h"
 
+#define PIOM_PTHREAD_MAX_THREADS 8
+
 #ifdef PIOMAN_PTHREAD
 static struct
 {
@@ -27,7 +29,11 @@ static struct
     sem_t lwps_ready;
     /** ltasks queue to feed LWPs */
     struct piom_ltask_lfqueue_s lwps_queue;
-} __piom_pthread;
+    /** array of all created threads */
+    pthread_t all_threads[PIOM_PTHREAD_MAX_THREADS];
+    /** size of above array */
+    int n_threads;
+} __piom_pthread = { .n_threads = 0 };
 #endif /* PIOMAN_PTHREAD */
 
     
@@ -40,6 +46,19 @@ static void __piom_pthread_setname(const char*name)
 #warning pthread_setname_np not available
 #endif
 }
+static pthread_t*__piom_pthread_create(const pthread_attr_t*attr, void*(*start_routine)(void*), void *arg)
+{
+    pthread_t*thread = &__piom_pthread.all_threads[__piom_pthread.n_threads];
+    __piom_pthread.n_threads++;
+    assert(__piom_pthread.n_threads < PIOM_PTHREAD_MAX_THREADS);
+    int err = pthread_create(thread, attr, start_routine, arg);
+    if(err)
+	{
+	    PIOM_FATAL("cannot create threads- error %d\n", err);
+	}
+    return thread;
+}
+				 
 static void*__piom_ltask_timer_worker(void*_dummy)
 {
     const long timeslice_nsec = piom_parameters.timer_period * 1000;
@@ -144,17 +163,15 @@ void piom_pthread_init_ltasks(void)
       /* ** timer-based polling */
     if(piom_parameters.timer_period > 0)
 	{
-	    pthread_t timer_thread;
-	    pthread_create(&timer_thread, NULL, &__piom_ltask_timer_worker, NULL);
+	    __piom_pthread_create(NULL, &__piom_ltask_timer_worker, NULL);
 	}
     /* ** idle polling */
     if(piom_parameters.idle_granularity >= 0)
 	{
 #if defined(PIOMAN_TOPOLOGY_NONE)
-	    pthread_t idle_thread;
 	    piom_ltask_queue_t*queue = piom_topo_get_queue(piom_topo_full);
-	    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);
-	    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
+	    pthread_t*idle_thread = __piom_pthread_create(NULL, &__piom_ltask_idle_worker, queue);
+	    pthread_setschedprio(*idle_thread, sched_get_priority_min(SCHED_OTHER));
 	    PIOM_WARN("no hwloc, using global queue. Running in degraded mode.\n");
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
 	    hwloc_topology_t topo = piom_topo_get();
@@ -176,15 +193,14 @@ void piom_pthread_init_ltasks(void)
 			    hwloc_obj_snprintf(string, sizeof(string), topo, o, "#", 0);
 			    PIOM_DISP("idle #%d on %s\n", i, string);
 			    piom_ltask_queue_t*queue = piom_topo_get_queue(o);
-			    pthread_t idle_thread;
 			    pthread_attr_t attr;
 			    pthread_attr_init(&attr);
 #ifdef SCHED_IDLE
 			    pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
 			    pthread_attr_setschedpolicy(&attr, SCHED_IDLE);
 #endif /* SCHED_IDLE */
-			    pthread_create(&idle_thread, &attr, &__piom_ltask_idle_worker, queue);
-			    int rc = hwloc_set_thread_cpubind(topo, idle_thread, o->cpuset, HWLOC_CPUBIND_THREAD);
+			    pthread_t*idle_thread = __piom_pthread_create(&attr, &__piom_ltask_idle_worker, queue);
+			    int rc = hwloc_set_thread_cpubind(topo, *idle_thread, o->cpuset, HWLOC_CPUBIND_THREAD);
 			    if(rc != 0)
 				{
 				    PIOM_WARN("hwloc_set_thread_cpubind failed.\n");
@@ -206,9 +222,8 @@ void piom_pthread_init_ltasks(void)
 	    int i;
 	    for(i = 0; i < __piom_pthread.lwps_num; i++)
 		{
-		    pthread_t tid;
-		    int err = pthread_create(&tid, NULL, &__piom_ltask_lwp_worker, NULL);
-		    if(err)
+		    pthread_t*tid = __piom_pthread_create(NULL, &__piom_ltask_lwp_worker, NULL);
+		    if(tid == NULL)
 			{
 			    PIOM_FATAL("cannot create spare LWP #%d\n", i);
 			}
@@ -218,6 +233,14 @@ void piom_pthread_init_ltasks(void)
 
 }
 
+void piom_pthread_exit_ltasks(void)
+{
+    int i;
+    for(i = 0; i < __piom_pthread.n_threads; i++)
+	{
+	    pthread_join(__piom_pthread.all_threads[i], NULL);
+	}
+}
 
 #endif /* PIOMAN_PTHREAD */
 

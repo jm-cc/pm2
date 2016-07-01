@@ -72,6 +72,7 @@ TBX_INTERNAL void piom_io_task_stop(void);
 
 #ifdef PIOMAN_PTHREAD
 TBX_INTERNAL void piom_pthread_init_ltasks(void);
+TBX_INTERNAL void piom_pthread_exit_ltasks(void);
 #endif /* PIOMAN_PTHREAD */
 
 #ifdef PIOMAN_ABT

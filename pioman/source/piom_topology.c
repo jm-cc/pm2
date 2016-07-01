@@ -196,7 +196,6 @@ void piom_topo_exit_ltasks(void)
 		  if(queue)
 		      {
 			  piom_trace_remote_state(queue->binding, PIOM_TRACE_STATE_NONE);
-			  piom_ltask_queue_exit(queue);
 			  o->userdata = NULL;
 			  free(queue);
 		      }

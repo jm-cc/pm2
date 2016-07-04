@@ -45,6 +45,7 @@ static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
 }
 static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
 {
+  assert((lookup_tag & mask) == lookup_tag);
   return ((recv_tag & mask) == lookup_tag);
 }
 
@@ -87,6 +88,7 @@ static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
 }
 static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
 {
+  assert((lookup_tag & mask) == lookup_tag);
   return ((recv_tag & mask) == lookup_tag);
 }
 
@@ -157,8 +159,9 @@ static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
 }
 static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
 {
-  return ((recv_tag.tag & mask.tag) == lookup_tag.tag) &&
-    ((recv_tag.hashcode & mask.hashcode) == lookup_tag.hashcode);
+  assert((lookup_tag.tag & mask.tag) == lookup_tag.tag);
+  return ( ((recv_tag.hashcode & mask.hashcode) == lookup_tag.hashcode) &&
+	   ((recv_tag.tag & mask.tag) == lookup_tag.tag) );
 }
 
 static uint32_t nm_tag_indirect_hash(const void*_tag)

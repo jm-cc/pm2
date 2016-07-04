@@ -51,6 +51,10 @@ int MPI_Init_thread(int *argc,
                     int required,
                     int *provided);
 
+/** Return the level of thread support provided by the MPI library 
+ */
+int MPI_Query_thread(int*provided);
+
 /**
  * Indicates whether MPI_Init has been called.
  * @param flag a pointer to an int set to 1 if MPI_Init has been called, 0 otherwise.

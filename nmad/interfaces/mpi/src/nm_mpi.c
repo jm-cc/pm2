@@ -23,6 +23,7 @@
 PADICO_MODULE_BUILTIN(MadMPI, NULL, NULL, NULL);
 
 static int init_done = 0, finalize_done = 0;
+static int thread_level = 0;
 
 NM_MPI_HANDLE_TYPE(errhandler, struct nm_mpi_errhandler_s, _NM_MPI_ERRHANDLER_OFFSET, 8);
 static struct nm_mpi_handle_errhandler_s nm_mpi_errhandlers;
@@ -36,6 +37,7 @@ static struct nm_mpi_handle_info_s nm_mpi_infos;
 NM_MPI_ALIAS(MPI_Init, mpi_init);
 NM_MPI_ALIAS(MPI_Init_thread, mpi_init_thread);
 NM_MPI_ALIAS(MPI_Initialized, mpi_initialized);
+NM_MPI_ALIAS(MPI_Query_thread, mpi_query_thread);
 NM_MPI_ALIAS(MPI_Finalize, mpi_finalize);
 NM_MPI_ALIAS(MPI_Finalized, mpi_finalized);
 NM_MPI_ALIAS(MPI_Abort, mpi_abort);
@@ -111,6 +113,11 @@ int mpi_init(int*argc, char***argv)
   nm_mpi_op_init();
   nm_mpi_request_init();
   nm_mpi_io_init();
+#if defined(PIOMAN) && defined(PIOMAN_MULTITHREAD)
+  thread_level = MPI_THREAD_MULTIPLE;
+#else
+  thread_level = MPI_THREAD_FUNNELED;
+#endif
   init_done = 1;
   return MPI_SUCCESS;
 }
@@ -119,14 +126,21 @@ int mpi_init_thread(int*argc, char***argv, int required, int*provided)
 {
   int err;
   err = mpi_init(argc, argv);
-#ifndef PIOMAN
-  *provided = (required == MPI_THREAD_MULTIPLE) ? MPI_THREAD_FUNNELED : required;
-#else /* PIOMAN */
-  *provided = required;
-#endif /* PIOMAN */
+  *provided = (thread_level > required) ? required : thread_level;
   return err;
 }
 
+int mpi_query_thread(int*provided)
+{
+  if(!init_done)
+    {
+      *provided = MPI_UNDEFINED;
+      return MPI_ERR_OTHER;
+    }
+  *provided = thread_level;
+  return MPI_SUCCESS;
+}
+  
 int mpi_initialized(int*flag)
 {
   *flag = init_done;

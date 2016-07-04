@@ -22,3 +22,11 @@ starting- max_pending = 4096
   ok.
 starting- max_pending = 8192
   ok.
+starting- max_pending = 16384
+  ok.
+starting- max_pending = 32768
+  ok.
+starting- max_pending = 65536
+  ok.
+starting- max_pending = 131072
+  ok.

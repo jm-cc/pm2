@@ -22,15 +22,15 @@
 
 #include "sr_examples_helper.h"
 
-/* test up to 8192 pending isend/irecv at the same time */
+/* test up to 128k pending isend/irecv at the same time */
 
-#define MAX_PENDING (1024*8)
+#define MAX_PENDING (1024*128)
 
 int main(int argc, char	**argv)
 {
   const int len = MAX_PENDING + 1;
   char buf[MAX_PENDING + 1];
-  nm_sr_request_t requests[MAX_PENDING];
+  nm_sr_request_t*requests = malloc(MAX_PENDING * sizeof(nm_sr_request_t));
   int i;
   int max_pending;
 
@@ -64,6 +64,7 @@ int main(int argc, char	**argv)
       else
 	{
 	  /* client */
+	  fprintf(stderr, "# sending: max_pending = %d\n", max_pending);
 	  for(i = 0; i < max_pending; i++)
 	    {
 	      buf[i] = 'A' + i % ('Z' - 'A');
@@ -78,8 +79,9 @@ int main(int argc, char	**argv)
 	      nm_sr_swait(p_session, &requests[i]);
 	    }
 	}
+      nm_examples_barrier(max_pending);
     }
-  
+  free(requests);
   nm_examples_exit();
   return 0;
 }

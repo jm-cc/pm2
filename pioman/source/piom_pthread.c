@@ -33,7 +33,11 @@ static struct
     pthread_t all_threads[PIOM_PTHREAD_MAX_THREADS];
     /** size of above array */
     int n_threads;
-} __piom_pthread = { .n_threads = 0 };
+} __piom_pthread =
+    {
+	.lwps_num  = 0,
+	.n_threads = 0
+    };
 #endif /* PIOMAN_PTHREAD */
 
     

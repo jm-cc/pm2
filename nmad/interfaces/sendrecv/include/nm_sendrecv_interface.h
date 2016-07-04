@@ -160,7 +160,7 @@ static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_req
 static inline void nm_sr_recv_unpack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
 						void*ptr, nm_len_t len);
 static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
-					 struct iovec*iov, int num_entry);
+					 const struct iovec*iov, int num_entry);
 static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
 					  const struct nm_data_s*p_data);
 static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,

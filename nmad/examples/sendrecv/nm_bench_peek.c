@@ -64,7 +64,7 @@ static void sr_peek_recv(void*buf, nm_len_t len)
     }
   int hlen = -1;
   struct nm_data_s header;
-  nm_data_contiguous_set(&header, (struct nm_data_contiguous_s){ .ptr = &hlen, .len = sizeof(hlen) });
+  nm_data_contiguous_build(&header, &hlen, sizeof(hlen));
   int rc = nm_sr_recv_peek(nm_bench_common.p_session, &request, &header);
   if(rc != NM_ESUCCESS)
     {

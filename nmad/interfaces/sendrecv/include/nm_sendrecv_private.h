@@ -151,14 +151,14 @@ static inline void nm_sr_send_pack_contiguous(nm_session_t p_session, nm_sr_requ
 					      const void*ptr, nm_len_t len)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_data_contiguous_set(&p_request->data, (struct nm_data_contiguous_s){ .ptr = (void*)ptr, .len = len });
+  nm_data_contiguous_build(&p_request->data, (void*)ptr, len);
   nm_core_pack_data(p_core, &p_request->req, &p_request->data);
 }
 static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
-				       const struct iovec*iov, int num_entries)
+				       const struct iovec*v, int n)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_data_iov_set(&p_request->data, (struct nm_data_iov_s){ .v = (struct iovec*)iov, .n = num_entries });
+  nm_data_iov_build(&p_request->data, v, n);
   nm_core_pack_data(p_core, &p_request->req, &p_request->data);
 }
 
@@ -226,15 +226,15 @@ static inline void nm_sr_recv_unpack_contiguous(nm_session_t p_session, nm_sr_re
 						void*data, nm_len_t len)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_data_contiguous_set(&p_request->data, (struct nm_data_contiguous_s){ .ptr = (void*)data, .len = len });
+  nm_data_contiguous_build(&p_request->data, data, len);
   nm_core_unpack_data(p_core, &p_request->req, &p_request->data);
 }
 
 static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
-					 struct iovec*iov, int num_entries)
+					 const struct iovec*v, int n)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_data_iov_set(&p_request->data, (struct nm_data_iov_s){ .v = (struct iovec*)iov, .n = num_entries });
+  nm_data_iov_build(&p_request->data, v, n);
   nm_core_unpack_data(p_core, &p_request->req, &p_request->data);
 }
 

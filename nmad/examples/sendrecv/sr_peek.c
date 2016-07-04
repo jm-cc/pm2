@@ -35,7 +35,7 @@ int main(int argc, char**argv)
       nm_sr_recv_init(p_session, &request);
       nm_sr_recv_match(p_session, &request, NM_ANY_GATE, 0, NM_TAG_MASK_FULL );
       struct nm_data_s data;
-      nm_data_contiguous_set(&data, (struct nm_data_contiguous_s){ .ptr = buf, .len = sizeof(int) });
+      nm_data_contiguous_build(&data, buf, sizeof(int));
       while(nm_sr_recv_iprobe(p_session, &request) == -NM_EAGAIN)
 	{
 	  nm_sr_progress(p_session);

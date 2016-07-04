@@ -21,6 +21,8 @@
 
 #include <assert.h>
 
+/* ** Data iterators *************************************** */
+
 /** maximum size of content descriptor for nm_data */
 #define _NM_DATA_CONTENT_SIZE 32
 #define _NM_DATA_GENERATOR_SIZE 32
@@ -147,24 +149,40 @@ struct nm_data_s
     return (CONTENT_TYPE*)p_data->_content;				\
   }
 
+
+/* ** Built-in data types ********************************** */
+
 /** data descriptor for contiguous data 
  */
 struct nm_data_contiguous_s
 {
-  void*ptr;
-  nm_len_t len;
+  void*ptr;     /**< base pointer for block */
+  nm_len_t len; /**< data length */
 };
 extern const struct nm_data_ops_s nm_data_ops_contiguous;
 NM_DATA_TYPE(contiguous, struct nm_data_contiguous_s, &nm_data_ops_contiguous);
+
+static inline void nm_data_contiguous_build(struct nm_data_s*p_data, void*ptr, nm_len_t len)
+{
+  nm_data_contiguous_set(p_data, (struct nm_data_contiguous_s){ .ptr = ptr, .len = len });
+}
+
 /** data descriptor for iov data
  */
 struct nm_data_iov_s
 {
-  struct iovec*v;
+  const struct iovec*v;
   int n;
 };
 extern const struct nm_data_ops_s nm_data_ops_iov;
 NM_DATA_TYPE(iov, struct nm_data_iov_s, &nm_data_ops_iov);
+
+static inline void nm_data_iov_build(struct nm_data_s*p_data, const struct iovec*v, int n)
+{
+  nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = v, .n = n });
+}
+
+/* ** Helper functions ************************************* */
 
 /** helper function to apply iterator to data
  */

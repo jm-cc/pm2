@@ -91,10 +91,10 @@ int nm_launcher_init(int *argc, char**argv)
   /*
    * Lazy Puk initialization (it may already have been initialized in PadicoTM)
    */
-  if(!padico_puk_initialized()) {
-    padico_puk_init(0, NULL);
-  }
-
+  if(!padico_puk_initialized())
+    {
+      padico_puk_init(0, NULL);
+    }
 
   if(getenv("PADICO_NOPRELOAD") != NULL)
     {

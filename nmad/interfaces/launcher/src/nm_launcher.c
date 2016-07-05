@@ -95,6 +95,17 @@ int nm_launcher_init(int *argc, char**argv)
     padico_puk_init(0, NULL);
   }
 
+
+  if(getenv("PADICO_NOPRELOAD") != NULL)
+    {
+      puk_mod_t boot_mod = NULL;
+      padico_rc_t rc = padico_puk_mod_resolve(&boot_mod, "PadicoBootLib");
+      assert(boot_mod);
+      assert(!padico_rc_iserror(rc));
+      rc = padico_puk_mod_load(boot_mod);
+      assert(!padico_rc_iserror(rc));
+    }
+
   const char*launcher_name =
     (puk_mod_getbyname("PadicoTM") != NULL) ? "NewMad_Launcher_newmadico" : "NewMad_Launcher_cmdline";
 

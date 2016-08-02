@@ -67,8 +67,14 @@ typedef struct nm_mpi_errhandler_s
   MPI_Handler_function*function;
 } nm_mpi_errhandler_t;
 
+#define NM_MPI_WARNING(...) {						\
+    fprintf(stderr, "\n# MadMPI: WARNING- %s\n\t", __TBX_FUNCTION__);	\
+    fprintf(stderr, __VA_ARGS__);					\
+    fprintf(stderr, "\n\n");						\
+  }
+
 #define NM_MPI_FATAL_ERROR(...) {					\
-    fprintf(stderr, "\n# madmpi: FATAL- %s\n\t", __TBX_FUNCTION__);	\
+    fprintf(stderr, "\n# MadMPI: FATAL- %s\n\t", __TBX_FUNCTION__);	\
     fprintf(stderr, __VA_ARGS__);					\
     fprintf(stderr, "\n\n");						\
     void*buffer[100];							\

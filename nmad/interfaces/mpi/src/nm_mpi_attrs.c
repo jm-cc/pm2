@@ -158,7 +158,7 @@ int nm_mpi_attrs_copy(int id, puk_hashtable_t p_old_attrs, puk_hashtable_t*p_new
 	    }
 	  if(err != MPI_SUCCESS)
 	    {
-	      fprintf(stderr, "# madmpi: WARNING- copy_fn returned and error while copying attribute.\n");
+	      NM_MPI_WARNING("copy_fn returned and error while copying attribute.\n");
 	      return err;
 	    }
 	  if(flag)
@@ -218,7 +218,7 @@ int nm_mpi_attr_delete(int id, puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p
 	}
       else
 	{
-	  fprintf(stderr, "# madmpi: WARNING- delete_fn returned an error while deleting attribute.\n");
+	  NM_MPI_WARNING("delete_fn returned an error while deleting attribute.\n");
 	}
     }
   return err;

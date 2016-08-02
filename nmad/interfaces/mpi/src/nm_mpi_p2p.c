@@ -73,7 +73,7 @@ int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *
   __sync_add_and_fetch(&p_req->p_datatype->refcount, 1);
   if(p_gate == NULL)
     {
-      TBX_FAILUREF("Cannot find rank %d in comm %p.\n", dest, p_comm);
+      NM_MPI_FATAL_ERROR("Cannot find rank %d in comm %p.\n", dest, p_comm);
       return MPI_ERR_INTERN;
     }
   p_req->gate = p_gate;
@@ -89,7 +89,7 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
   nm_session_t p_session = nm_mpi_communicator_get_session(p_req->p_comm);
   if(!p_req->p_datatype->committed)
     {
-      fprintf(stderr, "# MadMPI: ERROR- trying to send with a non-committed datatype.\n");
+      NM_MPI_WARNING("trying to send with a non-committed datatype.\n");
       return MPI_ERR_TYPE;
     }
   struct nm_data_s data;
@@ -142,7 +142,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
       p_req->gate = nm_mpi_communicator_get_gate(p_comm, source);
       if(tbx_unlikely(p_req->gate == NULL))
 	{
-	  TBX_FAILUREF("Cannot find rank %d in comm %p\n", source, p_comm);
+	  NM_MPI_FATAL_ERROR("Cannot find rank %d in comm %p\n", source, p_comm);
 	  return MPI_ERR_INTERN;
 	}
     }
@@ -162,7 +162,7 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
   nm_session_t p_session = nm_mpi_communicator_get_session(p_req->p_comm);
   if(!p_req->p_datatype->committed)
     {
-      fprintf(stderr, "# MadMPI: ERROR- trying to recv with a non-committed datatype.\n");
+      NM_MPI_WARNING("trying to recv with a non-committed datatype.\n");
       return MPI_ERR_TYPE;
     }
   struct nm_data_s data;
@@ -220,9 +220,9 @@ int mpi_bsend(const void *buffer,
 	      int dest,
 	      int tag,
 	      MPI_Comm comm) {
-	/* todo: only valid for small messages ? */
-	fprintf(stderr, "Warning: bsend called. it may be invalid\n");
-	return mpi_send(buffer, count, datatype, dest, tag, comm);
+  /* todo: only valid for small messages ? */
+  NM_MPI_WARNING("Warning: MPI_Bsend called. it may be invalid\n");
+  return mpi_send(buffer, count, datatype, dest, tag, comm);
 }
 
 int mpi_send(const void *buffer, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
@@ -399,7 +399,7 @@ int mpi_iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status
       gate = nm_mpi_communicator_get_gate(p_comm, source);
       if(gate == NULL)
 	{
-	  fprintf(stderr, "Cannot find a in connection for source %d\n", source);
+	  NM_MPI_WARNING("Cannot find a in connection for source %d\n", source);
 	  return MPI_ERR_INTERN;
 	}
     }

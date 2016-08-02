@@ -635,8 +635,7 @@ int mpi_comm_split(MPI_Comm oldcomm, int color, int key, MPI_Comm*newcomm)
 	}
       else
 	{
-	  fprintf(stderr, "# MPI_Comm_split()- internal error (node in group, not in new communicator).\n");
-	  abort();
+	  NM_MPI_FATAL_ERROR("# MPI_Comm_split()- internal error (node in group, not in new communicator).\n");
 	}
     }
   else
@@ -715,7 +714,7 @@ static int nodesharedcmp(const void*v1, const void*v2)
 
 int mpi_comm_split_type(MPI_Comm oldcomm, int split_type, int key, MPI_Info info, MPI_Comm*newcomm)
 {
-  fprintf(stderr, "# This functions (%s) is not implemented yet.\n",__FUNCTION__);
+  NM_MPI_WARNING("# This functions (%s) is not implemented yet.\n",__FUNCTION__);
   nm_mpi_communicator_t*p_old_comm = nm_mpi_communicator_get(oldcomm);
   const int intra = (p_old_comm->kind == NM_MPI_COMMUNICATOR_INTRA);
   nm_group_t p_old_group = intra ? nm_comm_group(p_old_comm->p_nm_comm) : p_old_comm->intercomm.p_local_group;
@@ -763,8 +762,7 @@ int mpi_comm_split_type(MPI_Comm oldcomm, int split_type, int key, MPI_Info info
 	}
       else
 	{
-	  fprintf(stderr, "# MPI_Comm_split()- internal error (node in group, not in new communicator).\n");
-	  abort();
+	  NM_MPI_FATAL_ERROR("# MPI_Comm_split()- internal error (node in group, not in new communicator).\n");
 	}
     }
   else

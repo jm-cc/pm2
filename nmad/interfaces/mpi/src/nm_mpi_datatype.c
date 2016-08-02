@@ -1616,13 +1616,12 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 	      (*apply)(ptr, p_datatype->size, _context);
 	      if(p_datatype->committed)
 		{
-		  fprintf(stderr, "# MadMPI: internal error- NAMED datatype %s not contiguous.\n", p_datatype->name);
-		  abort();
+		  NM_MPI_FATAL_ERROR("internal error- NAMED datatype %s not contiguous.\n", p_datatype->name);
 		}
 	      break;
 
 	    default:
-	      NM_MPI_FATAL_ERROR("madmpi: cannot filter datatype with combiner %d\n", p_datatype->combiner);
+	      NM_MPI_FATAL_ERROR("cannot filter datatype with combiner %d\n", p_datatype->combiner);
 	    }
 	  ptr += p_datatype->extent;
 	}

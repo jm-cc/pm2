@@ -688,15 +688,17 @@ void mpi_alltoallv_(void *sendbuf,
  */
 void mpi_op_create_(MPI_User_function *function TBX_UNUSED,
                     int commute TBX_UNUSED,
-                    MPI_Op *op TBX_UNUSED) {
-  TBX_FAILURE("unimplemented");
+                    MPI_Op *op TBX_UNUSED)
+{
+  NM_MPI_FATAL_ERROR("unimplemented");
 }
 
 /**
  * Fortran version for MPI_OP_FREE
  */
-void mpi_op_free_(MPI_Op *op) {
-  TBX_FAILURE("unimplemented");
+void mpi_op_free_(MPI_Op *op)
+{
+  NM_MPI_FATAL_ERROR("unimplemented");
 }
 
 /**

@@ -45,19 +45,21 @@ typedef struct nm_mpi_win_addr_lelt_s
 
 /** Request queue head */
 TAILQ_HEAD(nm_mpi_win_addrlist_s, nm_mpi_win_addr_lelt_s);
-typedef struct {
+typedef struct
+{
   struct nm_mpi_win_addrlist_s head;
   nm_mpi_spinlock_t lock;
 } nm_mpi_win_addrlist_t;
 
-/** Slack allocator for addr list elements */
+/** Slab allocator for addr list elements */
 #define NM_MPI_WIN_INITIAL_ADDR_LELT 8
 PUK_ALLOCATOR_TYPE(nm_mpi_win_addr_lelt, nm_mpi_win_addr_lelt_t);
 static nm_mpi_win_addr_lelt_allocator_t nm_mpi_win_addr_lelt_allocator;
 
 /* ** Windows initialization types definition ************** */
 
-typedef struct nm_mpi_win_init_data_s {
+typedef struct nm_mpi_win_init_data_s
+{
   MPI_Aint size;
   int unit;
   int win_id;
@@ -161,9 +163,10 @@ int nm_mpi_win_addr_is_valid(void*base, MPI_Aint size, nm_mpi_window_t*p_win)
   struct nm_mpi_win_addr_lelt_s*it;
   nm_mpi_win_addrlist_t*p_list = p_win->p_base;
   nm_mpi_spin_lock(&p_list->lock);
-  for(it = TAILQ_FIRST(&p_list->head); !is_valid && it; it = TAILQ_NEXT(it, link)) {
-    is_valid |= it->begin <= base && it->size >= (size + NM_MPI_WIN_ABS(it->begin - base));
-  }
+  for(it = TAILQ_FIRST(&p_list->head); !is_valid && it; it = TAILQ_NEXT(it, link))
+    {
+      is_valid |= it->begin <= base && it->size >= (size + NM_MPI_WIN_ABS(it->begin - base));
+    }
   nm_mpi_spin_unlock(&p_list->lock);
   return is_valid;
 }
@@ -225,76 +228,81 @@ static inline nm_mpi_window_t*nm_mpi_window_alloc(int comm_size)
   p_win->waiting_queue.lock_type    = 0;
   p_win->waiting_queue.naccess      = 0;
   p_win->pending_ops                = malloc(comm_size * sizeof(nm_mpi_win_locklist_t));
-  for(int i = 0; i < comm_size; ++i) {
-    TAILQ_INIT(&p_win->pending_ops[i].pending);
-    nm_mpi_spin_init(&p_win->pending_ops[i].lock);
-  }
+  for(int i = 0; i < comm_size; ++i)
+    {
+      TAILQ_INIT(&p_win->pending_ops[i].pending);
+      nm_mpi_spin_init(&p_win->pending_ops[i].lock);
+    }
   strcpy(p_win->shared_file_name, "/tmp/padico-d-mpi-shared-XXXXXX");
   return p_win;
 }
 
 static inline void nm_mpi_window_destroy(nm_mpi_window_t*p_win)
 {
-  if(p_win != NULL){
-    switch(p_win->flavor){
-    case MPI_WIN_FLAVOR_DYNAMIC:
-      {
-	nm_mpi_win_addrlist_t*p_list = p_win->p_base;
-	nm_mpi_spin_lock(&p_list->lock);
-	nm_mpi_win_addr_lelt_t*it = TAILQ_FIRST(&p_list->head);
-	while(!TAILQ_EMPTY(&p_list->head)) {
-	  TAILQ_REMOVE(&p_list->head, it, link);
-	  nm_mpi_win_addr_lelt_free(nm_mpi_win_addr_lelt_allocator, it);
-	  it = TAILQ_FIRST(&p_list->head);
+  if(p_win != NULL)
+    {
+      switch(p_win->flavor)
+	{
+	case MPI_WIN_FLAVOR_DYNAMIC:
+	  {
+	    nm_mpi_win_addrlist_t*p_list = p_win->p_base;
+	    nm_mpi_spin_lock(&p_list->lock);
+	    nm_mpi_win_addr_lelt_t*it = TAILQ_FIRST(&p_list->head);
+	    while(!TAILQ_EMPTY(&p_list->head)) {
+	      TAILQ_REMOVE(&p_list->head, it, link);
+	      nm_mpi_win_addr_lelt_free(nm_mpi_win_addr_lelt_allocator, it);
+	      it = TAILQ_FIRST(&p_list->head);
+	    }
+	    nm_mpi_spin_unlock(&p_list->lock);
+	    FREE_AND_SET_NULL(p_list);
+	  }
+	  break;
+	case MPI_WIN_FLAVOR_SHARED:
+	  {
+	    if(0 == p_win->myrank)
+	      {
+		remove(p_win->shared_file_name);
+	      }
+	    MPI_Aint total_size = 0;
+	    int size = nm_comm_size(p_win->p_comm->p_nm_comm);
+	    for(int i=0; i<size; ++i)
+	      {
+		total_size += p_win->size[i];
+	      }
+	    munmap(*(void**)p_win->p_base, total_size);
+	    FREE_AND_SET_NULL(p_win->p_base);
+	  }
+	  break;
+	case MPI_WIN_FLAVOR_ALLOCATE:
+	  {
+	    FREE_AND_SET_NULL(p_win->p_base);
+	  }
+	  break;
+	default:
+	  {
+	    p_win->p_base = NULL;
+	  }
+	  break;
 	}
-	nm_mpi_spin_unlock(&p_list->lock);
-	FREE_AND_SET_NULL(p_list);
-      }
-      break;
-    case MPI_WIN_FLAVOR_SHARED:
-      {
-	if(0 == p_win->myrank) {
-	  remove(p_win->shared_file_name);
-	}
-	MPI_Aint total_size = 0;
-	int size = nm_comm_size(p_win->p_comm->p_nm_comm);
-	for(int i=0; i<size; ++i) {
-	  total_size += p_win->size[i];
-	}
-	munmap(*(void**)p_win->p_base, total_size);
-	FREE_AND_SET_NULL(p_win->p_base);
-      }
-      break;
-    case MPI_WIN_FLAVOR_ALLOCATE:
-      {
-	FREE_AND_SET_NULL(p_win->p_base);
-      }
-      break;
-    default:
-      {
-	p_win->p_base = NULL;
-      }
-      break;
+      FREE_AND_SET_NULL(p_win->size);
+      FREE_AND_SET_NULL(p_win->disp_unit);
+      FREE_AND_SET_NULL(p_win->win_ids);
+      FREE_AND_SET_NULL(p_win->name);
+      FREE_AND_SET_NULL(p_win->end_reqs);
+      FREE_AND_SET_NULL(p_win->msg_count);
+      FREE_AND_SET_NULL(p_win->access);
+      FREE_AND_SET_NULL(p_win->pending_ops);
+      nm_mpi_info_free(p_win->p_info);
+      p_win->p_info       = NULL;
+      p_win->flavor       = MPI_UNDEFINED;
+      p_win->mode         = MPI_MODE_NO_ASSERT;
+      p_win->p_comm       = NULL;
+      p_win->p_group      = NULL;
+      p_win->mem_model    = MPI_WIN_UNIFIED;
+      p_win->p_errhandler = NULL;
+      nm_mpi_attrs_destroy(p_win->id, &p_win->attrs);
+      nm_mpi_handle_window_free(&nm_mpi_windows, p_win);
     }
-    FREE_AND_SET_NULL(p_win->size);
-    FREE_AND_SET_NULL(p_win->disp_unit);
-    FREE_AND_SET_NULL(p_win->win_ids);
-    FREE_AND_SET_NULL(p_win->name);
-    FREE_AND_SET_NULL(p_win->end_reqs);
-    FREE_AND_SET_NULL(p_win->msg_count);
-    FREE_AND_SET_NULL(p_win->access);
-    FREE_AND_SET_NULL(p_win->pending_ops);
-    nm_mpi_info_free(p_win->p_info);
-    p_win->p_info       = NULL;
-    p_win->flavor       = MPI_UNDEFINED;
-    p_win->mode         = MPI_MODE_NO_ASSERT;
-    p_win->p_comm       = NULL;
-    p_win->p_group      = NULL;
-    p_win->mem_model    = MPI_WIN_UNIFIED;
-    p_win->p_errhandler = NULL;
-    nm_mpi_attrs_destroy(p_win->id, &p_win->attrs);
-    nm_mpi_handle_window_free(&nm_mpi_windows, p_win);
-  }
 }
 
 static inline void nm_mpi_win_exchange_init(nm_mpi_window_t*p_win, int size)
@@ -306,24 +314,27 @@ static inline void nm_mpi_win_exchange_init(nm_mpi_window_t*p_win, int size)
   a_data[myrank].size   = p_win->size[myrank];
   a_data[myrank].unit   = p_win->disp_unit[myrank];
   a_data[myrank].win_id = p_win->id;
-  for(int i=0; i<size; ++i){
-    if(i == myrank) continue;
-    requests[2*i]   = nm_mpi_coll_irecv(&a_data[i],      1, p_init_datatype, i, tag, p_win->p_comm);
-    requests[2*i+1] = nm_mpi_coll_isend(&a_data[myrank], 1, p_init_datatype, i, tag, p_win->p_comm);
-  }
+  for(int i=0; i<size; ++i)
+    {
+      if(i == myrank) continue;
+      requests[2*i]   = nm_mpi_coll_irecv(&a_data[i],      1, p_init_datatype, i, tag, p_win->p_comm);
+      requests[2*i+1] = nm_mpi_coll_isend(&a_data[myrank], 1, p_init_datatype, i, tag, p_win->p_comm);
+    }
   /* Wait for sends */
-  for(int i=0; i<size; ++i){
-    if(i == myrank) continue;
-    nm_mpi_coll_wait(requests[2*i+1]);
-  }
+  for(int i=0; i<size; ++i)
+    {
+      if(i == myrank) continue;
+      nm_mpi_coll_wait(requests[2*i+1]);
+    }
   /* Wait for recieves */
-  for(int i=0; i<size; ++i){
-    if(i == myrank) continue;
-    nm_mpi_coll_wait(requests[2*i]);
-    p_win->size[i]      = a_data[i].size;
-    p_win->disp_unit[i] = a_data[i].unit;
-    p_win->win_ids[i]   = a_data[i].win_id;
-  }
+  for(int i=0; i<size; ++i)
+    {
+      if(i == myrank) continue;
+      nm_mpi_coll_wait(requests[2*i]);
+      p_win->size[i]      = a_data[i].size;
+      p_win->disp_unit[i] = a_data[i].unit;
+      p_win->win_ids[i]   = a_data[i].win_id;
+    }
 }
 
 static inline int nm_mpi_win_exchange_init_shm(nm_mpi_window_t*p_win, int size)
@@ -336,66 +347,79 @@ static inline int nm_mpi_win_exchange_init_shm(nm_mpi_window_t*p_win, int size)
   int fd;
   nm_mpi_datatype_t*p_char = nm_mpi_datatype_get(MPI_CHAR);
   void**p_base = (void**)p_win->p_base;
-  if(0 == p_win->myrank) { /* root */
-    nm_mpi_request_t*requests[3 * size + 1];
-    nm_mpi_win_init_data_t a_data[size];
-    a_data[myrank].size   = p_win->size[myrank];
-    a_data[myrank].unit   = p_win->disp_unit[myrank];
-    a_data[myrank].win_id = p_win->id;
-    for(int i=0; i<size; ++i){
-      if(i == myrank) continue;
-      requests[3 * i]   = nm_mpi_coll_irecv(&a_data[i], 1, p_init_datatype, i, tag, p_win->p_comm);
+  if(0 == p_win->myrank)
+    {
+      /* root */
+      nm_mpi_request_t*requests[3 * size + 1];
+      nm_mpi_win_init_data_t a_data[size];
+      a_data[myrank].size   = p_win->size[myrank];
+      a_data[myrank].unit   = p_win->disp_unit[myrank];
+      a_data[myrank].win_id = p_win->id;
+      for(int i=0; i<size; ++i)
+	{
+	  if(i == myrank) continue;
+	  requests[3 * i]   = nm_mpi_coll_irecv(&a_data[i], 1, p_init_datatype, i, tag, p_win->p_comm);
+	}
+      /* Wait for recieves */
+      MPI_Aint total_size = p_win->size[myrank];
+      for(int i=0; i<size; ++i)
+	{
+	  if(i == myrank) continue;
+	  nm_mpi_coll_wait(requests[3 * i]);
+	  p_win->size[i]      = a_data[i].size;
+	  p_win->disp_unit[i] = a_data[i].unit;
+	  p_win->win_ids[i]   = a_data[i].win_id;
+	  total_size         += a_data[i].size;
+	}
+      /* Create shared memory segment */
+      fd = mkstemp(p_win->shared_file_name);
+      if(-1 == fd)
+	{
+	  return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_SHARED);
+	}
+      ftruncate(fd, total_size);
+      *p_base = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+      if(MAP_FAILED == *p_base)
+	{
+	  return (close(fd),NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_SHARED));
+	}
+      for(int i=0; i<size; ++i)
+	{
+	  if(i == myrank) continue;
+	  requests[3*i+2] = nm_mpi_coll_isend(p_win->shared_file_name, name_size, p_char, i, tag,
+					      p_win->p_comm);
+	  requests[3*i+1] = nm_mpi_coll_isend(&a_data[myrank], 1, p_init_datatype, i, tag, p_win->p_comm);
+	}
+      /* Wait for sends */
+      for(int i=0; i<size; ++i)
+	{
+	  if(i == myrank) continue;
+	  nm_mpi_coll_wait(requests[3*i+1]);
+	  nm_mpi_coll_wait(requests[3*i+2]);
+	}
     }
-    /* Wait for recieves */
-    MPI_Aint total_size = p_win->size[myrank];
-    for(int i=0; i<size; ++i){
-      if(i == myrank) continue;
-      nm_mpi_coll_wait(requests[3 * i]);
-      p_win->size[i]      = a_data[i].size;
-      p_win->disp_unit[i] = a_data[i].unit;
-      p_win->win_ids[i]   = a_data[i].win_id;
-      total_size         += a_data[i].size;
+  else
+    {
+      nm_mpi_request_t*request;
+      request = nm_mpi_coll_irecv(p_win->shared_file_name, name_size, p_char, 0, tag, p_win->p_comm);
+      nm_mpi_win_exchange_init(p_win, size);
+      MPI_Aint total_size = 0;
+      for(int i = 0; i < size; ++i)
+	{
+	  total_size += p_win->size[i];
+	}
+      nm_mpi_coll_wait(request);
+      fd = open(p_win->shared_file_name, O_RDWR);
+      if(-1 == fd)
+	{
+	  return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_SHARED);
+	}
+      *p_base = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+      if(MAP_FAILED == *p_base)
+	{
+	  return (close(fd), NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_SHARED));
+	}
     }
-    /* Create shared memory segment */
-    fd = mkstemp(p_win->shared_file_name);
-    if(-1 == fd) {
-      return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_SHARED);
-    }
-    ftruncate(fd, total_size);
-    *p_base = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if(MAP_FAILED == *p_base) {
-      return (close(fd),NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_SHARED));
-    }
-    for(int i=0; i<size; ++i){
-      if(i == myrank) continue;
-      requests[3*i+2] = nm_mpi_coll_isend(p_win->shared_file_name, name_size, p_char, i, tag,
-					  p_win->p_comm);
-      requests[3*i+1] = nm_mpi_coll_isend(&a_data[myrank], 1, p_init_datatype, i, tag, p_win->p_comm);
-    }
-    /* Wait for sends */
-    for(int i=0; i<size; ++i){
-      if(i == myrank) continue;
-      nm_mpi_coll_wait(requests[3*i+1]);
-      nm_mpi_coll_wait(requests[3*i+2]);
-    }
-  } else {
-    nm_mpi_request_t*request;
-    request = nm_mpi_coll_irecv(p_win->shared_file_name, name_size, p_char, 0, tag, p_win->p_comm);
-    nm_mpi_win_exchange_init(p_win, size);
-    MPI_Aint total_size = 0;
-    for(int i=0; i<size; ++i) {
-      total_size += p_win->size[i];
-    }
-    nm_mpi_coll_wait(request);
-    fd = open(p_win->shared_file_name, O_RDWR);
-    if(-1 == fd) {
-      return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_SHARED);
-    }
-    *p_base = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if(MAP_FAILED == *p_base) {
-      return (close(fd), NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_SHARED));
-    }
-  }
   close(fd);
   return err;
 }
@@ -410,9 +434,10 @@ static inline int nm_mpi_win_flush(nm_mpi_window_t*p_win, int target_rank)
 static inline int nm_mpi_win_flush_all(nm_mpi_window_t*p_win)
 {
   int i, err = MPI_SUCCESS, comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
-  for(i = 0; i < comm_size; ++i) {
-    nm_mpi_win_flush(p_win, i);
-  }
+  for(i = 0; i < comm_size; ++i)
+    {
+      nm_mpi_win_flush(p_win, i);
+    }
   return err;
 }
 
@@ -426,9 +451,10 @@ static inline int nm_mpi_win_flush_local(nm_mpi_window_t*p_win, int target_rank)
 static inline int nm_mpi_win_flush_local_all(nm_mpi_window_t*p_win)
 {
   int i, err = MPI_SUCCESS, comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
-  for(i = 0; i < comm_size; ++i) {
-    nm_mpi_win_flush_local(p_win, i);
-  }
+  for(i = 0; i < comm_size; ++i)
+    {
+      nm_mpi_win_flush_local(p_win, i);
+    }
   return err;
 }
 
@@ -436,9 +462,10 @@ static inline int nm_mpi_win_flush_epoch(nm_mpi_win_epoch_t*p_epoch, nm_mpi_wind
 {
   int err = MPI_SUCCESS;
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
-  while(nm_mpi_win_is_ready(p_epoch) && !nm_mpi_win_completed_epoch(p_epoch)) {
-    nm_sr_progress(p_session);
-  }
+  while(nm_mpi_win_is_ready(p_epoch) && !nm_mpi_win_completed_epoch(p_epoch))
+    {
+      nm_sr_progress(p_session);
+    }
   return err;
 }
 
@@ -454,22 +481,24 @@ static void nm_mpi_win_unexpected_notifier(nm_sr_event_t event, const nm_sr_even
   const nm_tag_t    tag = info->recv_unexpected.tag;
   assert(ref);
   nm_mpi_window_t*p_win = (nm_mpi_window_t*)ref;
-  if(NULL != p_win) {
-    switch(tag & NM_MPI_TAG_PRIVATE_RMA_MASK_OP){
-    case NM_MPI_TAG_PRIVATE_RMA_PUT:
-    case NM_MPI_TAG_PRIVATE_RMA_GET_REQ:
-    case NM_MPI_TAG_PRIVATE_RMA_ACC:
-    case NM_MPI_TAG_PRIVATE_RMA_GACC_REQ:
-    case NM_MPI_TAG_PRIVATE_RMA_FAO_REQ:
-    case NM_MPI_TAG_PRIVATE_RMA_CAS_REQ:
-      {
-	nm_mpi_rma_recv(info, p_win);
-      }
-      break;
-    default:
-      ERROR("You should not have arrived here.\n");
+  if(NULL != p_win)
+    {
+      switch(tag & NM_MPI_TAG_PRIVATE_RMA_MASK_OP)
+	{
+	case NM_MPI_TAG_PRIVATE_RMA_PUT:
+	case NM_MPI_TAG_PRIVATE_RMA_GET_REQ:
+	case NM_MPI_TAG_PRIVATE_RMA_ACC:
+	case NM_MPI_TAG_PRIVATE_RMA_GACC_REQ:
+	case NM_MPI_TAG_PRIVATE_RMA_FAO_REQ:
+	case NM_MPI_TAG_PRIVATE_RMA_CAS_REQ:
+	  {
+	    nm_mpi_rma_recv(info, p_win);
+	  }
+	  break;
+	default:
+	  ERROR("You should not have arrived here.\n");
+	}
     }
-  }
 }
 
 static void nm_mpi_win_free_req_monitor(nm_sr_event_t event, const nm_sr_event_info_t*info, void*ref)
@@ -500,47 +529,51 @@ static void nm_mpi_win_lock_unexpected(nm_sr_event_t event, const nm_sr_event_in
   nm_sr_recv_match_event(p_session, &p_req_lock->request_nmad, info);
   /* Check whether to enqueue the request or start epoch */
   nm_mpi_spin_lock(&p_win->waiting_queue.q.lock);
-  if(nm_mpi_win_lock_probe(&p_win->waiting_queue, lock_type)) {
-    /* Start new exposure epoch, LOCK_SHARED or LOCK_EXCLUSIVE */
-    __sync_add_and_fetch(&p_win->waiting_queue.naccess, 1);
-    __sync_bool_compare_and_swap(&p_win->exposure[source].mode,
-				 NM_MPI_WIN_UNUSED,
-				 NM_MPI_WIN_PASSIVE_TARGET);
-    p_win->waiting_queue.lock_type = lock_type;
-    nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);
-    /* Post reception of lock request (triggers the monitor) */
-    nm_sr_recv_post(p_session, &p_req_lock->request_nmad);
-    /* If self request or shared memory window, send reply */
-    if(source == p_win->myrank || MPI_WIN_FLAVOR_SHARED == p_win->flavor) {
-      const nm_tag_t tag_lock_r = nm_mpi_rma_create_tag(p_win->win_ids[source], 0,
-							NM_MPI_TAG_PRIVATE_RMA_LOCK_R);
-      nm_mpi_request_t*p_req_ack = nm_mpi_request_alloc();
-      nm_sr_send_init(p_session, &p_req_ack->request_nmad);
-      nm_sr_send_pack_contiguous(p_session, &p_req_ack->request_nmad, NULL, 0);
-      nm_sr_request_set_ref(&p_req_ack->request_nmad, p_req_ack);
-      nm_sr_request_monitor(p_session, &p_req_ack->request_nmad, NM_SR_EVENT_FINALIZED,
-			    &nm_mpi_win_free_req_monitor);
-      nm_sr_send_isend(p_session, &p_req_ack->request_nmad, info->recv_unexpected.p_gate, tag_lock_r);
+  if(nm_mpi_win_lock_probe(&p_win->waiting_queue, lock_type))
+    {
+      /* Start new exposure epoch, LOCK_SHARED or LOCK_EXCLUSIVE */
+      __sync_add_and_fetch(&p_win->waiting_queue.naccess, 1);
+      __sync_bool_compare_and_swap(&p_win->exposure[source].mode,
+				   NM_MPI_WIN_UNUSED,
+				   NM_MPI_WIN_PASSIVE_TARGET);
+      p_win->waiting_queue.lock_type = lock_type;
+      nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);
+      /* Post reception of lock request (triggers the monitor) */
+      nm_sr_recv_post(p_session, &p_req_lock->request_nmad);
+      /* If self request or shared memory window, send reply */
+      if(source == p_win->myrank || MPI_WIN_FLAVOR_SHARED == p_win->flavor)
+	{
+	  const nm_tag_t tag_lock_r = nm_mpi_rma_create_tag(p_win->win_ids[source], 0,
+							    NM_MPI_TAG_PRIVATE_RMA_LOCK_R);
+	  nm_mpi_request_t*p_req_ack = nm_mpi_request_alloc();
+	  nm_sr_send_init(p_session, &p_req_ack->request_nmad);
+	  nm_sr_send_pack_contiguous(p_session, &p_req_ack->request_nmad, NULL, 0);
+	  nm_sr_request_set_ref(&p_req_ack->request_nmad, p_req_ack);
+	  nm_sr_request_monitor(p_session, &p_req_ack->request_nmad, NM_SR_EVENT_FINALIZED,
+				&nm_mpi_win_free_req_monitor);
+	  nm_sr_send_isend(p_session, &p_req_ack->request_nmad, info->recv_unexpected.p_gate, tag_lock_r);
+	}
+      /* Register the unlock request */
+      const nm_tag_t tag_unlock = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK);
+      nm_mpi_request_t*p_req_unlock = nm_mpi_request_alloc();
+      nm_sr_recv_init(p_session, &p_req_unlock->request_nmad);
+      nm_sr_recv_unpack_contiguous(p_session, &p_req_unlock->request_nmad,
+				   &p_win->msg_count[source], sizeof(uint64_t));
+      nm_sr_request_set_ref(&p_req_unlock->request_nmad, p_req_unlock);
+      p_req_unlock->p_win = p_win;
+      nm_sr_request_monitor(p_session, &p_req_unlock->request_nmad, NM_SR_EVENT_FINALIZED,
+			    &nm_mpi_win_unlock_monitor);
+      nm_sr_recv_irecv(p_session, &p_req_unlock->request_nmad, info->recv_unexpected.p_gate,
+		       tag_unlock, tag_mask);
     }
-    /* Register the unlock request */
-    const nm_tag_t tag_unlock = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK);
-    nm_mpi_request_t*p_req_unlock = nm_mpi_request_alloc();
-    nm_sr_recv_init(p_session, &p_req_unlock->request_nmad);
-    nm_sr_recv_unpack_contiguous(p_session, &p_req_unlock->request_nmad,
-				 &p_win->msg_count[source], sizeof(uint64_t));
-    nm_sr_request_set_ref(&p_req_unlock->request_nmad, p_req_unlock);
-    p_req_unlock->p_win = p_win;
-    nm_sr_request_monitor(p_session, &p_req_unlock->request_nmad, NM_SR_EVENT_FINALIZED,
-			  &nm_mpi_win_unlock_monitor);
-    nm_sr_recv_irecv(p_session, &p_req_unlock->request_nmad, info->recv_unexpected.p_gate,
-		     tag_unlock, tag_mask);
-  } else {
-    /* Add the request for lock to the pending list */
-    if(NM_MPI_LOCK_EXCLUSIVE == lock_type)
-      __sync_add_and_fetch(&p_win->waiting_queue.excl_pending, 1);
-    TAILQ_INSERT_TAIL(&p_win->waiting_queue.q.pending, p_req_lock, link);
-    nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);
-  }  
+  else
+    {
+      /* Add the request for lock to the pending list */
+      if(NM_MPI_LOCK_EXCLUSIVE == lock_type)
+	__sync_add_and_fetch(&p_win->waiting_queue.excl_pending, 1);
+      TAILQ_INSERT_TAIL(&p_win->waiting_queue.q.pending, p_req_lock, link);
+      nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);
+    }
 }
 
 static inline int nm_mpi_win_lock_is_free(nm_mpi_win_pass_mngmt_t*p_mng)
@@ -567,22 +600,24 @@ static void nm_mpi_win_start_passive_exposure(nm_sr_event_t event, const nm_sr_e
   assert(p_req_lock);
   nm_mpi_window_t*p_win = p_req_lock->p_win;
   assert(p_win);
-  if(MPI_WIN_FLAVOR_SHARED != p_win->flavor) {
-    nm_sr_request_get_gate(&p_req_lock->request_nmad, &from);
-    assert(from);
-    const int source = nm_mpi_communicator_get_dest(p_win->p_comm, from);
-    assert(p_win->exposure[source].mode);
-    nm_mpi_win_locklist_t*pendings = &p_win->pending_ops[source];
-    nm_mpi_spin_lock(&pendings->lock);
-    while(!TAILQ_EMPTY(&pendings->pending)){
-      p_req_lelt = TAILQ_FIRST(&pendings->pending);
-      TAILQ_REMOVE(&pendings->pending, p_req_lelt, link);
-      nm_mpi_spin_unlock(&pendings->lock);
-      nm_mpi_rma_handle_passive(p_req_lelt);
+  if(MPI_WIN_FLAVOR_SHARED != p_win->flavor)
+    {
+      nm_sr_request_get_gate(&p_req_lock->request_nmad, &from);
+      assert(from);
+      const int source = nm_mpi_communicator_get_dest(p_win->p_comm, from);
+      assert(p_win->exposure[source].mode);
+      nm_mpi_win_locklist_t*pendings = &p_win->pending_ops[source];
       nm_mpi_spin_lock(&pendings->lock);
+      while(!TAILQ_EMPTY(&pendings->pending))
+	{
+	  p_req_lelt = TAILQ_FIRST(&pendings->pending);
+	  TAILQ_REMOVE(&pendings->pending, p_req_lelt, link);
+	  nm_mpi_spin_unlock(&pendings->lock);
+	  nm_mpi_rma_handle_passive(p_req_lelt);
+	  nm_mpi_spin_lock(&pendings->lock);
+	}
+      nm_mpi_spin_unlock(&pendings->lock);
     }
-    nm_mpi_spin_unlock(&pendings->lock);
-  }
   nm_mpi_request_free(p_req_lock);
 }
 
@@ -592,17 +627,19 @@ void nm_mpi_win_enqueue_pending(nm_mpi_request_t*p_req, nm_mpi_window_t*p_win)
   nm_mpi_win_locklist_t*pendings = &p_win->pending_ops[p_req->request_source];
   int was_inserted = 0;
   nm_mpi_spin_lock(&pendings->lock);
-  if(!((NM_MPI_WIN_PASSIVE_TARGET | NM_MPI_WIN_PASSIVE_TARGET_END) & p_req->p_epoch->mode)) {
-    TAILQ_INSERT_TAIL(&pendings->pending, p_req, link);
-    was_inserted = 1;
-  }
+  if(!((NM_MPI_WIN_PASSIVE_TARGET | NM_MPI_WIN_PASSIVE_TARGET_END) & p_req->p_epoch->mode))
+    {
+      TAILQ_INSERT_TAIL(&pendings->pending, p_req, link);
+      was_inserted = 1;
+    }
   nm_mpi_spin_unlock(&pendings->lock);
-  if(!was_inserted) {
-    if(MPI_WIN_FLAVOR_SHARED == p_win->flavor)
-      nm_mpi_rma_handle_passive_shm(p_req);
-    else
-      nm_mpi_rma_handle_passive(p_req);
-  }
+  if(!was_inserted)
+    {
+      if(MPI_WIN_FLAVOR_SHARED == p_win->flavor)
+	nm_mpi_rma_handle_passive_shm(p_req);
+      else
+	nm_mpi_rma_handle_passive(p_req);
+    }
 }
 
 static void nm_mpi_win_unlock_monitor(nm_sr_event_t event, const nm_sr_event_info_t*info, void*ref)
@@ -621,9 +658,10 @@ static void nm_mpi_win_unlock_monitor(nm_sr_event_t event, const nm_sr_event_inf
   p_win->exposure[source].mode = NM_MPI_WIN_PASSIVE_TARGET_END;
   nm_mpi_request_free(p_req_unlock);
   /* Clean the exposure epoch */
-  if(nm_mpi_win_completed_epoch(&p_win->exposure[source])){
-    nm_mpi_win_unlock(p_win, source, &p_win->exposure[source]);
-  }
+  if(nm_mpi_win_completed_epoch(&p_win->exposure[source]))
+    {
+      nm_mpi_win_unlock(p_win, source, &p_win->exposure[source]);
+    }
 }
 
 __PUK_SYM_INTERNAL
@@ -660,10 +698,11 @@ int nm_mpi_win_unlock(nm_mpi_window_t*p_win, int source, nm_mpi_win_epoch_t*p_ep
     return MPI_SUCCESS;
   nm_mpi_spin_lock(&p_win->waiting_queue.q.lock);
   p_win->waiting_queue.lock_type = NM_MPI_LOCK_NONE;
-  if(TAILQ_EMPTY(&p_win->waiting_queue.q.pending)){ /* If no lock request pending */
-    nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);
-    return MPI_SUCCESS;
-  }
+  if(TAILQ_EMPTY(&p_win->waiting_queue.q.pending))
+    { /* If no lock request pending */
+      nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);
+      return MPI_SUCCESS;
+    }
   /* Start next exposure */
   nm_tag_t tag;
   nm_mpi_request_t*p_req_unlock;
@@ -683,51 +722,55 @@ int nm_mpi_win_unlock(nm_mpi_window_t*p_win, int source, nm_mpi_win_epoch_t*p_ep
     __sync_sub_and_fetch(&p_win->waiting_queue.excl_pending, 1);  
   p_win->waiting_queue.lock_type = lock_type;
   /* Dequeue one NM_MPI_LOCK_EXCLUSIVE or all the next NM_MPI_LOCK_SHARED from the pending list */
-  do {
-    /* Start new exposure epoch, LOCK_SHARED or LOCK_EXCLUSIVE */
-    p_epoch->mode = NM_MPI_WIN_PASSIVE_TARGET;
-    __sync_add_and_fetch(&p_win->waiting_queue.naccess, 1);
-    /* Post reception of lock request (triggers the monitor) */
-    nm_sr_recv_post(p_session, &p_req_lelt->request_nmad);
-    /* If self request or shared memory window, send reply */
-    if(source == p_win->myrank || MPI_WIN_FLAVOR_SHARED == p_win->flavor) {
-      nm_tag_t tag_lock_r = nm_mpi_rma_create_tag(p_win->win_ids[source], 0,
-						  NM_MPI_TAG_PRIVATE_RMA_LOCK_R);
-      nm_mpi_request_t*p_req_ack = nm_mpi_request_alloc();
-      nm_sr_send_init(p_session, &p_req_ack->request_nmad);
-      nm_sr_send_pack_contiguous(p_session, &p_req_ack->request_nmad, NULL, 0);
-      nm_sr_request_set_ref(&p_req_ack->request_nmad, p_req_ack);
-      nm_sr_request_monitor(p_session, &p_req_ack->request_nmad, NM_SR_EVENT_FINALIZED,
-			    &nm_mpi_win_free_req_monitor);
-      nm_sr_send_isend(p_session, &p_req_ack->request_nmad, from, tag_lock_r);
-    }
-    /* Register the unlock request */
-    p_req_unlock = nm_mpi_request_alloc();
-    nm_sr_recv_init(p_session, &p_req_unlock->request_nmad);
-    nm_sr_recv_unpack_contiguous(p_session, &p_req_unlock->request_nmad,
-				 &p_win->msg_count[source], sizeof(uint64_t));
-    nm_sr_request_set_ref(&p_req_unlock->request_nmad, p_req_unlock);
-    p_req_unlock->p_win = p_win;
-    nm_sr_request_monitor(p_session, &p_req_unlock->request_nmad, NM_SR_EVENT_FINALIZED,
-			  &nm_mpi_win_unlock_monitor);
-    nm_sr_recv_irecv(p_session, &p_req_unlock->request_nmad, from, tag_unlock, tag_mask);
-    /* Free reqlist element and check next one (if LOCK_SHARED) */
-    nm_mpi_spin_lock(&p_win->waiting_queue.q.lock);
-    p_req_lelt = TAILQ_FIRST(&p_win->waiting_queue.q.pending);
-    if(NULL == p_req_lelt || NM_MPI_LOCK_EXCLUSIVE == lock_type) {
+  do
+    {
+      /* Start new exposure epoch, LOCK_SHARED or LOCK_EXCLUSIVE */
+      p_epoch->mode = NM_MPI_WIN_PASSIVE_TARGET;
+      __sync_add_and_fetch(&p_win->waiting_queue.naccess, 1);
+      /* Post reception of lock request (triggers the monitor) */
+      nm_sr_recv_post(p_session, &p_req_lelt->request_nmad);
+      /* If self request or shared memory window, send reply */
+      if(source == p_win->myrank || MPI_WIN_FLAVOR_SHARED == p_win->flavor)
+	{
+	  nm_tag_t tag_lock_r = nm_mpi_rma_create_tag(p_win->win_ids[source], 0,
+						      NM_MPI_TAG_PRIVATE_RMA_LOCK_R);
+	  nm_mpi_request_t*p_req_ack = nm_mpi_request_alloc();
+	  nm_sr_send_init(p_session, &p_req_ack->request_nmad);
+	  nm_sr_send_pack_contiguous(p_session, &p_req_ack->request_nmad, NULL, 0);
+	  nm_sr_request_set_ref(&p_req_ack->request_nmad, p_req_ack);
+	  nm_sr_request_monitor(p_session, &p_req_ack->request_nmad, NM_SR_EVENT_FINALIZED,
+				&nm_mpi_win_free_req_monitor);
+	  nm_sr_send_isend(p_session, &p_req_ack->request_nmad, from, tag_lock_r);
+	}
+      /* Register the unlock request */
+      p_req_unlock = nm_mpi_request_alloc();
+      nm_sr_recv_init(p_session, &p_req_unlock->request_nmad);
+      nm_sr_recv_unpack_contiguous(p_session, &p_req_unlock->request_nmad,
+				   &p_win->msg_count[source], sizeof(uint64_t));
+      nm_sr_request_set_ref(&p_req_unlock->request_nmad, p_req_unlock);
+      p_req_unlock->p_win = p_win;
+      nm_sr_request_monitor(p_session, &p_req_unlock->request_nmad, NM_SR_EVENT_FINALIZED,
+			    &nm_mpi_win_unlock_monitor);
+      nm_sr_recv_irecv(p_session, &p_req_unlock->request_nmad, from, tag_unlock, tag_mask);
+      /* Free reqlist element and check next one (if LOCK_SHARED) */
+      nm_mpi_spin_lock(&p_win->waiting_queue.q.lock);
+      p_req_lelt = TAILQ_FIRST(&p_win->waiting_queue.q.pending);
+      if(NULL == p_req_lelt || NM_MPI_LOCK_EXCLUSIVE == lock_type)
+	{
+	  nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);	
+	  break;
+	}
+      TAILQ_REMOVE(&p_win->waiting_queue.q.pending, p_req_lelt, link);
       nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);	
-      break;
+      nm_sr_request_get_gate(&p_req_lelt->request_nmad, &from);
+      assert(from);
+      nm_sr_request_get_tag(&p_req_lelt->request_nmad, &tag);
+      assert(tag);
+      source = nm_mpi_communicator_get_dest(p_win->p_comm, from);
+      lock_type = nm_mpi_rma_tag_to_seq(tag);
+      p_epoch = &p_win->exposure[source];
     }
-    TAILQ_REMOVE(&p_win->waiting_queue.q.pending, p_req_lelt, link);
-    nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);	
-    nm_sr_request_get_gate(&p_req_lelt->request_nmad, &from);
-    assert(from);
-    nm_sr_request_get_tag(&p_req_lelt->request_nmad, &tag);
-    assert(tag);
-    source = nm_mpi_communicator_get_dest(p_win->p_comm, from);
-    lock_type = nm_mpi_rma_tag_to_seq(tag);
-    p_epoch = &p_win->exposure[source];
-  } while(p_win->waiting_queue.lock_type == lock_type);
+  while(p_win->waiting_queue.lock_type == lock_type);
   return err;
 }
 
@@ -796,11 +839,12 @@ int mpi_win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info,
   if(MPI_UNDEFINED == rank)
     return MPI_ERR_COMM;
   struct nm_mpi_info_s*p_info = NULL;
-  if(MPI_INFO_NULL != info) {
-    p_info = nm_mpi_info_get(info);
-    if(NULL == p_info)
-      return MPI_ERR_INFO;
-  }
+  if(MPI_INFO_NULL != info)
+    {
+      p_info = nm_mpi_info_get(info);
+      if(NULL == p_info)
+	return MPI_ERR_INFO;
+    }
   nm_mpi_window_t*p_win  = nm_mpi_window_alloc(comm_size);
   nm_mpi_info_update(p_info, p_win->p_info);
   p_win->flavor          = MPI_WIN_FLAVOR_CREATE;
@@ -830,15 +874,17 @@ int mpi_win_allocate(MPI_Aint size, int disp_unit, MPI_Info info,
   if(MPI_UNDEFINED == rank)
     return MPI_ERR_COMM;
   struct nm_mpi_info_s*p_info = NULL;
-  if(MPI_INFO_NULL != info) {
-    p_info = nm_mpi_info_get(info);
-    if(NULL == p_info)
-      return MPI_ERR_INFO;
-  }
+  if(MPI_INFO_NULL != info)
+    {
+      p_info = nm_mpi_info_get(info);
+      if(NULL == p_info)
+	return MPI_ERR_INFO;
+    }
   *(void**)baseptr = malloc(size);
-  if(NULL == *(void**)baseptr){
-    return MPI_ERR_NO_MEM;
-  }
+  if(NULL == *(void**)baseptr)
+    {
+      return MPI_ERR_NO_MEM;
+    }
   nm_mpi_window_t*p_win  = nm_mpi_window_alloc(comm_size);
   nm_mpi_info_update(p_info, p_win->p_info);
   p_win->flavor          = MPI_WIN_FLAVOR_ALLOCATE;
@@ -868,11 +914,12 @@ int mpi_win_allocate_shared(MPI_Aint size, int disp_unit, MPI_Info info,
   if(MPI_UNDEFINED == rank)
     return MPI_ERR_COMM;
   struct nm_mpi_info_s*p_info = NULL;
-  if(MPI_INFO_NULL != info) {
-    p_info = nm_mpi_info_get(info);
-    if(NULL == p_info)
-      return MPI_ERR_INFO;
-  }
+  if(MPI_INFO_NULL != info)
+    {
+      p_info = nm_mpi_info_get(info);
+      if(NULL == p_info)
+	return MPI_ERR_INFO;
+    }
   nm_mpi_window_t*p_win  = nm_mpi_window_alloc(comm_size);
   nm_mpi_info_update(p_info, p_win->p_info);
   p_win->flavor          = MPI_WIN_FLAVOR_SHARED;
@@ -885,9 +932,10 @@ int mpi_win_allocate_shared(MPI_Aint size, int disp_unit, MPI_Info info,
   p_win->p_base          = p_base;
   if(MPI_SUCCESS != (err = nm_mpi_win_exchange_init_shm(p_win, comm_size)))
     return err;
-  for(int i=0; i<comm_size - 1; ++i) {
-    p_base[i + 1] = p_base[i] + p_win->size[i];
-  }
+  for(int i=0; i<comm_size - 1; ++i)
+    {
+      p_base[i + 1] = p_base[i] + p_win->size[i];
+    }
   p_win->monitor.p_notifier = &nm_mpi_win_unexpected_notifier_shm;
   nm_sr_session_monitor_set(p_session, &p_win->monitor);
   nm_sr_session_monitor_set(p_session, &p_win->monitor_sync);
@@ -908,24 +956,29 @@ int mpi_win_shared_query(MPI_Win win, int rank, MPI_Aint *size,
   if(MPI_PROC_NULL > rank || rank > comm_size)
     return NM_MPI_WIN_ERROR(win, MPI_ERR_RANK);
   *size = -1;
-  if(MPI_PROC_NULL == rank) {
-    for(int i = 0; i < comm_size; ++i) {
-      if(0 < p_win->size[i]) {
-	*(void**)baseptr = ((void**)p_win->p_base)[i];
-	*size            = p_win->size[i];
-	*disp_unit       = p_win->disp_unit[i];
-	return MPI_SUCCESS;
-      }
+  if(MPI_PROC_NULL == rank)
+    {
+      for(int i = 0; i < comm_size; ++i)
+	{
+	  if(0 < p_win->size[i])
+	    {
+	      *(void**)baseptr = ((void**)p_win->p_base)[i];
+	      *size            = p_win->size[i];
+	      *disp_unit       = p_win->disp_unit[i];
+	      return MPI_SUCCESS;
+	    }
+	}
+      /* No shared memory allocated */
+      *(void**)baseptr = *(void**)p_win->p_base;
+      *size            = 0;
+      *disp_unit       = 1;
     }
-    /* No shared memory allocated */
-    *(void**)baseptr = *(void**)p_win->p_base;
-    *size            = 0;
-    *disp_unit       = 1;
-  } else {
-    *(void**)baseptr = ((void**)p_win->p_base)[rank];
-    *size            = p_win->size[rank];
-    *disp_unit       = p_win->disp_unit[rank];
-  }
+  else
+    {
+      *(void**)baseptr = ((void**)p_win->p_base)[rank];
+      *size            = p_win->size[rank];
+      *disp_unit       = p_win->disp_unit[rank];
+    }
   return MPI_SUCCESS;
 }
 
@@ -941,11 +994,12 @@ int mpi_win_create_dynamic(MPI_Info info, MPI_Comm comm, MPI_Win *win)
   if(MPI_UNDEFINED == rank)
     return MPI_ERR_COMM;
   struct nm_mpi_info_s*p_info = NULL;
-  if(MPI_INFO_NULL != info) {
-    p_info = nm_mpi_info_get(info);
-    if(NULL == p_info)
-      return MPI_ERR_INFO;
-  }
+  if(MPI_INFO_NULL != info)
+    {
+      p_info = nm_mpi_info_get(info);
+      if(NULL == p_info)
+	return MPI_ERR_INFO;
+    }
   nm_mpi_win_addrlist_t*p_list = malloc(sizeof(nm_mpi_win_addrlist_t));
   *p_list = (nm_mpi_win_addrlist_t)TAILQ_HEAD_INITIALIZER(p_list->head);
   nm_mpi_spin_init(&p_list->lock);
@@ -982,16 +1036,18 @@ int mpi_win_attach(MPI_Win win, void *base, MPI_Aint size)
   /* Check if memory is not already attached */
   nm_mpi_win_addr_lelt_t*it;
   TAILQ_FOREACH(it, &p_list->head, link) {
-    if(it->begin <= base && it->size >= (size + NM_MPI_WIN_ABS(it->begin - base))) {
-      err = NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_ATTACH);
-      break;
+    if(it->begin <= base && it->size >= (size + NM_MPI_WIN_ABS(it->begin - base)))
+      {
+	err = NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_ATTACH);
+	break;
+      }
+  }
+  if(MPI_SUCCESS != err)
+    {
+      nm_mpi_spin_unlock(&p_list->lock);
+      nm_mpi_win_addr_lelt_free(nm_mpi_win_addr_lelt_allocator, p_addr_lelt);
+      return err;
     }
-  }
-  if(MPI_SUCCESS != err) {
-    nm_mpi_spin_unlock(&p_list->lock);
-    nm_mpi_win_addr_lelt_free(nm_mpi_win_addr_lelt_allocator, p_addr_lelt);
-    return err;
-  }
 #endif /* DEBUG */
   p_addr_lelt->begin = base;
   p_addr_lelt->size = size;
@@ -1011,15 +1067,19 @@ int mpi_win_detach(MPI_Win win, const void *base)
   nm_mpi_win_addrlist_t*p_list = p_win->p_base;
   nm_mpi_spin_lock(&p_list->lock);
   nm_mpi_win_addr_lelt_t*it = TAILQ_FIRST(&p_list->head);
-  while(it && base != it->begin) {
-    it = TAILQ_NEXT(it, link);
-  }
-  if(it) {
-    TAILQ_REMOVE(&p_list->head, it, link);
-    nm_mpi_win_addr_lelt_free(nm_mpi_win_addr_lelt_allocator, it);
-  } else {
-    err = NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_RANGE);
-  }
+  while(it && base != it->begin)
+    {
+      it = TAILQ_NEXT(it, link);
+    }
+  if(it)
+    {
+      TAILQ_REMOVE(&p_list->head, it, link);
+      nm_mpi_win_addr_lelt_free(nm_mpi_win_addr_lelt_allocator, it);
+    }
+  else
+    {
+      err = NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_RANGE);
+    }
   nm_mpi_spin_unlock(&p_list->lock);
   return err;
 }
@@ -1034,12 +1094,15 @@ int mpi_win_free(MPI_Win *win)
   nm_coll_barrier(p_win->p_comm->p_nm_comm, tag);
   const int    comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
-  for(i = 0; i < comm_size; ++i) {
-    do {
-      nm_sr_progress(p_session);
-    } while (!nm_mpi_win_completed_epoch(&p_win->exposure[i])
+  for(i = 0; i < comm_size; ++i)
+    {
+      do
+	{
+	  nm_sr_progress(p_session);
+	}
+      while (!nm_mpi_win_completed_epoch(&p_win->exposure[i])
 	     || !nm_mpi_win_completed_epoch(&p_win->access[i]));
-  }
+    }
   assert(TAILQ_EMPTY(&p_win->waiting_queue.q.pending));
   nm_sr_session_monitor_remove(p_session, &p_win->monitor);
   nm_sr_session_monitor_remove(p_session, &p_win->monitor_sync);
@@ -1138,48 +1201,52 @@ int mpi_win_get_attr(MPI_Win win, int win_keyval, void *attribute_val, int *flag
   *flag = 0;
   /* Check window validity */
   nm_mpi_window_t*p_win = nm_mpi_window_get(win);
-  if(NULL == p_win) {
-    return MPI_ERR_WIN;
-  }
+  if(NULL == p_win)
+    {
+      return MPI_ERR_WIN;
+    }
   /* Check window communicator validity */
   nm_mpi_communicator_t*p_comm = p_win->p_comm;
-  if(NULL == p_comm) {
-    ERROR("Invalid communicator store in the window");
-    return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
-  }
+  if(NULL == p_comm)
+    {
+      ERROR("Invalid communicator store in the window");
+      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+    }
   /* Check the current process belongs to both the window and the communicator */
   int rank = nm_comm_rank(p_comm->p_nm_comm);
-  if(MPI_UNDEFINED == rank){
-    ERROR("Invalid communicator store in the window or process does not belong to the window");
-    return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
-  }
-  *flag = 1;
-  switch(win_keyval){
-  case MPI_WIN_BASE:
-    *(void**)attribute_val = p_win->p_base;
-    break;
-  case MPI_WIN_SIZE:
-    *(MPI_Aint**)attribute_val = &p_win->size[rank];
-    break;
-  case MPI_WIN_DISP_UNIT:
-    *(int**)attribute_val = &p_win->disp_unit[rank];
-    break;
-  case MPI_WIN_CREATE_FLAVOR:
-    *(int**)attribute_val = &p_win->flavor;
-    break;
-  case MPI_WIN_MODEL:
-    *(int**)attribute_val = &p_win->mem_model;
-    break;
-  default:
+  if(MPI_UNDEFINED == rank)
     {
-      struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(win_keyval);
-      *flag = 0;
-      if(p_keyval == NULL)
-	return NM_MPI_WIN_ERROR(win, MPI_ERR_KEYVAL);
-      nm_mpi_attr_get(p_win->attrs, p_keyval, attribute_val, flag);
+      ERROR("Invalid communicator store in the window or process does not belong to the window");
+      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
     }
-    break;
-  }  
+  *flag = 1;
+  switch(win_keyval)
+    {
+    case MPI_WIN_BASE:
+      *(void**)attribute_val = p_win->p_base;
+      break;
+    case MPI_WIN_SIZE:
+      *(MPI_Aint**)attribute_val = &p_win->size[rank];
+      break;
+    case MPI_WIN_DISP_UNIT:
+      *(int**)attribute_val = &p_win->disp_unit[rank];
+      break;
+    case MPI_WIN_CREATE_FLAVOR:
+      *(int**)attribute_val = &p_win->flavor;
+      break;
+    case MPI_WIN_MODEL:
+      *(int**)attribute_val = &p_win->mem_model;
+      break;
+    default:
+      {
+	struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(win_keyval);
+	*flag = 0;
+	if(p_keyval == NULL)
+	  return NM_MPI_WIN_ERROR(win, MPI_ERR_KEYVAL);
+	nm_mpi_attr_get(p_win->attrs, p_keyval, attribute_val, flag);
+      }
+      break;
+    }  
   return err;
 }
 
@@ -1188,9 +1255,10 @@ int mpi_win_set_name(MPI_Win win, char*win_name)
   nm_mpi_window_t*p_win = nm_mpi_window_get(win);
   if(p_win == NULL)
     return MPI_ERR_WIN;
-  if(p_win->name != NULL){
-    free(p_win->name);
-  }
+  if(p_win->name != NULL)
+    {
+      free(p_win->name);
+    }
   p_win->name = strndup(win_name, MPI_MAX_OBJECT_NAME);
   return MPI_SUCCESS;
 }
@@ -1200,11 +1268,14 @@ int mpi_win_get_name(MPI_Win win, char*win_name, int*resultlen)
   nm_mpi_window_t*p_win = nm_mpi_window_get(win);
   if(p_win == NULL)
     return MPI_ERR_WIN;
-  if(p_win->name != NULL) {
-    strncpy(win_name, p_win->name, MPI_MAX_OBJECT_NAME);
-  } else {
-    win_name[0] = '\0';
-  }
+  if(p_win->name != NULL)
+    {
+      strncpy(win_name, p_win->name, MPI_MAX_OBJECT_NAME);
+    }
+  else
+    {
+      win_name[0] = '\0';
+    }
   *resultlen = strlen(win_name);
   return MPI_SUCCESS;
 }
@@ -1258,53 +1329,62 @@ int mpi_win_fence(int assert, MPI_Win win)
     return MPI_ERR_WIN;
   const int    comm_size = nm_comm_size(p_win->p_comm->p_nm_comm), myrank = p_win->myrank;
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
-  if(MPI_MODE_NOPRECEDE & assert || NM_MPI_WIN_UNUSED == p_win->access[myrank].mode) {
-    nm_coll_barrier(p_win->p_comm->p_nm_comm, tag);
-  } else {
-    const nm_tag_t tag_bcast = NM_MPI_TAG_PRIVATE_WIN_FENCE;
-    nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(MPI_UINT64_T);
-    nm_mpi_request_t*requests[2 * comm_size];
-    for(i = 0; i < comm_size; ++i){
-      requests[2*i]   = nm_mpi_coll_irecv(&p_win->msg_count[i], 1, p_datatype, i,
-					  tag_bcast, p_win->p_comm);
-      requests[2*i+1] = nm_mpi_coll_isend(&p_win->access[i].nmsg, 1, p_datatype, i,
-					  tag_bcast, p_win->p_comm);
-      while(!nm_mpi_win_completed_epoch(&p_win->access[i]))
+  if(MPI_MODE_NOPRECEDE & assert || NM_MPI_WIN_UNUSED == p_win->access[myrank].mode)
+    {
+      nm_coll_barrier(p_win->p_comm->p_nm_comm, tag);
+    }
+  else
+    {
+      const nm_tag_t tag_bcast = NM_MPI_TAG_PRIVATE_WIN_FENCE;
+      nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(MPI_UINT64_T);
+      nm_mpi_request_t*requests[2 * comm_size];
+      for(i = 0; i < comm_size; ++i)
 	{
-	  nm_sr_progress(p_session);
+	  requests[2*i]   = nm_mpi_coll_irecv(&p_win->msg_count[i], 1, p_datatype, i,
+					      tag_bcast, p_win->p_comm);
+	  requests[2*i+1] = nm_mpi_coll_isend(&p_win->access[i].nmsg, 1, p_datatype, i,
+					      tag_bcast, p_win->p_comm);
+	  while(!nm_mpi_win_completed_epoch(&p_win->access[i]))
+	    {
+	      nm_sr_progress(p_session);
+	    }
+	  p_win->access[i].mode      = NM_MPI_WIN_UNUSED;
+	  p_win->access[i].nmsg      = 0;
+	  p_win->access[i].completed = 0;
 	}
-      p_win->access[i].mode      = NM_MPI_WIN_UNUSED;
-      p_win->access[i].nmsg      = 0;
-      p_win->access[i].completed = 0;
-    }
-    for(i = 0; i < comm_size; ++i){
-      /* Wait for sends */
-      nm_mpi_coll_wait(requests[2*i+1]);
-      /* Wait for recieves */
-      nm_mpi_coll_wait(requests[2*i]);
-      while(p_win->msg_count[i] > p_win->exposure[i].completed)
+      for(i = 0; i < comm_size; ++i)
 	{
-	  nm_sr_progress(p_session);
+	  /* Wait for sends */
+	  nm_mpi_coll_wait(requests[2*i+1]);
+	  /* Wait for recieves */
+	  nm_mpi_coll_wait(requests[2*i]);
+	  while(p_win->msg_count[i] > p_win->exposure[i].completed)
+	    {
+	      nm_sr_progress(p_session);
+	    }
+	  p_win->exposure[i].mode      = NM_MPI_WIN_UNUSED;
+	  p_win->exposure[i].nmsg      = 0;
+	  p_win->exposure[i].completed = 0;
 	}
-      p_win->exposure[i].mode      = NM_MPI_WIN_UNUSED;
-      p_win->exposure[i].nmsg      = 0;
-      p_win->exposure[i].completed = 0;
+      nm_coll_barrier(p_win->p_comm->p_nm_comm, tag);
+      nm_mpi_win_synchronize(p_win);
+      if(MPI_WIN_FLAVOR_SHARED == p_win->flavor)
+	{
+	  for(i = 0; i < comm_size; ++i)
+	    {
+	      msync(((void**)p_win->p_base)[i], p_win->size[i], MS_SYNC);
+	    }
+	}
     }
-    nm_coll_barrier(p_win->p_comm->p_nm_comm, tag);
-    nm_mpi_win_synchronize(p_win);
-    if(MPI_WIN_FLAVOR_SHARED == p_win->flavor) {
-      for(i = 0; i < comm_size; ++i) {
-	msync(((void**)p_win->p_base)[i], p_win->size[i], MS_SYNC);
-      }
+  if(!(MPI_MODE_NOSUCCEED & assert))
+    {
+      for(i = 0; i < comm_size; ++i)
+	{
+	  p_win->exposure[i].mode = NM_MPI_WIN_ACTIVE_TARGET;
+	  p_win->access[i].mode   = NM_MPI_WIN_ACTIVE_TARGET;
+	}
+      nm_coll_barrier(p_win->p_comm->p_nm_comm, tag);
     }
-  }
-  if(!(MPI_MODE_NOSUCCEED & assert)){
-    for(i = 0; i < comm_size; ++i){
-      p_win->exposure[i].mode = NM_MPI_WIN_ACTIVE_TARGET;
-      p_win->access[i].mode   = NM_MPI_WIN_ACTIVE_TARGET;
-    }
-    nm_coll_barrier(p_win->p_comm->p_nm_comm, tag);
-  }
   return MPI_SUCCESS;
 }
 
@@ -1329,34 +1409,37 @@ int mpi_win_start(MPI_Group group, int assert, MPI_Win win)
   const int     comm_size = nm_group_size(p_win->p_group);
   nm_mpi_request_t p_reqs[comm_size];
   int             targets[comm_size];
-  for(i = 0; i < comm_size; ++i){
-    gate = nm_group_get_gate(p_win->p_group, i);
-    if(tbx_unlikely(gate == NULL)){
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+  for(i = 0; i < comm_size; ++i)
+    {
+      gate = nm_group_get_gate(p_win->p_group, i);
+      if(tbx_unlikely(gate == NULL))
+	{
+	  return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+	}
+      targets[i] = nm_mpi_communicator_get_dest(p_win->p_comm, gate);
+      tag        = nm_mpi_rma_create_tag(p_win->win_ids[targets[i]], 0, NM_MPI_TAG_PRIVATE_RMA_START);
+      p_reqs[i].gate                    = nm_group_get_gate(p_win->p_group, i);
+      p_reqs[i].sbuf                    = NULL;
+      p_reqs[i].count                   = 0;
+      p_reqs[i].p_comm                  = p_win->p_comm;
+      p_reqs[i].user_tag                = tag;
+      p_reqs[i].p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
+      p_reqs[i].request_type            = NM_MPI_REQUEST_RECV;
+      p_reqs[i].request_source          = targets[i];
+      p_reqs[i].communication_mode      = NM_MPI_MODE_IMMEDIATE;
+      p_reqs[i].request_persistent_type = NM_MPI_REQUEST_ZERO;
+      ++p_reqs[i].p_datatype->refcount;
+      nm_sr_recv_init(p_session, &p_reqs[i].request_nmad);
+      nm_sr_recv_unpack_contiguous(p_session, &p_reqs[i].request_nmad, NULL, 0);
+      err = nm_sr_recv_irecv(p_session, &p_reqs[i].request_nmad, p_reqs[i].gate, tag, tag_mask);
     }
-    targets[i] = nm_mpi_communicator_get_dest(p_win->p_comm, gate);
-    tag        = nm_mpi_rma_create_tag(p_win->win_ids[targets[i]], 0, NM_MPI_TAG_PRIVATE_RMA_START);
-    p_reqs[i].gate                    = nm_group_get_gate(p_win->p_group, i);
-    p_reqs[i].sbuf                    = NULL;
-    p_reqs[i].count                   = 0;
-    p_reqs[i].p_comm                  = p_win->p_comm;
-    p_reqs[i].user_tag                = tag;
-    p_reqs[i].p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
-    p_reqs[i].request_type            = NM_MPI_REQUEST_RECV;
-    p_reqs[i].request_source          = targets[i];
-    p_reqs[i].communication_mode      = NM_MPI_MODE_IMMEDIATE;
-    p_reqs[i].request_persistent_type = NM_MPI_REQUEST_ZERO;
-    ++p_reqs[i].p_datatype->refcount;
-    nm_sr_recv_init(p_session, &p_reqs[i].request_nmad);
-    nm_sr_recv_unpack_contiguous(p_session, &p_reqs[i].request_nmad, NULL, 0);
-    err = nm_sr_recv_irecv(p_session, &p_reqs[i].request_nmad, p_reqs[i].gate, tag, tag_mask);
-  }
-  for(i = 0; i < comm_size; ++i) {
-    err = nm_sr_rwait(p_session, &p_reqs[i].request_nmad);
-    p_reqs[i].request_error = err;
-    p_win->access[targets[i]].mode    = NM_MPI_WIN_ACTIVE_TARGET;
-    assert(p_win->access[i].nmsg == 0);
-  }
+  for(i = 0; i < comm_size; ++i)
+    {
+      err = nm_sr_rwait(p_session, &p_reqs[i].request_nmad);
+      p_reqs[i].request_error = err;
+      p_win->access[targets[i]].mode    = NM_MPI_WIN_ACTIVE_TARGET;
+      assert(p_win->access[i].nmsg == 0);
+    }
   return err;
 }
 
@@ -1377,38 +1460,42 @@ int mpi_win_complete(MPI_Win win)
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   const int    comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
   nm_mpi_win_flush_local_all(p_win);
-  for(i = 0; i < comm_size; ++i){
-    if(NM_MPI_WIN_ACTIVE_TARGET != p_win->access[i].mode) continue;
-    gate = nm_mpi_communicator_get_gate(p_win->p_comm, i);
-    if(tbx_unlikely(gate == NULL)){
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+  for(i = 0; i < comm_size; ++i)
+    {
+      if(NM_MPI_WIN_ACTIVE_TARGET != p_win->access[i].mode) continue;
+      gate = nm_mpi_communicator_get_gate(p_win->p_comm, i);
+      if(tbx_unlikely(gate == NULL))
+	{
+	  return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+	}
+      tag = nm_mpi_rma_create_tag(p_win->win_ids[i], 0, NM_MPI_TAG_PRIVATE_RMA_END);
+      req.gate                    = gate;
+      req.sbuf                    = (MPI_WIN_FLAVOR_SHARED == p_win->flavor) ? &zero : &p_win->access[i].nmsg;
+      req.count                   = 1;
+      req.p_comm                  = p_win->p_comm;
+      req.user_tag                = tag;
+      req.p_datatype              = nm_mpi_datatype_get(MPI_UINT64_T);
+      req.request_type            = NM_MPI_REQUEST_SEND;
+      req.request_source          = i;
+      req.communication_mode      = NM_MPI_MODE_IMMEDIATE;
+      req.request_persistent_type = NM_MPI_REQUEST_ZERO;
+      ++req.p_datatype->refcount;
+      nm_sr_send_init(p_session, &req.request_nmad);
+      nm_sr_send_pack_contiguous(p_session, &req.request_nmad, req.sbuf, req.p_datatype->size);
+      err = nm_sr_send_isend(p_session, &req.request_nmad, req.gate, tag);
+      err = nm_sr_swait(p_session, &req.request_nmad);
+      p_win->access[i].mode       = NM_MPI_WIN_UNUSED;
+      p_win->access[i].nmsg       = 0;
+      p_win->access[i].completed  = 0;
     }
-    tag = nm_mpi_rma_create_tag(p_win->win_ids[i], 0, NM_MPI_TAG_PRIVATE_RMA_END);
-    req.gate                    = gate;
-    req.sbuf                    = (MPI_WIN_FLAVOR_SHARED == p_win->flavor) ? &zero : &p_win->access[i].nmsg;
-    req.count                   = 1;
-    req.p_comm                  = p_win->p_comm;
-    req.user_tag                = tag;
-    req.p_datatype              = nm_mpi_datatype_get(MPI_UINT64_T);
-    req.request_type            = NM_MPI_REQUEST_SEND;
-    req.request_source          = i;
-    req.communication_mode      = NM_MPI_MODE_IMMEDIATE;
-    req.request_persistent_type = NM_MPI_REQUEST_ZERO;
-    ++req.p_datatype->refcount;
-    nm_sr_send_init(p_session, &req.request_nmad);
-    nm_sr_send_pack_contiguous(p_session, &req.request_nmad, req.sbuf, req.p_datatype->size);
-    err = nm_sr_send_isend(p_session, &req.request_nmad, req.gate, tag);
-    err = nm_sr_swait(p_session, &req.request_nmad);
-    p_win->access[i].mode       = NM_MPI_WIN_UNUSED;
-    p_win->access[i].nmsg       = 0;
-    p_win->access[i].completed  = 0;
-  }
   nm_mpi_win_synchronize(p_win);
-  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor) {
-    for(i = 0; i < comm_size; ++i) {
-      msync(((void**)p_win->p_base)[i], p_win->size[i], MS_SYNC);
+  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor)
+    {
+      for(i = 0; i < comm_size; ++i)
+	{
+	  msync(((void**)p_win->p_base)[i], p_win->size[i], MS_SYNC);
+	}
     }
-  }
   return err;
 }
 
@@ -1436,43 +1523,46 @@ int mpi_win_post(MPI_Group group, int assert, MPI_Win win)
   int              target;
   nm_mpi_request_t p_reqs[comm_size];
   nm_mpi_request_t *p_req_end;
-  for(i = 0; i < comm_size; ++i){
-    gate = nm_group_get_gate(p_win->p_group, i);
-    if(tbx_unlikely(gate == NULL)){
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+  for(i = 0; i < comm_size; ++i)
+    {
+      gate = nm_group_get_gate(p_win->p_group, i);
+      if(tbx_unlikely(gate == NULL))
+	{
+	  return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+	}
+      target = nm_mpi_communicator_get_dest(p_win->p_comm, gate);
+      tag    = nm_mpi_rma_create_tag(p_win->win_ids[target], 0, NM_MPI_TAG_PRIVATE_RMA_START);
+      p_reqs[i].gate                    = gate;
+      p_reqs[i].sbuf                    = NULL;
+      p_reqs[i].count                   = 0;
+      p_reqs[i].p_comm                  = p_win->p_comm;
+      p_reqs[i].user_tag                = tag;
+      p_reqs[i].p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
+      p_reqs[i].request_type            = NM_MPI_REQUEST_SEND;
+      p_reqs[i].request_source          = target;
+      p_reqs[i].communication_mode      = NM_MPI_MODE_IMMEDIATE;
+      p_reqs[i].request_persistent_type = NM_MPI_REQUEST_ZERO;
+      ++p_reqs[i].p_datatype->refcount;
+      nm_sr_send_init(p_session, &p_reqs[i].request_nmad);
+      nm_sr_send_pack_contiguous(p_session, &p_reqs[i].request_nmad, NULL, 0);
+      err = nm_sr_send_isend(p_session, &p_reqs[i].request_nmad, gate, tag);
+      p_reqs[i].request_error = err;
+      /* Closing requests */
+      tag       = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_END);
+      p_req_end = nm_mpi_request_alloc();
+      nm_sr_recv_init(p_session, &p_req_end->request_nmad);
+      nm_sr_recv_unpack_contiguous(p_session, &p_req_end->request_nmad,
+				   &p_win->msg_count[target], sizeof(uint64_t));
+      nm_sr_recv_irecv(p_session, &p_req_end->request_nmad, gate, tag, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+      p_win->end_reqs[target]           = p_req_end;
+      p_win->exposure[target].mode      = NM_MPI_WIN_ACTIVE_TARGET;
+      p_win->exposure[target].nmsg      = 0;
+      p_win->exposure[target].completed = 0;
     }
-    target = nm_mpi_communicator_get_dest(p_win->p_comm, gate);
-    tag    = nm_mpi_rma_create_tag(p_win->win_ids[target], 0, NM_MPI_TAG_PRIVATE_RMA_START);
-    p_reqs[i].gate                    = gate;
-    p_reqs[i].sbuf                    = NULL;
-    p_reqs[i].count                   = 0;
-    p_reqs[i].p_comm                  = p_win->p_comm;
-    p_reqs[i].user_tag                = tag;
-    p_reqs[i].p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
-    p_reqs[i].request_type            = NM_MPI_REQUEST_SEND;
-    p_reqs[i].request_source          = target;
-    p_reqs[i].communication_mode      = NM_MPI_MODE_IMMEDIATE;
-    p_reqs[i].request_persistent_type = NM_MPI_REQUEST_ZERO;
-    ++p_reqs[i].p_datatype->refcount;
-    nm_sr_send_init(p_session, &p_reqs[i].request_nmad);
-    nm_sr_send_pack_contiguous(p_session, &p_reqs[i].request_nmad, NULL, 0);
-    err = nm_sr_send_isend(p_session, &p_reqs[i].request_nmad, gate, tag);
-    p_reqs[i].request_error = err;
-    /* Closing requests */
-    tag       = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_END);
-    p_req_end = nm_mpi_request_alloc();
-    nm_sr_recv_init(p_session, &p_req_end->request_nmad);
-    nm_sr_recv_unpack_contiguous(p_session, &p_req_end->request_nmad,
-				 &p_win->msg_count[target], sizeof(uint64_t));
-    nm_sr_recv_irecv(p_session, &p_req_end->request_nmad, gate, tag, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
-    p_win->end_reqs[target]           = p_req_end;
-    p_win->exposure[target].mode      = NM_MPI_WIN_ACTIVE_TARGET;
-    p_win->exposure[target].nmsg      = 0;
-    p_win->exposure[target].completed = 0;
-  }
-  for(i = 0; i < comm_size; ++i){
-    nm_sr_swait(p_session, &p_reqs[i].request_nmad);
-  }
+  for(i = 0; i < comm_size; ++i)
+    {
+      nm_sr_swait(p_session, &p_reqs[i].request_nmad);
+    }
   return err;
 }
  
@@ -1487,23 +1577,29 @@ int mpi_win_wait(MPI_Win win)
     return MPI_ERR_WIN;
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   const int    comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
-  for(i = 0; i < comm_size; ++i){
-    if(NULL == p_win->end_reqs[i]) continue;
-    err = nm_sr_rwait(p_session, &p_win->end_reqs[i]->request_nmad);
-    if(NM_ESUCCESS == err){
-      while(p_win->exposure[i].nmsg < p_win->msg_count[i]) {
-	nm_sr_progress(p_session);
-      }
-      nm_mpi_win_flush(p_win, i);
-      p_win->exposure[i].mode      = NM_MPI_WIN_UNUSED;
-      p_win->exposure[i].nmsg      = 0;
-      p_win->exposure[i].completed = 0;
-      nm_mpi_request_free(p_win->end_reqs[i]);
-      p_win->end_reqs[i]  = NULL;
-      p_win->msg_count[i] = 0;
-    } else
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
-  }
+  for(i = 0; i < comm_size; ++i)
+    {
+      if(NULL == p_win->end_reqs[i]) continue;
+      err = nm_sr_rwait(p_session, &p_win->end_reqs[i]->request_nmad);
+      if(NM_ESUCCESS == err)
+	{
+	  while(p_win->exposure[i].nmsg < p_win->msg_count[i])
+	    {
+	      nm_sr_progress(p_session);
+	    }
+	  nm_mpi_win_flush(p_win, i);
+	  p_win->exposure[i].mode      = NM_MPI_WIN_UNUSED;
+	  p_win->exposure[i].nmsg      = 0;
+	  p_win->exposure[i].completed = 0;
+	  nm_mpi_request_free(p_win->end_reqs[i]);
+	  p_win->end_reqs[i]  = NULL;
+	  p_win->msg_count[i] = 0;
+	}
+      else
+	{
+	  return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+	}
+    }
   nm_mpi_win_synchronize(p_win);
   return err;
 }
@@ -1517,22 +1613,26 @@ int mpi_win_test(MPI_Win win, int *flag)
     return MPI_ERR_WIN;
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   const int    comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
-  for(i = 0; i < comm_size; ++i){
-    if(NULL == p_win->end_reqs[i]) continue;
-    err = nm_sr_rtest(p_session, &p_win->end_reqs[i]->request_nmad);
-    if(NM_ESUCCESS == err && p_win->exposure[i].nmsg >= p_win->msg_count[i]){
-      nm_mpi_win_flush(p_win, i);
-      p_win->exposure[i].mode      = NM_MPI_WIN_UNUSED;
-      p_win->exposure[i].nmsg      = 0;
-      p_win->exposure[i].completed = 0;
-      nm_mpi_request_free(p_win->end_reqs[i]);
-      p_win->end_reqs[i]  = NULL;
-      p_win->msg_count[i] = 0;
-    } else {
-      nm_sr_progress(p_session);
-      return MPI_SUCCESS;
+  for(i = 0; i < comm_size; ++i)
+    {
+      if(NULL == p_win->end_reqs[i]) continue;
+      err = nm_sr_rtest(p_session, &p_win->end_reqs[i]->request_nmad);
+      if(NM_ESUCCESS == err && p_win->exposure[i].nmsg >= p_win->msg_count[i])
+	{
+	  nm_mpi_win_flush(p_win, i);
+	  p_win->exposure[i].mode      = NM_MPI_WIN_UNUSED;
+	  p_win->exposure[i].nmsg      = 0;
+	  p_win->exposure[i].completed = 0;
+	  nm_mpi_request_free(p_win->end_reqs[i]);
+	  p_win->end_reqs[i]  = NULL;
+	  p_win->msg_count[i] = 0;
+	}
+      else
+	{
+	  nm_sr_progress(p_session);
+	  return MPI_SUCCESS;
+	}
     }
-  }
   /* All pending request are completed */
   *flag = 1;
   nm_mpi_win_synchronize(p_win);
@@ -1550,19 +1650,22 @@ int mpi_win_lock(int lock_type, int rank, int assert, MPI_Win win)
   if(NULL == p_win)
     return MPI_ERR_WIN;
   if(nm_mpi_win_is_ready(&p_win->access[rank]) && !nm_mpi_win_completed_epoch(&p_win->access[rank])
-     || NULL != p_win->end_reqs[rank]) {
-    /* Check if there is really an active  exposure / access epoch currently pending */
-    return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
-  }
-  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor) {
-    return nm_mpi_win_lock_shm(lock_type, rank, assert, p_win);
-  }
+     || NULL != p_win->end_reqs[rank])
+    {
+      /* Check if there is really an active  exposure / access epoch currently pending */
+      return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
+    }
+  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor)
+    {
+      return nm_mpi_win_lock_shm(lock_type, rank, assert, p_win);
+    }
   nm_sr_request_t req;
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   nm_gate_t         gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, rank);
-  if(tbx_unlikely(gate == NULL)){
-    return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
-  }
+  if(tbx_unlikely(gate == NULL))
+    {
+      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+    }
   /* Ending epoch */
   nm_tag_t tag_unlock_ack = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK_R);
   p_win->end_reqs[rank] = nm_mpi_request_alloc();
@@ -1578,14 +1681,15 @@ int mpi_win_lock(int lock_type, int rank, int assert, MPI_Win win)
   nm_sr_swait(p_session, &req);
   /* Recv echo for self lock */
   const nm_tag_t tag_resp = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_LOCK_R);
-  if(rank == p_win->myrank) {
-    /* Recv self request echo */
-    nm_sr_request_t req_in;
-    nm_sr_recv_init(p_session, &req_in);
-    nm_sr_recv_unpack_contiguous(p_session, &req_in, NULL, 0);
-    nm_sr_recv_irecv(p_session, &req_in, gate, tag_resp, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
-    nm_sr_rwait(p_session, &req_in);
-  }
+  if(rank == p_win->myrank)
+    {
+      /* Recv self request echo */
+      nm_sr_request_t req_in;
+      nm_sr_recv_init(p_session, &req_in);
+      nm_sr_recv_unpack_contiguous(p_session, &req_in, NULL, 0);
+      nm_sr_recv_irecv(p_session, &req_in, gate, tag_resp, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+      nm_sr_rwait(p_session, &req_in);
+    }
   p_win->access[rank].mode = NM_MPI_WIN_PASSIVE_TARGET;
   return err;
 }
@@ -1599,20 +1703,23 @@ int mpi_win_lock_all(int assert, MPI_Win win)
   nm_mpi_window_t*p_win = nm_mpi_window_get(win);
   if(NULL == p_win)
     return MPI_ERR_WIN;
-  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor) {
-    return nm_mpi_win_lock_all_shm(assert, p_win);
-  }
+  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor)
+    {
+      return nm_mpi_win_lock_all_shm(assert, p_win);
+    }
   nm_tag_t tag;
   nm_session_t    p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   const int       comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
   nm_sr_request_t reqs_out[comm_size];
   nm_sr_request_t req_in;
-  for(i = 0; i < comm_size; ++i){
-    if(nm_mpi_win_is_ready(&p_win->access[i]) && !nm_mpi_win_completed_epoch(&p_win->access[i])) {
-      /* Check if there is really an active  exposure / access epoch currently pending */
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
+  for(i = 0; i < comm_size; ++i)
+    {
+      if(nm_mpi_win_is_ready(&p_win->access[i]) && !nm_mpi_win_completed_epoch(&p_win->access[i]))
+	{
+	  /* Check if there is really an active  exposure / access epoch currently pending */
+	  return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
+	}
     }
-  }
   /* Recv self request echo */
   const nm_tag_t tag_resp = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_LOCK_R);
   gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, p_win->myrank);
@@ -1621,27 +1728,30 @@ int mpi_win_lock_all(int assert, MPI_Win win)
   nm_sr_recv_irecv(p_session, &req_in, gate, tag_resp, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
   /* Send lock requests */
   const nm_tag_t tag_unlock_ack = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK_R);
-  for(i = 0; i < comm_size; ++i){
-    gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, i);
-    if(tbx_unlikely(gate == NULL)){
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+  for(i = 0; i < comm_size; ++i)
+    {
+      gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, i);
+      if(tbx_unlikely(gate == NULL))
+	{
+	  return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+	}
+      p_win->access[i].mode = NM_MPI_WIN_PASSIVE_TARGET;
+      /* Ending epoch */
+      p_win->end_reqs[i] = nm_mpi_request_alloc();
+      nm_sr_recv_init(p_session, &p_win->end_reqs[i]->request_nmad);
+      nm_sr_recv_unpack_contiguous(p_session, &p_win->end_reqs[i]->request_nmad, NULL, 0);
+      err = nm_sr_recv_irecv(p_session, &p_win->end_reqs[i]->request_nmad, gate, tag_unlock_ack,
+			     NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+      /* Send request */
+      tag = nm_mpi_rma_create_tag(p_win->win_ids[i], NM_MPI_LOCK_SHARED, NM_MPI_TAG_PRIVATE_RMA_LOCK);
+      nm_sr_send_init(p_session, &reqs_out[i]);
+      nm_sr_send_pack_contiguous(p_session, &reqs_out[i], NULL, 0);
+      err = nm_sr_send_isend(p_session, &reqs_out[i], gate, tag);
     }
-    p_win->access[i].mode = NM_MPI_WIN_PASSIVE_TARGET;
-    /* Ending epoch */
-    p_win->end_reqs[i] = nm_mpi_request_alloc();
-    nm_sr_recv_init(p_session, &p_win->end_reqs[i]->request_nmad);
-    nm_sr_recv_unpack_contiguous(p_session, &p_win->end_reqs[i]->request_nmad, NULL, 0);
-    err = nm_sr_recv_irecv(p_session, &p_win->end_reqs[i]->request_nmad, gate, tag_unlock_ack,
-			   NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
-    /* Send request */
-    tag = nm_mpi_rma_create_tag(p_win->win_ids[i], NM_MPI_LOCK_SHARED, NM_MPI_TAG_PRIVATE_RMA_LOCK);
-    nm_sr_send_init(p_session, &reqs_out[i]);
-    nm_sr_send_pack_contiguous(p_session, &reqs_out[i], NULL, 0);
-    err = nm_sr_send_isend(p_session, &reqs_out[i], gate, tag);
-  }
-  for(i = 0; i < comm_size; ++i){
-    nm_sr_swait(p_session, &reqs_out[i]);
-  }
+  for(i = 0; i < comm_size; ++i)
+    {
+      nm_sr_swait(p_session, &reqs_out[i]);
+    }
   /* Wait for self lock */
   nm_sr_rwait(p_session, &req_in);
   return err;
@@ -1653,9 +1763,10 @@ int mpi_win_unlock(int rank, MPI_Win win)
   nm_mpi_window_t*p_win = nm_mpi_window_get(win);
   if(NULL == p_win)
     return MPI_ERR_WIN;
-  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor) {
-    return nm_mpi_win_unlock_shm(rank, p_win);
-  }
+  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor)
+    {
+      return nm_mpi_win_unlock_shm(rank, p_win);
+    }
   if(!(__sync_bool_compare_and_swap(&p_win->access[rank].mode,
 				    NM_MPI_WIN_PASSIVE_TARGET_PENDING,
 				    NM_MPI_WIN_PASSIVE_TARGET_END)
@@ -1668,9 +1779,10 @@ int mpi_win_unlock(int rank, MPI_Win win)
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   nm_gate_t         gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, rank);
   nm_mpi_win_flush_local(p_win, rank);
-  if(tbx_unlikely(gate == NULL)){
-    return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
-  }
+  if(tbx_unlikely(gate == NULL))
+    {
+      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+    }
   /* Send unlock request */
   nm_sr_request_t req_out;
   const nm_tag_t tag = nm_mpi_rma_create_tag(p_win->win_ids[rank], 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK);
@@ -1698,43 +1810,48 @@ int mpi_win_unlock_all(MPI_Win win)
   nm_mpi_window_t*p_win = nm_mpi_window_get(win);
   if(NULL == p_win)
     return MPI_ERR_WIN;
-  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor) {
-    return nm_mpi_win_unlock_all_shm(p_win);
-  }
+  if(MPI_WIN_FLAVOR_SHARED == p_win->flavor)
+    {
+      return nm_mpi_win_unlock_all_shm(p_win);
+    }
   nm_tag_t         tag;
   nm_session_t     p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   const int        comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
   nm_sr_request_t  reqs_out[comm_size];
-  for(i = 0; i < comm_size; ++i){
-    if(!(__sync_bool_compare_and_swap(&p_win->access[i].mode,
-				      NM_MPI_WIN_PASSIVE_TARGET_PENDING,
-				      NM_MPI_WIN_PASSIVE_TARGET_END)
-	 || __sync_bool_compare_and_swap(&p_win->access[i].mode,
-					 NM_MPI_WIN_PASSIVE_TARGET,
-					 NM_MPI_WIN_PASSIVE_TARGET_END)))
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
-  }
-  nm_mpi_win_flush_local_all(p_win);
-  for(i = 0; i < comm_size; ++i){
-    gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, i);
-    if(tbx_unlikely(gate == NULL)){
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+  for(i = 0; i < comm_size; ++i)
+    {
+      if(!(__sync_bool_compare_and_swap(&p_win->access[i].mode,
+					NM_MPI_WIN_PASSIVE_TARGET_PENDING,
+					NM_MPI_WIN_PASSIVE_TARGET_END)
+	   || __sync_bool_compare_and_swap(&p_win->access[i].mode,
+					   NM_MPI_WIN_PASSIVE_TARGET,
+					   NM_MPI_WIN_PASSIVE_TARGET_END)))
+	return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
     }
-    tag = nm_mpi_rma_create_tag(p_win->win_ids[i], 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK);
-    nm_sr_send_init(p_session, &reqs_out[i]);
-    nm_sr_send_pack_contiguous(p_session, &reqs_out[i], &p_win->access[i].nmsg, sizeof(uint64_t));
-    err = nm_sr_send_isend(p_session, &reqs_out[i], gate, tag);
-  }
-  for(i = 0; i < comm_size; ++i){
-    nm_sr_swait(p_session, &reqs_out[i]);
-    nm_sr_rwait(p_session, &p_win->end_reqs[i]->request_nmad);
-    nm_mpi_request_free(p_win->end_reqs[i]);
-    p_win->end_reqs[i]         = NULL;
-    p_win->access[i].mode      = NM_MPI_WIN_UNUSED;
-    p_win->access[i].nmsg      = 0;
-    p_win->access[i].completed = 0;
-    p_win->msg_count[i]        = 0;
-  }
+  nm_mpi_win_flush_local_all(p_win);
+  for(i = 0; i < comm_size; ++i)
+    {
+      gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, i);
+      if(tbx_unlikely(gate == NULL))
+	{
+	  return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
+	}
+      tag = nm_mpi_rma_create_tag(p_win->win_ids[i], 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK);
+      nm_sr_send_init(p_session, &reqs_out[i]);
+      nm_sr_send_pack_contiguous(p_session, &reqs_out[i], &p_win->access[i].nmsg, sizeof(uint64_t));
+      err = nm_sr_send_isend(p_session, &reqs_out[i], gate, tag);
+    }
+  for(i = 0; i < comm_size; ++i)
+    {
+      nm_sr_swait(p_session, &reqs_out[i]);
+      nm_sr_rwait(p_session, &p_win->end_reqs[i]->request_nmad);
+      nm_mpi_request_free(p_win->end_reqs[i]);
+      p_win->end_reqs[i]         = NULL;
+      p_win->access[i].mode      = NM_MPI_WIN_UNUSED;
+      p_win->access[i].nmsg      = 0;
+      p_win->access[i].completed = 0;
+      p_win->msg_count[i]        = 0;
+    }
   nm_mpi_win_synchronize(p_win);
   return err;
 }
@@ -1759,12 +1876,13 @@ int mpi_win_flush_all(MPI_Win win)
   if(NULL == p_win)
     return MPI_ERR_WIN;
   const int comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
-  for(int i = 0; i < comm_size; ++i) {
-    if(p_win->access[i].mode && 
-       !((NM_MPI_WIN_PASSIVE_TARGET | NM_MPI_WIN_PASSIVE_TARGET_PENDING | NM_MPI_WIN_PASSIVE_TARGET_END)
-	 & p_win->access[i].mode))
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
-  }
+  for(int i = 0; i < comm_size; ++i)
+    {
+      if(p_win->access[i].mode && 
+	 !((NM_MPI_WIN_PASSIVE_TARGET | NM_MPI_WIN_PASSIVE_TARGET_PENDING | NM_MPI_WIN_PASSIVE_TARGET_END)
+	   & p_win->access[i].mode))
+	return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
+    }
   err = nm_mpi_win_flush_local_all(p_win);
   return err;
 }
@@ -1789,12 +1907,13 @@ int mpi_win_flush_local_all(MPI_Win win)
   if(NULL == p_win)
     return MPI_ERR_WIN;
   const int comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
-  for(int i = 0; i < comm_size; ++i) {
-    if(p_win->access[i].mode && 
-       !((NM_MPI_WIN_PASSIVE_TARGET | NM_MPI_WIN_PASSIVE_TARGET_PENDING | NM_MPI_WIN_PASSIVE_TARGET_END)
-	 & p_win->access[i].mode))
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
-  }
+  for(int i = 0; i < comm_size; ++i)
+    {
+      if(p_win->access[i].mode && 
+	 !((NM_MPI_WIN_PASSIVE_TARGET | NM_MPI_WIN_PASSIVE_TARGET_PENDING | NM_MPI_WIN_PASSIVE_TARGET_END)
+	   & p_win->access[i].mode))
+	return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
+    }
   err = nm_mpi_win_flush_local_all(p_win);
   return err;
 }
@@ -1807,10 +1926,11 @@ int mpi_win_sync(MPI_Win win)
     return MPI_ERR_WIN;
   const int test_passive = NM_MPI_WIN_PASSIVE_TARGET | NM_MPI_WIN_PASSIVE_TARGET_PENDING | NM_MPI_WIN_PASSIVE_TARGET_END;
   const int comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
-  for(int i = 0; i < comm_size; ++i) {
-    if(p_win->access[i].mode && !(test_passive & p_win->access[i].mode))
-      return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
-  }
+  for(int i = 0; i < comm_size; ++i)
+    {
+      if(p_win->access[i].mode && !(test_passive & p_win->access[i].mode))
+	return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_CONFLICT);
+    }
   nm_mpi_win_synchronize(p_win);
   return err;
 }
@@ -1837,13 +1957,14 @@ static void nm_mpi_win_start_passive_exposure_shm(nm_sr_event_t event, const nm_
 					 NM_MPI_WIN_PASSIVE_TARGET_END));
   nm_mpi_win_locklist_t*pendings = &p_win->pending_ops[source];
   nm_mpi_spin_lock(&pendings->lock);
-  while(!TAILQ_EMPTY(&pendings->pending)){
-    p_req_lelt = TAILQ_FIRST(&pendings->pending);
-    TAILQ_REMOVE(&pendings->pending, p_req_lelt, link);
-    nm_mpi_spin_unlock(&pendings->lock);
-    nm_mpi_rma_handle_passive_shm(p_req_lelt);
-    nm_mpi_spin_lock(&pendings->lock);
-  }
+  while(!TAILQ_EMPTY(&pendings->pending))
+    {
+      p_req_lelt = TAILQ_FIRST(&pendings->pending);
+      TAILQ_REMOVE(&pendings->pending, p_req_lelt, link);
+      nm_mpi_spin_unlock(&pendings->lock);
+      nm_mpi_rma_handle_passive_shm(p_req_lelt);
+      nm_mpi_spin_lock(&pendings->lock);
+    }
   nm_mpi_spin_unlock(&pendings->lock);
   nm_mpi_request_free(p_req_lock);
 }
@@ -1854,22 +1975,24 @@ static void nm_mpi_win_unexpected_notifier_shm(nm_sr_event_t event, const nm_sr_
   const nm_tag_t    tag = info->recv_unexpected.tag;
   assert(ref);
   nm_mpi_window_t*p_win = (nm_mpi_window_t*)ref;
-  if(NULL != p_win) {
-    switch(tag & NM_MPI_TAG_PRIVATE_RMA_MASK_OP){
-    case NM_MPI_TAG_PRIVATE_RMA_PUT:
-    case NM_MPI_TAG_PRIVATE_RMA_GET_REQ:
-    case NM_MPI_TAG_PRIVATE_RMA_ACC:
-    case NM_MPI_TAG_PRIVATE_RMA_GACC_REQ:
-    case NM_MPI_TAG_PRIVATE_RMA_FAO_REQ:
-    case NM_MPI_TAG_PRIVATE_RMA_CAS_REQ:
-      {
-	nm_mpi_rma_recv_shm(info, p_win);
-      }
-      break;
-    default:
-      ERROR("You should not have arrived here.\n");
+  if(NULL != p_win)
+    {
+      switch(tag & NM_MPI_TAG_PRIVATE_RMA_MASK_OP)
+	{
+	case NM_MPI_TAG_PRIVATE_RMA_PUT:
+	case NM_MPI_TAG_PRIVATE_RMA_GET_REQ:
+	case NM_MPI_TAG_PRIVATE_RMA_ACC:
+	case NM_MPI_TAG_PRIVATE_RMA_GACC_REQ:
+	case NM_MPI_TAG_PRIVATE_RMA_FAO_REQ:
+	case NM_MPI_TAG_PRIVATE_RMA_CAS_REQ:
+	  {
+	    nm_mpi_rma_recv_shm(info, p_win);
+	  }
+	  break;
+	default:
+	  ERROR("You should not have arrived here.\n");
+	}
     }
-  }
 }
 
 static int nm_mpi_win_lock_shm(int lock_type, int rank, int assert, nm_mpi_window_t*p_win)
@@ -1878,9 +2001,10 @@ static int nm_mpi_win_lock_shm(int lock_type, int rank, int assert, nm_mpi_windo
   nm_sr_request_t req;
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   nm_gate_t         gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, rank);
-  if(tbx_unlikely(gate == NULL)){
-    return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_OTHER);
-  }
+  if(tbx_unlikely(gate == NULL))
+    {
+      return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_OTHER);
+    }
   /* Ending epoch */
   nm_tag_t tag_unlock_ack = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK_R);
   p_win->end_reqs[rank] = nm_mpi_request_alloc();
@@ -1896,25 +2020,28 @@ static int nm_mpi_win_lock_shm(int lock_type, int rank, int assert, nm_mpi_windo
   nm_sr_swait(p_session, &req);
   /* Recv echo */
   const nm_tag_t tag_resp = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_LOCK_R);
-  if(rank == p_win->myrank) {
-    /* Recv self request echo */
-    nm_sr_request_t req_in;
-    nm_sr_recv_init(p_session, &req_in);
-    nm_sr_recv_unpack_contiguous(p_session, &req_in, NULL, 0);
-    nm_sr_recv_irecv(p_session, &req_in, gate, tag_resp, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
-    nm_sr_rwait(p_session, &req_in);
-    p_win->access[rank].mode = NM_MPI_WIN_PASSIVE_TARGET;
-  } else {
-    p_win->access[rank].mode = NM_MPI_WIN_PASSIVE_TARGET_PENDING;
-    nm_mpi_request_t*p_req = nm_mpi_request_alloc();
-    p_req->p_win = p_win;
-    nm_sr_recv_init(p_session, &p_req->request_nmad);
-    nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, NULL, 0);
-    nm_sr_request_set_ref(&p_req->request_nmad, p_req);
-    nm_sr_request_monitor(p_session, &p_req->request_nmad, NM_SR_EVENT_FINALIZED,
-			  &nm_mpi_win_start_passive_exposure_shm);
-    nm_sr_recv_irecv(p_session, &p_req->request_nmad, gate, tag_resp, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
-  }
+  if(rank == p_win->myrank)
+    {
+      /* Recv self request echo */
+      nm_sr_request_t req_in;
+      nm_sr_recv_init(p_session, &req_in);
+      nm_sr_recv_unpack_contiguous(p_session, &req_in, NULL, 0);
+      nm_sr_recv_irecv(p_session, &req_in, gate, tag_resp, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+      nm_sr_rwait(p_session, &req_in);
+      p_win->access[rank].mode = NM_MPI_WIN_PASSIVE_TARGET;
+    }
+  else
+    {
+      p_win->access[rank].mode = NM_MPI_WIN_PASSIVE_TARGET_PENDING;
+      nm_mpi_request_t*p_req = nm_mpi_request_alloc();
+      p_req->p_win = p_win;
+      nm_sr_recv_init(p_session, &p_req->request_nmad);
+      nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, NULL, 0);
+      nm_sr_request_set_ref(&p_req->request_nmad, p_req);
+      nm_sr_request_monitor(p_session, &p_req->request_nmad, NM_SR_EVENT_FINALIZED,
+			    &nm_mpi_win_start_passive_exposure_shm);
+      nm_sr_recv_irecv(p_session, &p_req->request_nmad, gate, tag_resp, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+    }
   msync(((void**)p_win->p_base)[rank], p_win->size[rank], MS_SYNC);
   return err;
 }
@@ -1934,43 +2061,49 @@ static int nm_mpi_win_lock_all_shm(int assert, nm_mpi_window_t*p_win)
   nm_sr_recv_init(p_session, &req_in);
   nm_sr_recv_unpack_contiguous(p_session, &req_in, NULL, 0);
   nm_sr_recv_irecv(p_session, &req_in, gate, tag_resp, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
-  for(i = 0; i < comm_size; ++i){
-    gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, i);
-    if(tbx_unlikely(gate == NULL)){
-      return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_OTHER);
-    }
-    if(i != p_win->myrank) {
-      /* Recv echo */
-      p_win->access[i].mode = NM_MPI_WIN_PASSIVE_TARGET_PENDING;
-      nm_mpi_request_t*p_req = nm_mpi_request_alloc();
-      p_req->p_win = p_win;
-      nm_sr_recv_init(p_session, &p_req->request_nmad);
-      nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, NULL, 0);
-      nm_sr_request_set_ref(&p_req->request_nmad, p_req);
-      nm_sr_request_monitor(p_session, &p_req->request_nmad, NM_SR_EVENT_FINALIZED,
-			    &nm_mpi_win_start_passive_exposure_shm);
-      nm_sr_recv_irecv(p_session, &p_req->request_nmad, gate, tag_resp,
-		       NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
-    } else {
-      p_win->access[i].mode = NM_MPI_WIN_PASSIVE_TARGET;
-    }
-    /* Ending epoch */
-    nm_tag_t tag_unlock_ack = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK_R);
-    p_win->end_reqs[i] = nm_mpi_request_alloc();
-    nm_sr_recv_init(p_session, &p_win->end_reqs[i]->request_nmad);
-    nm_sr_recv_unpack_contiguous(p_session, &p_win->end_reqs[i]->request_nmad, NULL, 0);
-    err = nm_sr_recv_irecv(p_session, &p_win->end_reqs[i]->request_nmad, gate, tag_unlock_ack,
+  for(i = 0; i < comm_size; ++i)
+    {
+      gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, i);
+      if(tbx_unlikely(gate == NULL))
+	{
+	  return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_OTHER);
+	}
+      if(i != p_win->myrank)
+	{
+	  /* Recv echo */
+	  p_win->access[i].mode = NM_MPI_WIN_PASSIVE_TARGET_PENDING;
+	  nm_mpi_request_t*p_req = nm_mpi_request_alloc();
+	  p_req->p_win = p_win;
+	  nm_sr_recv_init(p_session, &p_req->request_nmad);
+	  nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, NULL, 0);
+	  nm_sr_request_set_ref(&p_req->request_nmad, p_req);
+	  nm_sr_request_monitor(p_session, &p_req->request_nmad, NM_SR_EVENT_FINALIZED,
+				&nm_mpi_win_start_passive_exposure_shm);
+	  nm_sr_recv_irecv(p_session, &p_req->request_nmad, gate, tag_resp,
 			   NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
-    /* Send requests */
-    tag  = nm_mpi_rma_create_tag(p_win->win_ids[i], NM_MPI_LOCK_SHARED, NM_MPI_TAG_PRIVATE_RMA_LOCK);
-    nm_sr_send_init(p_session, &reqs_out[i]);
-    nm_sr_send_pack_contiguous(p_session, &reqs_out[i], NULL, 0);
-    err = nm_sr_send_isend(p_session, &reqs_out[i], gate, tag);
-  }
-  for(i = 0; i < comm_size; ++i){
-    nm_sr_swait(p_session, &reqs_out[i]);
-    msync(((void**)p_win->p_base)[i], p_win->size[i], MS_SYNC);
-  }
+	}
+      else
+	{
+	  p_win->access[i].mode = NM_MPI_WIN_PASSIVE_TARGET;
+	}
+      /* Ending epoch */
+      nm_tag_t tag_unlock_ack = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK_R);
+      p_win->end_reqs[i] = nm_mpi_request_alloc();
+      nm_sr_recv_init(p_session, &p_win->end_reqs[i]->request_nmad);
+      nm_sr_recv_unpack_contiguous(p_session, &p_win->end_reqs[i]->request_nmad, NULL, 0);
+      err = nm_sr_recv_irecv(p_session, &p_win->end_reqs[i]->request_nmad, gate, tag_unlock_ack,
+			     NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+      /* Send requests */
+      tag  = nm_mpi_rma_create_tag(p_win->win_ids[i], NM_MPI_LOCK_SHARED, NM_MPI_TAG_PRIVATE_RMA_LOCK);
+      nm_sr_send_init(p_session, &reqs_out[i]);
+      nm_sr_send_pack_contiguous(p_session, &reqs_out[i], NULL, 0);
+      err = nm_sr_send_isend(p_session, &reqs_out[i], gate, tag);
+    }
+  for(i = 0; i < comm_size; ++i)
+    {
+      nm_sr_swait(p_session, &reqs_out[i]);
+      msync(((void**)p_win->p_base)[i], p_win->size[i], MS_SYNC);
+    }
   nm_sr_rwait(p_session, &req_in);
   return err;
 }
@@ -1989,9 +2122,10 @@ static int nm_mpi_win_unlock_shm(int rank, nm_mpi_window_t*p_win)
     }
   nm_session_t p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   nm_gate_t         gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, rank);
-  if(tbx_unlikely(gate == NULL)){
-    return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_OTHER);
-  }
+  if(tbx_unlikely(gate == NULL))
+    {
+      return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_OTHER);
+    }
   /* Wait for local operation completion */
   nm_mpi_win_flush_local(p_win, rank);
   /* Send unlock */
@@ -2025,45 +2159,50 @@ static int nm_mpi_win_unlock_all_shm(nm_mpi_window_t*p_win)
   const int        comm_size = nm_comm_size(p_win->p_comm->p_nm_comm);
   const uint64_t   nmsg = 0;
   nm_sr_request_t  reqs_out[comm_size];
-  for(i = 0; i < comm_size; ++i){
-    if(!(__sync_bool_compare_and_swap(&p_win->access[i].mode,
-				      NM_MPI_WIN_PASSIVE_TARGET_PENDING,
-				      NM_MPI_WIN_PASSIVE_TARGET_END)
-	 || __sync_bool_compare_and_swap(&p_win->access[i].mode,
-					 NM_MPI_WIN_PASSIVE_TARGET,
-					 NM_MPI_WIN_PASSIVE_TARGET_END)))
-      {
-	return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_CONFLICT);
-      }
-  }
+  for(i = 0; i < comm_size; ++i)
+    {
+      if(!(__sync_bool_compare_and_swap(&p_win->access[i].mode,
+					NM_MPI_WIN_PASSIVE_TARGET_PENDING,
+					NM_MPI_WIN_PASSIVE_TARGET_END)
+	   || __sync_bool_compare_and_swap(&p_win->access[i].mode,
+					   NM_MPI_WIN_PASSIVE_TARGET,
+					   NM_MPI_WIN_PASSIVE_TARGET_END)))
+	{
+	  return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_CONFLICT);
+	}
+    }
   /* Wait for local operations completion */
   nm_mpi_win_flush_local_all(p_win);
   /* Send unlock requests */
-  for(i = 0; i < comm_size; ++i){
-    gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, i);
-    if(tbx_unlikely(gate == NULL)){
-      return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_OTHER);
+  for(i = 0; i < comm_size; ++i)
+    {
+      gate = nm_comm_get_gate(p_win->p_comm->p_nm_comm, i);
+      if(tbx_unlikely(gate == NULL))
+	{
+	  return NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_OTHER);
+	}
+      tag = nm_mpi_rma_create_tag(p_win->win_ids[i], 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK);
+      nm_sr_send_init(p_session, &reqs_out[i]);
+      nm_sr_send_pack_contiguous(p_session, &reqs_out[i], &nmsg, sizeof(uint64_t));
+      err = nm_sr_send_isend(p_session, &reqs_out[i], gate, tag);
     }
-    tag = nm_mpi_rma_create_tag(p_win->win_ids[i], 0, NM_MPI_TAG_PRIVATE_RMA_UNLOCK);
-    nm_sr_send_init(p_session, &reqs_out[i]);
-    nm_sr_send_pack_contiguous(p_session, &reqs_out[i], &nmsg, sizeof(uint64_t));
-    err = nm_sr_send_isend(p_session, &reqs_out[i], gate, tag);
-  }
   /* Wait for unlock ack's */
-  for(i = 0; i < comm_size; ++i){
-    nm_sr_swait(p_session, &reqs_out[i]);
-    nm_sr_rwait(p_session, &p_win->end_reqs[i]->request_nmad);
-    nm_mpi_request_free(p_win->end_reqs[i]);
-    /* Reset epoch */
-    p_win->end_reqs[i]         = NULL;
-    p_win->access[i].mode      = NM_MPI_WIN_UNUSED;
-    p_win->access[i].nmsg      = 0;
-    p_win->access[i].completed = 0;
-    p_win->msg_count[i]        = 0;
-  }
+  for(i = 0; i < comm_size; ++i)
+    {
+      nm_sr_swait(p_session, &reqs_out[i]);
+      nm_sr_rwait(p_session, &p_win->end_reqs[i]->request_nmad);
+      nm_mpi_request_free(p_win->end_reqs[i]);
+      /* Reset epoch */
+      p_win->end_reqs[i]         = NULL;
+      p_win->access[i].mode      = NM_MPI_WIN_UNUSED;
+      p_win->access[i].nmsg      = 0;
+      p_win->access[i].completed = 0;
+      p_win->msg_count[i]        = 0;
+    }
   nm_mpi_win_synchronize(p_win);
-  for(i = 0; i < comm_size; ++i) {
-    msync(((void**)p_win->p_base)[i], p_win->size[i], MS_SYNC);
-  }
+  for(i = 0; i < comm_size; ++i)
+    {
+      msync(((void**)p_win->p_base)[i], p_win->size[i], MS_SYNC);
+    }
   return err;
 }

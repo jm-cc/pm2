@@ -55,7 +55,7 @@ nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype
   int err = nm_mpi_isend(p_req, dest, p_comm);
   if(err != MPI_SUCCESS)
     {
-      ERROR("nm_mpi_isend returned %d in collective.\n", err);
+      NM_MPI_FATAL_ERROR("nm_mpi_isend returned %d in collective.\n", err);
     }
   return p_req;
 }
@@ -75,7 +75,7 @@ nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatype_t*p_d
   int err = nm_mpi_irecv(p_req, source, p_comm);
   if(err != MPI_SUCCESS)
     {
-      ERROR("nm_mpi_irecv returned %d in collective.\n", err);
+      NM_MPI_FATAL_ERROR("nm_mpi_irecv returned %d in collective.\n", err);
     }
   return p_req;
 }
@@ -86,7 +86,7 @@ void nm_mpi_coll_wait(nm_mpi_request_t*p_req)
   int err = nm_mpi_request_wait(p_req);
   if(err != MPI_SUCCESS)
     {
-      ERROR("nm_mpi_request_wait returned %d in collective.\n", err);
+      NM_MPI_FATAL_ERROR("nm_mpi_request_wait returned %d in collective.\n", err);
     }
   nm_mpi_request_complete(p_req);
   nm_mpi_request_free(p_req);
@@ -462,7 +462,7 @@ int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatyp
   const int size = nm_comm_size(p_comm->p_nm_comm);
   if(p_operator->function == NULL)
     {
-      ERROR("Operation %d not implemented\n", op);
+      NM_MPI_FATAL_ERROR("Operation %d not implemented\n", op);
       return MPI_ERR_INTERN;
     }
   if (nm_comm_rank(p_comm->p_nm_comm) == root)

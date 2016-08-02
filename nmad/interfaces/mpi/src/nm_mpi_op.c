@@ -236,7 +236,7 @@ void nm_mpi_operator_apply(void*invec, void*outvec, int count, nm_mpi_datatype_t
 	  break;
 	      
 	default:
-	  ERROR("madmpi: cannot filter datatype with combiner %d\n", p_datatype->combiner);
+	  NM_MPI_FATAL_ERROR("madmpi: cannot filter datatype with combiner %d\n", p_datatype->combiner);
 	}
       outvec += p_datatype->extent;
     }
@@ -345,7 +345,7 @@ static void nm_mpi_op_max(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
       
     default: 
       {
-	ERROR("Datatype %d for MAX Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for MAX Reduce operation", *type);
 	break;
       }
     }
@@ -365,7 +365,7 @@ static void nm_mpi_op_min(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
       
     default:
       {
-	ERROR("Datatype %d for MIN Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for MIN Reduce operation", *type);
 	break;
       }
     }
@@ -385,7 +385,7 @@ static void nm_mpi_op_sum(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
       
     default:
       {
-	ERROR("Datatype %d for SUM Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for SUM Reduce operation", *type);
 	break;
       }
     }
@@ -405,7 +405,7 @@ static void nm_mpi_op_prod(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 
     default:
       {
-	ERROR("Datatype %d for PROD Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for PROD Reduce operation", *type);
 	break;
       }
     }
@@ -424,7 +424,7 @@ static void nm_mpi_op_land(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 
     default : 
       {
-	ERROR("Datatype %d for LAND Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for LAND Reduce operation", *type);
 	break;
       }
     }
@@ -442,7 +442,7 @@ static void nm_mpi_op_band(void*invec, void*inoutvec, int*len, MPI_Datatype*type
       
     default:
       {
-	ERROR("Datatype %d for BAND Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for BAND Reduce operation", *type);
 	break;
       }
     }
@@ -461,7 +461,7 @@ static void nm_mpi_op_lor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 
     default: 
       {
-	ERROR("Datatype %d for LOR Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for LOR Reduce operation", *type);
 	break;
       }
     }
@@ -479,7 +479,7 @@ static void nm_mpi_op_bor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 
     default:
       {
-	ERROR("Datatype %d for BOR Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for BOR Reduce operation", *type);
 	break;
       }
     }
@@ -501,7 +501,7 @@ static void nm_mpi_op_lxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 
     default:
       {
-	ERROR("Datatype %d for LXOR Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for LXOR Reduce operation", *type);
 	break;
       }
     }
@@ -519,7 +519,7 @@ static void nm_mpi_op_bxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 
     default:
       {
-	ERROR("Datatype %d for BXOR Reduce operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for BXOR Reduce operation", *type);
 	break;
       }
     }
@@ -568,7 +568,7 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 	case MPI_INTEGER8         : { DO_MAXLOC(uint64_t, uint64_t); break; }
 	  
 	default:
-	  ERROR("Datatype Contiguous(%d) for MAXLOC Reduce operation", *type);
+	  NM_MPI_FATAL_ERROR("Datatype Contiguous(%d) for MAXLOC Reduce operation", *type);
 	  break;
 	}
     }
@@ -585,14 +585,14 @@ static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 	case MPI_LONG_INT:          { DO_MAXLOC(long, int); break; }
 	case MPI_SHORT_INT:         { DO_MAXLOC(short, int); break; }
 	default:
-	  ERROR("Datatype Basic(%d) for MAXLOC Reduce operation", *type);
+	  NM_MPI_FATAL_ERROR("Datatype Basic(%d) for MAXLOC Reduce operation", *type);
 	  break;
 	}
     }
   else
     {
       fprintf(stderr, "type %d, elements %lld\n", p_datatype->combiner, p_datatype->count);
-      ERROR("Datatype %d for MAXLOC Reduce operation", *type);
+      NM_MPI_FATAL_ERROR("Datatype %d for MAXLOC Reduce operation", *type);
     }
 }
 
@@ -638,7 +638,7 @@ static void nm_mpi_op_minloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 	case MPI_INTEGER4         : { DO_MINLOC(uint32_t, uint32_t); break; }
 	case MPI_INTEGER8         : { DO_MINLOC(uint64_t, uint64_t); break; }
 	default:
-	  ERROR("Datatype Contiguous(%d) for MINLOC Reduce operation", *type);
+	  NM_MPI_FATAL_ERROR("Datatype Contiguous(%d) for MINLOC Reduce operation", *type);
 	  break;
 	}
     }
@@ -655,14 +655,14 @@ static void nm_mpi_op_minloc(void*invec, void*inoutvec, int*len, MPI_Datatype*ty
 	case MPI_LONG_INT:          { DO_MINLOC(long, int); break; }
 	case MPI_SHORT_INT:         { DO_MINLOC(short, int); break; }
 	default:
-	  ERROR("Datatype Basic(%d) for MAXLOC Reduce operation", *type);
+	  NM_MPI_FATAL_ERROR("Datatype Basic(%d) for MAXLOC Reduce operation", *type);
 	  break;
 	}
     }
 
   else
     {
-      ERROR("Datatype %d for MINLOC Reduce operation", *type);
+      NM_MPI_FATAL_ERROR("Datatype %d for MINLOC Reduce operation", *type);
     }
 }
 
@@ -700,7 +700,7 @@ static void nm_mpi_op_replace(void*invec, void*inoutvec, int*len, MPI_Datatype*t
     case MPI_2DOUBLE_PRECISION: { DO_REPLACE2(double, double); break; }
     default:
       {
-	ERROR("Datatype %d for REPLACE operation", *type);
+	NM_MPI_FATAL_ERROR("Datatype %d for REPLACE operation", *type);
 	break;
       }
     }

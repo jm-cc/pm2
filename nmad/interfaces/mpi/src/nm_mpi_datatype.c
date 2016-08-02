@@ -492,7 +492,7 @@ static void nm_mpi_datatype_request_recv(nm_sr_event_t event, const nm_sr_event_
     nm_sr_recv_match_event(p_session, &p_req->request_nmad, info);
     nm_sr_recv_post(p_session, &p_req->request_nmad);
   } else /* ERROR */
-    ERROR("How did you get here? You shouldn't have...\n");
+    NM_MPI_FATAL_ERROR("How did you get here? You shouldn't have...\n");
 }
 
 __PUK_SYM_INTERNAL
@@ -1622,7 +1622,7 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 	      break;
 
 	    default:
-	      ERROR("madmpi: cannot filter datatype with combiner %d\n", p_datatype->combiner);
+	      NM_MPI_FATAL_ERROR("madmpi: cannot filter datatype with combiner %d\n", p_datatype->combiner);
 	    }
 	  ptr += p_datatype->extent;
 	}
@@ -1880,7 +1880,7 @@ static void nm_mpi_datatype_serial_traversal_apply(const void*_content, nm_data_
 	}
       break;
     default:
-      ERROR("madmpi: cannot serialize datatype with combiner %d\n", p_datatype->combiner);
+      NM_MPI_FATAL_ERROR("madmpi: cannot serialize datatype with combiner %d\n", p_datatype->combiner);
     }
   assert(p_datatype->p_serialized);
   (*apply)((void*)p_datatype->p_serialized, p_datatype->ser_size, _context);
@@ -1982,7 +1982,7 @@ void nm_mpi_datatype_deserialize(nm_mpi_datatype_ser_t*p_datatype, MPI_Datatype*
       }
       break;
     default:
-      ERROR("madmpi: cannot deserialize datatype with combiner %d\n", p_datatype->combiner);
+      NM_MPI_FATAL_ERROR("madmpi: cannot deserialize datatype with combiner %d\n", p_datatype->combiner);
     }
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_get(*newtype), *p_saved_type;
   uint32_t       newtype_hash = p_newtype->hash;

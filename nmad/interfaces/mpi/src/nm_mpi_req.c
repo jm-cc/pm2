@@ -345,7 +345,7 @@ int mpi_testall(int count, MPI_Request*array_of_requests, int*flag, MPI_Status*s
       if(*flag != 1)
 	{
 	  /* at least one request is not completed */
-	  ERROR("Error during MPI_Testall: request #%d should be completed, but it is not !", i);
+	  NM_MPI_FATAL_ERROR("Error during MPI_Testall: request #%d should be completed, but it is not !", i);
 	  return MPI_ERR_INTERN;
 	}
     }
@@ -392,7 +392,7 @@ int mpi_cancel(MPI_Request *request)
     }
   else 
     {
-      ERROR("Request type %d incorrect\n", p_req->request_type);
+      NM_MPI_FATAL_ERROR("Request type %d incorrect\n", p_req->request_type);
     }
   p_req->request_type = NM_MPI_REQUEST_CANCELLED;
   return err;
@@ -413,7 +413,7 @@ int mpi_start(MPI_Request *request)
     }
   else 
     {
-      ERROR("Unknown persistent request type: %d\n", p_req->request_persistent_type);
+      NM_MPI_FATAL_ERROR("Unknown persistent request type: %d\n", p_req->request_persistent_type);
       err = MPI_ERR_INTERN;
     }
   return err;
@@ -483,7 +483,7 @@ int nm_mpi_request_test(nm_mpi_request_t*p_req)
     }
   else
     {
-     ERROR("Request type %d invalid\n", p_req->request_type);
+     NM_MPI_FATAL_ERROR("Request type %d invalid\n", p_req->request_type);
     }
   return err;
 }
@@ -502,7 +502,7 @@ int nm_mpi_request_wait(nm_mpi_request_t*p_req)
     }
   else
     {
-      ERROR("Waiting operation invalid for request type %d\n", p_req->request_type);
+      NM_MPI_FATAL_ERROR("Waiting operation invalid for request type %d\n", p_req->request_type);
     }
   return err;
 }

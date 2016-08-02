@@ -857,18 +857,18 @@ int mpi_comm_free(MPI_Comm *comm)
 {
   if(*comm == MPI_COMM_WORLD)
     {
-      ERROR("Cannot free communicator MPI_COMM_WORLD");
+      NM_MPI_FATAL_ERROR("Cannot free communicator MPI_COMM_WORLD");
       return MPI_ERR_OTHER;
     }
   else if(*comm == MPI_COMM_SELF)
     {
-      ERROR("Cannot free communicator MPI_COMM_SELF");
+      NM_MPI_FATAL_ERROR("Cannot free communicator MPI_COMM_SELF");
       return MPI_ERR_OTHER;
     }
   nm_mpi_communicator_t*p_comm = nm_mpi_handle_communicator_get(&nm_mpi_communicators, *comm);
   if(p_comm == NULL)
     {
-      ERROR("Communicator %d unknown\n", *comm);
+      NM_MPI_FATAL_ERROR("Communicator %d unknown\n", *comm);
       return MPI_ERR_OTHER;
     }
   nm_mpi_communicator_destroy(p_comm);
@@ -1130,7 +1130,7 @@ int mpi_group_range_incl(MPI_Group group, int n, int ranges[][3], MPI_Group*newg
       const int last   = ranges[i][1];
       const int stride = ranges[i][2];
       if(stride == 0)
-	ERROR("stride = 0");
+	NM_MPI_FATAL_ERROR("stride = 0");
       const int e = (last - first) / stride;
       int j;
       for(j = 0; j <= e; j++)
@@ -1186,7 +1186,7 @@ int mpi_group_range_excl(MPI_Group group, int n, int ranges[][3], MPI_Group*newg
       const int last   = ranges[i][1];
       const int stride = ranges[i][2];
       if(stride == 0)
-	ERROR("stride = 0");
+	NM_MPI_FATAL_ERROR("stride = 0");
       const int e = (last - first) / stride;
       int j;
       for(j = 0; j <= e; j++)

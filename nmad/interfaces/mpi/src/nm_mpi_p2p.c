@@ -60,7 +60,7 @@ static inline int nm_mpi_check_tag(int tag)
 {
   if((tag != MPI_ANY_TAG) && (tag < 0 || tag > NM_MPI_TAG_MAX))
     {
-      ERROR("invalid tag %d", tag);
+      NM_MPI_FATAL_ERROR("invalid tag %d", tag);
     }
   return tag;
 }
@@ -108,7 +108,7 @@ int nm_mpi_isend_start(nm_mpi_request_t *p_req)
       err = nm_sr_send_issend(p_session, &(p_req->request_nmad), p_req->gate, nm_tag);
       break;
     default:
-      ERROR("madmpi: unkown mode %d for isend", p_req->communication_mode);
+      NM_MPI_FATAL_ERROR("madmpi: unkown mode %d for isend", p_req->communication_mode);
       break;
     }
   p_req->request_error = err;
@@ -198,7 +198,7 @@ int mpi_issend(const void*buffer, int count, MPI_Datatype datatype, int dest, in
   int err;
   if(tbx_unlikely(tag == MPI_ANY_TAG))
     {
-      ERROR("Cannot use MPI_ANY_TAG for send.");
+      NM_MPI_FATAL_ERROR("Cannot use MPI_ANY_TAG for send.");
       return MPI_ERR_TAG;
     }
   p_req->request_type = NM_MPI_REQUEST_SEND;
@@ -233,7 +233,7 @@ int mpi_send(const void *buffer, int count, MPI_Datatype datatype, int dest, int
   int                   err = 0;
   if(tbx_unlikely(tag == MPI_ANY_TAG))
     {
-      ERROR("Cannot use MPI_ANY_TAG for send.");
+      NM_MPI_FATAL_ERROR("Cannot use MPI_ANY_TAG for send.");
       return MPI_ERR_TAG;
     }
   p_req->request_type = NM_MPI_REQUEST_SEND;
@@ -257,7 +257,7 @@ int mpi_isend(const void *buffer, int count, MPI_Datatype datatype, int dest, in
   int err;
   if(tbx_unlikely(tag == MPI_ANY_TAG))
     {
-      ERROR("Cannot use MPI_ANY_TAG for send.");
+      NM_MPI_FATAL_ERROR("Cannot use MPI_ANY_TAG for send.");
       return MPI_ERR_TAG;
     }
   p_req->request_type = NM_MPI_REQUEST_SEND;
@@ -280,7 +280,7 @@ int mpi_rsend(const void* buffer, int count, MPI_Datatype datatype, int dest, in
   int                   err = 0;
   if(tbx_unlikely(tag == MPI_ANY_TAG))
     {
-      ERROR("Cannot use MPI_ANY_TAG for send.");
+      NM_MPI_FATAL_ERROR("Cannot use MPI_ANY_TAG for send.");
       return MPI_ERR_TAG;
     }
   p_req->request_type = NM_MPI_REQUEST_SEND;
@@ -448,7 +448,7 @@ int mpi_send_init(const void* buf, int count, MPI_Datatype datatype, int dest, i
   MPI_NMAD_TRACE("Init Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
   if(tbx_unlikely(tag == MPI_ANY_TAG))
     {
-      ERROR("<Using MPI_ANY_TAG> not implemented yet!");
+      NM_MPI_FATAL_ERROR("<Using MPI_ANY_TAG> not implemented yet!");
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }

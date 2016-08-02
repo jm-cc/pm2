@@ -496,7 +496,7 @@ static void nm_mpi_win_unexpected_notifier(nm_sr_event_t event, const nm_sr_even
 	  }
 	  break;
 	default:
-	  ERROR("You should not have arrived here.\n");
+	  NM_MPI_FATAL_ERROR("unexpected tag\n");
 	}
     }
 }
@@ -1209,14 +1209,14 @@ int mpi_win_get_attr(MPI_Win win, int win_keyval, void *attribute_val, int *flag
   nm_mpi_communicator_t*p_comm = p_win->p_comm;
   if(NULL == p_comm)
     {
-      ERROR("Invalid communicator store in the window");
+      NM_MPI_FATAL_ERROR("Invalid communicator store in the window");
       return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
     }
   /* Check the current process belongs to both the window and the communicator */
   int rank = nm_comm_rank(p_comm->p_nm_comm);
   if(MPI_UNDEFINED == rank)
     {
-      ERROR("Invalid communicator store in the window or process does not belong to the window");
+      NM_MPI_FATAL_ERROR("Invalid communicator store in the window or process does not belong to the window");
       return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
     }
   *flag = 1;
@@ -1990,7 +1990,7 @@ static void nm_mpi_win_unexpected_notifier_shm(nm_sr_event_t event, const nm_sr_
 	  }
 	  break;
 	default:
-	  ERROR("You should not have arrived here.\n");
+	  NM_MPI_FATAL_ERROR("unexpected tag.\n");
 	}
     }
 }

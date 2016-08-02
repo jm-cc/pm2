@@ -74,7 +74,7 @@ typedef struct nm_mpi_errhandler_s
   MPI_Handler_function*function;
 } nm_mpi_errhandler_t;
 
-#define ERROR(...) {							\
+#define NM_MPI_FATAL_ERROR(...) {					\
     fprintf(stderr, "\n# madmpi: FATAL- %s\n\t", __TBX_FUNCTION__);	\
     fprintf(stderr, __VA_ARGS__);					\
     fprintf(stderr, "\n\n");						\
@@ -723,11 +723,11 @@ struct nm_mpi_window_s
     TYPE*e = ENAME ## _malloc(p_allocator->allocator);			\
     if((id <= 0) || (id > OFFSET))					\
       {									\
-	ERROR("madmpi: cannot store invalid %s handle id %d\n", #ENAME, id); \
+	NM_MPI_FATAL_ERROR("madmpi: cannot store invalid %s handle id %d\n", #ENAME, id); \
       }									\
     if(nm_mpi_entry_##ENAME##_vect_at(&p_allocator->table, id) != NULL) \
       {									\
-	ERROR("madmpi: %s handle %d busy; cannot store.", #ENAME, id);	\
+	NM_MPI_FATAL_ERROR("madmpi: %s handle %d busy; cannot store.", #ENAME, id);	\
       }									\
     nm_mpi_entry_##ENAME##_vect_put(&p_allocator->table, e, id);	\
     e->id = id;								\

@@ -348,12 +348,10 @@ int mpi_sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int 
 {
   int err;
   MPI_Request srequest, rrequest;
-  MPI_NMAD_LOG_IN();
   err = mpi_isend(sendbuf, sendcount, sendtype, dest, sendtag, comm, &srequest);
   err = mpi_irecv(recvbuf, recvcount, recvtype, source, recvtag, comm, &rrequest);
   err = mpi_wait(&srequest, MPI_STATUS_IGNORE);
   err = mpi_wait(&rrequest, status);
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 
@@ -444,12 +442,9 @@ int mpi_send_init(const void* buf, int count, MPI_Datatype datatype, int dest, i
   nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-  MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Init Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
   if(tbx_unlikely(tag == MPI_ANY_TAG))
     {
       NM_MPI_FATAL_ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-      MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
   p_req->request_type = NM_MPI_REQUEST_SEND;
@@ -461,7 +456,6 @@ int mpi_send_init(const void* buf, int count, MPI_Datatype datatype, int dest, i
   p_req->communication_mode = NM_MPI_MODE_IMMEDIATE;
   p_req->p_comm = p_comm;
   int err = nm_mpi_isend_init(p_req, dest, p_comm);
-  MPI_NMAD_LOG_OUT();
   return err;
 }
 

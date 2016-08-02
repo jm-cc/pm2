@@ -265,17 +265,14 @@ int mpi_abort(MPI_Comm comm TBX_UNUSED, int errorcode)
 int mpi_get_processor_name(char *name, int *resultlen)
 {
   int err;
-  MPI_NMAD_LOG_IN();
   err = gethostname(name, MPI_MAX_PROCESSOR_NAME);
   if (!err)
     {
       *resultlen = strlen(name);
-      MPI_NMAD_LOG_OUT();
       return MPI_SUCCESS;
     }
   else
     {
-      MPI_NMAD_LOG_OUT();
       return errno;
     }
 }
@@ -284,8 +281,6 @@ double mpi_wtime(void)
 {
   static tbx_tick_t orig_time;
   static int orig_done = 0;
-
-  MPI_NMAD_LOG_IN();
   if(!orig_done)
     {
       TBX_GET_TICK(orig_time);
@@ -294,8 +289,6 @@ double mpi_wtime(void)
   tbx_tick_t time;
   TBX_GET_TICK(time);
   const double usec = TBX_TIMING_DELAY(orig_time, time);
-
-  MPI_NMAD_LOG_OUT();
   return usec / 1000000.0;
 }
 

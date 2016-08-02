@@ -273,10 +273,8 @@ int mpi_allgatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, vo
     {
       for(i = 0; i < nm_comm_size(p_comm->p_nm_comm); i++)
 	{
-	  MPI_NMAD_TRACE("recvcounts[%d] = %d\n", i, recvcounts[i]);
 	  recvcount += recvcounts[i];
 	}
-      MPI_NMAD_TRACE("recvcount = %d\n", recvcount);
     }
   err = mpi_bcast(&recvcount, 1, MPI_INT, 0, comm);
   // Gather on process 0

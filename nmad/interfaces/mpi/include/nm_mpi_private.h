@@ -48,13 +48,6 @@
 #define MADMPI_SUBVERSION 0
 
 
-/** @name Debugging facilities */
-/* @{ */
-#define MPI_NMAD_TRACE(fmt, args...)    NM_TRACEF(fmt , ##args)
-#define MPI_NMAD_LOG_IN()               NM_LOG_IN()
-#define MPI_NMAD_LOG_OUT()              NM_LOG_OUT()
-/* @} */
-
 #ifdef PIOMAN
 #define nm_mpi_spinlock_t        piom_spinlock_t
 #define nm_mpi_spin_init(LOCK)   piom_spin_init(LOCK)

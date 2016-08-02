@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,6 +53,7 @@ NM_MPI_ALIAS(MPI_Errhandler_free, mpi_errhandler_free);
 NM_MPI_ALIAS(MPI_Comm_create_errhandler, mpi_comm_create_errhandler);
 NM_MPI_ALIAS(MPI_Comm_set_errhandler, mpi_comm_set_errhandler);
 NM_MPI_ALIAS(MPI_Comm_get_errhandler, mpi_comm_get_errhandler);
+NM_MPI_ALIAS(MPI_Comm_call_errhandler, mpi_comm_call_errhandler);
 NM_MPI_ALIAS(MPI_Get_version, mpi_get_version);
 NM_MPI_ALIAS(MPI_Get_count, mpi_get_count);
 NM_MPI_ALIAS(MPI_Get_elements, mpi_get_elements);
@@ -80,6 +81,12 @@ struct nm_mpi_errhandler_s*nm_mpi_errhandler_get(int errhandler)
   return nm_mpi_handle_errhandler_get(&nm_mpi_errhandlers, errhandler);
 }
 
+__PUK_SYM_INTERNAL
+struct nm_mpi_errhandler_s*nm_mpi_errhandler_alloc(void)
+{
+  return nm_mpi_handle_errhandler_alloc(&nm_mpi_errhandlers);
+}
+
 static void nm_mpi_errhandler_return_function(MPI_Comm*comm, int*err, ...)
 {
   fprintf(stderr, "\n# madmpi: WARNING- error %d on communicator %d\n", *err, *comm);
@@ -88,6 +95,7 @@ static void nm_mpi_errhandler_return_function(MPI_Comm*comm, int*err, ...)
   backtrace_symbols_fd(buffer, nptrs, STDERR_FILENO);
   fflush(stderr);
 }
+
 static void nm_mpi_errhandler_fatal_function(MPI_Comm*comm, int*err, ...)
 {
   fprintf(stderr, "\n# madmpi: FATAL- error %d on communicator %d\n", *err, *comm);
@@ -98,6 +106,77 @@ static void nm_mpi_errhandler_fatal_function(MPI_Comm*comm, int*err, ...)
   abort();
 }
 
+__PUK_SYM_INTERNAL
+struct nm_mpi_info_s*nm_mpi_info_alloc(void)
+{
+  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_alloc(&nm_mpi_infos);
+  p_info->content = puk_hashtable_new_string();
+  return p_info;
+}
+
+__PUK_SYM_INTERNAL
+void nm_mpi_info_free(struct nm_mpi_info_s*p_info)
+{
+  char*key = NULL, *data = NULL;
+  puk_hashtable_getentry(p_info->content, &key, &data);
+  while(NULL != key)
+    {
+      puk_hashtable_remove(p_info->content, key);
+      free(key);
+      free(data);
+      puk_hashtable_getentry(p_info->content, &key, &data);
+    }
+  puk_hashtable_delete(p_info->content);
+  nm_mpi_handle_info_free(&nm_mpi_infos, p_info);
+}
+
+__PUK_SYM_INTERNAL
+struct nm_mpi_info_s*nm_mpi_info_get(MPI_Info info)
+{
+  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_get(&nm_mpi_infos, info);
+  return p_info;
+}
+
+__PUK_SYM_INTERNAL
+struct nm_mpi_info_s*nm_mpi_info_dup(struct nm_mpi_info_s*p_info)
+{
+  int i;
+  struct nm_mpi_info_s*p_info_dup = nm_mpi_info_alloc();
+  puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(p_info->content);
+  char*key, *data;
+  for(i = 0; i < puk_hashtable_size(p_info->content); ++i)
+    {
+      puk_hashtable_enumerator_next2(e, &key, &data);
+      puk_hashtable_insert(p_info_dup->content, strdup(key), strdup(data));
+    }
+  return p_info_dup;
+}
+
+__PUK_SYM_INTERNAL
+void nm_mpi_info_update(const struct nm_mpi_info_s*p_info_up, struct nm_mpi_info_s*p_info_origin)
+{
+  assert(p_info_origin);
+  if(NULL == p_info_up) return;
+  int i;
+  puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(p_info_up->content);
+  char*key, *data;
+  for(i = 0; i < puk_hashtable_size(p_info_up->content); ++i)
+    {
+      puk_hashtable_enumerator_next2(e, &key, &data);
+      if(puk_hashtable_probe(p_info_origin->content, key))
+	{
+	  void*oldkey = NULL, *oldvalue = NULL;
+	  puk_hashtable_lookup2(p_info_origin->content, key, &oldkey, &oldvalue);
+	  puk_hashtable_remove(p_info_origin->content, key);
+	  free(oldkey);
+	  free(oldvalue);
+	  puk_hashtable_insert(p_info_origin->content, strdup(key), strdup(data));
+	}
+    }
+}
+
+/* ********************************************************* */
+					     
 int mpi_init(int*argc, char***argv)
 {
   nm_mpi_handle_info_init(&nm_mpi_infos);
@@ -113,6 +192,8 @@ int mpi_init(int*argc, char***argv)
   nm_mpi_op_init();
   nm_mpi_request_init();
   nm_mpi_io_init();
+  nm_mpi_win_init();
+  nm_mpi_rma_init();
 #if defined(PIOMAN) && defined(PIOMAN_MULTITHREAD)
   thread_level = MPI_THREAD_MULTIPLE;
 #else
@@ -156,6 +237,8 @@ int mpi_finalized(int*flag)
 int mpi_finalize(void)
 {
   mpi_barrier(MPI_COMM_WORLD);
+  nm_mpi_rma_exit();
+  nm_mpi_win_exit();
   nm_mpi_io_exit();
   nm_mpi_datatype_exit();
   nm_mpi_op_exit();
@@ -434,9 +517,8 @@ int mpi_free_mem(void*ptr)
 
 int mpi_info_create(MPI_Info*info)
 {
-  struct nm_mpi_info_s*p_info = nm_mpi_handle_info_alloc(&nm_mpi_infos);
+  struct nm_mpi_info_s*p_info = nm_mpi_info_alloc();
   *info = p_info->id;
-  p_info->content = puk_hashtable_new_string();
   return MPI_SUCCESS;
 }
 
@@ -445,8 +527,7 @@ int mpi_info_free(MPI_Info*info)
   struct nm_mpi_info_s*p_info = nm_mpi_handle_info_get(&nm_mpi_infos, *info);
   if(p_info == NULL)
     return MPI_ERR_INFO;
-  puk_hashtable_delete(p_info->content);
-  nm_mpi_handle_info_free(&nm_mpi_infos, p_info);
+  nm_mpi_info_free(p_info);
   *info = MPI_INFO_NULL;
   return MPI_SUCCESS;
 }
@@ -567,8 +648,8 @@ int mpi_errhandler_get(MPI_Comm comm, MPI_Errhandler*errhandler)
   if(p_comm == NULL)
     return MPI_ERR_COMM;
   struct nm_mpi_errhandler_s*p_new_errhandler = nm_mpi_handle_errhandler_alloc(&nm_mpi_errhandlers);
-  *p_new_errhandler = *p_comm->p_errhandler,
-    *errhandler = p_new_errhandler->id;
+  *p_new_errhandler = *p_comm->p_errhandler;
+  *errhandler = p_new_errhandler->id;
   return MPI_SUCCESS;
 }
 
@@ -597,6 +678,15 @@ int mpi_comm_get_errhandler(MPI_Comm comm, MPI_Errhandler*errhandler)
   return mpi_errhandler_get(comm, errhandler);
 }
 
+int mpi_comm_call_errhandler(MPI_Comm comm, int errorcode)
+{
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL)
+    return MPI_ERR_COMM;
+  p_comm->p_errhandler->function(&comm, &errorcode);
+  return MPI_SUCCESS;
+}
+
 int mpi_status_f2c(MPI_Fint *f_status, MPI_Status *c_status)
 {
   if (*f_status && c_status) {
@@ -618,48 +708,3 @@ int mpi_status_c2f(MPI_Status *c_status, MPI_Fint *f_status)
   }
   return MPI_ERR_ARG;
 }
-
-
-/* Not implemented */
-
-int MPI_Get(void *origin_addr,
-	    int origin_count,
-	    MPI_Datatype origin_datatype,
-	    int target_rank,
-	    MPI_Aint target_disp,
-            int target_count,
-	    MPI_Datatype target_datatype,
-	    MPI_Win win)
-{
-  ERROR("<%s> not implemented\n", __FUNCTION__);
-  return MPI_ERR_UNKNOWN;
-}
-
-
-int MPI_Put(const void *origin_addr,
-	    int origin_count,
-	    MPI_Datatype origin_datatype,
-	    int target_rank,
-	    MPI_Aint target_disp,
-            int target_count,
-	    MPI_Datatype target_datatype,
-	    MPI_Win win)
-{
-  ERROR("<%s> not implemented\n", __FUNCTION__);
-  return MPI_ERR_UNKNOWN;
-}
-
-
-MPI_Win MPI_Win_f2c(MPI_Fint win)
-{
-  ERROR("<%s> not implemented\n", __FUNCTION__);
-  return MPI_ERR_UNKNOWN;
-}
-
-
-MPI_Fint MPI_Win_c2f(MPI_Win win)
-{
-  ERROR("<%s> not implemented\n", __FUNCTION__);
-  return MPI_ERR_UNKNOWN;
-}
-

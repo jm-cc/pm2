@@ -244,6 +244,23 @@ int MPI_Comm_split(MPI_Comm comm,
 		   MPI_Comm *newcomm);
 
 /**
+ * Partitions the group associated to the communicator into disjoint
+ * subgroups, based on the type specified by split_type. Each subgroup
+ * contains all processes of the same type.
+ * @param comm communicator
+ * @param split_type control of subset assignment
+ * @param key control of rank assigment
+ * @param info info argument
+ * @param newcomm new communicator
+ * @return MPI status
+ */
+int MPI_Comm_split_type(MPI_Comm comm,
+			int split_type,
+			int key,
+			MPI_Info info,
+			MPI_Comm *newcomm);
+
+/**
  * Creates a new intracommunicator with the same fixed attributes as
  * the input intracommunicator.
  * @param comm communicator

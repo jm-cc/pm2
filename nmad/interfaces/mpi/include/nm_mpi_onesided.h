@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015 (see AUTHORS file)
+ * Copyright (C) 2015-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,6 @@
 
 /** @name preliminary one-sided interface */
 /* @{ */
-
-
-typedef int MPI_Win;
 
 int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info,
 		   MPI_Comm comm, MPI_Win *win);
@@ -49,9 +46,33 @@ int MPI_Win_get_group(MPI_Win win, MPI_Group *group);
 
 int MPI_Win_set_info(MPI_Win win, MPI_Info info);
 
+int MPI_Win_create_keyval(MPI_Win_copy_attr_function*copy_fn,
+			  MPI_Win_delete_attr_function*delete_fn,
+			  int*keyval,
+			  void*extra_state);
+
+int MPI_Win_free_keyval(int*keyval);
+
+int MPI_Win_delete_attr(MPI_Win win, int keyval);
+
 int MPI_Win_get_info(MPI_Win win, MPI_Info *info_used);
 
+int MPI_Win_set_attr(MPI_Win win, int win_keyval, void *attribute_val);
 
+int MPI_Win_get_attr(MPI_Win win, int win_keyval, void *attribute_val, int *flag);
+
+int MPI_Win_set_name(MPI_Win win, char*win_name);
+
+int MPI_Win_get_name(MPI_Win win, char*win_name, int*resultlen);
+
+int MPI_Win_create_errhandler(MPI_Win_errhandler_fn*function, MPI_Errhandler*errhandler);
+
+int MPI_Win_set_errhandler(MPI_Win win, MPI_Errhandler errhandler);
+
+int MPI_Win_get_errhandler(MPI_Win win, MPI_Errhandler*errhandler);
+
+int MPI_Win_call_errhandler(MPI_Win win, int errorcode);
+  
 
 int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
 	    int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,

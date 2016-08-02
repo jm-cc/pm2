@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <complex.h>
+#include <sys/queue.h>
 
 #include <Padico/Puk.h>
 #include <nm_public.h>
@@ -54,6 +55,18 @@
 #define MPI_NMAD_LOG_OUT()              NM_LOG_OUT()
 /* @} */
 
+#ifdef PIOMAN
+#define nm_mpi_spinlock_t        piom_spinlock_t
+#define nm_mpi_spin_init(LOCK)   piom_spin_init(LOCK)
+#define nm_mpi_spin_lock(LOCK)   piom_spin_lock(LOCK)
+#define nm_mpi_spin_unlock(LOCK) piom_spin_unlock(LOCK)
+#else
+#define nm_mpi_spinlock_t       int
+#define nm_mpi_spin_init(LOCK)
+#define nm_mpi_spin_lock(LOCK)
+#define nm_mpi_spin_unlock(LOCK)
+#endif /* PIOMAN */
+
 /** error handler */
 typedef struct nm_mpi_errhandler_s
 {
@@ -72,7 +85,7 @@ typedef struct nm_mpi_errhandler_s
     abort();								\
   }
 
-#define FREE_AND_SET_NULL(p) { free(p); p = NULL; }
+#define FREE_AND_SET_NULL(p) do { free(p); p = NULL; } while (0/*CONSTCOND*/)
 
 /** Maximum value of the tag specified by the end-user */
 #define NM_MPI_TAG_MAX           0x7FFFFFFF
@@ -89,9 +102,42 @@ typedef struct nm_mpi_errhandler_s
 #define NM_MPI_TAG_PRIVATE_REDUCE        (NM_MPI_TAG_PRIVATE_BASE | 0x09)
 #define NM_MPI_TAG_PRIVATE_REDUCESCATTER (NM_MPI_TAG_PRIVATE_BASE | 0x0A)
 #define NM_MPI_TAG_PRIVATE_ALLGATHER     (NM_MPI_TAG_PRIVATE_BASE | 0x0B)
-
+#define NM_MPI_TAG_PRIVATE_TYPE_ADD      (NM_MPI_TAG_PRIVATE_BASE | 0x0C) /**< add a datatype */
+#define NM_MPI_TAG_PRIVATE_TYPE_ADD_ACK  (NM_MPI_TAG_PRIVATE_BASE | 0x0D) /**< answer to add request */
+#define NM_MPI_TAG_PRIVATE_WIN_INIT      (NM_MPI_TAG_PRIVATE_BASE | 0x0E)
+#define NM_MPI_TAG_PRIVATE_WIN_FENCE     (NM_MPI_TAG_PRIVATE_BASE | 0x0F)
+#define NM_MPI_TAG_PRIVATE_WIN_BARRIER   (NM_MPI_TAG_PRIVATE_BASE | 0x10)
 #define NM_MPI_TAG_PRIVATE_COMMSPLIT     (NM_MPI_TAG_PRIVATE_BASE | 0xF1)
 #define NM_MPI_TAG_PRIVATE_COMMCREATE    (NM_MPI_TAG_PRIVATE_BASE | 0xF2)
+/** Masks for RMA-communication tags */
+#define NM_MPI_TAG_PRIVATE_RMA_BASE      (NM_MPI_TAG_PRIVATE_BASE | 0x08000000)
+#define NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC (NM_MPI_TAG_PRIVATE_BASE | 0x04000000)
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_OP   (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x0F) /**< rma operation mask */
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_AOP  (NM_MPI_TAG_PRIVATE_RMA_BASE | 0xF0) /**< acc operation mask */
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_FOP  (NM_MPI_TAG_PRIVATE_RMA_MASK_OP    | \
+					  NM_MPI_TAG_PRIVATE_RMA_MASK_AOP)    /**< full operation mask */
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_SEQ  (NM_MPI_TAG_PRIVATE_RMA_BASE | 0xFFFF00)
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_WIN  (0xFFFFFFFF00000000 | NM_MPI_TAG_PRIVATE_RMA_BASE)
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_USER (NM_MPI_TAG_PRIVATE_RMA_MASK_FOP   | \
+					  NM_MPI_TAG_PRIVATE_RMA_MASK_SEQ)
+#define NM_MPI_TAG_PRIVATE_RMA_MASK      (NM_MPI_TAG_PRIVATE_RMA_MASK_WIN   | \
+					  NM_MPI_TAG_PRIVATE_RMA_MASK_USER)
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0xFFFFFFFF000000FF)
+#define NM_MPI_TAG_PRIVATE_RMA_START     (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x01)
+#define NM_MPI_TAG_PRIVATE_RMA_END       (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x02)
+#define NM_MPI_TAG_PRIVATE_RMA_LOCK      (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x13) /**< lock request */
+#define NM_MPI_TAG_PRIVATE_RMA_LOCK_R    (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x04) /**< lock ACK */
+#define NM_MPI_TAG_PRIVATE_RMA_UNLOCK    (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x05) /**< unlock request */
+#define NM_MPI_TAG_PRIVATE_RMA_UNLOCK_R  (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x06) /**< unlock ACK */
+/** If dynamic window, tells if target address is valid */
+#define NM_MPI_TAG_PRIVATE_RMA_OP_CHECK  (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x0F) 
+#define NM_MPI_TAG_PRIVATE_RMA_PUT       (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x1)
+#define NM_MPI_TAG_PRIVATE_RMA_GET_REQ   (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x2)
+#define NM_MPI_TAG_PRIVATE_RMA_ACC       (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x3) /**< accumulate */
+#define NM_MPI_TAG_PRIVATE_RMA_GACC_REQ  (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x4) /**< get_accumulate */
+#define NM_MPI_TAG_PRIVATE_RMA_FAO_REQ   (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x5) /**< fetch and op */
+#define NM_MPI_TAG_PRIVATE_RMA_CAS_REQ   (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x6) /**< compare and swap */
+#define NM_MPI_TAG_PRIVATE_RMA_REQ_RESP  (NM_MPI_TAG_PRIVATE_RMA_BASE | 0xF)
 
 /** content for MPI_Info */
 struct nm_mpi_info_s
@@ -166,6 +212,14 @@ typedef struct nm_mpi_communicator_s
 } nm_mpi_communicator_t;
 /* @} */
 
+/** @name Window */
+/* @{ */
+struct nm_mpi_window_s;
+typedef struct nm_mpi_window_s nm_mpi_window_t;
+struct nm_mpi_win_epoch_s;
+typedef struct nm_mpi_win_epoch_s nm_mpi_win_epoch_t;
+/* @} */
+
 /** @name Requests */
 /* @{ */
 /** Type of a communication request */
@@ -183,9 +237,13 @@ typedef int nm_mpi_communication_mode_t;
 #define NM_MPI_MODE_SYNCHRONOUS    ((nm_mpi_communication_mode_t)-3)
 /* @} */
 
+#define _NM_MPI_MAX_DATATYPE_SIZE 64
+
 /** Internal communication request */
 typedef struct nm_mpi_request_s
 {
+  /** Link for nm_mpi_reqlist_t lists */
+  TAILQ_ENTRY(nm_mpi_request_s) link;
   /** identifier of the request */
   MPI_Request id;
   /** type of the request */
@@ -215,7 +273,12 @@ typedef struct nm_mpi_request_s
   {
     void*rbuf;       /**< pointer used for receiving */
     const void*sbuf; /**< pointer for sending */
+    char static_buf[_NM_MPI_MAX_DATATYPE_SIZE]; /**< static buffer of max predefined datatype size */
   };
+  /** corresponding epoch management structure for rma operations */
+  nm_mpi_win_epoch_t*p_epoch;
+  /** corresponding rma window */
+  nm_mpi_window_t*p_win;
 } __attribute__((__may_alias__)) nm_mpi_request_t;
 
 /* @} */
@@ -234,6 +297,113 @@ typedef struct nm_mpi_operator_s
 
 /** @name Datatypes */
 /* @{ */
+
+/** Serialized version of the internal datatype */
+/** @note: each array in the types are inlined */
+typedef struct nm_mpi_datatype_ser_s
+{
+  /** combiner of datatype elements */
+  nm_mpi_type_combiner_t combiner;
+  /** number of blocks in type map */
+  MPI_Count count;
+  /** size of the datatype once serialized */
+  size_t ser_size;
+  /** (probably unique) datatype hash */
+  uint32_t hash;
+  /** combiner specific parameters */
+  union nm_mpi_datatype_ser_param_u
+  {
+    struct nm_mpi_datatype_ser_param_dup_s
+    {
+      uint32_t old_type;
+    } DUP;
+    struct nm_mpi_datatype_ser_param_resized_s
+    {
+      uint32_t old_type;
+      MPI_Aint lb;
+      MPI_Aint extent;
+    } RESIZED;
+    struct nm_mpi_datatype_ser_param_contiguous_s
+    {
+      uint32_t old_type;
+    } CONTIGUOUS;
+    struct nm_mpi_datatype_ser_param_vector_s
+    {
+      uint32_t old_type;
+      int stride;       /**< stride in multiple of datatype extent */
+      int blocklength;
+    } VECTOR;
+    struct nm_mpi_datatype_ser_param_hvector_s
+    {
+      uint32_t old_type;
+      MPI_Aint hstride; /**< stride in bytes */
+      int blocklength;
+    } HVECTOR;
+    struct nm_mpi_datatype_ser_param_indexed_s
+    {
+      uint32_t old_type;
+      /**
+       * The two following arrays inlined in the structure :
+       * int*blocklengths;
+       * int*displacements; < displacement in multiple of oldtype extent
+       */
+      void*DATA;
+    } INDEXED;
+    struct nm_mpi_datatype_ser_param_hindexed_s
+    {
+      uint32_t old_type;
+      /**
+       * The two following arrays inlined in the structure :
+       * int*blocklengths;
+       * MPI_Aint*displacements; < displacement in bytes
+       */
+      void*DATA;
+    } HINDEXED;
+    struct nm_mpi_datatype_ser_param_indexed_block_s
+    {
+      uint32_t old_type;
+      int blocklength;
+      /**
+       * The following array inlined in the structure :
+       * int*displacements;
+       */
+      void*DATA;
+    } INDEXED_BLOCK;
+    struct nm_mpi_datatype_ser_param_hindexed_block_s
+    {
+      uint32_t old_type;
+      int blocklength;
+      /**
+       * The following array inlined in the structure :
+       * MPI_Aint*displacements; < displacement in bytes
+       */
+      void*DATA;
+    } HINDEXED_BLOCK;
+    struct nm_mpi_datatype_ser_param_subarray_s
+    {
+      uint32_t old_type;
+      int ndims;
+      int order;
+      /**
+       * The three following arrays inlined in the structure :
+       * int*sizes;
+       * int*subsizes;
+       * int*starts;
+       */
+      void*DATA;
+    } SUBARRAY;
+    struct nm_mpi_datatype_ser_param_struct_s
+    {
+      /**
+       * The three following arrays inlined in the structure :
+       * uint32_t*old_types;
+       * int*blocklengths;
+       * MPI_Aint*displacements;  < displacement in bytes
+       */
+      void*DATA;
+    } STRUCT;
+  } p;
+} nm_mpi_datatype_ser_t;
 
 /** Internal datatype */
 typedef struct nm_mpi_datatype_s
@@ -342,6 +512,10 @@ typedef struct nm_mpi_datatype_s
     } STRUCT;
   };
   char*name;
+  puk_hashtable_t attrs; /**< datatype attributes, hashed by keyval descriptor */
+  size_t ser_size;       /**< size of the datatype once serialized */
+  nm_mpi_datatype_ser_t*p_serialized; /**< serialized version of the type. */
+  uint32_t hash;         /**< (probably unique) datatype hash */
 } nm_mpi_datatype_t;
 
 /** content for datatype traversal */
@@ -354,21 +528,151 @@ struct nm_data_mpi_datatype_s
 __PUK_SYM_INTERNAL const struct nm_data_ops_s nm_mpi_datatype_ops;
 NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_ops);
 
+/** function apply to each datatype or sub-datatype upon traversal */
+typedef void (*nm_mpi_datatype_apply_t)(void*ptr, nm_len_t len, void*_ref);
+
+struct nm_data_mpi_datatype_header_s
+{
+  MPI_Aint offset;        /**< data offset */
+  uint32_t datatype_hash; /**< datatype-to-be-send hash */
+  int count;              /**< number of elements */
+};
+
+/** content for datatype traversal and sending */
+struct nm_data_mpi_datatype_wrapper_s
+{
+  struct nm_data_mpi_datatype_header_s header; /**< header for datatype */
+  struct nm_data_mpi_datatype_s data;          /**< datatype describing data layout */
+};
+__PUK_SYM_INTERNAL const struct nm_data_ops_s nm_mpi_datatype_wrapper_ops;
+NM_DATA_TYPE(mpi_datatype_wrapper, struct nm_data_mpi_datatype_wrapper_s, &nm_mpi_datatype_wrapper_ops);
+
+__PUK_SYM_INTERNAL const struct nm_data_ops_s nm_mpi_datatype_serialize_ops;
+NM_DATA_TYPE(mpi_datatype_serial, struct nm_mpi_datatype_s*, &nm_mpi_datatype_serialize_ops);
+
+/* @} */
+
+/** @name Window */
+/* @{ */
+
+/** @name Requests list with its locks */
+/* @{ */
+
+typedef struct nm_mpi_win_locklist_s
+{
+  nm_mpi_spinlock_t lock;       /**< lock for pending requests access */
+  TAILQ_HEAD(nm_mpi_win_reqlist_s, nm_mpi_request_s) pending; /**< pending requests */
+} nm_mpi_win_locklist_t;
+
+/* @} */
+
+/** @name Asynchronous management for incoming request */
+/* @{ */
+
+struct nm_mpi_win_epoch_s
+{
+  volatile int mode;  /**< window mode for the given pair */
+  uint64_t nmsg;      /**< number of messages exchanges during this epoch */
+  uint64_t completed; /**< counter of completed requests */
+};
+
+/* @} */
+
+/** @name Management structure for passive target mode */
+/* @{ */
+
+typedef struct nm_mpi_win_pass_mngmt_s
+{
+  uint64_t excl_pending;   /**< whether there is an exclusive lock request pending */
+  uint16_t lock_type;      /**< current lock type. 0 = NONE, 1 = EXCLUSIVE, 2 = SHARED */
+  uint64_t naccess;        /**< number of procs that are currently accessing this window */
+  nm_mpi_win_locklist_t q; /**< lock protected pending lock request list */
+} nm_mpi_win_pass_mngmt_t;
+
+/* @} */
+
+/** Content for MPI_Win */
+struct nm_mpi_window_s
+{
+  /** identifier of the window */
+  int id;
+  /** window's rank into the communicator */
+  int myrank;
+  /** data base address of the window */
+  void*p_base;
+  /** window's memory size */
+  MPI_Aint*size;
+  /** displacement unit */
+  int*disp_unit;
+  /** Distant windows id */
+  int*win_ids;
+  /** window communicator */
+  nm_mpi_communicator_t*p_comm;
+  /** group of processor that interact with this window */
+  nm_group_t p_group;
+  /** window core monitor for asynchronous call */
+  struct nm_sr_monitor_s monitor;
+  /** window core monitor for asynchronous lock */
+  struct nm_sr_monitor_s monitor_sync;
+  /**   WINDOW ATTRIBUTES   */
+  /** infos about the window */
+  struct nm_mpi_info_s*p_info;
+  /** bit-vector window's flavor (the function used to allocate the window */
+  int flavor;
+  /** bit-vector OR of MPI_MODE_* constants (used in assert) */
+  int mode;
+  /** window memory model */
+  int mem_model;
+  /** error handler attached to window */
+  nm_mpi_errhandler_t*p_errhandler;
+  /** window name */
+  char*name;
+  /** window attributes, hashed by keyval descriptor */
+  puk_hashtable_t attrs;
+  /**   SEQUENCE/EPOCH NUMBER MANAGEMENT   */
+  /** sequence number for thread safety and message scheduling 
+   *  /!\ WARNING : As this number is on a 16 bits uint, if a lot of
+   *  operations are issued (more than 65536 per epoch for one
+   *  target), there is a risk for mismatching responses.
+   */  
+  uint16_t next_seq;
+  /** epoch management */
+  nm_mpi_win_epoch_t*access;
+  nm_mpi_win_epoch_t*exposure;
+  /** pending closing exposing epoch requests */
+  nm_mpi_request_t**end_reqs;
+  /** counter to recieve the amount of messages to be expected from a given distant window */
+  uint64_t*msg_count;
+  /** management queue for passive target */
+  nm_mpi_win_pass_mngmt_t waiting_queue;
+  /** pending passive RMA operation */
+  nm_mpi_win_locklist_t*pending_ops;
+  /** memory access protecting lock */
+  nm_mpi_spinlock_t lock;
+  /** shared memory file name */
+  char shared_file_name[32];
+};
+
+/** @name Target communication modes */
+/* @{ */
+#define NM_MPI_WIN_UNUSED                 0
+#define NM_MPI_WIN_ACTIVE_TARGET          1
+#define NM_MPI_WIN_PASSIVE_TARGET         2
+#define NM_MPI_WIN_PASSIVE_TARGET_END     4
+#define NM_MPI_WIN_PASSIVE_TARGET_PENDING 8
+/* @} */
+
+/** @name Lock types for private use */
+/* @{ */
+#define NM_MPI_LOCK_NONE      ((uint16_t)0)
+#define NM_MPI_LOCK_EXCLUSIVE ((uint16_t)MPI_LOCK_EXCLUSIVE)
+#define NM_MPI_LOCK_SHARED    ((uint16_t)MPI_LOCK_SHARED)
+#define _NM_MPI_LOCK_OFFSET   ((uint16_t)3)
+/* @} */
+
 /* @} */
 
 /* ********************************************************* */
-
-#ifdef PIOMAN
-#define nm_mpi_spinlock_t        piom_spinlock_t
-#define nm_mpi_spin_init(LOCK)   piom_spin_init(LOCK)
-#define nm_mpi_spin_lock(LOCK)   piom_spin_lock(LOCK)
-#define nm_mpi_spin_unlock(LOCK) piom_spin_unlock(LOCK)
-#else
-#define nm_mpi_spinlock_t       int
-#define nm_mpi_spin_init(LOCK)
-#define nm_mpi_spin_lock(LOCK)
-#define nm_mpi_spin_unlock(LOCK)
-#endif /* PIOMAN */
 
 /* typed handle manager and object allocator for objects indexed by ID
  */
@@ -489,6 +793,7 @@ NM_DATA_TYPE(mpi_datatype, struct nm_data_mpi_datatype_s, &nm_mpi_datatype_ops);
 
 /** init request sub-system */
 void nm_mpi_request_init(void);
+
 void nm_mpi_request_exit(void);
 
 /** init communicator sub-system */
@@ -504,14 +809,25 @@ void nm_mpi_op_init(void);
 
 void nm_mpi_op_exit(void);
 
-/** init MPI I/O subsystem */
+/** init MPI I/O sub-system */
 void nm_mpi_io_init(void);
 
 void nm_mpi_io_exit(void);
 
+/** init attribute sub-system */
 void nm_mpi_attrs_init(void);
 
 void nm_mpi_attrs_exit(void);
+
+/** init window sub-system */
+void nm_mpi_win_init(void);
+
+void nm_mpi_win_exit(void);
+
+/** init rma sub-system */
+void nm_mpi_rma_init(void);
+
+void nm_mpi_rma_exit(void);
 
 /* Accessor functions */
 
@@ -546,7 +862,54 @@ static inline nm_session_t nm_mpi_communicator_get_session(nm_mpi_communicator_t
   return nm_comm_get_session(p_comm->p_nm_comm);
 }
 
+/**
+ * Allocate a new internal representation of a group.
+ */
+nm_mpi_group_t*nm_mpi_group_alloc(void);
+
+/**
+ * Gets the internal representation of the given group.
+ */
+nm_mpi_group_t*nm_mpi_group_get(MPI_Group group);
+
+/**
+ * Allocate a new internal representation of a errhandler.
+ */
+struct nm_mpi_errhandler_s*nm_mpi_errhandler_alloc(void);
+
+/**
+ * Gets the internal representation of the given errhandler.
+ */
 struct nm_mpi_errhandler_s*nm_mpi_errhandler_get(int errhandler);
+
+/* Info operations */
+
+/**
+ * Allocates a new instance of the internal representation of an info.
+ */
+struct nm_mpi_info_s*nm_mpi_info_alloc(void);
+
+/**
+ * Frees the given instance of the internal representation of an info.
+ */
+void nm_mpi_info_free(struct nm_mpi_info_s*p_info);
+
+/**
+ * Gets the internal representation of the given info.
+ */
+struct nm_mpi_info_s*nm_mpi_info_get(MPI_Info info);
+
+/**
+ * Duplicates the internal representation of the given info.
+ */
+struct nm_mpi_info_s*nm_mpi_info_dup(struct nm_mpi_info_s*p_info);
+
+/**
+ * Update or add new entry in p_info_origin based on the entry from
+ * p_info_up. This function only update already existing entries. It
+ * does NOT create any new entry.
+ */
+void nm_mpi_info_update(const struct nm_mpi_info_s*p_info_up, struct nm_mpi_info_s*p_info_origin);
 
 /* Requests functions */
 
@@ -561,7 +924,6 @@ int nm_mpi_request_test(nm_mpi_request_t *p_req);
 int nm_mpi_request_wait(nm_mpi_request_t *p_req);
 
 void nm_mpi_request_complete(nm_mpi_request_t*p_req);
-
 
 /* Send/recv/status functions */
 
@@ -595,6 +957,20 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req);
  */
 int nm_mpi_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_comm);
 
+/**
+ * Collective send over the communicator
+ */
+nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm);
+
+/**
+ * Recieve data sent over the communicator via nm_mpi_coll_isend
+ */
+nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int source, int tag, nm_mpi_communicator_t*p_comm);
+
+/**
+ * Wait for the end of the communication over communicator via nm_mpi_coll_isend
+ */
+void nm_mpi_coll_wait(nm_mpi_request_t*p_req);
 
 /* Datatype functionalities */
 
@@ -607,6 +983,12 @@ size_t nm_mpi_datatype_size(nm_mpi_datatype_t*p_datatype);
  * Gets the internal representation of the given datatype.
  */
 nm_mpi_datatype_t*nm_mpi_datatype_get(MPI_Datatype datatype);
+
+/**
+ * Gets the internal representation of the given datatype from its
+ * hash.
+ */
+nm_mpi_datatype_t*nm_mpi_datatype_hashtable_get(uint32_t datatype_hash);
 
 /**
  * Unlocks the given datatype, when the datatype is fully unlocked,
@@ -627,12 +1009,34 @@ static inline void*nm_mpi_datatype_get_ptr(void*buf, int count, const nm_mpi_dat
   return buf + count * p_datatype->extent;
 }
 
+/**
+ * Deserialize a new datatype from the informations given in
+ * p_datatype.
+ */
+void nm_mpi_datatype_deserialize(nm_mpi_datatype_ser_t*p_datatype, MPI_Datatype*p_newtype);
+
+/**
+ * Send a datatype to a distant node identified by its gate. This
+ * function blocks until it recieve an acknowledgement from the
+ * distant node that the type can now be used.
+ */
+int nm_mpi_datatype_send(nm_gate_t gate, nm_mpi_datatype_t*p_datatype);
+
 /* Reduce operation functionalities */
 
 /**
  * Gets the function associated to the given operator.
  */
 nm_mpi_operator_t*nm_mpi_operator_get(MPI_Op op);
+
+/**
+ * Apply the operator to every chunk of data described by p_datatype
+ * and pointed by outvec, with the result stored in outvec. The invec
+ * parameter is an address of a pointer to a contiguous buffer of
+ * predefined types, corresponding to each element pointed by outvec.
+ */
+void nm_mpi_operator_apply(void*invec, void*outvec, int count, nm_mpi_datatype_t*p_datatype,
+			   nm_mpi_operator_t*p_operator);
 
 /* Communicator operations */
 
@@ -659,7 +1063,134 @@ void nm_mpi_attr_get(puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p_keyval, v
 
 int nm_mpi_attr_delete(int id, puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p_keyval);
 
+/* Window operations */
 
+/**
+ * Gets the internal representation of the given window.
+ */
+nm_mpi_window_t*nm_mpi_window_get(MPI_Win win);
+
+/**
+ * Returns the next sequence number for the given window, and
+ * increments it, lock free.
+ */
+static inline uint16_t nm_mpi_win_get_next_seq(nm_mpi_window_t*p_win)
+{
+  return __sync_fetch_and_add(&p_win->next_seq, 1);
+}
+
+/**
+ * Returns whether the epoch requests are all completed
+ */
+static inline int nm_mpi_win_completed_epoch(nm_mpi_win_epoch_t*p_epoch)
+{
+  int ret = __sync_bool_compare_and_swap(&p_epoch->nmsg, p_epoch->completed, p_epoch->nmsg);
+  return ret;
+}
+
+/**
+ * Check whether the epoch (exposure or acces, passive or active) is
+ * opened.
+ */
+static inline int nm_mpi_win_is_ready(nm_mpi_win_epoch_t*p_epoch)
+{
+  int ret = NM_MPI_WIN_UNUSED != p_epoch->mode;
+  return ret;
+}
+
+/**
+ * Check whether or not an assert if only a combination of defined
+ * symbols.
+ */
+static inline int nm_mpi_win_valid_assert(int assert)
+{
+  int ret = assert >= 0 && assert <= (MPI_MODE_NOCHECK | MPI_MODE_NOSTORE | MPI_MODE_NOPUT
+				      | MPI_MODE_NOPRECEDE | MPI_MODE_NOSUCCEED);
+  return ret;
+}
+
+/**
+ * Check whether base is part of a memory segment attached to p_win,
+ * and if the data fit, based on its extent.
+ */
+int nm_mpi_win_addr_is_valid(void*base, MPI_Aint extent, nm_mpi_window_t*p_win);
+
+/**
+ * Looks up in the hashtable if the datatype is already exchanged with
+ * the target node. If it is, it returns immediately. Otherwhise, it
+ * exchanges the datatype information with the target, and set the
+ * proper entry in the hashtable.
+ */
+int nm_mpi_win_send_datatype(nm_mpi_datatype_t*p_datatype, int target_rank, nm_mpi_window_t*p_win);
+
+/* RMA operations */
+
+/**
+ * Decode the win_id from the tag.
+ */
+static inline int nm_mpi_rma_tag_to_win(nm_tag_t tag)
+{
+  return (tag & NM_MPI_TAG_PRIVATE_RMA_MASK_WIN) >> 32;
+}
+
+/**
+ * Encode a window id inside the tag to handle the multiple windows.
+ */
+static inline nm_tag_t nm_mpi_rma_win_to_tag(int win_id)
+{
+  return ((nm_tag_t)win_id) << 32;
+}
+
+/**
+ * Decode the sequence number from the tag.
+ */
+static inline uint16_t nm_mpi_rma_tag_to_seq(nm_tag_t tag)
+{
+  return (tag & NM_MPI_TAG_PRIVATE_RMA_MASK_SEQ) >> 8;
+}
+
+/**
+ * Encode a sequence number inside the tag to handle THREAD_MULTIPLE.
+ */
+static inline nm_tag_t nm_mpi_rma_seq_to_tag(uint16_t seq)
+{
+  return (nm_tag_t)((((nm_tag_t)seq) << 8) & 0xFFFF00);
+}
+
+/**
+ * Decode the operation id from the tag.
+ */
+static inline MPI_Op nm_mpi_rma_tag_to_mpi_op(nm_tag_t tag)
+{
+  return (tag & 0xF0) >> 4;
+}
+
+/**
+ * Encode an operation id inside the tag for MPI_Accumulate and
+ * MPI_Get_accumulate functions.
+ */
+static inline nm_tag_t nm_mpi_rma_mpi_op_to_tag(MPI_Op op)
+{
+  return (nm_tag_t)((((nm_tag_t)op) << 4) & 0xF0);
+}
+ 
+/**
+ * Create the tag for private rma operations, without the window encoded
+ * id.
+ */
+static inline nm_tag_t nm_mpi_rma_create_usertag(uint16_t seq, int user_tag)
+{
+  return nm_mpi_rma_seq_to_tag(seq) + (((nm_tag_t)user_tag) & 0xFC0000FF);
+}
+ 
+/**
+ * Create the tag for private rma operations, with the first 32 bits used for window
+ * id.
+ */
+static inline nm_tag_t nm_mpi_rma_create_tag(int win_id,  uint16_t seq_num, int user_tag)
+{
+  return nm_mpi_rma_win_to_tag(win_id) + nm_mpi_rma_create_usertag(seq_num, user_tag);
+}
 
 /* ********************************************************* */
 

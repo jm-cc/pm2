@@ -24,8 +24,8 @@
 /* ** Data iterators *************************************** */
 
 /** maximum size of content descriptor for nm_data */
-#define _NM_DATA_CONTENT_SIZE 32
-#define _NM_DATA_GENERATOR_SIZE 32
+#define _NM_DATA_CONTENT_SIZE 64
+#define _NM_DATA_GENERATOR_SIZE 64
 
 struct nm_data_s;
 /** function apply to each data chunk upon traversal */
@@ -93,7 +93,7 @@ void                   nm_data_coroutine_generator_destroy(const struct nm_data_
 /** block of static properties for a given data descriptor */
 struct nm_data_properties_s
 {
-  int blocks;    /**< number of blocks; -1 if properties ar not initialized */
+  int blocks;    /**< number of blocks; -1 if properties are not initialized */
   nm_len_t size; /**< total size in bytes (accumulator) */
   int is_contig; /**< is data contiguous */
 };

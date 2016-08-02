@@ -147,6 +147,8 @@ int MPI_Comm_set_errhandler(MPI_Comm comm, MPI_Errhandler errhandler);
 
 int MPI_Comm_get_errhandler(MPI_Comm comm, MPI_Errhandler*errhandler);
 
+int MPI_Comm_call_errhandler(MPI_Comm comm, int errorcode);
+
 /**
  * Returns the byte address of location.
  * @param location location in caller memory

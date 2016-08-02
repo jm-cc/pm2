@@ -24,6 +24,71 @@ NM_MPI_HANDLE_TYPE(datatype, nm_mpi_datatype_t, _NM_MPI_DATATYPE_OFFSET, 64);
 
 static struct nm_mpi_handle_datatype_s nm_mpi_datatypes;
 
+/* ** Hashtable types definition *************************** */
+
+struct nm_mpi_datatype_hash_key_s
+{
+  uint32_t hash; /**< MPI_Datatype hash */
+};
+struct nm_mpi_datatype_hash_entry_s
+{
+  struct nm_mpi_datatype_hash_key_s*key;
+  nm_mpi_datatype_t*p_datatype; /**< pointer to datatype representation */
+};
+
+static struct {
+  nm_mpi_spinlock_t lock;
+  puk_hashtable_t table;
+} hashed_datatypes;
+
+static inline int      nm_mpi_datatype_hashtable_init(void);
+static inline int      nm_mpi_datatype_hashtable_destroy(void);
+static        uint32_t nm_mpi_datatype_hash(const void*_datatype);
+static inline uint32_t nm_mpi_datatype_hash_common(const nm_mpi_datatype_t*p_datatype);
+static        int      nm_mpi_datatype_eq(const void*_datatype1, const void*_datatype2);
+static inline void     nm_mpi_datatype_hashtable_insert(nm_mpi_datatype_t*p_datatype);
+static inline void     nm_mpi_datatype_hashtable_remove_hash(uint32_t hash);
+
+/* ** Hashtable types definition *************************** */
+
+struct nm_mpi_datatype_exchange_hash_key_s
+{
+  nm_gate_t target;
+  MPI_Datatype datatype; /**< local MPI_Datatype id */
+};
+struct nm_mpi_datatype_exchange_hash_entry_s
+{
+  struct nm_mpi_datatype_exchange_hash_key_s*key;
+  uint32_t hash;
+};
+
+static struct {
+  nm_mpi_spinlock_t lock;
+  puk_hashtable_t table;
+} exchanged_datatypes;
+
+static inline int      nm_mpi_datatype_exchange_hashtable_init(void);
+static inline int      nm_mpi_datatype_exchange_hashtable_destroy(void);
+static        uint32_t nm_mpi_datatype_exchange_hash(const void*_datatype);
+static        int      nm_mpi_datatype_exchange_eq(const void*_datatype1, const void*_datatype2);
+static inline void     nm_mpi_datatype_exchange_insert(nm_gate_t target, MPI_Datatype datatype, uint32_t hash);
+static inline void     nm_mpi_datatype_exchange_remove(nm_gate_t target, MPI_Datatype datatype);
+
+/* ** Datatype exchanging interface ************************ */
+
+static        void     nm_mpi_datatype_request_recv(nm_sr_event_t event, const nm_sr_event_info_t*info,
+						    void*ref);
+static        void     nm_mpi_datatype_request_monitor(nm_sr_event_t event,
+						       const nm_sr_event_info_t*info, void*ref);
+static        void     nm_mpi_datatype_request_free(nm_sr_event_t event, const nm_sr_event_info_t*info,
+						    void*ref);
+
+static struct nm_sr_monitor_s nm_mpi_datatype_requests_monitor = 
+  (struct nm_sr_monitor_s) { .p_notifier = &nm_mpi_datatype_request_recv,
+			     .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
+			     .p_gate     = NM_ANY_GATE,
+			     .tag        = NM_MPI_TAG_PRIVATE_TYPE_ADD,
+			     .tag_mask   = NM_MPI_TAG_PRIVATE_BASE | 0x0F };
 
 /** store builtin datatypes */
 static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*name);
@@ -31,6 +96,8 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
 static void nm_mpi_datatype_properties_compute(nm_mpi_datatype_t*p_datatype);
 static void nm_mpi_datatype_update_bounds(int blocklength, MPI_Aint displacement, nm_mpi_datatype_t*p_oldtype, nm_mpi_datatype_t*p_newtype);
 static void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context);
+static void nm_mpi_datatype_wrapper_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context);
+static void nm_mpi_datatype_serial_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context);
 static void nm_mpi_datatype_data_properties_compute(struct nm_data_s*p_data);
 
 const struct nm_data_ops_s nm_mpi_datatype_ops =
@@ -39,6 +106,15 @@ const struct nm_data_ops_s nm_mpi_datatype_ops =
     .p_properties_compute = &nm_mpi_datatype_data_properties_compute
   };
 
+const struct nm_data_ops_s nm_mpi_datatype_wrapper_ops =
+  {
+    .p_traversal = &nm_mpi_datatype_wrapper_traversal_apply
+  };
+
+const struct nm_data_ops_s nm_mpi_datatype_serialize_ops =
+  {
+    .p_traversal = &nm_mpi_datatype_serial_traversal_apply
+  };
 
 /* ********************************************************* */
 
@@ -78,12 +154,22 @@ NM_MPI_ALIAS(MPI_Pack_size,                  mpi_pack_size);
 
 /* ********************************************************* */
 
-
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_init(void)
 {
   nm_mpi_handle_datatype_init(&nm_mpi_datatypes);
 
+  /** Initialize hashed datatypes <-> datatype id hashtable */
+  nm_mpi_datatype_hashtable_init();
+
+  /** Initialize exchanged datatypes hashtable */
+  nm_mpi_datatype_exchange_hashtable_init();
+
+  /* Initialize the asynchronous mecanism for datatype exchange */
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(MPI_COMM_WORLD);
+  nm_session_t       p_session = nm_mpi_communicator_get_session(p_comm);
+  nm_sr_session_monitor_set(p_session, &nm_mpi_datatype_requests_monitor);
+  
   /* Initialise the basic datatypes */
 
   /* C types */
@@ -124,6 +210,7 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_CHARACTER,          sizeof(char), 1, "MPI_CHARACTER");
   nm_mpi_datatype_store(MPI_LOGICAL,            sizeof(float), 1, "MPI_LOGICAL");
   nm_mpi_datatype_store(MPI_REAL,               sizeof(float), 1, "MPI_REAL");
+  nm_mpi_datatype_store(MPI_REAL2,              2, 1, "MPI_REAL2");
   nm_mpi_datatype_store(MPI_REAL4,              4, 1, "MPI_REAL4");
   nm_mpi_datatype_store(MPI_REAL8,              8, 1, "MPI_REAL8");
   nm_mpi_datatype_store(MPI_REAL16,             16, 1, "MPI_REAL16");
@@ -133,10 +220,15 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_INTEGER2,           2, 1, "MPI_INTEGER2");
   nm_mpi_datatype_store(MPI_INTEGER4,           4, 1, "MPI_INTEGER4");
   nm_mpi_datatype_store(MPI_INTEGER8,           8, 1, "MPI_INTEGER8");
+  nm_mpi_datatype_store(MPI_INTEGER16,          16, 1, "MPI_INTEGER16");
   nm_mpi_datatype_store(MPI_PACKED,             sizeof(char), 1, "MPI_PACKED");
 
   /* FORTRAN COMPLEX types */
   nm_mpi_datatype_store(MPI_COMPLEX,            sizeof(complex float), 1, "MPI_COMPLEX");
+  nm_mpi_datatype_store(MPI_COMPLEX4,           8, 1, "MPI_COMPLEX4");
+  nm_mpi_datatype_store(MPI_COMPLEX8,           16, 1, "MPI_COMPLEX8");
+  nm_mpi_datatype_store(MPI_COMPLEX16,          32, 1, "MPI_COMPLEX16");
+  nm_mpi_datatype_store(MPI_COMPLEX32,          64, 1, "MPI_COMPLEX32");
   nm_mpi_datatype_store(MPI_DOUBLE_COMPLEX,     sizeof(complex double), 1, "MPI_DOUBLE_COMPLEX");
 
   /* C struct types */
@@ -162,6 +254,11 @@ void nm_mpi_datatype_init(void)
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_exit(void)
 {
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(MPI_COMM_WORLD);
+  nm_session_t       p_session = nm_mpi_communicator_get_session(p_comm);
+  nm_sr_session_monitor_remove(p_session, &nm_mpi_datatype_requests_monitor);
+  nm_mpi_datatype_hashtable_destroy();
+  nm_mpi_datatype_exchange_hashtable_destroy();
   nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes, &nm_mpi_datatype_free);
 }
 
@@ -185,6 +282,10 @@ static void nm_mpi_datatype_store(int id, size_t size, int count, const char*nam
   p_datatype->name = strdup(name);
   p_datatype->true_lb = 0;
   p_datatype->true_extent = size;
+  p_datatype->ser_size = 0;
+  p_datatype->p_serialized = NULL;
+  p_datatype->hash = nm_mpi_datatype_hash_common(p_datatype) + puk_hash_oneatatime((void*)&id, sizeof(int));
+  nm_mpi_datatype_hashtable_insert(p_datatype);
   /* compute properties through traversal */
   nm_mpi_datatype_properties_compute(p_datatype);
   /* check computed values consistency*/
@@ -208,9 +309,318 @@ static nm_mpi_datatype_t*nm_mpi_datatype_alloc(nm_mpi_type_combiner_t combiner, 
   p_newtype->refcount = 1;
   p_newtype->is_contig = 0;
   p_newtype->name = NULL;
+  p_newtype->attrs = NULL;
   p_newtype->true_lb = MPI_UNDEFINED;
   p_newtype->true_extent = MPI_UNDEFINED;
+  p_newtype->ser_size = sizeof(nm_mpi_datatype_ser_t) - sizeof(union nm_mpi_datatype_ser_param_u);
+  p_newtype->p_serialized = NULL;
+  p_newtype->hash = 0;
   return p_newtype;
+}
+
+/* ********************************************************* */
+/* ** Datatype hash table management *********************** */
+
+static inline int nm_mpi_datatype_hashtable_init(void)
+{
+  hashed_datatypes.table = puk_hashtable_new(&nm_mpi_datatype_hash, &nm_mpi_datatype_eq);
+  nm_mpi_spin_init(&hashed_datatypes.lock);
+  return MPI_SUCCESS;
+}
+
+static inline int nm_mpi_datatype_hashtable_destroy(void)
+{
+  nm_mpi_spin_lock(&hashed_datatypes.lock);
+  struct nm_mpi_datatype_hash_entry_s*e;
+  struct nm_mpi_datatype_hash_key_s  *k;
+  do
+    {
+      puk_hashtable_getentry(hashed_datatypes.table, &k, &e);
+      if(k != NULL)
+	{
+	  puk_hashtable_remove(hashed_datatypes.table, k);
+	  FREE_AND_SET_NULL(e->key);
+	  FREE_AND_SET_NULL(e);
+	}
+    }
+  while(k != NULL);
+  nm_mpi_spin_unlock(&hashed_datatypes.lock);
+  puk_hashtable_delete(hashed_datatypes.table);
+  return MPI_SUCCESS;
+}
+
+static uint32_t nm_mpi_datatype_hash(const void*_datatype)
+{
+  const struct nm_mpi_datatype_hash_key_s*d = _datatype;
+  return d->hash;
+}
+
+static inline uint32_t nm_mpi_datatype_hash_common(const nm_mpi_datatype_t*p_datatype)
+{
+  uint32_t z = puk_hash_oneatatime((const void*)&p_datatype->combiner, sizeof(nm_mpi_type_combiner_t))
+    + puk_hash_oneatatime((const void*)&p_datatype->count, sizeof(MPI_Count))
+    + puk_hash_oneatatime((const void*)&p_datatype->elements, sizeof(MPI_Count))
+    + puk_hash_oneatatime((const void*)&p_datatype->is_contig, sizeof(int))
+    + puk_hash_oneatatime((const void*)&p_datatype->lb, sizeof(MPI_Aint))
+    + puk_hash_oneatatime((const void*)&p_datatype->extent, sizeof(MPI_Aint))
+    + puk_hash_oneatatime((const void*)&p_datatype->size, sizeof(size_t));
+  return z;
+}
+
+static int nm_mpi_datatype_eq(const void*_datatype1, const void*_datatype2)
+{
+  const struct nm_mpi_datatype_hash_key_s*d1 = _datatype1;
+  const struct nm_mpi_datatype_hash_key_s*d2 = _datatype2;
+  const int eq = (d1->hash == d2->hash);
+  return eq;
+}
+
+static inline void nm_mpi_datatype_hashtable_insert(nm_mpi_datatype_t*p_datatype)
+{
+  struct nm_mpi_datatype_hash_entry_s*e;
+  struct nm_mpi_datatype_hash_key_s*key = malloc(sizeof(struct nm_mpi_datatype_hash_key_s));
+  key->hash = p_datatype->hash;
+  nm_mpi_spin_lock(&hashed_datatypes.lock);
+  e = puk_hashtable_lookup(hashed_datatypes.table, key);
+  if(NULL == e)
+    {
+      e = malloc(sizeof(struct nm_mpi_datatype_hash_entry_s));
+      e->key = key;
+      e->p_datatype = p_datatype;
+      puk_hashtable_insert(hashed_datatypes.table, key, e);
+    }
+  else
+    {
+      FREE_AND_SET_NULL(key);
+    }
+  nm_mpi_spin_unlock(&hashed_datatypes.lock);
+}
+
+static inline void nm_mpi_datatype_hashtable_remove_hash(uint32_t hash)
+{
+  struct nm_mpi_datatype_hash_entry_s*e;
+  struct nm_mpi_datatype_hash_key_s key = (struct nm_mpi_datatype_hash_key_s){ .hash = hash };
+  nm_mpi_spin_lock(&hashed_datatypes.lock);
+  e = puk_hashtable_lookup(hashed_datatypes.table, &key);
+  puk_hashtable_remove(hashed_datatypes.table, &key);
+  nm_mpi_spin_unlock(&hashed_datatypes.lock);
+  nm_mpi_datatype_unlock(e->p_datatype);
+  FREE_AND_SET_NULL(e->key);
+  FREE_AND_SET_NULL(e);
+}
+
+__PUK_SYM_INTERNAL
+nm_mpi_datatype_t*nm_mpi_datatype_hashtable_get(uint32_t datatype_hash)
+{
+  struct nm_mpi_datatype_hash_entry_s*e;
+  struct nm_mpi_datatype_hash_key_s key = (struct nm_mpi_datatype_hash_key_s){ .hash = datatype_hash };
+  nm_mpi_spin_lock(&hashed_datatypes.lock);
+  e = puk_hashtable_lookup(hashed_datatypes.table, &key);
+  nm_mpi_spin_unlock(&hashed_datatypes.lock);
+  return e ? e->p_datatype : NULL;
+}
+
+/* ** Request monitoring functions for datatypes *********** */
+
+static void nm_mpi_datatype_request_monitor(nm_sr_event_t event, const nm_sr_event_info_t*info, void*ref)
+{
+  /* Retrieve parameters */
+  assert(ref);
+  nm_mpi_request_t  *p_req = (nm_mpi_request_t*)ref;
+  nm_sr_request_t*p_nm_req = info->req.p_request;
+  nm_tag_t tag = 0;
+  nm_sr_request_get_tag(p_nm_req, &tag);
+  assert(tag);
+  nm_session_t   p_session = NULL;
+  nm_sr_request_get_session(p_nm_req, &p_session);
+  assert(p_session);
+  /* Deserialize the datatypes */
+  void*tmp;
+  const void*end = p_req->rbuf + p_req->count;
+  MPI_Datatype new_datatype;
+  nm_mpi_datatype_ser_t*p_ser_datatype;
+  for(tmp = p_req->rbuf; tmp < end; tmp += p_ser_datatype->ser_size)
+    {
+      p_ser_datatype = tmp;
+      nm_mpi_datatype_deserialize(p_ser_datatype, &new_datatype);
+    }
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(new_datatype);
+  assert(p_datatype);
+  nm_mpi_datatype_exchange_insert(p_req->gate, p_datatype->id, p_datatype->hash);
+  /* Send back a echo to unlock */
+  tag += 1; /* Keeps the sequence number */
+  nm_mpi_request_t        *p_req_resp = nm_mpi_request_alloc();
+  p_req_resp->gate                    = p_req->gate;
+  p_req_resp->rbuf                    = NULL;
+  p_req_resp->count                   = 0;
+  p_req_resp->user_tag                = tag;
+  p_req_resp->p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
+  p_req_resp->request_type            = NM_MPI_REQUEST_RECV;
+  p_req_resp->communication_mode      = NM_MPI_MODE_IMMEDIATE;
+  p_req_resp->request_persistent_type = NM_MPI_REQUEST_ZERO;
+  nm_sr_send_init(p_session, &p_req_resp->request_nmad);
+  nm_sr_send_pack_contiguous(p_session, &p_req_resp->request_nmad, NULL, 0);
+  nm_sr_request_set_ref(&p_req_resp->request_nmad, p_req_resp);
+  nm_sr_request_monitor(p_session, &p_req_resp->request_nmad, NM_SR_EVENT_FINALIZED,
+			&nm_mpi_datatype_request_free);
+  nm_sr_send_isend(p_session, &p_req_resp->request_nmad, p_req_resp->gate, tag);
+  FREE_AND_SET_NULL(p_req->rbuf);
+  nm_mpi_request_free(p_req);  
+}
+
+static void nm_mpi_datatype_request_recv(nm_sr_event_t event, const nm_sr_event_info_t*info, void*ref)
+{
+  const nm_tag_t             tag = info->recv_unexpected.tag;
+  if(NM_MPI_TAG_PRIVATE_TYPE_ADD == (tag & (NM_MPI_TAG_PRIVATE_BASE | 0x0F))) {
+    const nm_gate_t           from = info->recv_unexpected.p_gate;      
+    const size_t               len = info->recv_unexpected.len;
+    const nm_session_t   p_session = info->recv_unexpected.p_session;
+    nm_mpi_request_t        *p_req = nm_mpi_request_alloc();
+    p_req->gate                    = from;
+    p_req->rbuf                    = malloc(len);
+    p_req->count                   = len;
+    p_req->user_tag                = tag;
+    p_req->p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
+    p_req->request_type            = NM_MPI_REQUEST_RECV;
+    p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
+    p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
+    nm_sr_recv_init(p_session, &p_req->request_nmad);
+    nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, p_req->rbuf, p_req->count);
+    nm_sr_request_set_ref(&p_req->request_nmad, p_req);
+    nm_sr_request_monitor(p_session, &p_req->request_nmad, NM_SR_EVENT_FINALIZED,
+			  &nm_mpi_datatype_request_monitor);
+    nm_sr_recv_match_event(p_session, &p_req->request_nmad, info);
+    nm_sr_recv_post(p_session, &p_req->request_nmad);
+  } else /* ERROR */
+    ERROR("How did you get here? You shouldn't have...\n");
+}
+
+__PUK_SYM_INTERNAL
+int nm_mpi_datatype_send(nm_gate_t gate, nm_mpi_datatype_t*p_datatype)
+{
+  assert(gate);
+  assert(p_datatype);
+  if(p_datatype->id < _NM_MPI_DATATYPE_OFFSET)
+    {
+      return MPI_SUCCESS;
+    }
+  struct nm_mpi_datatype_exchange_hash_entry_s*entry;
+  struct nm_mpi_datatype_exchange_hash_key_s key = (struct nm_mpi_datatype_exchange_hash_key_s)
+    { .target = gate, .datatype = p_datatype->id };
+  nm_mpi_spin_lock(&exchanged_datatypes.lock);
+  entry = puk_hashtable_lookup(exchanged_datatypes.table, &key);
+  nm_mpi_spin_unlock(&exchanged_datatypes.lock);
+  if(entry && entry->hash == p_datatype->hash){
+    return MPI_SUCCESS;
+  }
+  nm_mpi_datatype_exchange_insert(gate, p_datatype->id, p_datatype->hash);
+  static uint16_t sequence = 0;
+  uint16_t seq = __sync_fetch_and_add(&sequence, 1);
+  int err = MPI_SUCCESS;
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(MPI_COMM_WORLD);
+  nm_session_t       p_session = nm_mpi_communicator_get_session(p_comm);
+  nm_sr_request_t req;
+  struct nm_data_s data;
+  /* Send datatypes */
+  nm_data_mpi_datatype_serial_set(&data, p_datatype);
+  nm_tag_t nm_tag = NM_MPI_TAG_PRIVATE_TYPE_ADD | nm_mpi_rma_seq_to_tag(seq);
+  nm_sr_send_init(p_session, &req);
+  nm_sr_send_pack_data(p_session, &req, &data);
+  err = nm_sr_send_isend(p_session, &req, gate, nm_tag);
+  nm_sr_swait(p_session, &req);
+  /* Recieve echo */
+  nm_tag += 1; /* Keeps the sequence number */
+  nm_sr_recv_init(p_session, &req);
+  nm_sr_recv_unpack_contiguous(p_session, &req, NULL, 0);
+  err = nm_sr_recv_irecv(p_session, &req, gate, nm_tag, NM_MPI_TAG_PRIVATE_BASE | 0xFFFF0F);
+  nm_sr_rwait(p_session, &req);
+  /* Insert into exchanged hashtable */
+  nm_mpi_datatype_exchange_insert(gate, p_datatype->id, p_datatype->hash);
+  return err;
+}
+
+static void nm_mpi_datatype_request_free(nm_sr_event_t event, const nm_sr_event_info_t*info, void*ref)
+{
+  if(ref)
+    nm_mpi_request_free(ref);
+}
+
+/* ** Exchanged datatypes hashtable functions ************** */
+
+static inline int nm_mpi_datatype_exchange_hashtable_init(void)
+{
+  exchanged_datatypes.table = puk_hashtable_new(&nm_mpi_datatype_exchange_hash,
+						&nm_mpi_datatype_exchange_eq);
+  nm_mpi_spin_init(&exchanged_datatypes.lock);
+  return MPI_SUCCESS;
+}
+
+static inline int nm_mpi_datatype_exchange_hashtable_destroy(void)
+{
+  nm_mpi_spin_lock(&exchanged_datatypes.lock);
+  struct nm_mpi_datatype_exchange_hash_entry_s*e;
+  struct nm_mpi_datatype_exchange_hash_key_s  *k;
+  for(puk_hashtable_getentry(exchanged_datatypes.table, &k, &e);
+      puk_hashtable_size(exchanged_datatypes.table);
+      puk_hashtable_getentry(exchanged_datatypes.table, &k, &e)) {
+    puk_hashtable_remove(exchanged_datatypes.table, k);
+    FREE_AND_SET_NULL(e->key);
+    FREE_AND_SET_NULL(e);
+  }
+  nm_mpi_spin_unlock(&exchanged_datatypes.lock);
+  puk_hashtable_delete(exchanged_datatypes.table);
+  return MPI_SUCCESS;
+}
+
+static uint32_t nm_mpi_datatype_exchange_hash(const void*_datatype)
+{
+  const struct nm_mpi_datatype_exchange_hash_key_s*d = _datatype;
+  uint32_t z = puk_hash_oneatatime((const void*)&d->target, sizeof(nm_gate_t)) +
+    puk_hash_oneatatime((const void*)&d->datatype, sizeof(MPI_Datatype));
+  return z;
+}
+
+static int nm_mpi_datatype_exchange_eq(const void*_datatype1, const void*_datatype2)
+{
+  const struct nm_mpi_datatype_exchange_hash_key_s*d1 = _datatype1;
+  const struct nm_mpi_datatype_exchange_hash_key_s*d2 = _datatype2;
+  const int eq = ((d1->target == d2->target) && (d1->datatype == d2->datatype));
+  return eq;
+}
+
+static inline void nm_mpi_datatype_exchange_insert(nm_gate_t target, MPI_Datatype datatype, uint32_t hash)
+{
+  struct nm_mpi_datatype_exchange_hash_entry_s*e;
+  struct nm_mpi_datatype_exchange_hash_key_s*key = malloc(sizeof(struct nm_mpi_datatype_exchange_hash_key_s));
+  key->target = target;
+  key->datatype = datatype;
+  nm_mpi_spin_lock(&exchanged_datatypes.lock);
+  e = puk_hashtable_lookup(exchanged_datatypes.table, key);
+  if(NULL == e)
+    {
+      e = malloc(sizeof(struct nm_mpi_datatype_exchange_hash_entry_s));
+      e->key = key;
+      puk_hashtable_insert(exchanged_datatypes.table, key, e);
+    }
+  else
+    {
+      FREE_AND_SET_NULL(key);
+    }
+  nm_mpi_spin_unlock(&exchanged_datatypes.lock);
+  e->hash = hash;
+}
+
+static inline void nm_mpi_datatype_exchange_remove(nm_gate_t target, MPI_Datatype datatype)
+{
+  struct nm_mpi_datatype_exchange_hash_entry_s*e;
+  struct nm_mpi_datatype_exchange_hash_key_s key = (struct nm_mpi_datatype_exchange_hash_key_s)
+    { .target = target, .datatype = datatype };
+  nm_mpi_spin_lock(&exchanged_datatypes.lock);
+  e = puk_hashtable_lookup(exchanged_datatypes.table, &key);
+  puk_hashtable_remove(exchanged_datatypes.table, &key);
+  nm_mpi_spin_unlock(&exchanged_datatypes.lock);
+  FREE_AND_SET_NULL(e->key);
+  FREE_AND_SET_NULL(e);
 }
 
 /* ********************************************************* */
@@ -342,7 +752,28 @@ int mpi_type_dup(MPI_Datatype oldtype, MPI_Datatype*newtype)
   p_newtype->extent    = p_oldtype->extent;
   p_newtype->lb        = p_oldtype->lb;
   p_newtype->DUP.p_old_type = p_oldtype;
-  p_oldtype->refcount++;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_dup_s);
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
+  if(p_oldtype->attrs)
+    {
+      int err = nm_mpi_attrs_copy(p_oldtype->id, p_oldtype->attrs, &p_newtype->attrs);
+      if(err)
+	{
+	  nm_mpi_datatype_free(p_newtype);
+	  *newtype = MPI_DATATYPE_NULL;
+	  return err;
+	}
+    }
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_DUP;
+  p_newtype->p_serialized->count = 1;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.DUP.old_type = p_oldtype->hash;
+  if(p_oldtype->committed)
+    nm_mpi_datatype_properties_compute(p_newtype);
   return MPI_SUCCESS;
 }
 
@@ -360,7 +791,19 @@ int mpi_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, 
   p_newtype->lb        = lb;
   p_newtype->extent    = extent;
   p_newtype->RESIZED.p_old_type = p_oldtype;
-  p_oldtype->refcount++;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_resized_s);
+  p_newtype->ser_size += p_oldtype->ser_size;
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_RESIZED;
+  p_newtype->p_serialized->count = 1;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.RESIZED.old_type = p_oldtype->hash;
+  p_newtype->p_serialized->p.RESIZED.lb = lb;
+  p_newtype->p_serialized->p.RESIZED.extent = extent;
   return MPI_SUCCESS;
 }
 
@@ -408,7 +851,16 @@ int mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype*newtype)
   p_newtype->lb = p_oldtype->lb;
   p_newtype->extent = p_oldtype->extent * count;
   p_newtype->CONTIGUOUS.p_old_type = p_oldtype;
-  p_oldtype->refcount++;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_contiguous_s);
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_CONTIGUOUS;
+  p_newtype->p_serialized->count = count;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.CONTIGUOUS.old_type = p_oldtype->hash;
   return MPI_SUCCESS;
 }
 
@@ -428,7 +880,20 @@ int mpi_type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype
   p_newtype->VECTOR.p_old_type = p_oldtype;
   p_newtype->VECTOR.stride = stride;
   p_newtype->VECTOR.blocklength = blocklength;
-  p_oldtype->refcount++;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_vector_s);
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->hash += puk_hash_oneatatime((const void*)&stride, sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)&blocklength, sizeof(int));
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_VECTOR;
+  p_newtype->p_serialized->count = count;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.VECTOR.old_type = p_oldtype->hash;
+  p_newtype->p_serialized->p.VECTOR.stride = stride;
+  p_newtype->p_serialized->p.VECTOR.blocklength = blocklength;
   return MPI_SUCCESS;
 }
 
@@ -448,7 +913,20 @@ int mpi_type_hvector(int count, int blocklength, MPI_Aint hstride, MPI_Datatype 
   p_newtype->HVECTOR.p_old_type = p_oldtype;
   p_newtype->HVECTOR.hstride = hstride;
   p_newtype->HVECTOR.blocklength = blocklength;
-  p_oldtype->refcount++;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_hvector_s);
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->hash += puk_hash_oneatatime((const void*)&hstride, sizeof(MPI_Aint));
+  p_newtype->hash += puk_hash_oneatatime((const void*)&blocklength, sizeof(int));
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_HVECTOR;
+  p_newtype->p_serialized->count = count;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.HVECTOR.old_type = p_oldtype->hash;
+  p_newtype->p_serialized->p.HVECTOR.hstride = hstride;
+  p_newtype->p_serialized->p.HVECTOR.blocklength = blocklength;
   return MPI_SUCCESS;
 }
 
@@ -479,7 +957,23 @@ int mpi_type_indexed(int count, int *array_of_blocklengths, int *array_of_displa
     p_newtype->lb = 0;
   if(p_newtype->extent == MPI_UNDEFINED)
     p_newtype->extent = 0;
-  p_oldtype->refcount++;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_indexed_s);
+  p_newtype->ser_size += count * 2 * sizeof(int);
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_blocklengths, count * sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_displacements, count * sizeof(int));
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_INDEXED;
+  p_newtype->p_serialized->count = count;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.INDEXED.old_type = p_oldtype->hash;
+  void*tmp = &p_newtype->p_serialized->p.INDEXED.DATA;
+  memcpy(tmp, array_of_blocklengths, count * sizeof(int));
+  tmp += count * sizeof(int);
+  memcpy(tmp, array_of_displacements, count * sizeof(int));
   return MPI_SUCCESS;
 }
 
@@ -510,7 +1004,23 @@ int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_
     p_newtype->lb = 0;
   if(p_newtype->extent == MPI_UNDEFINED)
     p_newtype->extent = 0;
-  p_oldtype->refcount++;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_hindexed_s);
+  p_newtype->ser_size += count * (sizeof(int) + sizeof(MPI_Aint));
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_blocklengths, count * sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_displacements, count * sizeof(MPI_Aint));
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_HINDEXED;
+  p_newtype->p_serialized->count = count;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.HINDEXED.old_type = p_oldtype->hash;
+  void*tmp = &p_newtype->p_serialized->p.INDEXED.DATA;
+  memcpy(tmp, array_of_blocklengths, count * sizeof(int));
+  tmp += count * sizeof(int);
+  memcpy(tmp, array_of_displacements, count * sizeof(MPI_Aint));
   return MPI_SUCCESS;
 }
 
@@ -545,7 +1055,22 @@ int mpi_type_create_indexed_block(int count, int blocklength, const int array_of
     p_newtype->lb = 0;
   if(p_newtype->extent == MPI_UNDEFINED)
     p_newtype->extent = 0;
-  p_oldtype->refcount++;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_indexed_block_s);
+  p_newtype->ser_size += count * sizeof(int);
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->hash += puk_hash_oneatatime((const void*)&blocklength, sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_displacements, count * sizeof(int));
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_INDEXED_BLOCK;
+  p_newtype->p_serialized->count = count;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.INDEXED_BLOCK.old_type = p_oldtype->hash;
+  p_newtype->p_serialized->p.INDEXED_BLOCK.blocklength = blocklength;
+  void*tmp = &p_newtype->p_serialized->p.INDEXED_BLOCK.DATA;
+  memcpy(tmp, array_of_displacements, count * sizeof(int));
   return MPI_SUCCESS;
 }
 
@@ -575,7 +1100,22 @@ int mpi_type_create_hindexed_block(int count, int blocklength, const MPI_Aint ar
     p_newtype->lb = 0;
   if(p_newtype->extent == MPI_UNDEFINED)
     p_newtype->extent = 0;
-  p_oldtype->refcount++;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_hindexed_block_s);
+  p_newtype->ser_size += count * sizeof(MPI_Aint);
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->hash += puk_hash_oneatatime((const void*)&blocklength, sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_displacements, count * sizeof(MPI_Aint));
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_HINDEXED_BLOCK;
+  p_newtype->p_serialized->count = count;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.HINDEXED_BLOCK.old_type = p_oldtype->hash;
+  p_newtype->p_serialized->p.HINDEXED_BLOCK.blocklength = blocklength;
+  void*tmp = &p_newtype->p_serialized->p.INDEXED_BLOCK.DATA;
+  memcpy(tmp, array_of_displacements, count * sizeof(MPI_Aint));
   return MPI_SUCCESS;
 }
 
@@ -584,8 +1124,10 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
   int i;
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_STRUCT, 0, count);
   *newtype = p_newtype->id;
+  p_newtype->ser_size += count * (sizeof(int) + sizeof(MPI_Aint) + sizeof(MPI_Datatype));
   p_newtype->is_contig = 0;
   p_newtype->STRUCT.p_map = malloc(count * sizeof(struct nm_mpi_type_struct_map_s));
+  uint32_t old_types_hashes[count];
   for(i = 0; i < count; i++)
     {
       nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(array_of_types[i]);
@@ -599,16 +1141,32 @@ int mpi_type_struct(int count, int *array_of_blocklengths, MPI_Aint *array_of_di
       p_newtype->STRUCT.p_map[i].blocklength  = array_of_blocklengths[i];
       p_newtype->STRUCT.p_map[i].displacement = array_of_displacements[i];
       p_newtype->size += p_newtype->STRUCT.p_map[i].blocklength * p_datatype->size;
-      p_datatype->refcount++;
+      __sync_add_and_fetch(&p_datatype->refcount, 1);
       nm_mpi_datatype_update_bounds(p_newtype->STRUCT.p_map[i].blocklength,
 				    p_newtype->STRUCT.p_map[i].displacement,
 				    p_newtype->STRUCT.p_map[i].p_old_type,
 				    p_newtype);
+      p_newtype->hash    += p_datatype->hash;
+      old_types_hashes[i] = p_datatype->hash;
     }
   if(p_newtype->lb == MPI_UNDEFINED)
     p_newtype->lb = 0;
   if(p_newtype->extent == MPI_UNDEFINED)
     p_newtype->extent = 0;
+  p_newtype->hash += nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_blocklengths, count * sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_displacements, count * sizeof(int));
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_STRUCT;
+  p_newtype->p_serialized->count = count;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  void*tmp = &p_newtype->p_serialized->p.STRUCT.DATA;
+  memcpy(tmp, old_types_hashes, count * sizeof(uint32_t));
+  tmp += count * sizeof(uint32_t);
+  memcpy(tmp, array_of_blocklengths, count * sizeof(int));
+  tmp += count * sizeof(int);
+  memcpy(tmp, array_of_displacements, count * sizeof(MPI_Aint));
   return MPI_SUCCESS;
 }
 
@@ -620,7 +1178,7 @@ int mpi_type_create_subarray(int ndims, const int array_of_sizes[], const int ar
       *newtype = MPI_DATATYPE_NULL;
       return MPI_ERR_TYPE;
     }
-  p_oldtype->refcount++;
+  __sync_add_and_fetch(&p_oldtype->refcount, 1);
   nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_alloc(MPI_COMBINER_SUBARRAY, p_oldtype->size, 1);
   *newtype = p_newtype->id;
   p_newtype->is_contig = 0;
@@ -644,12 +1202,35 @@ int mpi_type_create_subarray(int ndims, const int array_of_sizes[], const int ar
     }
   nm_mpi_datatype_update_bounds(1, first_offset, p_oldtype, p_newtype);
   nm_mpi_datatype_update_bounds(1, last_offset, p_oldtype, p_newtype);
-  p_newtype->size     = elements * p_oldtype->size;
-  p_newtype->elements = elements;
+  p_newtype->size      = elements * p_oldtype->size;
+  p_newtype->elements  = elements;
+  p_newtype->ser_size += sizeof(struct nm_mpi_datatype_ser_param_subarray_s);
+  p_newtype->ser_size += ndims * 3 * sizeof(int);
   if(p_newtype->lb == MPI_UNDEFINED)
     p_newtype->lb = 0;
   if(p_newtype->extent == MPI_UNDEFINED)
     p_newtype->extent = 0;
+  p_newtype->hash  = nm_mpi_datatype_hash_common(p_newtype);
+  p_newtype->hash += p_oldtype->hash;
+  p_newtype->hash += puk_hash_oneatatime((const void*)&ndims, sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)&order, sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_sizes, ndims * sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_subsizes, ndims * sizeof(int));
+  p_newtype->hash += puk_hash_oneatatime((const void*)array_of_starts, ndims * sizeof(int));
+  p_newtype->p_serialized = malloc(p_newtype->ser_size);
+  p_newtype->p_serialized->hash = p_newtype->hash;
+  p_newtype->p_serialized->combiner = MPI_COMBINER_SUBARRAY;
+  p_newtype->p_serialized->count = p_newtype->count;
+  p_newtype->p_serialized->ser_size = p_newtype->ser_size;
+  p_newtype->p_serialized->p.SUBARRAY.old_type = p_oldtype->hash;
+  p_newtype->p_serialized->p.SUBARRAY.ndims = ndims;
+  p_newtype->p_serialized->p.SUBARRAY.order = order;
+  void*tmp = &p_newtype->p_serialized->p.SUBARRAY.DATA;
+  memcpy(tmp, array_of_sizes, ndims * sizeof(int));
+  tmp += ndims * sizeof(int);
+  memcpy(tmp, array_of_subsizes, ndims * sizeof(int));
+  tmp += ndims * sizeof(int);
+  memcpy(tmp, array_of_starts, ndims * sizeof(int));
   return MPI_SUCCESS;
 }
 
@@ -813,9 +1394,9 @@ nm_mpi_datatype_t* nm_mpi_datatype_get(MPI_Datatype datatype)
 __PUK_SYM_INTERNAL
 int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype)
 {
-  p_datatype->refcount--;
-  assert(p_datatype->refcount >= 0);
-  if((p_datatype->refcount == 0) && (p_datatype->id >= _NM_MPI_DATATYPE_OFFSET))
+  int nb_ref = __sync_sub_and_fetch(&p_datatype->refcount, 1);
+  assert(nb_ref >= 0);
+  if((nb_ref == 0) && (p_datatype->id >= _NM_MPI_DATATYPE_OFFSET))
     {
       nm_mpi_datatype_free(p_datatype);
     }
@@ -855,8 +1436,13 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
     }
   if(p_datatype->name != NULL)
     {
-      free(p_datatype->name);
+      FREE_AND_SET_NULL(p_datatype->name);
     }
+  if(p_datatype->p_serialized != NULL)
+    {
+      FREE_AND_SET_NULL(p_datatype->p_serialized);
+    }
+  nm_mpi_attrs_destroy(p_datatype->id, &p_datatype->attrs);
   nm_mpi_handle_datatype_free(&nm_mpi_datatypes, p_datatype);
 }
 
@@ -893,7 +1479,7 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
     {									\
       NM_MPI_DATATYPE_TRAVERSAL_LOOP_PLAIN(P_OLD_TYPE, BLOCKLENGTH, LPTR); \
     }
-	  
+ 
 /** apply a function to every chunk of data in datatype */
 static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_apply_t apply, void*_context)
 {
@@ -1217,6 +1803,201 @@ void nm_mpi_datatype_copy(const void*src_buf, nm_mpi_datatype_t*p_src_type, int 
     }
 }
 
+/** Apply a function to every chunk of data in datatype and to the corresponding header
+ */
+static void nm_mpi_datatype_wrapper_traversal_apply(const void*_content, nm_data_apply_t apply,
+						    void*_context)
+{
+  const struct nm_data_mpi_datatype_wrapper_s*const p_data = _content;
+  (*apply)((void*)&p_data->header, sizeof(struct nm_data_mpi_datatype_header_s), _context);
+  nm_mpi_datatype_traversal_apply((void*)&p_data->data, apply, _context);
+}
+
+/** apply a serialization function to a datatype 
+ */
+static void nm_mpi_datatype_serial_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context)
+{
+  int i;
+  const struct nm_mpi_datatype_s*const p_datatype = *(void**)_content;
+  switch(p_datatype->combiner)
+    {
+    case MPI_COMBINER_NAMED:
+      return;
+    case MPI_COMBINER_CONTIGUOUS:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->CONTIGUOUS.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_DUP:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->DUP.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_RESIZED:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->RESIZED.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_VECTOR:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->VECTOR.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_HVECTOR:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->HVECTOR.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_INDEXED:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->INDEXED.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_HINDEXED:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->HINDEXED.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_INDEXED_BLOCK:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->INDEXED_BLOCK.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_HINDEXED_BLOCK:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->HINDEXED_BLOCK.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_SUBARRAY:
+      {
+	nm_mpi_datatype_serial_traversal_apply(&p_datatype->SUBARRAY.p_old_type, apply, _context);
+      }
+      break;
+    case MPI_COMBINER_STRUCT:
+      for(i = 0; i < p_datatype->count; ++i)
+	{
+	  nm_mpi_datatype_serial_traversal_apply(&p_datatype->STRUCT.p_map[i].p_old_type, apply, _context);
+	}
+      break;
+    default:
+      ERROR("madmpi: cannot serialize datatype with combiner %d\n", p_datatype->combiner);
+    }
+  assert(p_datatype->p_serialized);
+  (*apply)((void*)p_datatype->p_serialized, p_datatype->ser_size, _context);
+}
+
+/** deserialize a datatype 
+ */
+__PUK_SYM_INTERNAL
+void nm_mpi_datatype_deserialize(nm_mpi_datatype_ser_t*p_datatype, MPI_Datatype*newtype)
+{
+  switch(p_datatype->combiner)
+    {
+    case MPI_COMBINER_CONTIGUOUS:
+      {
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.CONTIGUOUS.old_type);
+	MPI_Type_contiguous(p_datatype->count, p_oldtype->id, newtype);
+      }
+      break;
+    case MPI_COMBINER_DUP:
+      {
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.DUP.old_type);
+	MPI_Type_dup(p_oldtype->id, newtype);
+      }
+      break;
+    case MPI_COMBINER_RESIZED:
+      {
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.RESIZED.old_type);
+	MPI_Type_create_resized(p_oldtype->id, p_datatype->p.RESIZED.lb, p_datatype->p.RESIZED.extent, newtype);
+      }
+      break;
+    case MPI_COMBINER_VECTOR:
+      {
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.VECTOR.old_type);
+	MPI_Type_vector(p_datatype->count, p_datatype->p.VECTOR.blocklength, p_datatype->p.VECTOR.stride, p_oldtype->id, newtype);	
+      }
+      break;
+    case MPI_COMBINER_HVECTOR:
+      {
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.HVECTOR.old_type);
+	MPI_Type_hvector(p_datatype->count, p_datatype->p.HVECTOR.blocklength, p_datatype->p.HVECTOR.hstride, p_oldtype->id, newtype);
+      }
+      break;
+    case MPI_COMBINER_INDEXED:
+      {
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.INDEXED.old_type);
+	int*aob = (void*)&p_datatype->p.INDEXED.DATA;
+	int*aod = aob + p_datatype->count;
+	MPI_Type_indexed(p_datatype->count, (int*)aob, (int*)aod, p_oldtype->id, newtype);
+      }
+      break;
+    case MPI_COMBINER_HINDEXED:
+      {
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.HINDEXED.old_type);
+	int*aob = (void*)&p_datatype->p.INDEXED.DATA;
+	MPI_Aint*aod = (MPI_Aint*)(aob + p_datatype->count);
+	MPI_Type_hindexed(p_datatype->count, (int*)aob, (MPI_Aint*)aod, p_oldtype->id, newtype);
+      }
+      break;
+    case MPI_COMBINER_INDEXED_BLOCK:
+      {
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.INDEXED_BLOCK.old_type);
+	int*aod = (void*)&p_datatype->p.INDEXED_BLOCK.DATA;
+	MPI_Type_create_indexed_block(p_datatype->count, p_datatype->p.INDEXED_BLOCK.blocklength, (int*)aod, p_oldtype->id, newtype);
+      }
+      break;
+    case MPI_COMBINER_HINDEXED_BLOCK:
+      {
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.HINDEXED_BLOCK.old_type);
+	MPI_Aint*aod = (void*)&p_datatype->p.HINDEXED_BLOCK.DATA;
+	MPI_Type_create_hindexed_block(p_datatype->count, p_datatype->p.HINDEXED_BLOCK.blocklength, (MPI_Aint*)aod, p_oldtype->id, newtype);
+      }
+      break;
+    case MPI_COMBINER_SUBARRAY:
+      {
+	int*sizes = (void*)&p_datatype->p.SUBARRAY.DATA;;
+	int*subsizes = sizes + p_datatype->p.SUBARRAY.ndims;
+	int*starts = subsizes + p_datatype->p.SUBARRAY.ndims;
+	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.SUBARRAY.old_type);
+	MPI_Type_create_subarray(p_datatype->p.SUBARRAY.ndims, sizes, subsizes, starts, p_datatype->p.SUBARRAY.order, p_oldtype->id, newtype);
+      }
+      break;
+    case MPI_COMBINER_STRUCT:
+      {
+	void*tmp = (void*)&p_datatype->p.STRUCT.DATA;
+	uint32_t*old_hashes = tmp;
+	MPI_Datatype aodt[p_datatype->count];
+	int i;
+	nm_mpi_datatype_t*p_oldtype;
+	for(i = 0; i < p_datatype->count; ++i)
+	  {
+	    p_oldtype = nm_mpi_datatype_hashtable_get(old_hashes[i]);
+	    aodt[i] = p_oldtype->id;
+	  }
+	tmp += p_datatype->count * sizeof(MPI_Datatype);
+	int*aob = tmp;
+	tmp += p_datatype->count * sizeof(int);
+	MPI_Aint*aod = tmp;
+	MPI_Type_struct(p_datatype->count, aob, aod, aodt, newtype);
+      }
+      break;
+    default:
+      ERROR("madmpi: cannot deserialize datatype with combiner %d\n", p_datatype->combiner);
+    }
+  nm_mpi_datatype_t*p_newtype = nm_mpi_datatype_get(*newtype), *p_saved_type;
+  uint32_t       newtype_hash = p_newtype->hash;
+  nm_mpi_datatype_hashtable_insert(p_newtype);
+  p_saved_type = nm_mpi_datatype_hashtable_get(newtype_hash);
+  *newtype = p_saved_type->id;
+  if(p_saved_type == p_newtype)
+    {
+      nm_mpi_datatype_properties_compute(p_newtype);
+    }
+  else
+    {
+      nm_mpi_datatype_unlock(p_newtype);
+    }
+}
 
 int mpi_pack(void*inbuf, int incount, MPI_Datatype datatype, void*outbuf, int outsize, int*position, MPI_Comm comm)
 {
@@ -1279,4 +2060,68 @@ int mpi_type_get_name(MPI_Datatype datatype, char*type_name, int*resultlen)
     }
   *resultlen = strlen(type_name);
   return MPI_SUCCESS;
+}
+
+int mpi_type_create_keyval(MPI_Type_copy_attr_function*copy_fn, MPI_Type_delete_attr_function*delete_fn, int*keyval, void*extra_state)
+{
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_new();
+  p_keyval->copy_fn = copy_fn;
+  p_keyval->delete_fn = delete_fn;
+  p_keyval->extra_state = extra_state;
+  *keyval = p_keyval->id;
+  return MPI_SUCCESS;
+}
+
+int mpi_type_free_keyval(int*keyval)
+{
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(*keyval);
+  if(p_keyval == NULL)
+    return MPI_ERR_KEYVAL;
+  nm_mpi_keyval_delete(p_keyval);
+  *keyval = MPI_KEYVAL_INVALID;
+  return MPI_SUCCESS;
+}
+
+int mpi_type_delete_attr(MPI_Datatype datatype, int keyval)
+{
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(keyval);
+  if(p_keyval == NULL)
+    return MPI_ERR_KEYVAL;
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  int err = nm_mpi_attr_delete(p_datatype->id, p_datatype->attrs, p_keyval);
+  return err;
+}
+
+int mpi_type_set_attr(MPI_Datatype datatype, int type_keyval, void *attribute_val)
+{
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(type_keyval);
+  if(p_keyval == NULL)
+    return MPI_ERR_KEYVAL;
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
+  if(p_datatype->attrs == NULL)
+    {
+      p_datatype->attrs = puk_hashtable_new_ptr();
+    }
+  int err = nm_mpi_attr_put(p_datatype->id, p_datatype->attrs, p_keyval, attribute_val);
+  return err;
+}
+
+int mpi_type_get_attr(MPI_Datatype datatype, int type_keyval, void *attribute_val, int *flag)
+{
+  int err = MPI_SUCCESS;
+  *flag = 0;
+  /* Check type validity */
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(NULL == p_datatype) {
+    return MPI_ERR_TYPE;
+  }  
+  struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(type_keyval);
+  if(p_keyval == NULL)
+    return MPI_ERR_KEYVAL;
+  nm_mpi_attr_get(p_datatype->attrs, p_keyval, attribute_val, flag);
+  return err;
 }

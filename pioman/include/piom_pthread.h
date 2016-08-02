@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008-2015 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008-2016 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 /* ** base pthread types *********************************** */
 
 #define piom_thread_t      pthread_t
+#define piom_thread_attr_t pthread_attr_t
 #define PIOM_THREAD_NULL ((pthread_t)(-1))
 #define PIOM_SELF          pthread_self()
 
@@ -172,6 +173,19 @@ static inline void piom_sem_init(piom_sem_t *sem, int initial)
 #else /* PIOMAN_SEM_COND */
   sem_init(sem, 0, initial);
 #endif /* PIOMAN_SEM_COND */
+}
+
+/* ** Thread creation and join ***************************** */
+
+static inline int piom_thread_create(piom_thread_t*thread, piom_thread_attr_t*attr,
+				     void*(*thread_func)(void*), void*arg)
+{
+  return pthread_create((pthread_t*)thread, (pthread_attr_t*)attr, thread_func, arg);
+}
+
+static inline int piom_thread_join(piom_thread_t thread)
+{
+  return pthread_join((pthread_t)thread, NULL);
 }
 
 #endif /* PIOM_PTHREAD_H */

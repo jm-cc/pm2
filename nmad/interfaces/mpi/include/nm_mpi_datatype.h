@@ -267,6 +267,18 @@ int MPI_Type_set_name(MPI_Datatype datatype, char*type_name);
 
 int MPI_Type_get_name(MPI_Datatype datatype, char*type_name, int*resultlen);
 
+int MPI_Type_create_keyval(MPI_Type_copy_attr_function*copy_fn,
+			   MPI_Type_delete_attr_function*delete_fn,
+			   int*keyval,
+			   void*extra_state);
+
+int MPI_Type_free_keyval(int*keyval);
+
+int MPI_Type_delete_attr(MPI_Datatype datatype, int keyval);
+
+int MPI_Type_set_attr(MPI_Datatype datatype, int datatype_keyval, void *attribute_val);
+
+int MPI_Type_get_attr(MPI_Datatype datatype, int datatype_keyval, void *attribute_val, int *flag);
 
 /**
  * Packs a message specified by inbuf, incount, datatype, comm into

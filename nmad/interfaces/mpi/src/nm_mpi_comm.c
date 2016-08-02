@@ -51,6 +51,7 @@ NM_MPI_ALIAS(MPI_Comm_group,            mpi_comm_group);
 NM_MPI_ALIAS(MPI_Comm_create,           mpi_comm_create);
 NM_MPI_ALIAS(MPI_Comm_create_group,     mpi_comm_create_group);
 NM_MPI_ALIAS(MPI_Comm_split,            mpi_comm_split);
+NM_MPI_ALIAS(MPI_Comm_split_type,       mpi_comm_split_type);
 NM_MPI_ALIAS(MPI_Comm_dup,              mpi_comm_dup);
 NM_MPI_ALIAS(MPI_Comm_free,             mpi_comm_free);
 NM_MPI_ALIAS(MPI_Comm_compare,          mpi_comm_compare);
@@ -149,6 +150,21 @@ static void nm_mpi_communicator_destroy(nm_mpi_communicator_t*p_comm)
       nm_comm_destroy(p_comm->p_nm_comm);
       nm_mpi_handle_communicator_free(&nm_mpi_communicators, p_comm);
     }
+}
+
+__PUK_SYM_INTERNAL
+nm_mpi_group_t*nm_mpi_group_get(MPI_Group group)
+{
+  nm_mpi_group_t*p_group = nm_mpi_handle_group_get(&nm_mpi_groups, group);
+  return p_group;
+}
+
+__PUK_SYM_INTERNAL
+nm_mpi_group_t*nm_mpi_group_alloc(void)
+{
+  nm_mpi_group_t*p_group = nm_mpi_handle_group_alloc(&nm_mpi_groups);
+  p_group->p_nm_group = NULL;
+  return p_group;
 }
 
 static void nm_mpi_group_destroy(nm_mpi_group_t*p_group)
@@ -432,7 +448,7 @@ int mpi_comm_group(MPI_Comm comm, MPI_Group*group)
       p_new_group->p_nm_group = (p_comm->kind == NM_MPI_COMMUNICATOR_INTER) ?
 	nm_group_dup(p_comm->intercomm.p_local_group) :
 	nm_group_dup(nm_comm_group(p_comm->p_nm_comm));
-      MPI_Group new_id = p_new_group->id;;
+      MPI_Group new_id = p_new_group->id;
       *group = new_id;
     }
   return MPI_SUCCESS;
@@ -554,7 +570,7 @@ int mpi_comm_create_group(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm*newc
   return MPI_SUCCESS;
 }
   
-/** a node participating in a mpi_coll_split */
+/** a node participating in a mpi_comm_split */
 struct nm_mpi_comm_split_node_s
 {
   int color;
@@ -654,6 +670,134 @@ int mpi_comm_split(MPI_Comm oldcomm, int color, int key, MPI_Comm*newcomm)
 	    }
 	}
       free(all_colors);
+      if(p_remote_leader == NULL)
+	{
+	  /* remote group is empty */
+	  *newcomm = MPI_COMM_NULL;
+	}
+      else
+	{
+	  nm_mpi_communicator_t*p_new_intercomm = nm_mpi_intercomm_create(p_old_comm, p_newgroup, p_local_leader, p_remote_leader, tag);
+	  if(p_new_intercomm == NULL)
+	    {
+	      *newcomm = MPI_COMM_NULL;
+	    }
+	  else
+	    {
+	      *newcomm = p_new_intercomm->id;
+	    }
+	}
+    }
+  nm_group_free(p_newgroup);
+  free(all_nodes);
+  return MPI_SUCCESS;
+}
+
+#warning THIS HARDLY WORKS, AND IS USED ONLY FOR RMA TESTS. IT HAS TO BE REDONE !
+/** a node participating in a mpi_comm_split_type */
+struct nm_mpi_comm_split_shared_node_s
+{
+  char hostname[1024];
+  int key;
+  int rank;
+};
+/** sort by color major, key minor */
+static int nodesharedcmp(const void*v1, const void*v2) 
+{
+  const struct nm_mpi_comm_split_shared_node_s*n1 = v1;
+  const struct nm_mpi_comm_split_shared_node_s*n2 = v2;
+  int res = strcmp(n1->hostname, n2->hostname);
+  if(0 == res)
+    return (n1->key - n2->key);
+  else
+    return res;
+}
+
+int mpi_comm_split_type(MPI_Comm oldcomm, int split_type, int key, MPI_Info info, MPI_Comm*newcomm)
+{
+  fprintf(stderr, "# This functions (%s) is not implemented yet.\n",__FUNCTION__);
+  nm_mpi_communicator_t*p_old_comm = nm_mpi_communicator_get(oldcomm);
+  const int intra = (p_old_comm->kind == NM_MPI_COMMUNICATOR_INTRA);
+  nm_group_t p_old_group = intra ? nm_comm_group(p_old_comm->p_nm_comm) : p_old_comm->intercomm.p_local_group;
+  const int group_size   = nm_group_size(p_old_group);
+  const int rank         = intra ? nm_comm_rank(p_old_comm->p_nm_comm) : p_old_comm->intercomm.rank;
+  const struct nm_mpi_comm_split_shared_node_s local_node = { .key = key, .rank = rank};
+  char hostname[1024];
+  gethostname(hostname, 1024);
+  hostname[1023] = '\0';
+  memcpy((void*)local_node.hostname, hostname, 1024 * sizeof(char));
+  struct nm_mpi_comm_split_shared_node_s*all_nodes = malloc(group_size * sizeof(struct nm_mpi_comm_split_shared_node_s));
+
+  const int tag = NM_MPI_TAG_PRIVATE_COMMSPLIT;
+  const nm_gate_t p_self_gate = nm_comm_gate_self(p_old_comm->p_nm_comm);
+  const nm_gate_t p_root_gate = nm_group_get_gate(p_old_group, 0);
+  nm_coll_group_gather(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, p_root_gate, p_self_gate,
+		       &local_node, sizeof(local_node), all_nodes, sizeof(local_node), tag);
+  if(p_self_gate == p_root_gate)
+    {
+      qsort(all_nodes, group_size, sizeof(struct nm_mpi_comm_split_shared_node_s), &nodesharedcmp);
+    }
+  nm_coll_group_bcast(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, p_root_gate, p_self_gate,
+		      all_nodes, group_size * sizeof(struct nm_mpi_comm_split_shared_node_s), tag);
+  nm_group_t p_newgroup = nm_group_new();
+  int i;
+  for(i = 0; i < group_size; i++)
+    {
+      if(!strcmp(all_nodes[i].hostname, local_node.hostname))
+	{
+	  const nm_gate_t p_gate = nm_group_get_gate(p_old_group, all_nodes[i].rank);
+	  nm_group_add_node(p_newgroup, p_gate);
+	}
+    }
+  if(intra)
+    {
+      nm_comm_t p_nm_comm = nm_comm_create(p_old_comm->p_nm_comm, p_newgroup);
+      if(split_type == MPI_UNDEFINED)
+	{
+	  *newcomm = MPI_COMM_NULL;
+	}
+      else if(p_nm_comm != NULL)
+	{
+	  nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, p_old_comm->p_errhandler, NM_MPI_COMMUNICATOR_INTRA);
+	  *newcomm = p_new_comm->id;
+	}
+      else
+	{
+	  fprintf(stderr, "# MPI_Comm_split()- internal error (node in group, not in new communicator).\n");
+	  abort();
+	}
+    }
+  else
+    {
+      /* find new group leaders */
+      const int parent_size = nm_comm_size(p_old_comm->p_nm_comm);
+      char*all_hostnames = (char*)malloc(1024 * sizeof(char) * parent_size);
+      nm_coll_gather(p_old_comm->p_nm_comm, 1, local_node.hostname, 1024 * sizeof(char), all_hostnames, 1024 * sizeof(char), tag);
+      nm_coll_bcast(p_old_comm->p_nm_comm, 1, all_hostnames, 1024 * sizeof(char) * parent_size, tag);
+      const int local_size      = nm_group_size(p_old_comm->intercomm.p_local_group);
+      const int remote_size     = nm_group_size(p_old_comm->intercomm.p_remote_group);
+      const int local_offset    = (p_old_comm->intercomm.remote_offset == 0) ? remote_size : 0;
+      const int remote_offset   = p_old_comm->intercomm.remote_offset;
+      nm_gate_t p_local_leader  = NULL;
+      nm_gate_t p_remote_leader = NULL;
+      for(i = 0; i < local_size; i++)
+	{
+	  if(!strcmp(&all_hostnames[1024 * (i + local_offset)], local_node.hostname))
+	    {
+	      p_local_leader = nm_comm_get_gate(p_old_comm->p_nm_comm, i + local_offset);
+	      break;
+	    }
+	}
+      assert(p_local_leader != NULL);
+      for(i = 0; i < remote_size; i++)
+	{
+	  if(!strcmp(&all_hostnames[1024 * (i + remote_offset)], local_node.hostname))
+	    {
+	      p_remote_leader = nm_comm_get_gate(p_old_comm->p_nm_comm, i + remote_offset);
+	      break;
+	    }
+	}
+      free(all_hostnames);
       if(p_remote_leader == NULL)
 	{
 	  /* remote group is empty */
@@ -1123,7 +1267,7 @@ int mpi_comm_remote_group(MPI_Comm comm, MPI_Group*group)
     {
       nm_mpi_group_t*p_new_group = nm_mpi_handle_group_alloc(&nm_mpi_groups);
       p_new_group->p_nm_group = nm_group_dup(p_comm->intercomm.p_remote_group);
-      MPI_Group new_id = p_new_group->id;;
+      MPI_Group new_id = p_new_group->id;
       *group = new_id;
     }
   return MPI_SUCCESS;

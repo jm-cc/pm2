@@ -65,6 +65,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
 void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen)
 {
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
+  assert(hlen > 0);
   nmad_lock();
   if(r->driver->pack_data == NULL)
     {

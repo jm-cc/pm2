@@ -1,0 +1,66 @@
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @puk_root@/etc/common_vars.mk
+
+TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/*.c))
+TARGET_LIB =
+SUBDIRS =
+
+INSTALL_BIN     = $(TARGET_BIN)
+INSTALL_LIB     = $(TARGET_LIB)
+INSTALL_INCLUDE = 
+
+INSTALL_PREFIX := @nmad_root@
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
+
+CC       := @nmad_root@/bin/mpicc
+CFLAGS   := 
+LD       := $(CC)
+LDFLAGS  :=
+LIBS     :=
+CC_DEP   := $(CC) -MM
+
+include @puk_root@/etc/common_rules.mk
+
+$(TARGET_BIN): %: %.pic.o
+
+TESTS +=
+BENCH += mpi_bench mpi_latency
+
+include @nmad_srcdir@/nmad-tests.mk
+
+test-pscw_put: NMAD_NODES = 2
+
+test-pscw_put-struct: NMAD_NODES = 2
+
+test-pscw_get: NMAD_NODES = 2
+
+test-pscw_rget: NMAD_NODES = 2
+
+test-pscw_get-struct: NMAD_NODES = 2
+
+test-fence_put: NMAD_NODES = 2
+
+test-fence_put-struct: NMAD_NODES = 2
+
+test-fence_get: NMAD_NODES = 2
+
+test-fence_rget: NMAD_NODES = 2
+
+test-fence_get-struct: NMAD_NODES = 2
+
+test-lock_put: NMAD_NODES = 2
+
+test-lock_put_self: NMAD_NODES = 2
+
+test-lock_put-struct: NMAD_NODES = 2
+
+test-lock_get: NMAD_NODES = 2
+
+test-lock_rget: NMAD_NODES = 2
+
+test-lock_get-struct: NMAD_NODES = 2
+
+test-win_errhandler: NMAD_NODES = 1

@@ -164,8 +164,10 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
 {
   struct nm_strat_aggreg_s*p_status = _status;
   const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pack->p_data);
+#warning TODO- max block count and header size are rough estimates
   /* maximum header length- real length depends on block size */
-  const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
+  const nm_len_t max_blocks = (p_props->blocks > chunk_len) ? chunk_len : p_props->blocks;
+  const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + max_blocks * sizeof(struct nm_header_pkt_data_chunk_s);
   const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : 0; /* average block size */
   if(chunk_len + max_header_len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {

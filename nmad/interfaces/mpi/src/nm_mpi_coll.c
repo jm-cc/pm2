@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014 (see AUTHORS file)
+ * Copyright (C) 2014-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(MadMPI);
-
 
 /* ********************************************************* */
 
@@ -41,7 +40,8 @@ NM_MPI_ALIAS(MPI_Reduce_scatter, mpi_reduce_scatter);
 
 /* ** building blocks */
 
-static nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm)
+__PUK_SYM_INTERNAL
+nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm)
 {
   nm_mpi_request_t*p_req = nm_mpi_request_alloc();
   p_req->request_type            = NM_MPI_REQUEST_SEND;
@@ -59,7 +59,9 @@ static nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_d
     }
   return p_req;
 }
-static nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int source, int tag, nm_mpi_communicator_t*p_comm)
+
+__PUK_SYM_INTERNAL
+nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int source, int tag, nm_mpi_communicator_t*p_comm)
 {
   nm_mpi_request_t*p_req = nm_mpi_request_alloc();
   p_req->request_type            = NM_MPI_REQUEST_RECV;
@@ -78,7 +80,8 @@ static nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatyp
   return p_req;
 }
 
-static void nm_mpi_coll_wait(nm_mpi_request_t*p_req)
+__PUK_SYM_INTERNAL
+void nm_mpi_coll_wait(nm_mpi_request_t*p_req)
 {
   int err = nm_mpi_request_wait(p_req);
   if(err != MPI_SUCCESS)
@@ -224,8 +227,8 @@ int mpi_allgather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   const int size = nm_comm_size(p_comm->p_nm_comm);
   const int rank = nm_comm_rank(p_comm->p_nm_comm);
-  nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
+  nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_request_t**rreqs = malloc(size * sizeof(nm_mpi_request_t*));
   nm_mpi_request_t**sreqs = malloc(size * sizeof(nm_mpi_request_t*));
   int i;
@@ -234,7 +237,15 @@ int mpi_allgather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void
       if(i == rank) continue;
       rreqs[i] = nm_mpi_coll_irecv(nm_mpi_datatype_get_ptr(recvbuf, i * recvcount, p_recv_datatype),
 				   recvcount, p_recv_datatype, i, tag, p_comm);
-      sreqs[i] = nm_mpi_coll_isend(sendbuf, sendcount, p_send_datatype, i, tag, p_comm);
+      if(sendbuf != MPI_IN_PLACE)
+	{
+	  sreqs[i] = nm_mpi_coll_isend(sendbuf, sendcount, p_send_datatype, i, tag, p_comm);
+	}
+      else
+	{
+	  sreqs[i] = nm_mpi_coll_isend(nm_mpi_datatype_get_ptr(recvbuf, rank*recvcount, p_recv_datatype),
+				       recvcount, p_recv_datatype, i, tag, p_comm);
+	}
     }
   for(i = 0; i < size; i++)
     {
@@ -435,7 +446,7 @@ int mpi_alltoallv(const void* sendbuf, const int *sendcounts, const int *sdispls
 int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_REDUCE;
-  if(op == MPI_OP_NULL)
+  if(op == MPI_OP_NULL || op == MPI_REPLACE || op == MPI_NO_OP)
     {
       return MPI_ERR_OP;
     }

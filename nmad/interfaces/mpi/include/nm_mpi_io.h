@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015 (see AUTHORS file)
+ * Copyright (C) 2015-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,13 +17,18 @@
 #ifndef NM_MPI_IO_H
 #define NM_MPI_IO_H
 
+/** @name IO operations */
+/* @{ */
+/** File handle */
 typedef int MPI_File;
-
 #define MPI_FILE_NULL ((MPI_File)0)
 #define _NM_MPI_FILE_OFFSET 1
 
 typedef uint64_t MPI_Offset;
+typedef void (MPI_File_errhandler_fn)(MPI_File *, int *, ...);
 
+/** @name File modes */
+/* @{ */
 #define MPI_MODE_RDONLY            0x0001
 #define MPI_MODE_RDWR              0x0002
 #define MPI_MODE_WRONLY            0x0004
@@ -33,6 +38,9 @@ typedef uint64_t MPI_Offset;
 #define MPI_MODE_DELETE_ON_CLOSE   0x0100
 #define MPI_MODE_UNIQUE_OPEN       0x0200
 #define MPI_MODE_SEQUENTIAL        0x0400
+/* @} */
+
+/* @} */
 
 int MPI_File_open(MPI_Comm comm, char*filename, int amode, MPI_Info info, MPI_File*fh);
 int MPI_File_close(MPI_File*fh);
@@ -45,6 +53,10 @@ int MPI_File_get_amode(MPI_File fh, int*amode);
 int MPI_File_get_type_extent(MPI_File fh, MPI_Datatype datatype, MPI_Aint*extent);
 int MPI_File_set_info(MPI_File fh, MPI_Info info);
 int MPI_File_get_info(MPI_File fh, MPI_Info*info);
+int MPI_File_create_errhandler(MPI_File_errhandler_fn*function, MPI_Errhandler*errhandler);
+int MPI_File_set_errhandler(MPI_File file, MPI_Errhandler errhandler);
+int MPI_File_get_errhandler(MPI_File file, MPI_Errhandler*errhandler);
+int MPI_File_call_errhandler(MPI_File file, int errorcode);
 
 int MPI_File_set_view(MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype, const char*datarep, MPI_Info info);
   

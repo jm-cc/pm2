@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015 (see AUTHORS file)
+ * Copyright (C) 2015-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,9 @@
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(MadMPI);
 
-/** Internal MPI file */
+/** @name File */
+/* @{ */
+
 typedef struct nm_mpi_file_s
 {
   /** identifier of the file */
@@ -41,7 +43,11 @@ typedef struct nm_mpi_file_s
     } kind;
   /** POSIX file fields */
   int fd;
+  /** error handler attached to window */
+  nm_mpi_errhandler_t*p_errhandler;
 } nm_mpi_file_t;
+
+/* @} */
  
 NM_MPI_HANDLE_TYPE(file, struct nm_mpi_file_s, _NM_MPI_FILE_OFFSET, 256);
 
@@ -61,6 +67,10 @@ NM_MPI_ALIAS(MPI_File_read,      mpi_file_read);
 NM_MPI_ALIAS(MPI_File_write,     mpi_file_write);
 NM_MPI_ALIAS(MPI_File_read_at,   mpi_file_read_at);
 NM_MPI_ALIAS(MPI_File_write_at,  mpi_file_write_at);
+NM_MPI_ALIAS(MPI_File_create_errhandler, mpi_file_create_errhandler);
+NM_MPI_ALIAS(MPI_File_set_errhandler, mpi_file_set_errhandler);
+NM_MPI_ALIAS(MPI_File_get_errhandler, mpi_file_get_errhandler);
+NM_MPI_ALIAS(MPI_File_call_errhandler, mpi_file_call_errhandler);
 
 /* ********************************************************* */
 
@@ -74,6 +84,13 @@ __PUK_SYM_INTERNAL
 void nm_mpi_io_exit(void)
 {
   nm_mpi_handle_file_finalize(&nm_mpi_files, NULL /* &nm_mpi_files_free */);
+}
+
+__PUK_SYM_INTERNAL
+nm_mpi_file_t*nm_mpi_file_get(MPI_File file)
+{
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, file);
+  return p_file;
 }
 
 /* ********************************************************* */
@@ -289,3 +306,39 @@ int mpi_file_write_at(MPI_File fh, MPI_Offset offset, void*buf, int count, MPI_D
   return MPI_SUCCESS;
 }
 
+int mpi_file_create_errhandler(MPI_File_errhandler_fn*function, MPI_Errhandler*errhandler)
+{
+  return MPI_Errhandler_create(function, errhandler);
+}
+
+int mpi_file_set_errhandler(MPI_File file, MPI_Errhandler errhandler)
+{
+  struct nm_mpi_errhandler_s*p_errhandler = nm_mpi_errhandler_get(errhandler);
+  if(p_errhandler == NULL)
+    return MPI_ERR_ARG;
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, file);
+  if(p_file == NULL)
+    return MPI_ERR_FILE;
+  p_file->p_errhandler = p_errhandler;
+  return MPI_SUCCESS;
+}
+
+int mpi_file_get_errhandler(MPI_File file, MPI_Errhandler*errhandler)
+{
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, file);
+  if(p_file == NULL)
+    return MPI_ERR_FILE;
+  struct nm_mpi_errhandler_s*p_new_errhandler = nm_mpi_errhandler_alloc();
+  *p_new_errhandler = *p_file->p_errhandler;
+  *errhandler = p_new_errhandler->id;
+  return MPI_SUCCESS;
+}
+
+int mpi_file_call_errhandler(MPI_File file, int errorcode)
+{
+  nm_mpi_file_t*p_file = nm_mpi_handle_file_get(&nm_mpi_files, file);
+  if(p_file == NULL)
+    return MPI_ERR_FILE;
+  p_file->p_errhandler->function(&file, &errorcode);
+  return MPI_SUCCESS;
+}

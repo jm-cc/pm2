@@ -117,6 +117,7 @@ size_list=$( mpi_bench_extract_sizes  )
 echo "# sizes: ${size_list}"
 
 bench_list="mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_overlap_Nload"
+bench_list="${bench_list} mpi_bench_overlap_put_origin mpi_bench_overlap_put_target"
 
 for b in ${bench_list}; do
     case ${b} in
@@ -135,6 +136,10 @@ for b in ${bench_list}; do
 	*Nload*)
 	    benchref=mpi_bench_sendrecv
 	    lat0=0
+	    ;;
+	mpi_bench_overlap_put_*)
+	    benchref=mpi_bench_rma_put_active
+	    lat0=$( mpi_bench_extract_line mpi_bench_rma_put_active 0 | cut -f 2 )
 	    ;;
 	*)
 	    benchref=mpi_bench_sendrecv

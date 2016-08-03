@@ -28,31 +28,31 @@ static const struct mpi_bench_param_bounds_s param_bounds =
     .incr = 1
   };
 
-static const struct mpi_bench_param_bounds_s*mpi_bench_put_overlap_target_getparams(void)
+static const struct mpi_bench_param_bounds_s*mpi_bench_overlap_put_target_getparams(void)
 {
   return &param_bounds;
 }
 
-static void mpi_bench_put_overlap_target_setparam(int param)
+static void mpi_bench_overlap_put_target_setparam(int param)
 {
   compute = param;
 }
 
-static void mpi_bench_put_overlap_target_server(void*buf, size_t len)
+static void mpi_bench_overlap_put_target_server(void*buf, size_t len)
 {
   MPI_Win_post(grp_other, 0, win);
   mpi_bench_do_compute(compute);
   MPI_Win_wait(win);
 }
 
-static void mpi_bench_put_overlap_target_client(void*buf, size_t len)
+static void mpi_bench_overlap_put_target_client(void*buf, size_t len)
 {
   MPI_Win_start(grp_peer, 0, win);
   MPI_Put(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, win);
   MPI_Win_complete(win);
 }
 
-static void mpi_bench_put_overlap_target_init(void*buf, size_t len, int count)
+static void mpi_bench_overlap_put_target_init(void*buf, size_t len, int count)
 {
   MPI_Comm_group(mpi_bench_common.comm, &world_group);
   MPI_Group_excl(world_group, 1, &mpi_bench_common.self, &grp_other);
@@ -60,7 +60,7 @@ static void mpi_bench_put_overlap_target_init(void*buf, size_t len, int count)
   MPI_Win_create(buf, len, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
 }
 
-static void mpi_bench_put_overlap_target_finalize(void)
+static void mpi_bench_overlap_put_target_finalize(void)
 {
   MPI_Group_free(&grp_peer);
   MPI_Group_free(&grp_other);
@@ -68,16 +68,16 @@ static void mpi_bench_put_overlap_target_finalize(void)
   MPI_Win_free(&win);
 }
 
-const struct mpi_bench_s mpi_bench_rma_put_overlap_target =
+const struct mpi_bench_s mpi_bench_overlap_put_target =
   {
-    .label     = "mpi_bench_rma_put_overlap_target",
+    .label     = "mpi_bench_overlap_put_target",
     .name      = "MPI RMA Put Active Overlap Target",
     .rtt       = 1,
-    .server    = &mpi_bench_put_overlap_target_server,
-    .client    = &mpi_bench_put_overlap_target_client,
-    .init      = &mpi_bench_put_overlap_target_init,
-    .finalize  = &mpi_bench_put_overlap_target_finalize,
-    .setparam  = &mpi_bench_put_overlap_target_setparam,
-    .getparams = &mpi_bench_put_overlap_target_getparams
+    .server    = &mpi_bench_overlap_put_target_server,
+    .client    = &mpi_bench_overlap_put_target_client,
+    .init      = &mpi_bench_overlap_put_target_init,
+    .finalize  = &mpi_bench_overlap_put_target_finalize,
+    .setparam  = &mpi_bench_overlap_put_target_setparam,
+    .getparams = &mpi_bench_overlap_put_target_getparams
   };
 

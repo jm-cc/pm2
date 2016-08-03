@@ -359,8 +359,7 @@ void nm_mpi_rma_recv(const nm_sr_event_info_t*p_info, nm_mpi_window_t*p_win)
 	/* Retrieve the request as the message header */
 	struct nm_data_mpi_datatype_header_s header_msg;
 	struct nm_data_s header;
-	nm_data_contiguous_set(&header, (struct nm_data_contiguous_s)
-			       { .ptr = &header_msg, .len = sizeof(struct nm_data_mpi_datatype_header_s) });
+	nm_data_contiguous_build(&header, &header_msg, sizeof(struct nm_data_mpi_datatype_header_s));
 	nm_sr_recv_peek(p_session, &p_req->request_nmad, &header);
 	/* Set data for unpack */
 	nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_hashtable_get(header_msg.datatype_hash);
@@ -399,8 +398,7 @@ void nm_mpi_rma_recv(const nm_sr_event_info_t*p_info, nm_mpi_window_t*p_win)
 	/* Retrieve the request as the message header */
 	struct nm_data_mpi_datatype_header_s header_msg;
 	struct nm_data_s header;
-	nm_data_contiguous_set(&header, (struct nm_data_contiguous_s)
-			       { .ptr = &header_msg, .len = sizeof(struct nm_data_mpi_datatype_header_s) });
+	nm_data_contiguous_build(&header, &header_msg, sizeof(struct nm_data_mpi_datatype_header_s));
 	nm_sr_recv_peek(p_session, &p_req->request_nmad, &header);
 	void*p_base = MPI_WIN_FLAVOR_DYNAMIC == p_win->flavor ? MPI_BOTTOM : p_win->p_base;
 	p_req->rbuf       = p_base + header_msg.offset;
@@ -501,8 +499,7 @@ static int nm_mpi_rma_is_inbound_target(nm_mpi_request_t*p_req, const nm_sr_even
   /* Check message header to verify boundaries of data */
   struct nm_data_mpi_datatype_header_s header_msg;
   struct nm_data_s header;
-  nm_data_contiguous_set(&header, (struct nm_data_contiguous_s)
-			 { .ptr = &header_msg, .len = sizeof(struct nm_data_mpi_datatype_header_s) });
+  nm_data_contiguous_build(&header, &header_msg, sizeof(struct nm_data_mpi_datatype_header_s));
   nm_sr_recv_peek(p_session, &p_req->request_nmad, &header);
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_hashtable_get(header_msg.datatype_hash);
   is_inbound = nm_mpi_win_addr_is_valid((void*)header_msg.offset,

@@ -464,7 +464,7 @@ void nm_mpi_request_complete(nm_mpi_request_t*p_req)
   // Release one active communication for that type
   if(p_req->p_datatype->id >= _NM_MPI_DATATYPE_OFFSET)
     {
-      nm_mpi_datatype_unlock(p_req->p_datatype);
+      nm_mpi_datatype_ref_dec(p_req->p_datatype);
     }
 }
 

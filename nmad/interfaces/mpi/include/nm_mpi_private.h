@@ -989,11 +989,15 @@ nm_mpi_datatype_t*nm_mpi_datatype_get(MPI_Datatype datatype);
  */
 nm_mpi_datatype_t*nm_mpi_datatype_hashtable_get(uint32_t datatype_hash);
 
-/**
- * Unlocks the given datatype, when the datatype is fully unlocked,
- * and a freeing request was posted, it will be released.
- */
-int nm_mpi_datatype_unlock(nm_mpi_datatype_t*p_datatype);
+/** increment refcount on given datatype */
+static inline void nm_mpi_datatype_ref_inc(nm_mpi_datatype_t*p_datatype)
+{
+  assert(p_datatype->refcount >= 0);
+  __sync_fetch_and_add(&p_datatype->refcount, 1);
+}
+
+/** decrements refcount on given datatype, free datatype if refcount reaches 0. */
+int nm_mpi_datatype_ref_dec(nm_mpi_datatype_t*p_datatype);
 
 void nm_mpi_datatype_pack(void*dest_ptr, const void*src_ptr, nm_mpi_datatype_t*p_datatype, int count);
 

@@ -70,7 +70,7 @@ int nm_mpi_isend_init(nm_mpi_request_t *p_req, int dest, nm_mpi_communicator_t *
 {
   int err = MPI_SUCCESS;
   nm_gate_t p_gate = nm_mpi_communicator_get_gate(p_comm, dest);
-  __sync_add_and_fetch(&p_req->p_datatype->refcount, 1);
+  nm_mpi_datatype_ref_inc(p_req->p_datatype);
   if(p_gate == NULL)
     {
       NM_MPI_FATAL_ERROR("Cannot find rank %d in comm %p.\n", dest, p_comm);
@@ -148,7 +148,7 @@ int nm_mpi_irecv_init(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t
     }
   p_req->request_source = source;
   p_req->request_type = NM_MPI_REQUEST_RECV;
-  __sync_add_and_fetch(&p_req->p_datatype->refcount, 1);
+  nm_mpi_datatype_ref_inc(p_req->p_datatype);
   return MPI_SUCCESS;
 }
 

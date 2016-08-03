@@ -1008,6 +1008,12 @@ static inline void*nm_mpi_datatype_get_ptr(void*buf, int count, const nm_mpi_dat
   return buf + count * p_datatype->extent;
 }
 
+/** build a data descriptor for mpi data */
+static inline void nm_mpi_data_build(struct nm_data_s*p_data, void*ptr, struct nm_mpi_datatype_s*p_datatype, int count)
+{
+  nm_data_mpi_datatype_set(p_data, (struct nm_data_mpi_datatype_s){ .ptr = ptr, .p_datatype = p_datatype, .count = count });
+}
+
 /**
  * Deserialize a new datatype from the informations given in
  * p_datatype.

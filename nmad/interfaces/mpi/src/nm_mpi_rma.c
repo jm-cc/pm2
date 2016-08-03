@@ -583,8 +583,7 @@ static int nm_mpi_rma_pack_send_response(nm_mpi_request_t*p_req)
   p_resp->p_datatype      = p_req->p_datatype;
   p_resp->request_source  = p_req->request_source;
   struct nm_data_s data;
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s)
-			   { .ptr = p_resp->rbuf, .p_datatype = p_resp->p_datatype, .count = p_resp->count });
+  nm_mpi_data_build(&data, p_resp->rbuf, p_resp->p_datatype, p_resp->count);
   __sync_add_and_fetch(&p_win->exposure[p_req->request_source].nmsg, 1);
   err = nm_mpi_rma_isend(p_resp, &data, p_win, 0);
   nm_sr_request_set_ref(&p_resp->request_nmad, p_resp);
@@ -609,8 +608,7 @@ static int nm_mpi_rma_copy_send_response(const nm_mpi_request_t*p_req, nm_mpi_wi
   assert(p_datatype);
   struct nm_data_s data;
   void*p_base = MPI_WIN_FLAVOR_DYNAMIC == p_win->flavor ? MPI_BOTTOM : p_win->p_base;
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s)
-			   { .ptr = p_base + p_req_info->offset, .p_datatype = p_datatype, .count = p_req_info->count });
+  nm_mpi_data_build(&data, p_base + p_req_info->offset, p_datatype, p_req_info->count);
   nm_len_t size = nm_data_size(&data);
   nm_mpi_request_t*p_resp = nm_mpi_request_alloc();
   p_resp->rbuf            = malloc(size);
@@ -684,8 +682,7 @@ static int  nm_mpi_rma_send_element(const nm_mpi_request_t*p_req, nm_mpi_window_
   nm_mpi_spin_lock(&p_win->lock);
   memcpy(&p_resp->static_buf, p_base + p_req_info->offset, p_datatype->size);
   nm_mpi_spin_unlock(&p_win->lock);
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s)
-			   { .ptr = &p_resp->static_buf, .p_datatype = p_datatype, .count = 1 });
+  nm_mpi_data_build(&data, &p_resp->static_buf, p_datatype, 1);
   __sync_add_and_fetch(&p_win->exposure[dest].nmsg, 1);
   err = nm_mpi_rma_isend(p_resp, &data, p_win, 0);
   nm_sr_request_set_ref(&p_resp->request_nmad, p_resp);
@@ -807,7 +804,7 @@ static int nm_mpi_get(void *origin_addr, int origin_count, nm_mpi_datatype_t*p_o
   p_req_in->communication_mode      = NM_MPI_MODE_IMMEDIATE;
   p_req_in->request_persistent_type = NM_MPI_REQUEST_ZERO;
   __sync_add_and_fetch(&p_origin_datatype->refcount, 1);
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = origin_addr, .p_datatype = p_origin_datatype, .count = origin_count });
+  nm_mpi_data_build(&data, origin_addr, p_origin_datatype, origin_count);
   nm_sr_recv_init(p_session, &p_req_in->request_nmad);
   nm_sr_recv_unpack_data(p_session, &p_req_in->request_nmad, &data);
   nm_sr_request_set_ref(&p_req_in->request_nmad, p_req_in);
@@ -953,7 +950,7 @@ static int nm_mpi_get_accumulate(const void *origin_addr, int origin_count,
   p_req_in->communication_mode      = NM_MPI_MODE_IMMEDIATE;
   p_req_in->request_persistent_type = NM_MPI_REQUEST_ZERO;
   __sync_add_and_fetch(&p_result_datatype->refcount, 1);
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = result_addr, .p_datatype = p_result_datatype, .count = result_count });
+  nm_mpi_data_build(&data, result_addr, p_result_datatype, result_count);
   nm_sr_recv_init(p_session, &p_req_in->request_nmad);
   nm_sr_recv_unpack_data(p_session, &p_req_in->request_nmad, &data);
   nm_sr_request_set_ref(&p_req_in->request_nmad, p_req_in);
@@ -1042,9 +1039,7 @@ static int nm_mpi_fetch_and_op(const void *origin_addr, void *result_addr,
   p_req_in->communication_mode      = NM_MPI_MODE_IMMEDIATE;
   p_req_in->request_persistent_type = NM_MPI_REQUEST_ZERO;
   __sync_add_and_fetch(&p_datatype->refcount, 1);
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){
-      .ptr = result_addr, .p_datatype = p_datatype, .count = 1
-	});
+  nm_mpi_data_build(&data, result_addr, p_datatype, 1);
   nm_sr_recv_init(p_session, &p_req_in->request_nmad);
   nm_sr_recv_unpack_data(p_session, &p_req_in->request_nmad, &data);
   nm_sr_request_set_ref(&p_req_in->request_nmad, p_req_in);
@@ -1116,7 +1111,7 @@ static int nm_mpi_compare_and_swap(const void *origin_addr, const void *compare_
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
   p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   __sync_add_and_fetch(&p_datatype->refcount, 1);
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){ .ptr = result_addr, .p_datatype = p_datatype, .count = 1 });
+  nm_mpi_data_build(&data, result_addr, p_datatype, 1);
   nm_sr_recv_init(p_session, &p_req->request_nmad);
   nm_sr_recv_unpack_data(p_session, &p_req->request_nmad, &data);
   nm_sr_request_set_ref(&p_req->request_nmad, p_req);
@@ -1927,10 +1922,7 @@ void nm_mpi_rma_handle_passive_shm(nm_mpi_request_t*p_req)
   MPI_Op op = nm_mpi_rma_tag_to_mpi_op(p_req->user_tag);
   nm_mpi_rma_request_info_t*p_info_req = p_req->rbuf;
   struct nm_data_s data;
-  nm_data_mpi_datatype_set(&data, (struct nm_data_mpi_datatype_s){
-      .ptr = p_info_req->p_target_addr, .p_datatype = p_info_req->p_target_datatype,
-	.count = p_info_req->target_count
-	});
+  nm_mpi_data_build(&data, p_info_req->p_target_addr, p_info_req->p_target_datatype, p_info_req->target_count);
   nm_len_t size = nm_data_size(&data);
   void*buf = malloc(size);
   void*tmp = buf;

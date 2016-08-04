@@ -15,8 +15,6 @@
 
 #include "mpi_bench_generic.h"
 
-#define BLOCKSIZE 32
-
 static int blocksize = 0;
 
 static const struct mpi_bench_param_bounds_s param_bounds =

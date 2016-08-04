@@ -33,6 +33,9 @@ while [ "x${1}" != "x" ]; do
 	    usage
 	    exit
 	    ;;
+	--rma)
+	    rma=true
+	    ;;
 	-*)
 	    usage
 	    exit 1
@@ -110,14 +113,15 @@ mpi_bench_extract_params() {
 }
 
 mpi_bench_extract_sizes() {
-    sed -e "/^#/ d" ${outdir}/mpi_bench_sendrecv.dat | cut -f 1 | tr '\n' ' '
+    b=$1
+    sed -e "/^#/ d" ${outdir}/${b}.dat | cut -f 1 | tr '\n' ' '
 }
 
-size_list=$( mpi_bench_extract_sizes  )
-echo "# sizes: ${size_list}"
-
-bench_list="mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_overlap_Nload"
-bench_list="${bench_list} mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_target"
+if [ "x${rma}" = "x" ]; then
+    bench_list="mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_overlap_Nload"
+else
+    bench_list="mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_target"
+fi
 
 for b in ${bench_list}; do
     case ${b} in
@@ -148,6 +152,8 @@ for b in ${bench_list}; do
     esac
     benchfile=${outdir}/${b}.dat
     echo "# file ${benchfile}"
+    size_list=$( mpi_bench_extract_sizes ${benchref} )
+    echo "# sizes: ${size_list}"
     params=$( mpi_bench_extract_params ${b} )
     echo "# params list: ${params}"
     echo "# generated from ${b} and ${benchref}"       > ${outdir}/${b}-ref.dat

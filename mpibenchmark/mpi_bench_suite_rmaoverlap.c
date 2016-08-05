@@ -19,9 +19,11 @@
 
 const extern struct mpi_bench_s mpi_bench_rma_put_active;
 const extern struct mpi_bench_s mpi_bench_rma_put_passive;
+const extern struct mpi_bench_s mpi_bench_rma_put_noncontig;
 const extern struct mpi_bench_s mpi_bench_rmaoverlap_put_origin;
 const extern struct mpi_bench_s mpi_bench_rmaoverlap_put_target;
 const extern struct mpi_bench_s mpi_bench_rmaoverlap_put_passive;
+const extern struct mpi_bench_s mpi_bench_rmaoverlap_put_noncontig;
 
 int main(int argc, char**argv)
 {
@@ -38,10 +40,12 @@ int main(int argc, char**argv)
   mpi_bench_init(&argc, &argv, 0);
   mpi_bench_run(&mpi_bench_rma_put_active, &params);
   mpi_bench_run(&mpi_bench_rma_put_passive, &params);
+  mpi_bench_run(&mpi_bench_rma_put_noncontig, &params);
   params.iterations = LOOPS_DEFAULT_PARAM;
   mpi_bench_run(&mpi_bench_rmaoverlap_put_origin, &params);
   mpi_bench_run(&mpi_bench_rmaoverlap_put_target, &params);
   mpi_bench_run(&mpi_bench_rmaoverlap_put_passive, &params);
+  mpi_bench_run(&mpi_bench_rmaoverlap_put_noncontig, &params);
   mpi_bench_finalize();
   exit(0);
 }

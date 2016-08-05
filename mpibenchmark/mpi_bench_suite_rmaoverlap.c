@@ -43,6 +43,7 @@ int main(int argc, char**argv)
   mpi_bench_run(&mpi_bench_rma_put_active, &params);
   mpi_bench_run(&mpi_bench_rma_put_passive, &params);
   mpi_bench_run(&mpi_bench_rma_put_noncontig, &params);
+  mpi_bench_run(&mpi_bench_rma_get_active, &params);
   params.iterations = LOOPS_DEFAULT_PARAM;
   mpi_bench_run(&mpi_bench_rmaoverlap_put_origin, &params);
   mpi_bench_run(&mpi_bench_rmaoverlap_put_target, &params);

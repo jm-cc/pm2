@@ -60,7 +60,7 @@ fi
 outdir="${file}.d"
 mkdir -p ${outdir}
 
-bench_list=$( sed -e 's/# bench: \(mpi_bench_[a-zA-Z0-9_]*\) begin/\1/p;d' ${file} | sed -e 's/noncontig/noncontig%32/g' | tr '\n\r' ' ' )
+bench_list=$( sed -e 's/# bench: \(mpi_bench_[a-zA-Z0-9_]*\) begin/\1/p;d' ${file} | sed -e 's/mpi_bench_noncontig/mpi_bench_noncontig%32/g;s/mpi_bench_rma_put_noncontig/mpi_bench_rma_put_noncontig%32/g' | tr '\n\r' ' ' )
 
 echo
 echo "# ## parsing file ${file}..."
@@ -158,6 +158,7 @@ for b in ${bench_list}; do
 	    lat0=$( mpi_bench_extract_line mpi_bench_sendrecv 0 | cut -f 2 )
 	    ;;
     esac
+    echo "# ## benchmark: ${b}"
     benchfile=${outdir}/${b}.dat
     echo "# file ${benchfile}"
     size_list=$( mpi_bench_extract_sizes ${benchref} )

@@ -21,7 +21,7 @@ static MPI_Group world_group, grp_peer, grp_other;
 static void mpi_bench_accumulate_active_server(void*buf, size_t len)
 {
   MPI_Win_start(grp_peer, 0, win);
-  MPI_Accumulate(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, MPI_REPLACE, win);
+  MPI_Accumulate(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, MPI_SUM, win);
   MPI_Win_complete(win);
   MPI_Win_post(grp_other, 0, win);
   MPI_Win_wait(win);
@@ -32,7 +32,7 @@ static void mpi_bench_accumulate_active_client(void*buf, size_t len)
   MPI_Win_post(grp_other, 0, win);
   MPI_Win_wait(win);
   MPI_Win_start(grp_peer, 0, win);
-  MPI_Accumulate(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, MPI_REPLACE, win);
+  MPI_Accumulate(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, MPI_SUM, win);
   MPI_Win_complete(win);
 }
 
@@ -55,7 +55,7 @@ static void mpi_bench_accumulate_active_finalize(void)
 const struct mpi_bench_s mpi_bench_rma_accumulate_active =
   {
     .label    = "mpi_bench_rma_accumulate_active",
-    .name     = "MPI RMA Accumulate Active",
+    .name     = "MPI RMA Active Accumulate",
     .server   = &mpi_bench_accumulate_active_server,
     .client   = &mpi_bench_accumulate_active_client,
     .init     = &mpi_bench_accumulate_active_init,

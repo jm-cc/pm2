@@ -120,7 +120,7 @@ mpi_bench_extract_sizes() {
 if [ "x${rma}" = "x" ]; then
     bench_list="mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_overlap_Nload"
 else
-    bench_list="mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_target mpi_bench_rmaoverlap_put_passive mpi_bench_rmaoverlap_put_noncontig"
+    bench_list="mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_target mpi_bench_rmaoverlap_put_passive mpi_bench_rmaoverlap_put_noncontig mpi_bench_rmaoverlap_get"
 fi
 
 for b in ${bench_list}; do
@@ -132,6 +132,10 @@ for b in ${bench_list}; do
 	*rmaoverlap_put_noncontig)
 	    benchref="mpi_bench_rma_put_noncontig%32"
 	    lat0=$( mpi_bench_extract_line mpi_bench_rma_put_active 0 | cut -f 2 )
+	    ;;
+	*rmaoverlap_get*)
+	    benchref=mpi_bench_rma_get_active
+	    lat0=$( mpi_bench_extract_line mpi_bench_rma_get_active 0 | cut -f 2 )
 	    ;;
 	*rmaoverlap*)
 	    benchref=mpi_bench_rma_put_active

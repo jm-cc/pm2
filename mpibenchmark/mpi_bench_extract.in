@@ -84,7 +84,7 @@ else
     expected_bench_list="mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_target mpi_bench_rmaoverlap_put_passive mpi_bench_rmaoverlap_put_noncontig mpi_bench_rmaoverlap_get mpi_bench_rmaoverlap_accumulate"
 fi
 
-base_bench_list="mpi_bench_sendrecv mpi_bench_send_overhead mpi_bench_noncontig${noncontig_suffix} mpi_bench_rma_put_active mpi_bench_rma_put_passive mpi_bench_rma_accumulate_active mpi_bench_rma_put_noncontig${param_delimiter}32"
+base_bench_list="mpi_bench_sendrecv mpi_bench_send_overhead mpi_bench_noncontig${noncontig_suffix} mpi_bench_rma_put_active mpi_bench_rma_put_passive mpi_bench_rma_accumulate_active mpi_bench_rma_put_noncontig${param_delimiter}32 mpi_bench_rma_get_active"
 
 echo
 echo "# ## generating normalized files..."

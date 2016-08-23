@@ -30,7 +30,7 @@ CC       := $(MPICC)
 CFLAGS   += -Wall -I. @hwloc_CFLAGS@ @DEFS@
 LD       := $(CC)
 LDFLAGS  +=
-LIBS     += @hwloc_LIBS@
+LIBS     += -lm @hwloc_LIBS@
 CC_DEP   := $(MPICC) @CDEPFLAGS@
 
 CLEAN_MORE += $(wildcard stub_*.c)

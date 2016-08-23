@@ -15,32 +15,14 @@
 
 #include "mpi_bench_generic.h"
 
-static void mpi_bench_compute_vector_square_omp(void*buf, size_t len)
-{
-  unsigned char*m = buf;
-  size_t i;
-#ifdef _OPENMP
-#pragma omp parallel for
-#else
-#warning building without OpenMP support
-#endif
-  for(i = 0; i < len; i++)
-    {
-      const double v = (double)m[i];
-      const double s = v * v;
-      m[i] = (unsigned char)s;
-    }
-}
-
-
 static void mpi_bench_noise_omp_nocomm_server(void*buf, size_t len)
 {
-  mpi_bench_compute_vector_square_omp(buf, len);
+  mpi_bench_compute_vector(buf, len);
 }
 
 static void mpi_bench_noise_omp_nocomm_client(void*buf, size_t len)
 {
-  mpi_bench_compute_vector_square_omp(buf, len);
+  mpi_bench_compute_vector(buf, len);
 }
 
 const struct mpi_bench_s mpi_bench_noise_omp_nocomm =

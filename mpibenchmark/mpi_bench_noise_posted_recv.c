@@ -30,12 +30,12 @@ static void mpi_bench_noise_posted_recv_finalize(void)
 
 static void mpi_bench_noise_posted_recv_server(void*buf, size_t len)
 {
-  mpi_bench_compute_vector_square(buf, len);
+  mpi_bench_compute_vector(buf, len);
 }
 
 static void mpi_bench_noise_posted_recv_client(void*buf, size_t len)
 {
-  mpi_bench_compute_vector_square(buf, len);
+  mpi_bench_compute_vector(buf, len);
 }
 
 const struct mpi_bench_s mpi_bench_noise_posted_recv =

@@ -18,6 +18,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #ifndef MPI_BENCH_GENERIC_H
 #define MPI_BENCH_GENERIC_H
@@ -143,17 +144,20 @@ static void mpi_bench_do_compute(int usec)
     }
 }
 
-/** computation on variable-size vector (square values of a vector) */
-static void mpi_bench_compute_vector_square(void*buf, size_t len) __attribute__((unused));
-static void mpi_bench_compute_vector_square(void*buf, size_t len)
+/** computation on variable-size vector */
+static void mpi_bench_compute_vector(void*buf, size_t len) __attribute__((unused));
+static void mpi_bench_compute_vector(void*buf, size_t len)
 {
   unsigned char*m = buf;
   size_t i;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
   for(i = 0; i < len; i++)
     {
-      const double v = (double)m[i];
-      const double s = v * v;
-      m[i] = (unsigned char)s;
+      double v = (double)m[i];
+      v = sqrt(v * v + 1.0);
+      m[i] = (unsigned char)v;
     }
 }
 

@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include "mpi_bench_generic.h"
 
+const extern struct mpi_bench_s mpi_bench_sendrecv;
 const extern struct mpi_bench_s mpi_bench_rma_put_active;
 const extern struct mpi_bench_s mpi_bench_rma_put_passive;
 const extern struct mpi_bench_s mpi_bench_rma_put_noncontig;
@@ -42,6 +43,7 @@ int main(int argc, char**argv)
     };
 
   mpi_bench_init(&argc, &argv, 0);
+  mpi_bench_run(&mpi_bench_sendrecv, &params);
   mpi_bench_run(&mpi_bench_rma_put_active, &params);
   mpi_bench_run(&mpi_bench_rma_put_passive, &params);
   mpi_bench_run(&mpi_bench_rma_put_noncontig, &params);

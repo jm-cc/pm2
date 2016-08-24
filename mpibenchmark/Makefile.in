@@ -56,7 +56,7 @@ mpi_bench_suite_thread: $(patsubst %, %.o, mpi_bench_suite_thread mpi_bench_gene
 
 mpi_bench_suite_rma: $(patsubst %, %.o, mpi_bench_suite_rma mpi_bench_generic $(BENCH_RMA))
 
-mpi_bench_suite_rmaoverlap: $(patsubst %, %.o, mpi_bench_suite_rmaoverlap mpi_bench_generic $(BENCH_RMA) $(BENCH_RMAOVERLAP))
+mpi_bench_suite_rmaoverlap: $(patsubst %, %.o, mpi_bench_suite_rmaoverlap mpi_bench_generic $(BENCH_RMA) $(BENCH_RMAOVERLAP) $(BENCH_BASE))
 
 ifeq (@HAVE_OPENMP@,yes)
 BENCH_OPENMP = mpi_bench_noise_omp_nocomm mpi_bench_thread_NtoN mpi_bench_suite_thread

@@ -62,14 +62,14 @@ int main(int argc, char **argv)
 	  tbx_tick_t t1, t2;
 	  TBX_GET_TICK(t1);
 	  struct nm_req_s pack;
-	  nm_data_contiguous_set(&data, (struct nm_data_contiguous_s){ .ptr = &buffer, .len = sizeof(buffer) });
+	  nm_data_contiguous_build(&data, &buffer, sizeof(buffer));
 	  nm_core_pack_data(p_core, &pack, &data);
 	  nm_core_pack_send(p_core, &pack, tag, p_gate, 0);
 	  nm_core_pack_submit(p_core, &pack);
 	  while(nm_status_test(&pack, NM_STATUS_PACK_COMPLETED) == 0)
 	    nm_schedule(p_core);
 	  struct nm_req_s unpack;
-	  nm_data_contiguous_set(&data, (struct nm_data_contiguous_s){ .ptr = &buffer, .len = sizeof(buffer) });
+	  nm_data_contiguous_build(&data, &buffer, sizeof(buffer));
 	  nm_core_unpack_init(p_core, &unpack);
 	  nm_core_unpack_data(p_core, &unpack, &data);
 	  nm_core_unpack_match_recv(p_core, &unpack, p_gate, tag, NM_CORE_TAG_MASK_FULL);
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
       for(i = 0; i < roundtrips; i++)
 	{
 	  struct nm_req_s unpack;
-	  nm_data_contiguous_set(&data, (struct nm_data_contiguous_s){ .ptr = &buffer, .len = sizeof(buffer) });
+	  nm_data_contiguous_build(&data, &buffer, sizeof(buffer));
 	  nm_core_unpack_init(p_core, &unpack);
 	  nm_core_unpack_data(p_core, &unpack, &data);
 	  nm_core_unpack_match_recv(p_core, &unpack, p_gate, tag, NM_CORE_TAG_MASK_FULL);
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 	  while(nm_status_test(&unpack, NM_STATUS_UNPACK_COMPLETED) == 0)
 	    nm_schedule(p_core);
 	  struct nm_req_s pack;
-	  nm_data_contiguous_set(&data, (struct nm_data_contiguous_s){ .ptr = &buffer, .len = sizeof(buffer) });
+	  nm_data_contiguous_build(&data, &buffer, sizeof(buffer));
 	  nm_core_pack_data(p_core, &pack, &data);
 	  nm_core_pack_send(p_core, &pack, tag, p_gate, 0);
 	  nm_core_pack_submit(p_core, &pack);

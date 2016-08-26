@@ -75,6 +75,52 @@ static void clear_buffer(char*buffer, size_t len)
   memset(buffer, 0, len);
 }
 
+/* ** ACK latency ****************************************** */
+
+static double mpi_bench_ack_latency = -1.0;
+
+static void mpi_bench_latency_calibrate(void)
+{
+  const int tag_ack = 47;
+  mpi_bench_tick_t t1, t2;
+  int dummy = 0;
+  int i;
+  double lat = -1.0;
+  if(!mpi_bench_common.is_server)
+    {
+      printf("# ACK latency calibration...\n");
+    }
+  for(i = 0; i < LOOPS_CALIBRATE; i++)
+    {
+      if(mpi_bench_common.is_server)
+	{
+	  MPI_Recv(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	  MPI_Send(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD);
+	}
+      else
+	{
+	  mpi_bench_get_tick(&t1);
+	  MPI_Send(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD);
+	  MPI_Recv(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	  mpi_bench_get_tick(&t2);
+	  const double delay = mpi_bench_timing_delay(&t1, &t2) / 2.0;
+	  if((lat < 0) || (delay < lat))
+	    lat = delay;
+	}
+    }
+  mpi_bench_ack_latency = lat;
+  if(!mpi_bench_common.is_server)
+    {
+      printf("# ACK latency: %f usec.\n", lat);
+    }
+}
+
+static double mpi_bench_latency_get(void)
+{
+  assert(mpi_bench_ack_latency > 0);
+  return mpi_bench_ack_latency;
+}
+
 /* ** Threads ********************************************** */
 
 int mpi_bench_get_threads(void)
@@ -187,14 +233,21 @@ void mpi_bench_init(int*argc, char***argv, int threads)
       printf("# running on host: %s; build date: %s\n", hostname, __DATE__);
       printf("# \n");
     }
+  mpi_bench_latency_calibrate();
 }
 
 void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_param_s*params)
 {
   if(!mpi_bench_common.is_server)
     {
+      static const char*mpi_bench_rtt_labels[3] =
+	{
+	  [ MPI_BENCH_RTT_HALF ]   = "one-way",
+	  [ MPI_BENCH_RTT_FULL ]   = "round-trip",
+	  [ MPI_BENCH_RTT_SUBLAT ] = "full minus ack"
+	};
       printf("# bench: %s begin\n", mpi_bench->label);
-      printf("# measured time is: %s\n", mpi_bench->rtt ? "round-trip" : "one-way");
+      printf("# measured time is: %s\n", (mpi_bench->rtt >= 0 && mpi_bench->rtt < _MPI_BENCH_RTT_LAST) ? mpi_bench_rtt_labels[mpi_bench->rtt] : "<invalid>");
     }
   const struct mpi_bench_param_bounds_s*param_bounds = NULL;
   if(mpi_bench->setparam != NULL && mpi_bench->getparams != NULL)
@@ -282,7 +335,21 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 		  (*mpi_bench->client)(buf, len);
 		  mpi_bench_get_tick(&t2);
 		  const double delay = mpi_bench_timing_delay(&t1, &t2);
-		  const double t = mpi_bench->rtt ? delay : (delay / 2);
+		  double t = 0.0;
+		  switch(mpi_bench->rtt)
+		    {
+		    case MPI_BENCH_RTT_HALF:
+		      t = delay / 2.0;
+		      break;
+		    case MPI_BENCH_RTT_FULL:
+		      t = delay;
+		      break;
+		    case MPI_BENCH_RTT_SUBLAT:
+		      t = delay - mpi_bench_latency_get();
+		      break;
+		    default:
+		      abort();
+		    }
 		  lats[k] = t;
 		}
 	      if(mpi_bench->finalize != NULL)

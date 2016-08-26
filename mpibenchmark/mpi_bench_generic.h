@@ -37,6 +37,8 @@
 #define LOOPS_DEFAULT       1000
 #define PARAM_DEFAULT       -1
 
+#define LOOPS_CALIBRATE     10000
+
 /* ********************************************************* */
 
 /** parameters for a benchmark */
@@ -58,11 +60,19 @@ struct mpi_bench_param_bounds_s
   int incr;
 };
 
+enum mpi_bench_rtt_e
+  {
+    MPI_BENCH_RTT_HALF   = 0, /**< display half-roundtrip (supposed to be one-way latency) */
+    MPI_BENCH_RTT_FULL   = 1, /**< display full roundtrip (either it is directly meaningfull, or will be post-processed) */
+    MPI_BENCH_RTT_SUBLAT = 2, /**< display roundtrip minus ack latency */
+    _MPI_BENCH_RTT_LAST
+  };
+
 struct mpi_bench_s
 {
   const char*label;
   const char*name;
-  const int rtt; /**< whether we should output round-trip time or half-rtt (one way latency) */
+  const enum mpi_bench_rtt_e rtt; /**< whether we should output round-trip time or half-rtt (one way latency) */
   const int threads; /**< whether we need MPI_THREAD_MULTIPLE */
   void (*server)(void*buf, size_t len);
   void (*client)(void*buf, size_t len);

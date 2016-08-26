@@ -61,7 +61,7 @@ static void mpi_bench_overlap_sender_noncontig_finalize(void)
 static void mpi_bench_overlap_sender_noncontig_server(void*buf, size_t len)
 {
   MPI_Recv(sparse_buf, 1, dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-  MPI_Send(buf, 0, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD);
+  mpi_bench_ack_send();
 }
 
 static void mpi_bench_overlap_sender_noncontig_client(void*buf, size_t len)
@@ -70,7 +70,7 @@ static void mpi_bench_overlap_sender_noncontig_client(void*buf, size_t len)
   MPI_Isend(sparse_buf, 1, dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, &sreq);
   mpi_bench_do_compute(compute);
   MPI_Wait(&sreq, MPI_STATUS_IGNORE);
-  MPI_Recv(buf, 0, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  mpi_bench_ack_recv();
 }
 
 const struct mpi_bench_s mpi_bench_overlap_sender_noncontig =

@@ -37,13 +37,13 @@ static void mpi_bench_overlap_recv_setparam(int param)
 
 static void mpi_bench_overlap_recv_server(void*buf, size_t len)
 {
-  MPI_Recv(buf, 0, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  mpi_bench_ack_send();
   MPI_Send(buf, len, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD);
 }
 
 static void mpi_bench_overlap_recv_client(void*buf, size_t len)
 {
-  MPI_Send(buf, 0, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD);
+  mpi_bench_ack_recv();
   MPI_Request rreq;
   MPI_Irecv(buf, len, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, &rreq);
   mpi_bench_do_compute(compute);

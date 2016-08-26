@@ -79,11 +79,23 @@ static void clear_buffer(char*buffer, size_t len)
 
 static double mpi_bench_ack_latency = -1.0;
 
-static void mpi_bench_latency_calibrate(void)
+void mpi_bench_ack_send(void)
 {
   const int tag_ack = 47;
-  mpi_bench_tick_t t1, t2;
   int dummy = 0;
+  MPI_Send(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD);
+}
+
+void mpi_bench_ack_recv(void)
+{
+  const int tag_ack = 47;
+  int dummy;
+  MPI_Recv(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+}
+
+static void mpi_bench_latency_calibrate(void)
+{
+  mpi_bench_tick_t t1, t2;
   int i;
   double lat = -1.0;
   if(!mpi_bench_common.is_server)
@@ -94,14 +106,14 @@ static void mpi_bench_latency_calibrate(void)
     {
       if(mpi_bench_common.is_server)
 	{
-	  MPI_Recv(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	  MPI_Send(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD);
+	  mpi_bench_ack_recv();
+	  mpi_bench_ack_send();
 	}
       else
 	{
 	  mpi_bench_get_tick(&t1);
-	  MPI_Send(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD);
-	  MPI_Recv(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_ack, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	  mpi_bench_ack_send();
+	  mpi_bench_ack_recv();
 	  mpi_bench_get_tick(&t2);
 	  const double delay = mpi_bench_timing_delay(&t1, &t2) / 2.0;
 	  if((lat < 0) || (delay < lat))

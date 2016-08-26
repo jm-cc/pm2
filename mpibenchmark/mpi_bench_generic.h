@@ -179,6 +179,10 @@ static void mpi_bench_compute_vector(void*buf, size_t len)
 /** Get the max number of threads to use */
 int mpi_bench_get_threads(void);
 
+/* ** ACKs ************************************************* */
+
+void mpi_bench_ack_send(void);
+void mpi_bench_ack_recv(void);
 
 #endif /* MPI_BENCH_GENERIC_H */
 

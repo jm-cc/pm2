@@ -39,21 +39,24 @@ static void mpi_bench_rmaoverlap_put_passive_setparam(int param)
 
 static void mpi_bench_rmaoverlap_put_passive_server(void*buf, size_t len)
 {
+  MPI_Win_create(buf, len, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
   mpi_bench_do_compute(compute);
+  MPI_Win_free(&win);
+  mpi_bench_ack_recv();
 }
 
 static void mpi_bench_rmaoverlap_put_passive_client(void*buf, size_t len)
 {
+  MPI_Win_create(buf, len, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
   MPI_Win_lock(MPI_LOCK_EXCLUSIVE, mpi_bench_common.peer, 0, win);
   MPI_Put(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, win);
-  mpi_bench_do_compute(compute);
   MPI_Win_unlock(mpi_bench_common.peer, win);
+  MPI_Win_free(&win);
+  mpi_bench_ack_send();
 }
 
 static void mpi_bench_rmaoverlap_put_passive_init(void*buf, size_t len, int count)
 {
-  MPI_Win_create(buf, len, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
-  MPI_Barrier(mpi_bench_common.comm);
 }
 
 static void mpi_bench_rmaoverlap_put_passive_finalize(void)
@@ -64,8 +67,8 @@ static void mpi_bench_rmaoverlap_put_passive_finalize(void)
 const struct mpi_bench_s mpi_bench_rmaoverlap_put_passive =
   {
     .label     = "mpi_bench_rmaoverlap_put_passive",
-    .name      = "MPI RMA Put Passive Overlap both sides",
-    .rtt       = 1,
+    .name      = "MPI passive put, overlap on target sides",
+    .rtt       = MPI_BENCH_RTT_SUBLAT,
     .server    = &mpi_bench_rmaoverlap_put_passive_server,
     .client    = &mpi_bench_rmaoverlap_put_passive_client,
     .init      = &mpi_bench_rmaoverlap_put_passive_init,

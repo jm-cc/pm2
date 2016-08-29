@@ -53,7 +53,7 @@ const struct mpi_bench_s mpi_bench_rma_get_passive =
   {
     .label    = "mpi_bench_rma_get_passive",
     .name     = "MPI RMA Get passive",
-    .rtt      = 1,
+    .rtt      = MPI_BENCH_RTT_FULL,
     .server   = &mpi_bench_get_passive_server,
     .client   = &mpi_bench_get_passive_client,
     .init     = &mpi_bench_get_passive_init,

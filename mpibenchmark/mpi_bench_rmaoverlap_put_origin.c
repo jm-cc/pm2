@@ -42,6 +42,7 @@ static void mpi_bench_rmaoverlap_put_origin_server(void*buf, size_t len)
 {
   MPI_Win_post(grp_other, 0, win);
   MPI_Win_wait(win);
+  mpi_bench_ack_send();
 }
 
 static void mpi_bench_rmaoverlap_put_origin_client(void*buf, size_t len)
@@ -50,6 +51,7 @@ static void mpi_bench_rmaoverlap_put_origin_client(void*buf, size_t len)
   MPI_Put(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, win);
   mpi_bench_do_compute(compute);
   MPI_Win_complete(win);
+  mpi_bench_ack_recv();
 }
 
 static void mpi_bench_rmaoverlap_put_origin_init(void*buf, size_t len, int count)
@@ -71,8 +73,8 @@ static void mpi_bench_rmaoverlap_put_origin_finalize(void)
 const struct mpi_bench_s mpi_bench_rmaoverlap_put_origin =
   {
     .label     = "mpi_bench_rmaoverlap_put_origin",
-    .name      = "MPI RMA Put Active Overlap Origin",
-    .rtt       = 1,
+    .name      = "MPIactive put, overlap on origin side",
+    .rtt       = MPI_BENCH_RTT_SUBLAT,
     .server    = &mpi_bench_rmaoverlap_put_origin_server,
     .client    = &mpi_bench_rmaoverlap_put_origin_client,
     .init      = &mpi_bench_rmaoverlap_put_origin_init,

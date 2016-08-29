@@ -43,7 +43,7 @@ static void mpi_bench_rmaoverlap_accumulate_server(void*buf, size_t len)
   MPI_Win_post(grp_other, 0, win);
   mpi_bench_do_compute(compute);
   MPI_Win_wait(win);
-  MPI_Send(buf, 0, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD);
+  mpi_bench_ack_send();
 }
 
 static void mpi_bench_rmaoverlap_accumulate_client(void*buf, size_t len)
@@ -52,7 +52,7 @@ static void mpi_bench_rmaoverlap_accumulate_client(void*buf, size_t len)
   MPI_Accumulate(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, MPI_SUM, win);
   mpi_bench_do_compute(compute);
   MPI_Win_complete(win);
-  MPI_Recv(buf, 0, MPI_CHAR, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  mpi_bench_ack_recv();
 }
 
 static void mpi_bench_rmaoverlap_accumulate_init(void*buf, size_t len, int count)
@@ -74,8 +74,8 @@ static void mpi_bench_rmaoverlap_accumulate_finalize(void)
 const struct mpi_bench_s mpi_bench_rmaoverlap_accumulate =
   {
     .label     = "mpi_bench_rmaoverlap_accumulate",
-    .name      = "MPI RMA Active Accumulate, overlap both sides",
-    .rtt       = 1,
+    .name      = "MPI active accumulate, overlap both sides",
+    .rtt       = MPI_BENCH_RTT_SUBLAT,
     .server    = &mpi_bench_rmaoverlap_accumulate_server,
     .client    = &mpi_bench_rmaoverlap_accumulate_client,
     .init      = &mpi_bench_rmaoverlap_accumulate_init,

@@ -72,8 +72,8 @@ static void mpi_bench_rmaoverlap_get_finalize(void)
 const struct mpi_bench_s mpi_bench_rmaoverlap_get =
   {
     .label     = "mpi_bench_rmaoverlap_get",
-    .name      = "MPI RMA Active Get Overlap both sides",
-    .rtt       = 1,
+    .name      = "MPI active get, overlap on both sides",
+    .rtt       = MPI_BENCH_RTT_FULL,
     .server    = &mpi_bench_rmaoverlap_get_server,
     .client    = &mpi_bench_rmaoverlap_get_client,
     .init      = &mpi_bench_rmaoverlap_get_init,

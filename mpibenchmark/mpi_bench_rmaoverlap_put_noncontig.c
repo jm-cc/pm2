@@ -47,6 +47,7 @@ static void mpi_bench_rmaoverlap_put_noncontig_server(void*buf, size_t len)
   MPI_Win_post(grp_other, 0, win);
   mpi_bench_do_compute(compute);
   MPI_Win_wait(win);
+  mpi_bench_ack_send();
 }
 
 static void mpi_bench_rmaoverlap_put_noncontig_client(void*buf, size_t len)
@@ -55,6 +56,7 @@ static void mpi_bench_rmaoverlap_put_noncontig_client(void*buf, size_t len)
   MPI_Put(sparse_buf, 1, dtype, mpi_bench_common.peer, 0, 1, dtype, win);
   mpi_bench_do_compute(compute);
   MPI_Win_complete(win);
+  mpi_bench_ack_recv();
 }
 
 static void mpi_bench_rmaoverlap_put_noncontig_init(void*buf, size_t len, int count)
@@ -87,7 +89,7 @@ const struct mpi_bench_s mpi_bench_rmaoverlap_put_noncontig =
   {
     .label     = "mpi_bench_rmaoverlap_put_noncontig",
     .name      = "MPI RMA Put Active Overlap Origin",
-    .rtt       = 1,
+    .rtt       = MPI_BENCH_RTT_SUBLAT,
     .server    = &mpi_bench_rmaoverlap_put_noncontig_server,
     .client    = &mpi_bench_rmaoverlap_put_noncontig_client,
     .init      = &mpi_bench_rmaoverlap_put_noncontig_init,

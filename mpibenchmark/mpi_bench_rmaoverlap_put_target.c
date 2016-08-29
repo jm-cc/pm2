@@ -43,6 +43,7 @@ static void mpi_bench_rmaoverlap_put_target_server(void*buf, size_t len)
   MPI_Win_post(grp_other, 0, win);
   mpi_bench_do_compute(compute);
   MPI_Win_wait(win);
+  mpi_bench_ack_send();
 }
 
 static void mpi_bench_rmaoverlap_put_target_client(void*buf, size_t len)
@@ -50,6 +51,7 @@ static void mpi_bench_rmaoverlap_put_target_client(void*buf, size_t len)
   MPI_Win_start(grp_peer, 0, win);
   MPI_Put(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, win);
   MPI_Win_complete(win);
+  mpi_bench_ack_recv();
 }
 
 static void mpi_bench_rmaoverlap_put_target_init(void*buf, size_t len, int count)
@@ -71,8 +73,8 @@ static void mpi_bench_rmaoverlap_put_target_finalize(void)
 const struct mpi_bench_s mpi_bench_rmaoverlap_put_target =
   {
     .label     = "mpi_bench_rmaoverlap_put_target",
-    .name      = "MPI RMA Put Active Overlap Target",
-    .rtt       = 1,
+    .name      = "MPI active put, overlap on target side",
+    .rtt       = MPI_BENCH_RTT_SUBLAT,
     .server    = &mpi_bench_rmaoverlap_put_target_server,
     .client    = &mpi_bench_rmaoverlap_put_target_client,
     .init      = &mpi_bench_rmaoverlap_put_target_init,

@@ -353,15 +353,6 @@ int MPI_Get_elements_x(const MPI_Status*status,
 
 int MPI_Test_cancelled(const MPI_Status*status, int*flag);
   
-/**
- * This function does not belong to the MPI standard: compares two
- * request handles
- * @param request1 communication request handle
- * @param request2 communication request handle
- * @return 1 if request handles represent the same object
- */
-int MPI_Request_is_equal(MPI_Request request1,
-			 MPI_Request request2);
 
 /* @}*/
 /* @}*/

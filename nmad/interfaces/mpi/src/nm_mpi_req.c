@@ -40,7 +40,6 @@ NM_MPI_ALIAS(MPI_Test_cancelled,   mpi_test_cancelled);
 NM_MPI_ALIAS(MPI_Cancel,           mpi_cancel);
 NM_MPI_ALIAS(MPI_Start,            mpi_start);
 NM_MPI_ALIAS(MPI_Startall,         mpi_startall);
-NM_MPI_ALIAS(MPI_Request_is_equal, mpi_request_is_equal);
 
 /* ********************************************************* */
 
@@ -441,24 +440,6 @@ int mpi_startall(int count, MPI_Request *array_of_requests)
 	}
     }
   return err;
-}
-
-int mpi_request_is_equal(MPI_Request request1, MPI_Request request2)
-{
-  nm_mpi_request_t *p_req1 = nm_mpi_request_get(request1);
-  nm_mpi_request_t *p_req2 = nm_mpi_request_get(request2);
-  if(p_req1->request_type == NM_MPI_REQUEST_ZERO)
-    {
-      return (p_req1->request_type == p_req2->request_type);
-    }
-  else if(p_req2->request_type == NM_MPI_REQUEST_ZERO)
-    {
-      return (p_req1->request_type == p_req2->request_type);
-    }
-  else
-    {
-      return (p_req1 == p_req2);
-    }
 }
 
 /* ********************************************************* */

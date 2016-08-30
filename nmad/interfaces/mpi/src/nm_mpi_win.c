@@ -1427,7 +1427,6 @@ int mpi_win_start(MPI_Group group, int assert, MPI_Win win)
       p_reqs[i].request_type            = NM_MPI_REQUEST_RECV;
       p_reqs[i].request_source          = targets[i];
       p_reqs[i].communication_mode      = NM_MPI_MODE_IMMEDIATE;
-      p_reqs[i].request_persistent_type = NM_MPI_REQUEST_ZERO;
       ++p_reqs[i].p_datatype->refcount;
       nm_sr_recv_init(p_session, &p_reqs[i].request_nmad);
       nm_sr_recv_unpack_contiguous(p_session, &p_reqs[i].request_nmad, NULL, 0);
@@ -1478,7 +1477,6 @@ int mpi_win_complete(MPI_Win win)
       req.request_type            = NM_MPI_REQUEST_SEND;
       req.request_source          = i;
       req.communication_mode      = NM_MPI_MODE_IMMEDIATE;
-      req.request_persistent_type = NM_MPI_REQUEST_ZERO;
       ++req.p_datatype->refcount;
       nm_sr_send_init(p_session, &req.request_nmad);
       nm_sr_send_pack_contiguous(p_session, &req.request_nmad, req.sbuf, req.p_datatype->size);
@@ -1541,7 +1539,6 @@ int mpi_win_post(MPI_Group group, int assert, MPI_Win win)
       p_reqs[i].request_type            = NM_MPI_REQUEST_SEND;
       p_reqs[i].request_source          = target;
       p_reqs[i].communication_mode      = NM_MPI_MODE_IMMEDIATE;
-      p_reqs[i].request_persistent_type = NM_MPI_REQUEST_ZERO;
       ++p_reqs[i].p_datatype->refcount;
       nm_sr_send_init(p_session, &p_reqs[i].request_nmad);
       nm_sr_send_pack_contiguous(p_session, &p_reqs[i].request_nmad, NULL, 0);

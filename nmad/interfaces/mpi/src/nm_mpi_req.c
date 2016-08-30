@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014 (see AUTHORS file)
+ * Copyright (C) 2014-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ NM_MPI_ALIAS(MPI_Test,             mpi_test);
 NM_MPI_ALIAS(MPI_Testall,          mpi_testall);
 NM_MPI_ALIAS(MPI_Testany,          mpi_testany);
 NM_MPI_ALIAS(MPI_Testsome,         mpi_testsome);
+NM_MPI_ALIAS(MPI_Test_cancelled,   mpi_test_cancelled);
 NM_MPI_ALIAS(MPI_Cancel,           mpi_cancel);
 NM_MPI_ALIAS(MPI_Start,            mpi_start);
 NM_MPI_ALIAS(MPI_Startall,         mpi_startall);
@@ -61,6 +62,7 @@ __PUK_SYM_INTERNAL
 nm_mpi_request_t*nm_mpi_request_alloc(void)
 {
   nm_mpi_request_t*p_req = nm_mpi_handle_request_alloc(&nm_mpi_requests);
+  p_req->status = 0;
   return p_req;
 }
 
@@ -85,7 +87,7 @@ nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id)
   return p_req;
 }
 
-static int nm_mpi_set_status(nm_mpi_request_t*p_req, MPI_Status *status)
+static int nm_mpi_set_status(nm_mpi_request_t*p_req, struct mpi_status_s*status)
 {
   int err = MPI_SUCCESS;
   status->MPI_TAG = p_req->user_tag;
@@ -126,7 +128,6 @@ int mpi_request_free(MPI_Request*request)
   if(rc == NM_ESUCCESS || rc == -NM_ENOTPOSTED)
     {
       p_req->request_type = NM_MPI_REQUEST_ZERO;
-      p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
       nm_mpi_request_free(p_req);
     }
   else
@@ -245,7 +246,7 @@ int mpi_waitany(int count, MPI_Request*array_of_requests, int*rqindex, MPI_Statu
     }
 }
 
-int mpi_test(MPI_Request *request, int *flag, MPI_Status *status)
+int mpi_test(MPI_Request*request, int*flag, MPI_Status*status)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
   if(p_req == NULL)
@@ -378,13 +379,15 @@ int mpi_testsome(int count, MPI_Request*array_of_requests, int*outcount, int*ind
   return err;
 }
 
-int mpi_cancel(MPI_Request *request)
+int mpi_cancel(MPI_Request*request)
 {
   nm_mpi_request_t*p_req = nm_mpi_request_get(*request);
-  int err = MPI_SUCCESS;
+  if(!p_req)
+    return MPI_ERR_REQUEST;
   if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
-      err = nm_sr_rcancel(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
+      int err = nm_sr_rcancel(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
+      p_req->request_error = err;
     }
   else if(p_req->request_type == NM_MPI_REQUEST_SEND)
     {
@@ -393,26 +396,33 @@ int mpi_cancel(MPI_Request *request)
     {
       NM_MPI_FATAL_ERROR("Request type %d incorrect\n", p_req->request_type);
     }
-  p_req->request_type = NM_MPI_REQUEST_CANCELLED;
-  return err;
+  p_req->status |= NM_MPI_REQUEST_CANCELLED;
+  return MPI_SUCCESS;
 }
 
-int mpi_start(MPI_Request *request)
+int mpi_test_cancelled(const MPI_Status*status, int*flag)
+{
+  *flag = status->cancelled;
+  return MPI_SUCCESS;
+}
+
+int mpi_start(MPI_Request*request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
   int err = MPI_SUCCESS;
-  p_req->request_type = p_req->request_persistent_type;
-  if(p_req->request_persistent_type == NM_MPI_REQUEST_SEND)
+  assert(p_req->request_type != NM_MPI_REQUEST_ZERO);
+  assert(p_req->status & NM_MPI_REQUEST_PERSISTENT);
+  if(p_req->request_type == NM_MPI_REQUEST_SEND)
     {
       err = nm_mpi_isend_start(p_req);
     }
-  else if(p_req->request_persistent_type == NM_MPI_REQUEST_RECV)
+  else if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
       err = nm_mpi_irecv_start(p_req);
     }
   else 
     {
-      NM_MPI_FATAL_ERROR("Unknown persistent request type: %d\n", p_req->request_persistent_type);
+      NM_MPI_FATAL_ERROR("Unknown persistent request type: %d\n", p_req->request_type);
       err = MPI_ERR_INTERN;
     }
   return err;
@@ -457,7 +467,7 @@ int mpi_request_is_equal(MPI_Request request1, MPI_Request request2)
 __PUK_SYM_INTERNAL
 void nm_mpi_request_complete(nm_mpi_request_t*p_req)
 {
-  if(p_req->request_persistent_type == NM_MPI_REQUEST_ZERO)
+  if(!(p_req->status & NM_MPI_REQUEST_PERSISTENT))
     {
       p_req->request_type = NM_MPI_REQUEST_ZERO;
     }

@@ -351,6 +351,8 @@ int MPI_Get_elements_x(const MPI_Status*status,
 		       MPI_Datatype datatype,
 		       MPI_Count*count);
 
+int MPI_Test_cancelled(const MPI_Status*status, int*flag);
+  
 /**
  * This function does not belong to the MPI standard: compares two
  * request handles

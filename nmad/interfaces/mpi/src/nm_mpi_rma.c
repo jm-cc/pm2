@@ -309,7 +309,6 @@ static int nm_mpi_rma_isend(nm_mpi_request_t*p_req, struct nm_data_s*p_data, nm_
   p_req->p_comm                  = p_win->p_comm;
   p_req->request_type            = NM_MPI_REQUEST_SEND;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_req->p_datatype);
   nm_sr_send_init(p_session, &p_req->request_nmad);
   nm_sr_send_pack_data(p_session, &p_req->request_nmad, p_data);
@@ -341,7 +340,6 @@ void nm_mpi_rma_recv(const nm_sr_event_info_t*p_info, nm_mpi_window_t*p_win)
   p_req->request_type            = NM_MPI_REQUEST_RECV;
   p_req->request_source          = source;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   __sync_add_and_fetch(&p_win->exposure[source].nmsg, 1);
   nm_sr_recv_init(p_session, &p_req->request_nmad);
   nm_sr_request_set_ref(&p_req->request_nmad, p_req);
@@ -516,7 +514,6 @@ static int nm_mpi_rma_is_inbound_target(nm_mpi_request_t*p_req, const nm_sr_even
   p_req_valid->request_source          = source;
   p_req_valid->communication_mode      = NM_MPI_MODE_IMMEDIATE;
   ((int*)p_req_valid->static_buf)[0]   = is_inbound;
-  p_req_valid->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_req_valid->p_datatype);
   nm_tag_t tag_out = nm_mpi_rma_win_to_tag(p_win->win_ids[source]);
   tag_out |= (nm_tag_t)p_req_valid->user_tag & (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0xFFFFFF);
@@ -622,7 +619,6 @@ static int nm_mpi_rma_copy_send_response(const nm_mpi_request_t*p_req, nm_mpi_wi
   p_resp->request_type    = NM_MPI_REQUEST_SEND;
   p_resp->request_source  = dest;
   p_resp->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_resp->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_tag |= (nm_tag_t)p_resp->user_tag & NM_MPI_TAG_PRIVATE_RMA_MASK_USER;
   nm_mpi_datatype_ref_inc(p_datatype);
   /* Copy data */
@@ -752,7 +748,8 @@ static int nm_mpi_put(const void *origin_addr, int origin_count, nm_mpi_datatype
   nm_mpi_rma_is_inbound_origin(p_req_out, p_win, &is_inbound);
   if(!is_inbound)
     {
-      p_req_out->request_type = NM_MPI_REQUEST_CANCELLED;
+      NM_MPI_WARNING("cancel here- may be broken");
+      p_req_out->status |= NM_MPI_REQUEST_CANCELLED;
       err = NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_RANGE);
     }
   nm_mpi_datatype_ref_dec(p_target_datatype);
@@ -802,7 +799,6 @@ static int nm_mpi_get(void *origin_addr, int origin_count, nm_mpi_datatype_t*p_o
   p_req_in->request_type            = NM_MPI_REQUEST_RECV;
   p_req_in->request_source          = target_rank;
   p_req_in->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req_in->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_origin_datatype);
   nm_mpi_data_build(&data, origin_addr, p_origin_datatype, origin_count);
   nm_sr_recv_init(p_session, &p_req_in->request_nmad);
@@ -833,8 +829,9 @@ static int nm_mpi_get(void *origin_addr, int origin_count, nm_mpi_datatype_t*p_o
   nm_mpi_rma_is_inbound_origin(p_req_out, p_win, &is_inbound);
   if(!is_inbound)
     {
+      NM_MPI_WARNING("cancel here- may be broken");
       nm_sr_rcancel(p_session, &p_req_in->request_nmad);
-      p_req_in->request_type = NM_MPI_REQUEST_CANCELLED;
+      p_req_in->status |= NM_MPI_REQUEST_CANCELLED;
       err = NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_RANGE);
     }
   else
@@ -893,7 +890,8 @@ static int nm_mpi_accumulate(const void *origin_addr, int origin_count,
   nm_mpi_rma_is_inbound_origin(p_req_out, p_win, &is_inbound);
   if(!is_inbound)
     {
-      p_req_out->request_type = NM_MPI_REQUEST_CANCELLED;
+      NM_MPI_WARNING("cancel here- may be broken");
+      p_req_out->status |= NM_MPI_REQUEST_CANCELLED;
       err = NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_RANGE);
     }
   nm_mpi_datatype_ref_dec(p_target_datatype);
@@ -948,7 +946,6 @@ static int nm_mpi_get_accumulate(const void *origin_addr, int origin_count,
   p_req_in->request_type            = NM_MPI_REQUEST_RECV;
   p_req_in->request_source          = target_rank;
   p_req_in->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req_in->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_result_datatype);
   nm_mpi_data_build(&data, result_addr, p_result_datatype, result_count);
   nm_sr_recv_init(p_session, &p_req_in->request_nmad);
@@ -980,8 +977,9 @@ static int nm_mpi_get_accumulate(const void *origin_addr, int origin_count,
   nm_mpi_rma_is_inbound_origin(p_req_out, p_win, &is_inbound);
   if(!is_inbound)
     {
+      NM_MPI_WARNING("cancel here- may be broken");
       nm_sr_rcancel(p_session, &p_req_in->request_nmad);
-      p_req_in->request_type = NM_MPI_REQUEST_CANCELLED;
+      p_req_in->status |= NM_MPI_REQUEST_CANCELLED;
       err = NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_RANGE);
     }
   else
@@ -1037,7 +1035,6 @@ static int nm_mpi_fetch_and_op(const void *origin_addr, void *result_addr,
   p_req_in->request_type            = NM_MPI_REQUEST_RECV;
   p_req_in->request_source          = target_rank;
   p_req_in->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req_in->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_datatype);
   nm_mpi_data_build(&data, result_addr, p_datatype, 1);
   nm_sr_recv_init(p_session, &p_req_in->request_nmad);
@@ -1109,7 +1106,6 @@ static int nm_mpi_compare_and_swap(const void *origin_addr, const void *compare_
   p_req->request_type            = NM_MPI_REQUEST_RECV;
   p_req->request_source          = target_rank;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_datatype);
   nm_mpi_data_build(&data, result_addr, p_datatype, 1);
   nm_sr_recv_init(p_session, &p_req->request_nmad);
@@ -1340,8 +1336,9 @@ int mpi_fetch_and_op(const void *origin_addr, void *result_addr,
     }
   else
     {
+      NM_MPI_WARNING("cancel here- may be broken");
       nm_sr_rcancel(p_session, &p_req_in->request_nmad);
-      p_req_in->request_type = NM_MPI_REQUEST_CANCELLED;
+      p_req_in->status |= NM_MPI_REQUEST_CANCELLED;
       nm_mpi_request_free(p_req_in);
     }
   return err;
@@ -1383,8 +1380,9 @@ int mpi_compare_and_swap(const void *origin_addr, const void *compare_addr,
 				target_disp, p_win, p_req_in);
   if(MPI_ERR_RMA_RANGE == err)
     {
+      NM_MPI_WARNING("cancel here- may be broken");
       nm_sr_rcancel(p_session, &p_req_in->request_nmad);
-      p_req_in->request_type = NM_MPI_REQUEST_CANCELLED;
+      p_req_in->status |= NM_MPI_REQUEST_CANCELLED;
       nm_mpi_request_free(p_req_in);
     }
   else
@@ -1612,7 +1610,6 @@ static int nm_mpi_put_shm(const void *origin_addr, int origin_count, nm_mpi_data
   p_req->request_source = target_rank;
   p_req->request_type            = NM_MPI_REQUEST_SEND;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_origin_datatype);
   nm_mpi_datatype_ref_inc(p_target_datatype);
   __sync_add_and_fetch(&p_win->access[target_rank].nmsg, 1);
@@ -1663,7 +1660,6 @@ static int nm_mpi_get_shm(void *origin_addr, int origin_count, nm_mpi_datatype_t
   p_req->request_source = target_rank;
   p_req->request_type            = NM_MPI_REQUEST_SEND;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_origin_datatype);
   nm_mpi_datatype_ref_inc(p_target_datatype);
   __sync_add_and_fetch(&p_win->access[target_rank].nmsg, 1);
@@ -1716,7 +1712,6 @@ static int nm_mpi_accumulate_shm(const void *origin_addr, int origin_count,
   p_req->request_source = target_rank;
   p_req->request_type            = NM_MPI_REQUEST_SEND;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_origin_datatype);
   nm_mpi_datatype_ref_inc(p_target_datatype);
   __sync_add_and_fetch(&p_win->access[target_rank].nmsg, 1);
@@ -1773,7 +1768,6 @@ static int nm_mpi_get_accumulate_shm(const void *origin_addr, int origin_count,
   p_req->request_source = target_rank;
   p_req->request_type            = NM_MPI_REQUEST_SEND;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_datatype_ref_inc(p_origin_datatype);
   nm_mpi_datatype_ref_inc(p_target_datatype);
   nm_mpi_datatype_ref_inc(p_result_datatype);
@@ -1903,7 +1897,6 @@ void nm_mpi_rma_recv_shm(const nm_sr_event_info_t*p_info, nm_mpi_window_t*p_win)
   p_req->p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
   p_req->request_type            = NM_MPI_REQUEST_RECV;
   p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_sr_recv_init(p_session, &p_req->request_nmad);
   nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, p_req->rbuf, len);
   nm_sr_request_set_ref(&p_req->request_nmad, p_req);

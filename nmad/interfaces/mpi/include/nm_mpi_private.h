@@ -222,15 +222,19 @@ typedef struct nm_mpi_win_epoch_s nm_mpi_win_epoch_t;
 /** @name Requests */
 /* @{ */
 /** Type of a communication request */
-typedef int nm_mpi_request_type_t;
-#define NM_MPI_REQUEST_ZERO      ((nm_mpi_request_type_t)0)
-#define NM_MPI_REQUEST_SEND      ((nm_mpi_request_type_t)1)
-#define NM_MPI_REQUEST_RECV      ((nm_mpi_request_type_t)2)
-#define NM_MPI_REQUEST_CANCELLED ((nm_mpi_request_type_t)5)
+typedef int8_t nm_mpi_request_type_t;
+#define NM_MPI_REQUEST_ZERO       ((nm_mpi_request_type_t)0x00)
+#define NM_MPI_REQUEST_SEND       ((nm_mpi_request_type_t)0x01)
+#define NM_MPI_REQUEST_RECV       ((nm_mpi_request_type_t)0x02)
+
+typedef int8_t nm_mpi_status_t;
+#define NM_MPI_STATUS_NONE        ((nm_mpi_status_t)0x00)
+#define NM_MPI_REQUEST_CANCELLED  ((nm_mpi_status_t)0x01) /**< request has been cancelled */
+#define NM_MPI_REQUEST_PERSISTENT ((nm_mpi_status_t)0x02) /**< request is persistent */
 
 /** @name Extended modes */
 /* @{ */
-typedef int nm_mpi_communication_mode_t;
+typedef int8_t nm_mpi_communication_mode_t;
 #define NM_MPI_MODE_IMMEDIATE      ((nm_mpi_communication_mode_t)-1)
 #define NM_MPI_MODE_READY          ((nm_mpi_communication_mode_t)-2)
 #define NM_MPI_MODE_SYNCHRONOUS    ((nm_mpi_communication_mode_t)-3)
@@ -241,16 +245,16 @@ typedef int nm_mpi_communication_mode_t;
 /** Internal communication request */
 typedef struct nm_mpi_request_s
 {
-  /** Link for nm_mpi_reqlist_t lists */
-  TAILQ_ENTRY(nm_mpi_request_s) link;
   /** identifier of the request */
   MPI_Request id;
-  /** type of the request */
-  nm_mpi_request_type_t request_type;
-  /** persistent type of the request */
-  nm_mpi_request_type_t request_persistent_type;
   /** nmad request for sendrecv interface */
   nm_sr_request_t request_nmad;
+  /** type of the request */
+  nm_mpi_request_type_t request_type;
+  /** communication mode to be used when exchanging data */
+  nm_mpi_communication_mode_t communication_mode;
+  /** status of request */
+  nm_mpi_status_t status;
   /** tag given by the user*/
   int user_tag;
   /** rank of the source node (used for incoming request) */
@@ -259,8 +263,6 @@ typedef struct nm_mpi_request_s
   int request_error;
   /** type of the exchanged data */
   struct nm_mpi_datatype_s*p_datatype;
-  /** communication mode to be used when exchanging data */
-  nm_mpi_communication_mode_t communication_mode;
   /** gate of the destination or the source node */
   nm_gate_t gate;
   /** communicator used for communication */
@@ -274,6 +276,8 @@ typedef struct nm_mpi_request_s
     const void*sbuf; /**< pointer for sending */
     char static_buf[_NM_MPI_MAX_DATATYPE_SIZE]; /**< static buffer of max predefined datatype size */
   };
+  /** Link for nm_mpi_reqlist_t lists */
+  TAILQ_ENTRY(nm_mpi_request_s) link;
   /** corresponding epoch management structure for rma operations */
   nm_mpi_win_epoch_t*p_epoch;
   /** corresponding rma window */

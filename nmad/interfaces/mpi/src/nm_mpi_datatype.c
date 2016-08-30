@@ -457,7 +457,6 @@ static void nm_mpi_datatype_request_monitor(nm_sr_event_t event, const nm_sr_eve
   p_req_resp->p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
   p_req_resp->request_type            = NM_MPI_REQUEST_RECV;
   p_req_resp->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req_resp->request_persistent_type = NM_MPI_REQUEST_ZERO;
   nm_sr_send_init(p_session, &p_req_resp->request_nmad);
   nm_sr_send_pack_contiguous(p_session, &p_req_resp->request_nmad, NULL, 0);
   nm_sr_request_set_ref(&p_req_resp->request_nmad, p_req_resp);
@@ -483,7 +482,6 @@ static void nm_mpi_datatype_request_recv(nm_sr_event_t event, const nm_sr_event_
     p_req->p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
     p_req->request_type            = NM_MPI_REQUEST_RECV;
     p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-    p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
     nm_sr_recv_init(p_session, &p_req->request_nmad);
     nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, p_req->rbuf, p_req->count);
     nm_sr_request_set_ref(&p_req->request_nmad, p_req);

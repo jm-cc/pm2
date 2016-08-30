@@ -142,16 +142,17 @@ typedef int MPI_Info;
 #define MPI_STATUS_SIZE		4
 
 /** Status handle */
-struct MPI_Status_s
+struct mpi_status_s
 {
-  int MPI_SOURCE;
-  int MPI_TAG;
-  int MPI_ERROR;
-  int size;
+  int MPI_SOURCE; /**< field name mandatory by spec */
+  int MPI_TAG;    /**< field name mandatory by spec */
+  int MPI_ERROR;  /**< field name mandatory by spec */
+  int size;       /**< size of data received */
+  int cancelled;  /**< whether request was cancelled */
 };
 
 /** Status handle */
-typedef struct MPI_Status_s MPI_Status;
+typedef struct mpi_status_s MPI_Status;
 
 #define MPI_STATUS_IGNORE	(MPI_Status *)0
 #define MPI_STATUSES_IGNORE	(MPI_Status *)0

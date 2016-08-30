@@ -45,7 +45,6 @@ nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype
 {
   nm_mpi_request_t*p_req = nm_mpi_request_alloc();
   p_req->request_type            = NM_MPI_REQUEST_SEND;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype              = p_datatype;
   p_req->sbuf                    = buffer;
   p_req->count                   = count;
@@ -65,7 +64,6 @@ nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatype_t*p_d
 {
   nm_mpi_request_t*p_req = nm_mpi_request_alloc();
   p_req->request_type            = NM_MPI_REQUEST_RECV;
-  p_req->request_persistent_type = NM_MPI_REQUEST_ZERO;
   p_req->p_datatype              = p_datatype;
   p_req->rbuf                    = buffer;
   p_req->count                   = count;

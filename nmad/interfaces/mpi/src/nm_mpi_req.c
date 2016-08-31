@@ -383,23 +383,55 @@ int mpi_testsome(int count, MPI_Request*array_of_requests, int*outcount, int*ind
 
 int mpi_cancel(MPI_Request*request)
 {
+  int err = MPI_SUCCESS;
   nm_mpi_request_t*p_req = nm_mpi_request_get(*request);
   if(!p_req)
     return MPI_ERR_REQUEST;
   if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
-      int err = nm_sr_rcancel(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
-      p_req->request_error = err;
+      int rc = nm_sr_rcancel(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
+      if(rc == NM_ESUCCESS || rc == -NM_ECANCELED)
+	{
+	  /* successfully cancelled or already cancelled */
+	  p_req->status |= NM_MPI_REQUEST_CANCELLED;
+	  err = MPI_SUCCESS;
+	}
+      else if(rc == -NM_EINPROGRESS || rc == -NM_EALREADY)
+	{
+	  /* too late for cancel, recv will be successfull: return succes, do not mark as cancelled */
+	  err = MPI_SUCCESS;
+	}
+      else
+	{
+	  /* cannot cancel for another reason */
+	  NM_MPI_WARNING("MPI_Cancel unexpected error %d. Cannot cancel.", rc);
+	  err = MPI_ERR_UNKNOWN;
+	}
     }
   else if(p_req->request_type == NM_MPI_REQUEST_SEND)
     {
+      if(nm_sr_stest(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad) == NM_ESUCCESS)
+	{
+	  /* already successfull: return success */
+	  err = MPI_SUCCESS;
+	}
+      else
+	{
+	  /* cancel for send requests is not implemented in nmad.
+	   * 1. issue a warning
+	   * 2. mark as cancelled so as to unblock the next wait to avoid deadlock in case of rdv
+	   * 3. return an error code
+	   */
+	  NM_MPI_WARNING("MPI_Cancel called for send- not supported.");
+	  p_req->status |= NM_MPI_REQUEST_CANCELLED;
+	  err = MPI_ERR_UNSUPPORTED_OPERATION;
+	}
     }
   else 
     {
       NM_MPI_FATAL_ERROR("Request type %d incorrect\n", p_req->request_type);
     }
-  p_req->status |= NM_MPI_REQUEST_CANCELLED;
-  return MPI_SUCCESS;
+  return err;
 }
 
 int mpi_test_cancelled(const MPI_Status*status, int*flag)

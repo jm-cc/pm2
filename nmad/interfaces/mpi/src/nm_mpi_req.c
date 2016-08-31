@@ -114,6 +114,7 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, struct mpi_status_s*status)
   nm_len_t _size = 0;
   nm_sr_request_get_size(&(p_req->request_nmad), &_size);
   status->size = _size;
+  status->cancelled = p_req->status & NM_MPI_REQUEST_CANCELLED;
   return err;
 }
 
@@ -131,6 +132,8 @@ int mpi_request_free(MPI_Request*request)
     }
   else
     {
+      /* request is not completed yet. Enqueue it for future deletion.
+       */
 #warning TODO- enqueue task for future deletion
     }
   *request = MPI_REQUEST_NULL;
@@ -443,6 +446,7 @@ int mpi_startall(int count, MPI_Request *array_of_requests)
 }
 
 /* ********************************************************* */
+/* ** core test/wait/complete functions used to build MPI level primitives */
 
 /** notify request completion */
 __PUK_SYM_INTERNAL
@@ -452,7 +456,7 @@ void nm_mpi_request_complete(nm_mpi_request_t*p_req)
     {
       p_req->request_type = NM_MPI_REQUEST_ZERO;
     }
-  // Release one active communication for that type
+  /* Release one active communication for that type */
   if(p_req->p_datatype->id >= _NM_MPI_DATATYPE_OFFSET)
     {
       nm_mpi_datatype_ref_dec(p_req->p_datatype);
@@ -463,7 +467,11 @@ __PUK_SYM_INTERNAL
 int nm_mpi_request_test(nm_mpi_request_t*p_req)
  {
   int err = NM_ESUCCESS;
-  if(p_req->request_type == NM_MPI_REQUEST_RECV)
+  if(p_req->status & NM_MPI_REQUEST_CANCELLED)
+    {
+      err = MPI_SUCCESS;
+    }
+  else if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
       err = nm_sr_rtest(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
     }
@@ -482,7 +490,11 @@ __PUK_SYM_INTERNAL
 int nm_mpi_request_wait(nm_mpi_request_t*p_req)
 {
   int err = MPI_SUCCESS;
-  if(p_req->request_type == NM_MPI_REQUEST_RECV)
+  if(p_req->status & NM_MPI_REQUEST_CANCELLED)
+    {
+      err = MPI_SUCCESS;
+    }
+  else if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
       err = nm_sr_rwait(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
     }

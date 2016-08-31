@@ -393,7 +393,7 @@ int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t**out_req)
  *  -NM_ENOTIMPL    case where cancellation is not supported yet
  *  -NM_EINPROGRESS receipt is in progress, it is too late to cancel
  *  -NM_EALREADY    receipt is already completed
- *  -NM_CANCELED    receipt was already canceled
+ *  -NM_ECANCELED   receipt was already canceled
  */
 int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
 {

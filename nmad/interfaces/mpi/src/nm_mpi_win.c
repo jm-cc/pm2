@@ -22,6 +22,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <sys/queue.h>
+
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(MadMPI);
 
@@ -35,12 +37,11 @@ static struct nm_mpi_handle_window_s nm_mpi_windows;
 
 /** Content for requests queue elements */
 struct nm_mpi_win_addr_lelt_s;
-typedef TAILQ_ENTRY(nm_mpi_win_addr_lelt_s) _nm_mpi_win_addr_lelt_next_t;
 typedef struct nm_mpi_win_addr_lelt_s
 {
   void*begin;
   MPI_Aint size;
-  _nm_mpi_win_addr_lelt_next_t link;
+  TAILQ_ENTRY(nm_mpi_win_addr_lelt_s) link;
 } nm_mpi_win_addr_lelt_t;
 
 /** Request queue head */
@@ -222,7 +223,7 @@ static inline nm_mpi_window_t*nm_mpi_window_alloc(int comm_size)
     p_win->access[i].nmsg      = 0;
     p_win->access[i].completed = 0;
   }
-  TAILQ_INIT(&p_win->waiting_queue.q.pending);
+  nm_mpi_request_list_init(&p_win->waiting_queue.q.pending);
   nm_mpi_spin_init(&p_win->waiting_queue.q.lock);
   p_win->waiting_queue.excl_pending = 0;
   p_win->waiting_queue.lock_type    = 0;
@@ -230,7 +231,7 @@ static inline nm_mpi_window_t*nm_mpi_window_alloc(int comm_size)
   p_win->pending_ops                = malloc(comm_size * sizeof(nm_mpi_win_locklist_t));
   for(int i = 0; i < comm_size; ++i)
     {
-      TAILQ_INIT(&p_win->pending_ops[i].pending);
+      nm_mpi_request_list_init(&p_win->pending_ops[i].pending);
       nm_mpi_spin_init(&p_win->pending_ops[i].lock);
     }
   strcpy(p_win->shared_file_name, "/tmp/padico-d-mpi-shared-XXXXXX");
@@ -571,14 +572,14 @@ static void nm_mpi_win_lock_unexpected(nm_sr_event_t event, const nm_sr_event_in
       /* Add the request for lock to the pending list */
       if(NM_MPI_LOCK_EXCLUSIVE == lock_type)
 	__sync_add_and_fetch(&p_win->waiting_queue.excl_pending, 1);
-      TAILQ_INSERT_TAIL(&p_win->waiting_queue.q.pending, p_req_lock, link);
+      nm_mpi_request_list_push_back(&p_win->waiting_queue.q.pending, p_req_lock);
       nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);
     }
 }
 
 static inline int nm_mpi_win_lock_is_free(nm_mpi_win_pass_mngmt_t*p_mng)
 {
-  int ret = (NM_MPI_LOCK_NONE == p_mng->lock_type && TAILQ_EMPTY(&p_mng->q.pending));
+  int ret = (NM_MPI_LOCK_NONE == p_mng->lock_type && nm_mpi_request_list_empty(&p_mng->q.pending));
   return ret;
 }
 
@@ -595,7 +596,6 @@ static void nm_mpi_win_start_passive_exposure(nm_sr_event_t event, const nm_sr_e
 					      void*ref)
 {
   nm_gate_t from;
-  nm_mpi_request_t*p_req_lelt;
   nm_mpi_request_t*p_req_lock = (nm_mpi_request_t*)ref;
   assert(p_req_lock);
   nm_mpi_window_t*p_win = p_req_lock->p_win;
@@ -608,10 +608,9 @@ static void nm_mpi_win_start_passive_exposure(nm_sr_event_t event, const nm_sr_e
       assert(p_win->exposure[source].mode);
       nm_mpi_win_locklist_t*pendings = &p_win->pending_ops[source];
       nm_mpi_spin_lock(&pendings->lock);
-      while(!TAILQ_EMPTY(&pendings->pending))
+      while(!nm_mpi_request_list_empty(&pendings->pending))
 	{
-	  p_req_lelt = TAILQ_FIRST(&pendings->pending);
-	  TAILQ_REMOVE(&pendings->pending, p_req_lelt, link);
+	  nm_mpi_request_t*p_req_lelt = nm_mpi_request_list_pop_front(&pendings->pending);
 	  nm_mpi_spin_unlock(&pendings->lock);
 	  nm_mpi_rma_handle_passive(p_req_lelt);
 	  nm_mpi_spin_lock(&pendings->lock);
@@ -629,7 +628,7 @@ void nm_mpi_win_enqueue_pending(nm_mpi_request_t*p_req, nm_mpi_window_t*p_win)
   nm_mpi_spin_lock(&pendings->lock);
   if(!((NM_MPI_WIN_PASSIVE_TARGET | NM_MPI_WIN_PASSIVE_TARGET_END) & p_req->p_epoch->mode))
     {
-      TAILQ_INSERT_TAIL(&pendings->pending, p_req, link);
+      nm_mpi_request_list_push_back(&pendings->pending, p_req);
       was_inserted = 1;
     }
   nm_mpi_spin_unlock(&pendings->lock);
@@ -698,7 +697,7 @@ int nm_mpi_win_unlock(nm_mpi_window_t*p_win, int source, nm_mpi_win_epoch_t*p_ep
     return MPI_SUCCESS;
   nm_mpi_spin_lock(&p_win->waiting_queue.q.lock);
   p_win->waiting_queue.lock_type = NM_MPI_LOCK_NONE;
-  if(TAILQ_EMPTY(&p_win->waiting_queue.q.pending))
+  if(nm_mpi_request_list_empty(&p_win->waiting_queue.q.pending))
     { /* If no lock request pending */
       nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);
       return MPI_SUCCESS;
@@ -706,10 +705,8 @@ int nm_mpi_win_unlock(nm_mpi_window_t*p_win, int source, nm_mpi_win_epoch_t*p_ep
   /* Start next exposure */
   nm_tag_t tag;
   nm_mpi_request_t*p_req_unlock;
-  nm_mpi_request_t*p_req_lelt;
   uint16_t lock_type;
-  p_req_lelt = TAILQ_FIRST(&p_win->waiting_queue.q.pending);
-  TAILQ_REMOVE(&p_win->waiting_queue.q.pending, p_req_lelt, link);
+  nm_mpi_request_t*p_req_lelt = nm_mpi_request_list_pop_front(&p_win->waiting_queue.q.pending);
   nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);	
   nm_sr_request_get_gate(&p_req_lelt->request_nmad, &from);
   assert(from);
@@ -754,13 +751,13 @@ int nm_mpi_win_unlock(nm_mpi_window_t*p_win, int source, nm_mpi_win_epoch_t*p_ep
       nm_sr_recv_irecv(p_session, &p_req_unlock->request_nmad, from, tag_unlock, tag_mask);
       /* Free reqlist element and check next one (if LOCK_SHARED) */
       nm_mpi_spin_lock(&p_win->waiting_queue.q.lock);
-      p_req_lelt = TAILQ_FIRST(&p_win->waiting_queue.q.pending);
+      p_req_lelt = nm_mpi_request_list_front(&p_win->waiting_queue.q.pending);
       if(NULL == p_req_lelt || NM_MPI_LOCK_EXCLUSIVE == lock_type)
 	{
 	  nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);	
 	  break;
 	}
-      TAILQ_REMOVE(&p_win->waiting_queue.q.pending, p_req_lelt, link);
+      nm_mpi_request_list_pop_front(&p_win->waiting_queue.q.pending);
       nm_mpi_spin_unlock(&p_win->waiting_queue.q.lock);	
       nm_sr_request_get_gate(&p_req_lelt->request_nmad, &from);
       assert(from);
@@ -1103,7 +1100,7 @@ int mpi_win_free(MPI_Win *win)
       while (!nm_mpi_win_completed_epoch(&p_win->exposure[i])
 	     || !nm_mpi_win_completed_epoch(&p_win->access[i]));
     }
-  assert(TAILQ_EMPTY(&p_win->waiting_queue.q.pending));
+  assert(nm_mpi_request_list_empty(&p_win->waiting_queue.q.pending));
   nm_sr_session_monitor_remove(p_session, &p_win->monitor);
   nm_sr_session_monitor_remove(p_session, &p_win->monitor_sync);
   nm_mpi_attrs_destroy(p_win->id, &p_win->attrs);
@@ -1938,7 +1935,6 @@ static void nm_mpi_win_start_passive_exposure_shm(nm_sr_event_t event, const nm_
 						  void*ref)
 {
   nm_gate_t from;
-  nm_mpi_request_t*p_req_lelt;
   nm_mpi_request_t*p_req_lock = (nm_mpi_request_t*)ref;
   assert(p_req_lock);
   nm_mpi_window_t*p_win = p_req_lock->p_win;
@@ -1954,10 +1950,9 @@ static void nm_mpi_win_start_passive_exposure_shm(nm_sr_event_t event, const nm_
 					 NM_MPI_WIN_PASSIVE_TARGET_END));
   nm_mpi_win_locklist_t*pendings = &p_win->pending_ops[source];
   nm_mpi_spin_lock(&pendings->lock);
-  while(!TAILQ_EMPTY(&pendings->pending))
+  while(!nm_mpi_request_list_empty(&pendings->pending))
     {
-      p_req_lelt = TAILQ_FIRST(&pendings->pending);
-      TAILQ_REMOVE(&pendings->pending, p_req_lelt, link);
+      nm_mpi_request_t*p_req_lelt = nm_mpi_request_list_pop_front(&pendings->pending);
       nm_mpi_spin_unlock(&pendings->lock);
       nm_mpi_rma_handle_passive_shm(p_req_lelt);
       nm_mpi_spin_lock(&pendings->lock);

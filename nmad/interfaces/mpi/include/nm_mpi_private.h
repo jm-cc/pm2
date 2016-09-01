@@ -27,7 +27,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <complex.h>
-#include <sys/queue.h>
 
 #include <Padico/Puk.h>
 #include <nm_public.h>
@@ -277,12 +276,15 @@ typedef struct nm_mpi_request_s
     char static_buf[_NM_MPI_MAX_DATATYPE_SIZE]; /**< static buffer of max predefined datatype size */
   };
   /** Link for nm_mpi_reqlist_t lists */
-  TAILQ_ENTRY(nm_mpi_request_s) link;
+  PUK_LIST_LINK(nm_mpi_request);
   /** corresponding epoch management structure for rma operations */
   nm_mpi_win_epoch_t*p_epoch;
   /** corresponding rma window */
   nm_mpi_window_t*p_win;
 } __attribute__((__may_alias__)) nm_mpi_request_t;
+
+PUK_LIST_DECLARE_TYPE(nm_mpi_request);
+PUK_LIST_CREATE_FUNCS(nm_mpi_request);
 
 /* @} */
 
@@ -564,7 +566,7 @@ NM_DATA_TYPE(mpi_datatype_serial, struct nm_mpi_datatype_s*, &nm_mpi_datatype_se
 typedef struct nm_mpi_win_locklist_s
 {
   nm_mpi_spinlock_t lock;       /**< lock for pending requests access */
-  TAILQ_HEAD(nm_mpi_win_reqlist_s, nm_mpi_request_s) pending; /**< pending requests */
+  struct nm_mpi_request_list_s pending; /**< pending requests */
 } nm_mpi_win_locklist_t;
 
 /* @} */

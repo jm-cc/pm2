@@ -22,8 +22,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include <sys/queue.h>
-
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(MadMPI);
 
@@ -36,26 +34,21 @@ static struct nm_mpi_handle_window_s nm_mpi_windows;
 /* ** Memory segment list elements definition ************** */
 
 /** Content for requests queue elements */
-struct nm_mpi_win_addr_lelt_s;
-typedef struct nm_mpi_win_addr_lelt_s
-{
-  void*begin;
-  MPI_Aint size;
-  TAILQ_ENTRY(nm_mpi_win_addr_lelt_s) link;
-} nm_mpi_win_addr_lelt_t;
+PUK_LIST_TYPE(nm_mpi_win_addr,
+	      void*begin;
+	      MPI_Aint size;
+	      );
 
-/** Request queue head */
-TAILQ_HEAD(nm_mpi_win_addrlist_s, nm_mpi_win_addr_lelt_s);
 typedef struct
 {
-  struct nm_mpi_win_addrlist_s head;
+  struct nm_mpi_win_addr_list_s head;
   nm_mpi_spinlock_t lock;
 } nm_mpi_win_addrlist_t;
 
 /** Slab allocator for addr list elements */
 #define NM_MPI_WIN_INITIAL_ADDR_LELT 8
-PUK_ALLOCATOR_TYPE(nm_mpi_win_addr_lelt, nm_mpi_win_addr_lelt_t);
-static nm_mpi_win_addr_lelt_allocator_t nm_mpi_win_addr_lelt_allocator;
+PUK_ALLOCATOR_TYPE(nm_mpi_win_addr, struct nm_mpi_win_addr_s);
+static nm_mpi_win_addr_allocator_t nm_mpi_win_addr_allocator;
 
 /* ** Windows initialization types definition ************** */
 
@@ -161,12 +154,14 @@ int nm_mpi_win_addr_is_valid(void*base, MPI_Aint size, nm_mpi_window_t*p_win)
   if(!(MPI_WIN_FLAVOR_DYNAMIC == p_win->flavor))
     return 1;
   int is_valid = 0;
-  struct nm_mpi_win_addr_lelt_s*it;
+  struct nm_mpi_win_addr_s*it;
   nm_mpi_win_addrlist_t*p_list = p_win->p_base;
   nm_mpi_spin_lock(&p_list->lock);
-  for(it = TAILQ_FIRST(&p_list->head); !is_valid && it; it = TAILQ_NEXT(it, link))
+  puk_list_foreach(it, &p_list->head)
     {
       is_valid |= it->begin <= base && it->size >= (size + NM_MPI_WIN_ABS(it->begin - base));
+      if(is_valid)
+	break;
     }
   nm_mpi_spin_unlock(&p_list->lock);
   return is_valid;
@@ -248,12 +243,11 @@ static inline void nm_mpi_window_destroy(nm_mpi_window_t*p_win)
 	  {
 	    nm_mpi_win_addrlist_t*p_list = p_win->p_base;
 	    nm_mpi_spin_lock(&p_list->lock);
-	    nm_mpi_win_addr_lelt_t*it = TAILQ_FIRST(&p_list->head);
-	    while(!TAILQ_EMPTY(&p_list->head)) {
-	      TAILQ_REMOVE(&p_list->head, it, link);
-	      nm_mpi_win_addr_lelt_free(nm_mpi_win_addr_lelt_allocator, it);
-	      it = TAILQ_FIRST(&p_list->head);
-	    }
+	    while(!nm_mpi_win_addr_list_empty(&p_list->head))
+	      {
+		struct nm_mpi_win_addr_s*it = nm_mpi_win_addr_list_pop_front(&p_list->head);
+		nm_mpi_win_addr_free(nm_mpi_win_addr_allocator, it);
+	      }
 	    nm_mpi_spin_unlock(&p_list->lock);
 	    FREE_AND_SET_NULL(p_list);
 	  }
@@ -809,13 +803,13 @@ void nm_mpi_win_init(void)
   p_init_datatype->name = strdup("Window initialization datatype");
   MPI_Type_commit(&init_datatype);
   /** Initialize allocators */
-  nm_mpi_win_addr_lelt_allocator  = nm_mpi_win_addr_lelt_allocator_new(NM_MPI_WIN_INITIAL_ADDR_LELT);
+  nm_mpi_win_addr_allocator  = nm_mpi_win_addr_allocator_new(NM_MPI_WIN_INITIAL_ADDR_LELT);
 }
 
 __PUK_SYM_INTERNAL
 void nm_mpi_win_exit(void)
 {
-  nm_mpi_win_addr_lelt_allocator_delete(nm_mpi_win_addr_lelt_allocator);
+  nm_mpi_win_addr_allocator_delete(nm_mpi_win_addr_allocator);
   p_init_datatype = NULL;
   MPI_Type_free(&init_datatype);
   nm_mpi_handle_window_finalize(&nm_mpi_windows, &nm_mpi_window_destroy);
@@ -998,7 +992,7 @@ int mpi_win_create_dynamic(MPI_Info info, MPI_Comm comm, MPI_Win *win)
 	return MPI_ERR_INFO;
     }
   nm_mpi_win_addrlist_t*p_list = malloc(sizeof(nm_mpi_win_addrlist_t));
-  *p_list = (nm_mpi_win_addrlist_t)TAILQ_HEAD_INITIALIZER(p_list->head);
+  nm_mpi_win_addr_list_init(&p_list->head);
   nm_mpi_spin_init(&p_list->lock);
   nm_mpi_window_t*p_win  = nm_mpi_window_alloc(comm_size);
   nm_mpi_info_update(p_info, p_win->p_info);
@@ -1022,7 +1016,7 @@ int mpi_win_attach(MPI_Win win, void *base, MPI_Aint size)
   nm_mpi_window_t *p_win = nm_mpi_window_get(win);
   if(NULL == p_win)
     return MPI_ERR_WIN;
-  nm_mpi_win_addr_lelt_t*p_addr_lelt = nm_mpi_win_addr_lelt_malloc(nm_mpi_win_addr_lelt_allocator);
+  struct nm_mpi_win_addr_s*p_addr_lelt = nm_mpi_win_addr_malloc(nm_mpi_win_addr_allocator);
   if(NULL == p_addr_lelt)
     return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_ATTACH);
   if(MPI_WIN_FLAVOR_DYNAMIC != p_win->flavor)
@@ -1031,24 +1025,25 @@ int mpi_win_attach(MPI_Win win, void *base, MPI_Aint size)
   nm_mpi_spin_lock(&p_list->lock);
 #ifdef DEBUG
   /* Check if memory is not already attached */
-  nm_mpi_win_addr_lelt_t*it;
-  TAILQ_FOREACH(it, &p_list->head, link) {
-    if(it->begin <= base && it->size >= (size + NM_MPI_WIN_ABS(it->begin - base)))
-      {
-	err = NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_ATTACH);
-	break;
-      }
-  }
+  struct nm_mpi_win_addr_s*it;
+  puk_list_foreach(it, &p_list->head)
+    {
+      if(it->begin <= base && it->size >= (size + NM_MPI_WIN_ABS(it->begin - base)))
+	{
+	  err = NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_ATTACH);
+	  break;
+	}
+    }
   if(MPI_SUCCESS != err)
     {
       nm_mpi_spin_unlock(&p_list->lock);
-      nm_mpi_win_addr_lelt_free(nm_mpi_win_addr_lelt_allocator, p_addr_lelt);
+      nm_mpi_win_addr_free(nm_mpi_win_addr_allocator, p_addr_lelt);
       return err;
     }
 #endif /* DEBUG */
   p_addr_lelt->begin = base;
   p_addr_lelt->size = size;
-  TAILQ_INSERT_TAIL(&p_list->head, p_addr_lelt, link);
+  nm_mpi_win_addr_list_push_back(&p_list->head, p_addr_lelt);
   nm_mpi_spin_unlock(&p_list->lock);
   return err;
 }
@@ -1063,15 +1058,12 @@ int mpi_win_detach(MPI_Win win, const void *base)
     return NM_MPI_WIN_ERROR(win, MPI_ERR_RMA_FLAVOR);
   nm_mpi_win_addrlist_t*p_list = p_win->p_base;
   nm_mpi_spin_lock(&p_list->lock);
-  nm_mpi_win_addr_lelt_t*it = TAILQ_FIRST(&p_list->head);
-  while(it && base != it->begin)
-    {
-      it = TAILQ_NEXT(it, link);
-    }
+  struct nm_mpi_win_addr_s*it;
+  PUK_LIST_FIND(it, &p_list->head, (base == it->begin));
   if(it)
     {
-      TAILQ_REMOVE(&p_list->head, it, link);
-      nm_mpi_win_addr_lelt_free(nm_mpi_win_addr_lelt_allocator, it);
+      nm_mpi_win_addr_list_erase(&p_list->head, it);
+      nm_mpi_win_addr_free(nm_mpi_win_addr_allocator, it);
     }
   else
     {

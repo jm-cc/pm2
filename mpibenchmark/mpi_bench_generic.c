@@ -398,6 +398,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	    }
 	  if(mpi_bench->setparam)
 	    printf("# bench: %s%%%d end\n", mpi_bench->label, p);
+	  free(lats);
 	}
       if(param_bounds)
 	{

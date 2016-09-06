@@ -24,8 +24,8 @@
 
 struct nm_rpc_content_s
 {
-  struct nm_data_s header;
-  struct nm_data_s body;
+  struct nm_data_s*p_header;
+  struct nm_data_s*p_body;
 };
 
 static void nm_rpc_traversal(const void*_content, nm_data_apply_t apply, void*_context);
@@ -33,13 +33,13 @@ const struct nm_data_ops_s nm_rpc_ops =
   {
     .p_traversal = &nm_rpc_traversal
   };
-NM_DATA_TYPE(nm_rpc, struct nm_rpc_content_s, &nm_rpc_ops);
+NM_DATA_TYPE(rpc, struct nm_rpc_content_s, &nm_rpc_ops);
 
 static void nm_rpc_traversal(const void*_content, nm_data_apply_t apply, void*_context)
 {
   const struct nm_rpc_content_s*p_content = _content;
-  nm_data_traversal_apply(&p_content->header, apply, _context);
-  nm_data_traversal_apply(&p_content->body, apply, _context);
+  nm_data_traversal_apply(p_content->p_header, apply, _context);
+  nm_data_traversal_apply(p_content->p_body, apply, _context);
 }
 
 /* ********************************************************* */
@@ -47,19 +47,58 @@ static void nm_rpc_traversal(const void*_content, nm_data_apply_t apply, void*_c
 void nm_rpc_send(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag,
 		 struct nm_data_s*p_header, struct nm_data_s*p_body)
 {
-  
+  nm_sr_request_t request;
+  struct nm_data_s rpc_data;
+  nm_data_rpc_set(&rpc_data, (struct nm_rpc_content_s){ .p_header = p_header, .p_body = p_body });
+  nm_sr_send_init(p_session, &request);
+  nm_sr_send_pack_data(p_session, &request, &rpc_data);
+  nm_sr_send_dest(p_session, &request, p_gate, tag);
+  nm_sr_send_header(p_session, &request, nm_data_size(p_header));
+  nm_sr_send_submit(p_session, &request);
+  nm_sr_swait(p_session, &request);
 }
 
-void nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask,
-		     nm_rpc_handler_t p_handler, void*ref)
+static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
 {
+  assert(event & NM_SR_EVENT_RECV_UNEXPECTED);
+  const nm_gate_t from   = p_info->recv_unexpected.p_gate;
+  const nm_tag_t tag     = p_info->recv_unexpected.tag;
+  const size_t len       = p_info->recv_unexpected.len;
+  nm_session_t p_session = p_info->recv_unexpected.p_session;
+  struct nm_rpc_token_s*p_token = _ref;
+  nm_sr_request_t request;
+  nm_sr_recv_init(p_session, &request);
+  nm_sr_recv_match_event(p_session, &request, p_info);
+  int rc = nm_sr_recv_peek(p_session, &request, &p_token->header);
+  if(rc != NM_ESUCCESS)
+    {
+      fprintf(stderr, "# nm_rpc: rc = %d in nm_sr_recv_peek()\n", rc);
+      abort();
+    }
+  p_token->p_request = &request;
+  (*p_token->p_handler)(p_token, &request);
 }
 
-void nm_rpc_get_header(nm_rpc_token_t*p_token, struct nm_data_s*p_header)
+nm_rpc_token_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask,
+			       nm_rpc_handler_t p_handler, void*ref, struct nm_data_s*p_header)
 {
+  struct nm_rpc_token_s*p_token = malloc(sizeof(struct nm_rpc_token_s));
+  p_token->p_session = p_session;
+  p_token->p_handler = p_handler;
+  p_token->ref       = ref;
+  p_token->header    = *p_header;
+  p_token->monitor   = (struct nm_sr_monitor_s)
+    {
+      .p_notifier = &nm_rpc_handler,
+      .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
+      .p_gate     = NM_GATE_NONE,
+      .tag        = tag,
+      .tag_mask   = tag_mask,
+      .ref        = p_token
+    };
+  nm_sr_session_monitor_set(p_session, &p_token->monitor);
+
+  return p_token;
 }
 
-void nm_rpc_get_body(nm_rpc_token_t*p_token, struct nm_data_s*p_header)
-{
-}
 

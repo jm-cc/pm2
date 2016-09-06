@@ -20,14 +20,26 @@
 #include <nm_sendrecv_interface.h>
 #include <nm_session_interface.h>
 
-struct nm_rpc_token_s
-{
-  nm_session_t p_session;
-  nm_sr_request_t req;
-};
 typedef struct nm_rpc_token_s*nm_rpc_token_t;
 
-typedef void (*nm_rpc_handler_t)(nm_rpc_token_t p_token, void*ref);
+typedef void (*nm_rpc_handler_t)(nm_rpc_token_t p_token, nm_sr_request_t*p_request);
+
+struct nm_rpc_token_s
+{
+  struct nm_sr_monitor_s monitor;
+  struct nm_data_s header;
+  void*ref;
+  nm_session_t p_session;
+  nm_sr_request_t*p_request;
+  nm_rpc_handler_t p_handler;
+};
+
+void nm_rpc_send(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag,
+		 struct nm_data_s*p_header, struct nm_data_s*p_body);
+
+nm_rpc_token_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask,
+			       nm_rpc_handler_t p_handler, void*ref, struct nm_data_s*p_header);
+
 
 
 #endif /* NM_RPC_INTERFACE_H */

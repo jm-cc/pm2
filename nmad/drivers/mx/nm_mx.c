@@ -513,7 +513,7 @@ static int nm_mx_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_
   char*ep_url = strchr(url, '/');
   if(!ep_url)
     {
-      TBX_FAILUREF("MX: cannot parse url %s.\n", url);
+      NM_FATAL("MX: cannot parse url %s.\n", url);
     }
   *ep_url = '\0';
   ep_url++;

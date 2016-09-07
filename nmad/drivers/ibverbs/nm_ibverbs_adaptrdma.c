@@ -156,7 +156,7 @@ static void nm_ibverbs_adaptrdma_connect(void*_status, const void*remote_url, si
 			     IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(adaptrdma->mr == NULL)
     {
-      TBX_FAILURE("Infiniband: adaptrdma cannot register MR.\n");
+      NM_FATAL("Infiniband: adaptrdma cannot register MR.\n");
     }
   struct nm_ibverbs_segment*seg = &p_ibverbs_cnx->local_addr.segment;
   seg->raddr = (uintptr_t)&adaptrdma->buffer;

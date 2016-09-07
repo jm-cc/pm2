@@ -216,7 +216,7 @@ static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_
 			  IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(rcache->mr == NULL)
     {
-      TBX_FAILURE("Infiniband: rcache cannot register MR.\n");
+      NM_FATAL("Infiniband: rcache cannot register MR.\n");
     }
   struct nm_ibverbs_segment*seg = &p_ibverbs_cnx->local_addr.segment;
   seg->raddr = (uintptr_t)&rcache->headers;

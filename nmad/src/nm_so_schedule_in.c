@@ -228,7 +228,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
     {
       fprintf(stderr, "nmad: WARNING- %lu unexpected chunks allocated.\n", nm_unexpected_mem_size);
       if(nm_unexpected_mem_size > 64*1024)
-	TBX_FAILUREF("nmad: FATAL- %lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
+	NM_FATAL("nmad: FATAL- %lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
     }
 #endif /* DEBUG */
   nmad_lock_assert();

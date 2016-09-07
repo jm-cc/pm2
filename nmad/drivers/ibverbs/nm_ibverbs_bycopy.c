@@ -221,8 +221,8 @@ static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_
   if(bycopy->mr == NULL)
     {
       const int err = errno;
-      TBX_FAILUREF("Infiniband: bycopy cannot register MR (errno = %d; %s).\n",
-		   err, strerror(err));
+      NM_FATAL("Infiniband: bycopy cannot register MR (errno = %d; %s).\n",
+	       err, strerror(err));
     }
 
   struct nm_ibverbs_segment*seg = &bycopy->cnx->local_addr.segment;

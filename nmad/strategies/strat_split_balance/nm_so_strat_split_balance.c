@@ -84,15 +84,11 @@ static void*strat_split_balance_instantiate(puk_instance_t ai, puk_context_t con
 
   status->nb_packets = 0;
 
-  NM_LOGF("[loading strategy: <split_balance>]");
-
   const char*nm_max_small = puk_instance_getattr(ai, "nm_max_small");
   status->nm_max_small = atoi(nm_max_small);
-  NM_LOGF("[nm_max_small=%i]", status->nm_max_small);
 
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
   status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
-  NM_LOGF("[nm_copy_on_send_threshold=%i]", status->nm_copy_on_send_threshold);
 
   return (void*)status;
 }

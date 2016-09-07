@@ -147,7 +147,7 @@ static int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
     }
   else if(err != -NM_ECLOSED)
     {
-      TBX_FAILUREF("nm_pw_post_recv failed- err = %d", err);
+      NM_FATAL("nm_pw_post_recv failed- err = %d", err);
     }
   
   return err;
@@ -236,7 +236,7 @@ int nm_piom_block_recv(struct nm_pkt_wrap_s  *p_pw)
   nmad_lock();
 
   if (err != NM_ESUCCESS) {
-    NM_LOGF("drv->wait_recv returned %d", err);
+    NM_WARN("drv->wait_recv returned %d", err);
   }
 
   piom_ltask_completed(&p_pw->ltask);

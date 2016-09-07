@@ -219,8 +219,6 @@ static int nm_qsnet_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks
   int err = -NM_EINVAL;
   struct nm_qsnet_drv*p_qsnet_drv = p_drv->priv;
   
-  NM_LOG_IN();
-
   node_string = getenv("LIBELAN_ECAP0");
   if (node_string)
     goto capability_generated;
@@ -303,7 +301,6 @@ static int nm_qsnet_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks
   err = NM_ESUCCESS;
   
  out:
-  NM_LOG_OUT();
   
   return err;
 }
@@ -331,7 +328,6 @@ static int nm_qsnet_connect(void*_status, struct nm_cnx_rq *p_crq)
   int err;
   struct nm_qsnet_adm_pkt	 pkt;
 
-  NM_LOG_IN();
   
   /* process remote process URL
    */
@@ -373,7 +369,6 @@ static int nm_qsnet_connect(void*_status, struct nm_cnx_rq *p_crq)
   NM_TRACEF("send pkt <--");
   
   err = NM_ESUCCESS;
-  NM_LOG_OUT();
   
   return err;
 }
@@ -390,8 +385,6 @@ static int nm_qsnet_accept(void*_status, struct nm_cnx_rq *p_crq)
   int			 remote_proc	= 0;
   int err;
   struct nm_qsnet_adm_pkt pkt;
-  
-  NM_LOG_IN();
   
   NM_TRACEF("recv pkt -->");
   {
@@ -422,7 +415,6 @@ static int nm_qsnet_accept(void*_status, struct nm_cnx_rq *p_crq)
 	    p_gate, remote_proc);
   
   err = NM_ESUCCESS;
-  NM_LOG_OUT();
   
   return err;
 }

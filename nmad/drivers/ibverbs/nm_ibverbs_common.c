@@ -90,7 +90,7 @@ static void nm_ibverbs_common_init(void)
     {
       tbx_checksum_t checksum = tbx_checksum_get(checksum_env);
       if(checksum == NULL)
-	TBX_FAILUREF("# nmad: checksum algorithm *%s* not available.\n", checksum_env);
+	NM_FATAL("# nmad: checksum algorithm *%s* not available.\n", checksum_env);
       _nm_ibverbs_checksum = checksum;
       NM_DISPF("# nmad ibverbs: checksum enabled (%s).\n", checksum->name);
     }

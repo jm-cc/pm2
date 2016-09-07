@@ -126,9 +126,6 @@ static void*strat_split_all_instantiate(puk_instance_t ai, puk_context_t context
   const char*nm_so_max_small = puk_context_getattr(context, "nm_so_max_small");
   status->nm_so_max_small = atoi(nm_so_max_small);
 
-  NM_LOGF("[NM_SO_MAX_SMALL=%i]", status->nm_so_max_small);
-  NM_LOGF("[loading strategy: <split_all>]");
-
   return (void*)status;
 }
 

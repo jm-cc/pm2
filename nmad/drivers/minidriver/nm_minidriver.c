@@ -365,7 +365,7 @@ static int nm_minidriver_poll_recv_iov(void*_status, struct nm_pkt_wrap_s*__rest
     }
   else
     {
-      TBX_FAILURE("poll_any not implemented yet.");
+      NM_FATAL("poll_any not implemented yet.");
     }
   return err;
 }

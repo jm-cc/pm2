@@ -65,7 +65,6 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
 {
   int err;
 
-  NM_LOG_IN();
   p_drv->p_core = p_core;
 
   if (!p_drv->driver->init)
@@ -122,7 +121,6 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   err = NM_ESUCCESS;
 
  out:
-  NM_LOG_OUT();
 
   return err;
 }
@@ -149,12 +147,12 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 
   if(!p_drv->driver->query)
     {
-      TBX_FAILUREF("nmad: FATAL- driver %s has no 'query' method.\n", p_drv->driver->name);
+      NM_FATAL("nmad: FATAL- driver %s has no 'query' method.\n", p_drv->driver->name);
     }
   err = p_drv->driver->query(p_drv, param, 1);
   if(err != NM_ESUCCESS)
     {
-      TBX_FAILUREF("nmad: FATAL- error %d while querying driver %s\n", err, p_drv->driver->name);
+      NM_FATAL("nmad: FATAL- error %d while querying driver %s\n", err, p_drv->driver->name);
     }
 
 #ifdef PM2_TOPOLOGY

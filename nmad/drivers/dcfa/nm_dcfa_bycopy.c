@@ -193,8 +193,8 @@ static void nm_dcfa_bycopy_connect(void*_status, const void*remote_url, size_t u
   if(bycopy->mr == NULL)
     {
       const int err = errno;
-      TBX_FAILUREF("Infiniband: bycopy cannot register MR (errno = %d; %s).\n",
-		   err, strerror(err));
+      NM_FATAL("Infiniband: bycopy cannot register MR (errno = %d; %s).\n",
+	       err, strerror(err));
     }
 
   struct nm_dcfa_segment*seg = &p_dcfa_cnx->local_addr.segment;

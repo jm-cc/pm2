@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ extern int nm_sr_exit(nm_session_t p_session);
 /* ** Operations on requests (send or recv) **************** */
 
 /** Set a notification function called upon request completion */
-extern int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
+extern int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t*p_request,
 				 nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
 
 /** Ask to enqueue the request in the completion queue upon completion */

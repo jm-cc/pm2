@@ -214,7 +214,7 @@ static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t u
   lr2->send.prefetch = NULL;
   if(lr2->mr == NULL)
     {
-      TBX_FAILURE("Infiniband: lr2 cannot register MR.\n");
+      NM_FATAL("Infiniband: lr2 cannot register MR.\n");
     }
   struct nm_ibverbs_segment*seg = &lr2->cnx->local_addr.segment;
   seg->raddr = (uintptr_t)&lr2->buffer;

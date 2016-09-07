@@ -179,7 +179,7 @@ static void nm_dcfa_lr2_connect(void*_status, const void*remote_url, size_t url_
   lr2->send.prefetch = NULL;
   if(lr2->mr == NULL)
     {
-      TBX_FAILURE("Infiniband: lr2 cannot register MR.\n");
+      NM_FATAL("Infiniband: lr2 cannot register MR.\n");
     }
   struct nm_dcfa_segment*seg = &p_ibverbs_cnx->local_addr.segment;
   seg->raddr = (uintptr_t)lr2->mr->host_addr;

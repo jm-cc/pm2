@@ -121,9 +121,9 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t*p_request)
   nm_core_t p_core = p_session->p_core;
 #ifdef DEBUG
   if(!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED))
-    TBX_FAILUREF("nm_sr_swait- req=%p no send posted!\n", p_request);
+    NM_FATAL("nm_sr_swait- req=%p no send posted!\n", p_request);
   if(p_request->monitor.mask & NM_SR_EVENT_FINALIZED)
-    TBX_FAILUREF("nm_sr_swait- req=%p has monitor for EVENT_FINALIZED; cannot swait.\n", p_request);
+    NM_FATAL("nm_sr_swait- req=%p has monitor for EVENT_FINALIZED; cannot swait.\n", p_request);
 #endif /* DEBUG */
   const nm_status_t status = (p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS) ?
     (NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED) : (NM_STATUS_PACK_COMPLETED);
@@ -190,9 +190,9 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_core_t p_core = p_session->p_core;
 #ifdef DEBUG
   if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_POSTED))
-    TBX_FAILUREF("nm_sr_rwait- req=%p no recv posted!\n", p_request);
+    NM_FATAL("nm_sr_rwait- req=%p no recv posted!\n", p_request);
   if(p_request->monitor.mask & NM_SR_EVENT_FINALIZED)
-    TBX_FAILUREF("nm_sr_rwait- req=%p has monitor for EVENT_FINALIZED; cannot rwait.\n", p_request);
+    NM_FATAL("nm_sr_rwait- req=%p has monitor for EVENT_FINALIZED; cannot rwait.\n", p_request);
 #endif /* DEBUG */
   int rc = nm_sr_rtest(p_session, p_request);
   if(rc != NM_ESUCCESS)

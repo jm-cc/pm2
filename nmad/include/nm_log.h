@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,8 +30,15 @@
 #define NM_TRACE_PTR(str, ptr)	NM_TRACEF("%s = %p", str, (void*)ptr)
 #define NM_TRACE_STR(str, str2)	NM_TRACEF("%s: %s", str, str2)
 
-#define NM_LOGF(str, ...)	NM_TRACEF(str , ## __VA_ARGS__)
-#define NM_LOG_IN()		NM_TRACEF("-->")
-#define NM_LOG_OUT()		NM_TRACEF("<--")
+#define NM_FATAL(...) {							\
+    fprintf(stderr, "\n# nmad: FATAL- %s\n\t", __TBX_FUNCTION__);	\
+    fprintf(stderr, __VA_ARGS__);					\
+    fprintf(stderr, "\n\n");						\
+    void*buffer[100];							\
+    int nptrs = backtrace(buffer, 100);					\
+    backtrace_symbols_fd(buffer, nptrs, STDERR_FILENO);			\
+    fflush(stderr);							\
+    abort();								\
+  }
 
 #endif /* NM_LOG_H */

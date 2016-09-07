@@ -277,7 +277,7 @@ nm_tcp_socket_create(struct sockaddr_in	*address,
 	if(desc == -1)
 	  {
 	    perror("socket");
-	    TBX_FAILUREF("socket() system call failed.");
+	    NM_FATAL("socket() system call failed.");
 	  }
 
         temp.sin_family      = AF_INET;
@@ -454,7 +454,7 @@ static int nm_tcp_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk
 	  if(errno == EINTR)
 	    goto connect_again;
 	  else
-	    TBX_FAILUREF("nmad: connect() failed- error %d (%s)\n", errno, strerror(errno));
+	    NM_FATAL("nmad: connect() failed- error %d (%s)\n", errno, strerror(errno));
 	}
       struct nm_tcp_peer_id_s id;
       memset(&id.url, 0, sizeof(id.url));
@@ -490,7 +490,7 @@ static int nm_tcp_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk
 	  if(fd < 0)
 	    {
 	      if(errno != EINTR)
-		TBX_FAILUREF("nmad: accept() failed- error %d (%s)\n", errno, strerror(errno));
+		NM_FATAL("nmad: accept() failed- error %d (%s)\n", errno, strerror(errno));
 	    }
 	  else
 	    {
@@ -558,7 +558,7 @@ static int nm_tcp_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_
       if(errno == EINTR)
 	goto shutdown_retry;
       else
-	TBX_FAILUREF("nmad: shutdown() failed- error %d (%s)\n", errno, strerror(errno));
+	NM_FATAL("nmad: shutdown() failed- error %d (%s)\n", errno, strerror(errno));
     }
 
   /* flush (and throw away) remaining bytes in the pipe up to the EOS */
@@ -584,8 +584,6 @@ static int nm_tcp_poll_out(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout
   int			 err;
   struct pollfd		 pollfd;
 
-  NM_LOG_IN();
-  
   pollfd.fd	 = status->fd[p_pw->trk_id];
   pollfd.events	 = POLLOUT;
   pollfd.revents = 0;
@@ -631,7 +629,6 @@ static int nm_tcp_poll_out(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout
   err	= NM_ESUCCESS;
   
  out:
-  NM_LOG_OUT();
   
   return err;
 }
@@ -652,8 +649,6 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout)
   struct pollfd		*p_gate_pollfd	= NULL;
   int			 ret;
   int			 err;
-
-  NM_LOG_IN();
 
   if (!p_pw->p_gate) {
     int i;
@@ -814,7 +809,6 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout)
   err	= NM_ESUCCESS;
   
  out:
-  NM_LOG_OUT();
   
   return err;
 }
@@ -833,7 +827,6 @@ nm_tcp_send 	(void*_status,
         int				 ret;
         int				 err;
 
-        NM_LOG_IN();
         err	= nm_tcp_poll_out(_status, p_pw, timeout);
         if (err < 0) {
                 if (err == -NM_EAGAIN) {
@@ -1014,7 +1007,6 @@ nm_tcp_send 	(void*_status,
         err	= -NM_EAGAIN;
 
  out:
-        NM_LOG_OUT();
 
         return err;
 
@@ -1047,7 +1039,6 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout)
   int			 	 ret;
   int			 	 err;
   
-  NM_LOG_IN();
   err	= nm_tcp_poll_in(_status, p_pw, timeout);
   if (err < 0) {
     if (err == -NM_EAGAIN) {
@@ -1273,7 +1264,6 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout)
   err	= -NM_EAGAIN;
   
  out:
-  NM_LOG_OUT();
   
   return err;
   

@@ -133,7 +133,7 @@ int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_
 	}
       else if(p_pack->pack.done > p_pack->pack.len)
 	{ 
-	  TBX_FAILUREF("more bytes sent than posted (should have been = %lu; actually sent = %lu)\n",
+	  NM_FATAL("more bytes sent than posted (should have been = %lu; actually sent = %lu)\n",
 		       p_pack->pack.len, p_pack->pack.done);
 	}
     }
@@ -163,7 +163,7 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
     }
   else if(err != -NM_EAGAIN)
     {
-      TBX_FAILUREF("poll_send failed- err = %d", err);
+      NM_FATAL("poll_send failed- err = %d", err);
     }
 }
 
@@ -215,7 +215,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
     }
   else
     {
-      TBX_FAILUREF("post_send failed- err = %d", err);
+      NM_FATAL("post_send failed- err = %d", err);
     }
 }
 

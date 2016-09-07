@@ -338,7 +338,9 @@ static void nm_ns_eager_recv_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, void*ptr, 
 	      ptr += data_len;
 	    }
 	  else
-	    TBX_FAILUREF("unexpected proto %x; len = %d (%d)\n", proto_id, (int)len, (int)_len);
+	    {
+	      NM_FATAL("unexpected proto %x; len = %d (%d)\n", proto_id, (int)len, (int)_len);
+	    }
 	}
       while(ptr <  p_pw->v[0].iov_base + nm_header_global_v0len(p_pw));
       nm_pw_free(p_pw);
@@ -366,8 +368,7 @@ static void nm_ns_rdv_send(nm_drv_t p_drv, nm_gate_t p_gate, const void*ptr, siz
     }
   if(err != NM_ESUCCESS)
     {
-      fprintf(stderr, "sampling: error %d while sending [rdv send].\n", err);
-      abort();
+      NM_FATAL("sampling: error %d while sending [rdv send].\n", err);
     }
   nm_pw_free(p_pw);
 }

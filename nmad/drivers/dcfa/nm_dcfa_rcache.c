@@ -188,7 +188,7 @@ static void nm_dcfa_rcache_connect(void*_status, const void*remote_url, size_t u
 			  IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(rcache->mr == NULL)
     {
-      TBX_FAILURE("Infiniband: rcache cannot register MR.\n");
+      NM_FATAL("Infiniband: rcache cannot register MR.\n");
     }
   struct nm_dcfa_segment*seg = &p_ibverbs_cnx->local_addr.segment;
   seg->raddr = (uintptr_t)rcache->mr->host_addr;

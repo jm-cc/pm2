@@ -90,15 +90,11 @@ static void*strat_aggreg_autoextended_instantiate(puk_instance_t instance, puk_c
   num_instances++;
   nm_pkt_wrap_list_init(&p_status->out_list);
 
-  NM_LOGF("[loading strategy: <aggreg_autoextended>]");
-
   const char*nm_so_max_small = puk_instance_getattr(instance, "nm_so_max_small");
   p_status->nm_so_max_small = atoi(nm_so_max_small);
-  NM_LOGF("[nm_so_max_small=%i]", p_status->nm_so_max_small);
 
   const char*nm_so_copy_on_send_threshold = puk_instance_getattr(instance, "nm_so_copy_on_send_threshold");
   p_status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
-  NM_LOGF("[nm_so_copy_on_send_threshold=%i]", p_status->nm_so_copy_on_send_threshold);
 
   return p_status;
 }

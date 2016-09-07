@@ -64,6 +64,12 @@ void nm_rpc_send(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag,
   nm_sr_swait(p_session, &request);
 }
 
+static void nm_rpc_finalizer(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
+{
+  struct nm_rpc_token_s*p_token = _ref;
+  (*p_token->p_finalizer)(p_token);
+}
+
 static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
 {
   assert(event & NM_SR_EVENT_RECV_UNEXPECTED);
@@ -81,19 +87,23 @@ static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info,
       fprintf(stderr, "# nm_rpc: rc = %d in nm_sr_recv_peek()\n", rc);
       abort();
     }
+  nm_sr_request_set_ref(&request, p_token);
+  nm_sr_request_monitor(p_session, &request, NM_STATUS_FINALIZED, &nm_rpc_finalizer);
   p_token->p_request = &request;
   (*p_token->p_handler)(p_token, &request);
 }
 
 nm_rpc_token_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask,
-			       nm_rpc_handler_t p_handler, void*ref, struct nm_data_s*p_header)
+			       nm_rpc_handler_t p_handler, nm_rpc_finalizer_t p_finalizer,
+			       void*ref, struct nm_data_s*p_header)
 {
   struct nm_rpc_token_s*p_token = malloc(sizeof(struct nm_rpc_token_s));
-  p_token->p_session = p_session;
-  p_token->p_handler = p_handler;
-  p_token->ref       = ref;
-  p_token->header    = *p_header;
-  p_token->monitor   = (struct nm_sr_monitor_s)
+  p_token->p_session   = p_session;
+  p_token->p_handler   = p_handler;
+  p_token->p_finalizer = p_finalizer;
+  p_token->ref         = ref;
+  p_token->header      = *p_header;
+  p_token->monitor     = (struct nm_sr_monitor_s)
     {
       .p_notifier = &nm_rpc_handler,
       .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,

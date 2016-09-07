@@ -24,8 +24,8 @@
 
 struct nm_rpc_content_s
 {
-  struct nm_data_s*p_header;
-  struct nm_data_s*p_body;
+  const struct nm_data_s*p_header;
+  const struct nm_data_s*p_body;
 };
 
 static void nm_rpc_traversal(const void*_content, nm_data_apply_t apply, void*_context);
@@ -41,6 +41,12 @@ static void nm_rpc_traversal(const void*_content, nm_data_apply_t apply, void*_c
   nm_data_traversal_apply(p_content->p_header, apply, _context);
   nm_data_traversal_apply(p_content->p_body, apply, _context);
 }
+
+void nm_rpc_data_build(struct nm_data_s*p_rpc_data, const struct nm_data_s*p_header, const struct nm_data_s*p_body)
+{
+  nm_data_rpc_set(p_rpc_data, (struct nm_rpc_content_s){ .p_header = p_header, .p_body = p_body });
+}
+
 
 /* ********************************************************* */
 

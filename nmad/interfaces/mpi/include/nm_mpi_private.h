@@ -25,6 +25,7 @@
  */
 
 #include <stdint.h>
+#include <limits.h>
 #include <unistd.h>
 #include <complex.h>
 

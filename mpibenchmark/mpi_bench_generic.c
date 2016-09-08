@@ -19,6 +19,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <values.h>
+#include <assert.h>
 
 #include <mpi.h>
 #include "mpi_bench_generic.h"

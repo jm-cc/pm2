@@ -141,9 +141,8 @@ static inline void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw
 
 /** Schedule and post new outgoing buffers
  */
-static inline int nm_strat_try_and_commit(nm_gate_t p_gate)
+static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
 {
-  int err;
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
 #ifdef FINE_GRAIN_LOCKING
   if(r->driver->todo && 
@@ -152,22 +151,18 @@ static inline int nm_strat_try_and_commit(nm_gate_t p_gate)
     if(nm_trylock_interface(p_gate->p_core))
       {
 	nm_lock_status(p_gate->p_core);
-	err = r->driver->try_and_commit(r->_status, p_gate);
+	r->driver->try_and_commit(r->_status, p_gate);
 	nm_unlock_status(p_gate->p_core);
 	nm_unlock_interface(p_gate->p_core);
-	goto out;
       }
   }
-  err = NM_EINPROGRESS;
- out:
 #else
   if((r->driver->todo == NULL) ||
      (r->driver->todo && r->driver->todo(r->_status, p_gate)))
     {
-      err = r->driver->try_and_commit(r->_status, p_gate);
+      r->driver->try_and_commit(r->_status, p_gate);
     }
 #endif
-  return err;
 }
 
 /** Post a ready-to-receive

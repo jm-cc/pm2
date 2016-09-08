@@ -322,7 +322,7 @@ static inline void nm_mpi_win_exchange_init(nm_mpi_window_t*p_win, int size)
       nm_mpi_coll_wait(requests[2*i+1]);
     }
   /* Wait for recieves */
-  for(int i=0; i<size; ++i)
+  for(int i = 0; i < size; ++i)
     {
       if(i == myrank) continue;
       nm_mpi_coll_wait(requests[2*i]);
@@ -378,7 +378,7 @@ static inline int nm_mpi_win_exchange_init_shm(nm_mpi_window_t*p_win, int size)
 	{
 	  return (close(fd),NM_MPI_WIN_ERROR(p_win->id, MPI_ERR_RMA_SHARED));
 	}
-      for(int i=0; i<size; ++i)
+      for(int i = 0; i < size; ++i)
 	{
 	  if(i == myrank) continue;
 	  requests[3*i+2] = nm_mpi_coll_isend(p_win->shared_file_name, name_size, p_char, i, tag,
@@ -395,8 +395,7 @@ static inline int nm_mpi_win_exchange_init_shm(nm_mpi_window_t*p_win, int size)
     }
   else
     {
-      nm_mpi_request_t*request;
-      request = nm_mpi_coll_irecv(p_win->shared_file_name, name_size, p_char, 0, tag, p_win->p_comm);
+      nm_mpi_request_t*request = nm_mpi_coll_irecv(p_win->shared_file_name, name_size, p_char, 0, tag, p_win->p_comm);
       nm_mpi_win_exchange_init(p_win, size);
       MPI_Aint total_size = 0;
       for(int i = 0; i < size; ++i)

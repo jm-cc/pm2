@@ -69,6 +69,8 @@ NM_MPI_ALIAS(MPI_Info_get, mpi_info_get);
 NM_MPI_ALIAS(MPI_Info_delete, mpi_info_delete);
 NM_MPI_ALIAS(MPI_Info_get_nkeys, mpi_info_get_nkeys);
 NM_MPI_ALIAS(MPI_Info_get_valuelen, mpi_info_get_valuelen);
+/** stub implementation to be overriden by profiling library */
+int MPI_Pcontrol(const int level, ...) __attribute__((weak));
 NM_MPI_ALIAS(MPI_Pcontrol, mpi_pcontrol);
 NM_MPI_ALIAS(MPI_Status_c2f, mpi_status_c2f);
 NM_MPI_ALIAS(MPI_Status_f2c, mpi_status_f2c);
@@ -607,9 +609,6 @@ int mpi_info_get_valuelen(MPI_Info info, char*key, int*valuelen, int*flag)
 }
 
 
-
-/** stub implementation to be overriden by profiling library */
-int MPI_Pcontrol(const int level, ...) __attribute__((weak));
 int mpi_pcontrol(const int level, ...)
 {
   return MPI_SUCCESS;

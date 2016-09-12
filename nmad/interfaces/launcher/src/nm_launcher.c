@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,9 +36,11 @@ static struct
   struct puk_receptacle_NewMad_Launcher_s r;
   nm_gate_t *gates;
   int size;
+  puk_mod_t boot_mod;
+  int puk_init; /**< whether we initialized Puk ourself */
 } launcher =
   {
-    .instance = NULL, .gates = NULL, .size = -1
+    .instance = NULL, .gates = NULL, .size = -1, .boot_mod = NULL, .puk_init = 0
   };
 
 int nm_launcher_get_rank(int *rank)
@@ -94,15 +96,15 @@ int nm_launcher_init(int *argc, char**argv)
   if(!padico_puk_initialized())
     {
       padico_puk_init(0, NULL);
+      launcher.puk_init = 1;
     }
 
   if(getenv("PADICO_NOPRELOAD") != NULL)
     {
-      puk_mod_t boot_mod = NULL;
-      padico_rc_t rc = padico_puk_mod_resolve(&boot_mod, "PadicoBootLib");
-      assert(boot_mod);
+      padico_rc_t rc = padico_puk_mod_resolve(&launcher.boot_mod, "PadicoBootLib");
+      assert(launcher.boot_mod);
       assert(!padico_rc_iserror(rc));
-      rc = padico_puk_mod_load(boot_mod);
+      rc = padico_puk_mod_load(launcher.boot_mod);
       assert(!padico_rc_iserror(rc));
     }
 
@@ -137,6 +139,15 @@ int nm_launcher_exit(void)
   launcher.gates = NULL;
   puk_instance_destroy(launcher.instance);
   launcher.instance = NULL;
+  if(launcher.boot_mod)
+    {
+      padico_puk_mod_unload(launcher.boot_mod);
+      launcher.boot_mod = NULL;
+    }
+  if(launcher.puk_init)
+    {
+      padico_puk_shutdown();
+    }
   return NM_ESUCCESS;
 }
 

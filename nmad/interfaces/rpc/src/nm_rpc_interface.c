@@ -50,24 +50,24 @@ void nm_rpc_data_build(struct nm_data_s*p_rpc_data, const struct nm_data_s*p_hea
 
 /* ********************************************************* */
 
-void nm_rpc_send(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag,
-		 struct nm_data_s*p_header, struct nm_data_s*p_body)
+void nm_rpc_isend(nm_session_t p_session, nm_sr_request_t*p_request,
+		  nm_gate_t p_gate, nm_tag_t tag,
+		  struct nm_data_s*p_header, struct nm_data_s*p_body)
 {
-  nm_sr_request_t request;
   struct nm_data_s rpc_data;
-  nm_data_rpc_set(&rpc_data, (struct nm_rpc_content_s){ .p_header = p_header, .p_body = p_body });
-  nm_sr_send_init(p_session, &request);
-  nm_sr_send_pack_data(p_session, &request, &rpc_data);
-  nm_sr_send_dest(p_session, &request, p_gate, tag);
-  nm_sr_send_header(p_session, &request, nm_data_size(p_header));
-  nm_sr_send_submit(p_session, &request);
-  nm_sr_swait(p_session, &request);
+  nm_rpc_data_build(&rpc_data, p_header, p_body);
+  nm_sr_send_init(p_session, p_request);
+  nm_sr_send_pack_data(p_session, p_request, &rpc_data);
+  nm_sr_send_dest(p_session, p_request, p_gate, tag);
+  nm_sr_send_header(p_session, p_request, nm_data_size(p_header));
+  nm_sr_send_submit(p_session, p_request);
 }
 
 static void nm_rpc_finalizer(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
 {
   struct nm_rpc_token_s*p_token = _ref;
-  (*p_token->p_finalizer)(p_token);
+  (*p_token->p_service->p_finalizer)(p_token);
+  free(p_token);
 }
 
 static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
@@ -77,44 +77,43 @@ static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info,
   const nm_tag_t tag     = p_info->recv_unexpected.tag;
   const size_t len       = p_info->recv_unexpected.len;
   nm_session_t p_session = p_info->recv_unexpected.p_session;
-  struct nm_rpc_token_s*p_token = _ref;
-  nm_sr_request_t request;
-  nm_sr_recv_init(p_session, &request);
-  nm_sr_recv_match_event(p_session, &request, p_info);
-  int rc = nm_sr_recv_peek(p_session, &request, &p_token->header);
+  struct nm_rpc_service_s*p_service = _ref;
+  struct nm_rpc_token_s*p_token = malloc(sizeof(struct nm_rpc_token_s));
+  p_token->p_service = p_service;
+  nm_sr_recv_init(p_session, &p_token->request);
+  nm_sr_recv_match_event(p_session, &p_token->request, p_info);
+  int rc = nm_sr_recv_peek(p_session, &p_token->request, &p_service->header);
   if(rc != NM_ESUCCESS)
     {
       fprintf(stderr, "# nm_rpc: rc = %d in nm_sr_recv_peek()\n", rc);
       abort();
     }
-  nm_sr_request_set_ref(&request, p_token);
-  nm_sr_request_monitor(p_session, &request, NM_STATUS_FINALIZED, &nm_rpc_finalizer);
-  p_token->p_request = &request;
-  (*p_token->p_handler)(p_token, &request);
+  nm_sr_request_set_ref(&p_token->request, p_token);
+  nm_sr_request_monitor(p_session, &p_token->request, NM_STATUS_FINALIZED, &nm_rpc_finalizer);
+  (*p_service->p_handler)(p_token, &p_token->request);
 }
 
-nm_rpc_token_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask,
-			       nm_rpc_handler_t p_handler, nm_rpc_finalizer_t p_finalizer,
-			       void*ref, struct nm_data_s*p_header)
+nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask,
+				 nm_rpc_handler_t p_handler, nm_rpc_finalizer_t p_finalizer,
+				 void*ref, struct nm_data_s*p_header)
 {
-  struct nm_rpc_token_s*p_token = malloc(sizeof(struct nm_rpc_token_s));
-  p_token->p_session   = p_session;
-  p_token->p_handler   = p_handler;
-  p_token->p_finalizer = p_finalizer;
-  p_token->ref         = ref;
-  p_token->header      = *p_header;
-  p_token->monitor     = (struct nm_sr_monitor_s)
+  struct nm_rpc_service_s*p_service = malloc(sizeof(struct nm_rpc_service_s));
+  p_service->p_session   = p_session;
+  p_service->p_handler   = p_handler;
+  p_service->p_finalizer = p_finalizer;
+  p_service->ref         = ref;
+  p_service->header      = *p_header;
+  p_service->monitor     = (struct nm_sr_monitor_s)
     {
       .p_notifier = &nm_rpc_handler,
       .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
       .p_gate     = NM_GATE_NONE,
       .tag        = tag,
       .tag_mask   = tag_mask,
-      .ref        = p_token
+      .ref        = p_service
     };
-  nm_sr_session_monitor_set(p_session, &p_token->monitor);
-
-  return p_token;
+  nm_sr_session_monitor_set(p_session, &p_service->monitor);
+  return p_service;
 }
 
 

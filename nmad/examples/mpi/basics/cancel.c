@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-#if !defined(MAD_MPI)
-#  define MPI_Request_is_equal(r1, r2) r1 == r2
-#endif
 
 void check_buffer(char *buffer, int *strides, int *blocklengths);
 void exchange_index(int ping_side, int rank_dst);
@@ -49,38 +45,45 @@ int main(int argc, char **argv) {
   exit(0);
 }
 
-void check_buffer(char *buffer, int *strides, int *blocklengths) {
-  int i=0, j=0, success=1;
-  char value;
+void check_buffer(char *buffer, int *strides, int *blocklengths)
+{
+  int i = 0, success = 1;
   int nb, count, blength;
-
-  for(nb=0 ; nb<3 ; nb++) {
-    j=0;
-    for(count=0 ; count<3 ; count++) {
-      value = 'a' + (nb * (strides[2] + blocklengths[2]));
-      value += strides[j];
-      for(blength=0 ; blength<blocklengths[j] ; blength++) {
-        if (buffer[i] != value) {
-          success=0;
-          break;
-        }
-        i++;
-        value++;
-      }
-      j++;
+  for(nb = 0; nb < 3; nb++)
+    {
+      int j = 0;
+      for(count = 0; count < 3; count++)
+	{
+	  char value = 'a' + (nb * (strides[2] + blocklengths[2]));
+	  value += strides[j];
+	  for(blength = 0; blength < blocklengths[j]; blength++)
+	    {
+	      if(buffer[i] != value)
+		{
+		  success = 0;
+		  break;
+		}
+	      i++;
+	      value++;
+	    }
+	  j++;
+	}
     }
-  }
-  if (success) {
-    printf("Index successfully received\n");
-  }
-  else {
-    printf("Incorrect index: [ ");
-    for(i=0 ; i<18 ; i++) printf("%c(%d) ", buffer[i], ((int) buffer[i])-97);
-    printf("]\n");
-  }
+  if (success)
+    {
+      printf("Index successfully received\n");
+    }
+  else
+    {
+      printf("Incorrect index: [ ");
+      for(i=0 ; i<18 ; i++)
+	printf("%c(%d) ", buffer[i], ((int) buffer[i])-97);
+      printf("]\n");
+    }
 }
 
-void exchange_index(int ping_side, int rank_dst) {
+void exchange_index(int ping_side, int rank_dst)
+{
   MPI_Datatype mytype;
   int blocklengths[3] = {1, 2, 3};
   int strides[3] = {0, 2, 3};
@@ -90,17 +93,18 @@ void exchange_index(int ping_side, int rank_dst) {
   MPI_Type_indexed(3, blocklengths, strides, MPI_CHAR, &mytype);
   MPI_Type_commit(&mytype);
 
-  if (ping_side) {
-    MPI_Send(buffer, 3, mytype, rank_dst, 10, MPI_COMM_WORLD);
-  }
-  else {
-    MPI_Request recv_request;
-    char buffer2[18];
-
-    MPI_Irecv(buffer2, 3, mytype, rank_dst, 10, MPI_COMM_WORLD, &recv_request);
-    MPI_Cancel(&recv_request);
-    MPI_Wait(&recv_request, MPI_STATUS_IGNORE);
-  }
+  if(ping_side)
+    {
+      MPI_Send(buffer, 3, mytype, rank_dst, 10, MPI_COMM_WORLD);
+    }
+  else
+    {
+      MPI_Request recv_request;
+      char buffer2[18];
+      MPI_Irecv(buffer2, 3, mytype, rank_dst, 10, MPI_COMM_WORLD, &recv_request);
+      MPI_Cancel(&recv_request);
+      MPI_Wait(&recv_request, MPI_STATUS_IGNORE);
+    }
 
   MPI_Type_free(&mytype);
   fprintf(stdout, "success\n");

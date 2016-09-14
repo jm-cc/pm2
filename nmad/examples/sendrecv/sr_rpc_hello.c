@@ -28,14 +28,15 @@ struct rpc_hello_header_s
 {
   nm_len_t len;
 };
-static struct rpc_hello_header_s header;
 
 static void rpc_hello_handler(nm_rpc_token_t p_token, nm_sr_request_t*p_request)
 {
-  fprintf(stderr, "rpc_hello_handler()- header = %d\n", header.len);
+  struct rpc_hello_header_s*p_header = nm_rpc_get_header(p_token);
+  const nm_len_t rlen = p_header->len;
+  fprintf(stderr, "rpc_hello_handler()- header = %d\n", rlen);
 
   struct nm_data_s body;
-  nm_data_contiguous_build(&body, (void*)buf, header.len);
+  nm_data_contiguous_build(&body, (void*)buf, rlen);
   nm_rpc_recv_data(p_token, &body);
 }
 
@@ -47,20 +48,16 @@ static void rpc_hello_finalizer(nm_rpc_token_t p_token)
 int main(int argc, char**argv)
 {
   nm_len_t len = sizeof(nm_len_t) + strlen(msg) + 1;
+  struct rpc_hello_header_s header = { .len = len };
   void*buf = malloc(len);
   nm_examples_init(&argc, argv);
 
-  struct nm_data_s rheader;
-  header.len = len;
-  nm_data_contiguous_build(&rheader, &header, sizeof(struct rpc_hello_header_s));
+  nm_rpc_service_t p_service = nm_rpc_register(p_session, tag, NM_TAG_MASK_FULL, sizeof(struct rpc_hello_header_s),
+					       &rpc_hello_handler, &rpc_hello_finalizer, NULL);
 
-  nm_rpc_service_t p_service = nm_rpc_register(p_session, tag, NM_TAG_MASK_FULL,
-					       &rpc_hello_handler, &rpc_hello_finalizer, NULL, &rheader);
-
-  struct nm_data_s sheader, data;
-  nm_data_contiguous_build(&sheader, &len, sizeof(nm_len_t));
+  struct nm_data_s data;
   nm_data_contiguous_build(&data, (void*)msg, len);
-  nm_rpc_send(p_session, p_gate, tag, &sheader, &data);
+  nm_rpc_send(p_session, p_gate, tag, &header, sizeof(struct rpc_hello_header_s), &data);
   nm_examples_barrier(0x03);
   
   free(buf);

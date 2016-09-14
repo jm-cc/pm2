@@ -17,7 +17,7 @@
 #ifndef NM_CORE_H
 #define NM_CORE_H
 
-PUK_VECT_TYPE(nm_core_monitor, const struct nm_core_monitor_s*);
+PUK_VECT_TYPE(nm_core_monitor, struct nm_core_monitor_s*);
 
 PUK_QUEUE_TYPE(nm_core_event, struct nm_core_event_s);
 

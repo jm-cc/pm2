@@ -19,7 +19,7 @@
 
 PUK_VECT_TYPE(nm_core_monitor, const struct nm_core_monitor_s*);
 
-PUK_VECT_TYPE(nm_core_event, struct nm_core_event_s);
+PUK_QUEUE_TYPE(nm_core_event, struct nm_core_event_s);
 
 /** a chunk of unexpected message to be stored */
 struct nm_unexpected_s
@@ -61,7 +61,7 @@ struct nm_core
   struct nm_req_list_s unpacks;                /**< List of posted unpacks */
   struct nm_unexpected_list_s unexpected;      /**< List of unexpected chunks */
   struct nm_req_list_s pending_packs;          /**< List of pending packs waiting for an ack */
-  struct nm_core_event_vect_s pending_events;  /**< pending events not ready to dispatch */
+  struct nm_core_event_queue_s pending_events; /**< pending events not ready to dispatch */
 
   /** Monitors for upper layers to track events in nmad core */
   struct nm_core_monitor_vect_s monitors;

@@ -59,7 +59,8 @@ int main(int argc, char**argv)
   nm_data_contiguous_build(&data, (void*)msg, len);
   nm_rpc_send(p_session, p_gate, tag, &header, sizeof(struct rpc_hello_header_s), &data);
   nm_examples_barrier(0x03);
-  
+
+  nm_rpc_unregister(p_service);
   free(buf);
   nm_examples_exit();
   return 0;

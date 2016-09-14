@@ -77,6 +77,7 @@ nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t 
 				 nm_rpc_handler_t p_handler, nm_rpc_finalizer_t p_finalizer,
 				 void*ref);
 
+void nm_rpc_unregister(nm_rpc_service_t p_service);
 
 
 #endif /* NM_RPC_INTERFACE_H */

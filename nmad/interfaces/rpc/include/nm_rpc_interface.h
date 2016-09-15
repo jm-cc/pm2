@@ -28,6 +28,13 @@ typedef void (*nm_rpc_handler_t)(nm_rpc_token_t p_token, nm_sr_request_t*p_reque
 
 typedef void (*nm_rpc_finalizer_t)(nm_rpc_token_t p_token);
 
+struct nm_rpc_token_s
+{
+  nm_sr_request_t request;
+  struct nm_data_s rpc_data, body;
+  struct nm_rpc_service_s*p_service;
+};
+
 struct nm_rpc_service_s
 {
   struct nm_sr_monitor_s monitor;
@@ -37,14 +44,9 @@ struct nm_rpc_service_s
   void*header_ptr;
   nm_len_t hlen;
   void*ref;
+  struct nm_rpc_token_s token;
 };
 
-struct nm_rpc_token_s
-{
-  nm_sr_request_t request;
-  struct nm_data_s rpc_data, body;
-  struct nm_rpc_service_s*p_service;
-};
 
 void nm_rpc_data_build(struct nm_data_s*p_rpc_data, void*hptr, nm_len_t hlen, const struct nm_data_s*p_body);
 

@@ -76,7 +76,6 @@ static void nm_rpc_finalizer(nm_sr_event_t event, const nm_sr_event_info_t*p_inf
 {
   struct nm_rpc_token_s*p_token = _ref;
   (*p_token->p_service->p_finalizer)(p_token);
-  free(p_token);
 }
 
 static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
@@ -87,7 +86,7 @@ static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info,
   const size_t len       = p_info->recv_unexpected.len;
   nm_session_t p_session = p_info->recv_unexpected.p_session;
   struct nm_rpc_service_s*p_service = _ref;
-  struct nm_rpc_token_s*p_token = malloc(sizeof(struct nm_rpc_token_s));
+  struct nm_rpc_token_s*p_token = &p_service->token;
   p_token->p_service = p_service;
   nm_sr_recv_init(p_session, &p_token->request);
   nm_sr_recv_match_event(p_session, &p_token->request, p_info);

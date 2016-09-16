@@ -24,7 +24,7 @@ typedef struct nm_rpc_token_s*nm_rpc_token_t;
 
 typedef struct nm_rpc_service_s*nm_rpc_service_t;
 
-typedef void (*nm_rpc_handler_t)(nm_rpc_token_t p_token, nm_sr_request_t*p_request);
+typedef void (*nm_rpc_handler_t)(nm_rpc_token_t p_token);
 
 typedef void (*nm_rpc_finalizer_t)(nm_rpc_token_t p_token);
 

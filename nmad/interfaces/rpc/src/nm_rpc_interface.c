@@ -81,9 +81,6 @@ static void nm_rpc_finalizer(nm_sr_event_t event, const nm_sr_event_info_t*p_inf
 static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
 {
   assert(event & NM_SR_EVENT_RECV_UNEXPECTED);
-  const nm_gate_t from   = p_info->recv_unexpected.p_gate;
-  const nm_tag_t tag     = p_info->recv_unexpected.tag;
-  const size_t len       = p_info->recv_unexpected.len;
   nm_session_t p_session = p_info->recv_unexpected.p_session;
   struct nm_rpc_service_s*p_service = _ref;
   struct nm_rpc_token_s*p_token = &p_service->token;
@@ -100,7 +97,7 @@ static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info,
     }
   nm_sr_request_set_ref(&p_token->request, p_token);
   nm_sr_request_monitor(p_session, &p_token->request, NM_STATUS_FINALIZED, &nm_rpc_finalizer);
-  (*p_service->p_handler)(p_token, &p_token->request);
+  (*p_service->p_handler)(p_token);
 }
 
 nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask, nm_len_t hlen,

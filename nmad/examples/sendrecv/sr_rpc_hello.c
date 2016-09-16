@@ -29,7 +29,7 @@ struct rpc_hello_header_s
   nm_len_t len;
 };
 
-static void rpc_hello_handler(nm_rpc_token_t p_token, nm_sr_request_t*p_request)
+static void rpc_hello_handler(nm_rpc_token_t p_token)
 {
   struct rpc_hello_header_s*p_header = nm_rpc_get_header(p_token);
   const nm_len_t rlen = p_header->len;

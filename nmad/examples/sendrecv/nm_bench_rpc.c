@@ -22,7 +22,7 @@ static volatile int done = 0;
 static void*volatile rbuf = NULL;
 static nm_rpc_service_t p_service = NULL;
 
-static void bench_rpc_handler(nm_rpc_token_t p_token, nm_sr_request_t*p_request)
+static void bench_rpc_handler(nm_rpc_token_t p_token)
 {
   assert(rbuf != NULL);
   nm_len_t*p_rlen = nm_rpc_get_header(p_token);

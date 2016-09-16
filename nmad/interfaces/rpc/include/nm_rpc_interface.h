@@ -67,6 +67,27 @@ static inline void*nm_rpc_get_header(struct nm_rpc_token_s*p_token)
   return p_token->p_service->header_ptr;
 }
 
+static inline nm_gate_t nm_rpc_get_source(struct nm_rpc_token_s*p_token)
+{
+  nm_gate_t p_gate = NULL;
+  nm_sr_request_get_gate(&p_token->request, &p_gate);
+  return p_gate;
+}
+
+static inline nm_tag_t nm_rpc_get_tag(struct nm_rpc_token_s*p_token)
+{
+  nm_tag_t tag = 0;
+  nm_sr_request_get_tag(&p_token->request, &tag);
+  return tag;
+}
+
+static inline nm_len_t nm_rpc_get_size(struct nm_rpc_token_s*p_token)
+{
+  nm_len_t size = NM_LEN_UNDEFINED;
+  nm_sr_request_get_size(&p_token->request, &size);
+  return size;
+}
+
 static inline void nm_rpc_recv_data(struct nm_rpc_token_s*p_token, struct nm_data_s*p_body)
 {
   p_token->body = *p_body;

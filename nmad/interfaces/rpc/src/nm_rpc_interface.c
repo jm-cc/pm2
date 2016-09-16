@@ -87,9 +87,7 @@ static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info,
   p_token->p_service = p_service;
   nm_sr_recv_init(p_session, &p_token->request);
   nm_sr_recv_match_event(p_session, &p_token->request, p_info);
-  struct nm_data_s header;
-  nm_data_contiguous_build(&header, p_service->header_ptr, p_service->hlen);
-  int rc = nm_sr_recv_peek(p_session, &p_token->request, &header);
+  int rc = nm_sr_recv_peek(p_session, &p_token->request, &p_service->header);
   if(rc != NM_ESUCCESS)
     {
       fprintf(stderr, "# nm_rpc: rc = %d in nm_sr_recv_peek()\n", rc);
@@ -120,6 +118,7 @@ nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t 
       .tag_mask   = tag_mask,
       .ref        = p_service
     };
+  nm_data_contiguous_build(&p_service->header, p_service->header_ptr, p_service->hlen);
   nm_sr_session_monitor_set(p_session, &p_service->monitor);
   return p_service;
 }

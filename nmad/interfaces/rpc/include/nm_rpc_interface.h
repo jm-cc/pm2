@@ -41,6 +41,7 @@ struct nm_rpc_service_s
   nm_rpc_handler_t p_handler;
   nm_rpc_finalizer_t p_finalizer;
   nm_session_t p_session;
+  struct nm_data_s header;
   void*header_ptr;
   nm_len_t hlen;
   void*ref;

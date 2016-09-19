@@ -49,11 +49,33 @@ struct nm_rpc_service_s
 };
 
 
+nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask, nm_len_t hlen,
+				 nm_rpc_handler_t p_handler, nm_rpc_finalizer_t p_finalizer,
+				 void*ref);
+
+void nm_rpc_unregister(nm_rpc_service_t p_service);
+
 void nm_rpc_data_build(struct nm_data_s*p_rpc_data, void*hptr, nm_len_t hlen, const struct nm_data_s*p_body);
 
 void nm_rpc_isend(nm_session_t p_session, nm_sr_request_t*p_request,
 		  nm_gate_t p_gate, nm_tag_t tag,
 		  void*hptr, nm_len_t hlen, struct nm_data_s*p_body);
+
+static inline void nm_rpc_send(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag,
+			       void*hptr, nm_len_t hlen, struct nm_data_s*p_body);
+
+static inline void*nm_rpc_get_header(struct nm_rpc_token_s*p_token);
+
+static inline nm_gate_t nm_rpc_get_source(struct nm_rpc_token_s*p_token);
+
+static inline nm_tag_t nm_rpc_get_tag(struct nm_rpc_token_s*p_token);
+
+static inline nm_len_t nm_rpc_get_size(struct nm_rpc_token_s*p_token);
+
+static inline void nm_rpc_recv_data(struct nm_rpc_token_s*p_token, struct nm_data_s*p_body);
+
+
+/* ********************************************************* */
 
 static inline void nm_rpc_send(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag,
 			       void*hptr, nm_len_t hlen, struct nm_data_s*p_body)
@@ -96,12 +118,6 @@ static inline void nm_rpc_recv_data(struct nm_rpc_token_s*p_token, struct nm_dat
   nm_sr_recv_unpack_data(p_token->p_service->p_session, &p_token->request, &p_token->rpc_data);
   nm_sr_recv_post(p_token->p_service->p_session, &p_token->request);
 }
-
-nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask, nm_len_t hlen,
-				 nm_rpc_handler_t p_handler, nm_rpc_finalizer_t p_finalizer,
-				 void*ref);
-
-void nm_rpc_unregister(nm_rpc_service_t p_service);
 
 
 #endif /* NM_RPC_INTERFACE_H */

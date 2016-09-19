@@ -161,7 +161,7 @@ void mysleep(int n){
 
 void print_arr(int*buff, int len, int ld){
   int i;
-  printf("Recieved :");
+  printf("Received :");
   for(i = 0; i < len && (ld < LEN_MAX || i < LEN_MAX); ++i){
     if(!(i%ld))
       printf("\n");

@@ -359,8 +359,6 @@ static inline uint32_t nm_mpi_datatype_hash_common(const nm_mpi_datatype_t*p_dat
 {
   uint32_t z = puk_hash_oneatatime((const void*)&p_datatype->combiner, sizeof(nm_mpi_type_combiner_t))
     + puk_hash_oneatatime((const void*)&p_datatype->count, sizeof(MPI_Count))
-    + puk_hash_oneatatime((const void*)&p_datatype->elements, sizeof(MPI_Count))
-    + puk_hash_oneatatime((const void*)&p_datatype->is_contig, sizeof(int))
     + puk_hash_oneatatime((const void*)&p_datatype->lb, sizeof(MPI_Aint))
     + puk_hash_oneatatime((const void*)&p_datatype->extent, sizeof(MPI_Aint))
     + puk_hash_oneatatime((const void*)&p_datatype->size, sizeof(size_t));
@@ -470,27 +468,31 @@ static void nm_mpi_datatype_request_monitor(nm_sr_event_t event, const nm_sr_eve
 static void nm_mpi_datatype_request_recv(nm_sr_event_t event, const nm_sr_event_info_t*info, void*ref)
 {
   const nm_tag_t             tag = info->recv_unexpected.tag;
-  if(NM_MPI_TAG_PRIVATE_TYPE_ADD == (tag & (NM_MPI_TAG_PRIVATE_BASE | 0x0F))) {
-    const nm_gate_t           from = info->recv_unexpected.p_gate;      
-    const size_t               len = info->recv_unexpected.len;
-    const nm_session_t   p_session = info->recv_unexpected.p_session;
-    nm_mpi_request_t        *p_req = nm_mpi_request_alloc();
-    p_req->gate                    = from;
-    p_req->rbuf                    = malloc(len);
-    p_req->count                   = len;
-    p_req->user_tag                = tag;
-    p_req->p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
-    p_req->request_type            = NM_MPI_REQUEST_RECV;
-    p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-    nm_sr_recv_init(p_session, &p_req->request_nmad);
-    nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, p_req->rbuf, p_req->count);
-    nm_sr_request_set_ref(&p_req->request_nmad, p_req);
-    nm_sr_request_monitor(p_session, &p_req->request_nmad, NM_SR_EVENT_FINALIZED,
-			  &nm_mpi_datatype_request_monitor);
-    nm_sr_recv_match_event(p_session, &p_req->request_nmad, info);
-    nm_sr_recv_post(p_session, &p_req->request_nmad);
-  } else /* ERROR */
-    NM_MPI_FATAL_ERROR("How did you get here? You shouldn't have...\n");
+  if(NM_MPI_TAG_PRIVATE_TYPE_ADD == (tag & (NM_MPI_TAG_PRIVATE_BASE | 0x0F)))
+    {
+      const nm_gate_t           from = info->recv_unexpected.p_gate;      
+      const size_t               len = info->recv_unexpected.len;
+      const nm_session_t   p_session = info->recv_unexpected.p_session;
+      nm_mpi_request_t        *p_req = nm_mpi_request_alloc();
+      p_req->gate                    = from;
+      p_req->rbuf                    = malloc(len);
+      p_req->count                   = len;
+      p_req->user_tag                = tag;
+      p_req->p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
+      p_req->request_type            = NM_MPI_REQUEST_RECV;
+      p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
+      nm_sr_recv_init(p_session, &p_req->request_nmad);
+      nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, p_req->rbuf, p_req->count);
+      nm_sr_request_set_ref(&p_req->request_nmad, p_req);
+      nm_sr_request_monitor(p_session, &p_req->request_nmad, NM_SR_EVENT_FINALIZED,
+			    &nm_mpi_datatype_request_monitor);
+      nm_sr_recv_match_event(p_session, &p_req->request_nmad, info);
+      nm_sr_recv_post(p_session, &p_req->request_nmad);
+    }
+  else
+    {
+      NM_MPI_FATAL_ERROR("How did you get here? You shouldn't have...\n");
+    }
 }
 
 __PUK_SYM_INTERNAL
@@ -1230,7 +1232,7 @@ int mpi_type_create_darray(int size, int rank, int ndims,
 			   const int array_of_dargs[], const int array_of_psizes[],
 			   int order, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
-  padico_warning("madmpi: MPI_Type_create_darray()- unsupported.\n");
+  NM_MPI_WARNING("madmpi: MPI_Type_create_darray()- unsupported.\n");
   return MPI_ERR_OTHER;
 }
   
@@ -1319,7 +1321,7 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
     return MPI_ERR_TYPE;
-  padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
+  NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
   switch(p_datatype->combiner)
     {
     case MPI_COMBINER_NAMED:
@@ -1351,19 +1353,19 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
       array_of_integers[0]  = p_datatype->count;
       break;
     case MPI_COMBINER_HINDEXED:
-      padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
+      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
       break;
     case MPI_COMBINER_INDEXED_BLOCK:
-      padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
+      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
       break;
     case MPI_COMBINER_HINDEXED_BLOCK:
-      padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
+      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
       break;
     case MPI_COMBINER_SUBARRAY:
-      padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
+      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
       break;
     case MPI_COMBINER_STRUCT:
-      padico_fatal("MPI_Type_get_contents()- not supported yet.\n");
+      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
       break;
     }
   return MPI_SUCCESS;
@@ -2095,7 +2097,7 @@ int mpi_type_delete_attr(MPI_Datatype datatype, int keyval)
   return err;
 }
 
-int mpi_type_set_attr(MPI_Datatype datatype, int type_keyval, void *attribute_val)
+int mpi_type_set_attr(MPI_Datatype datatype, int type_keyval, void*attribute_val)
 {
   struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(type_keyval);
   if(p_keyval == NULL)
@@ -2111,15 +2113,13 @@ int mpi_type_set_attr(MPI_Datatype datatype, int type_keyval, void *attribute_va
   return err;
 }
 
-int mpi_type_get_attr(MPI_Datatype datatype, int type_keyval, void *attribute_val, int *flag)
+int mpi_type_get_attr(MPI_Datatype datatype, int type_keyval, void*attribute_val, int*flag)
 {
   int err = MPI_SUCCESS;
   *flag = 0;
-  /* Check type validity */
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
-  if(NULL == p_datatype) {
+  if(NULL == p_datatype)
     return MPI_ERR_TYPE;
-  }  
   struct nm_mpi_keyval_s*p_keyval = nm_mpi_keyval_get(type_keyval);
   if(p_keyval == NULL)
     return MPI_ERR_KEYVAL;

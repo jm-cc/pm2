@@ -22,7 +22,11 @@
 #ifdef NDEBUG
 #define NM_WARN(str, ...)       (void)(0)
 #else /* NDEBUG */
-#define NM_WARN(str, ...)       padico_warning("nmad (%s)-" str, __TBX_FUNCTION__ , ## __VA_ARGS__)
+#define NM_WARN(str, ...) {						\
+    fprintf(stderr, "# nmad: WARNING- (%s)-", __TBX_FUNCTION__);	\
+    fprintf(stderr, __VA_ARGS__);					\
+    fprintf(stderr, "\n");						\
+}
 #endif /* NDEBUG */
 
 #define NM_TRACEF(str, ...)	padico_trace(str "\n", ## __VA_ARGS__)

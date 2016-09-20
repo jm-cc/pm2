@@ -299,7 +299,7 @@ int nm_core_unpack_iprobe(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
   if(!(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
     {
-      fprintf(stderr, "# nmad: WARNING- cannot probe unmatched request.\n");
+      NM_WARN("# nmad: WARNING- cannot probe unmatched request.\n");
       return -NM_EINVAL;
     }
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
@@ -316,7 +316,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 {
   if((p_unpack->seq == NM_SEQ_NONE) || (p_unpack->p_gate == NM_GATE_NONE) || !(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
     {
-      fprintf(stderr, "# nmad: WARNING- cannot peek unmatched request.\n");
+      NM_WARN(stderr, "# nmad: WARNING- cannot peek unmatched request.\n");
       return -NM_EINVAL;
     }
   nm_len_t peek_len = nm_data_size(p_data);
@@ -387,8 +387,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 		const nm_len_t chunk_offset = p_ctrl_header->rdv.chunk_offset;
 		if(chunk_offset < peek_len)
 		  {
-		    fprintf(stderr, "# nmad: nm_core_unpack_peek()- not implemented for large messages. Use nm_sr_send_header() to send header eagerly.\n");
-		    abort();
+		    NM_FATAL("# nmad: nm_core_unpack_peek()- not implemented for large messages. Use nm_sr_send_header() to send header eagerly.\n");
 		  }
 		else
 		  {
@@ -396,9 +395,9 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 		  }
 	      }
 	      break;
-
 	    default:
-	      abort();
+	      NM_FATAL("unknown proto_id %d", proto_id);
+	      break;
 	    }
 	}
       if(done == peek_len)

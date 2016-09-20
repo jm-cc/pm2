@@ -52,13 +52,18 @@ endif
 
 .PHONY: examples check tests bench eztrace
 
-eztrace: eztrace-gen | eztrace-build
+eztrace: eztrace-install
 
-eztrace-gen:
+eztrace-gen: nmad-eztrace.tpl
 	$(Q)eztrace_create_plugin -o eztrace_nmad_core -I $(srcdir)/include -I @nmad_builddir@/include ./nmad-eztrace.tpl
-
 eztrace-build:
 	$(Q)$(MAKE) -C eztrace_nmad_core CC=$(CC) CFLAGS="$(CFLAGS)"
+
+eztrace-install: EZTRACE_LIBS = $(wildcard eztrace_nmad_core/libeztrace*nmad_core.so)
+eztrace-install: eztrace-build
+	$(SHOWMK) "  [INST]   in lib/:      $(EZTRACE_LIBS)"
+	$(Q)$(INSTALL) -d $(INSTALL_LIB_PATH)
+	$(Q)$(INSTALL) $(EZTRACE_LIBS)  $(INSTALL_LIB_PATH)
 
 examples:
 	$(Q)$(MAKE) install

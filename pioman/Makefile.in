@@ -32,7 +32,7 @@ doxygen: $(SRC_FILES)
 
 eztrace: eztrace-install
 
-eztrace-gen:
+eztrace-gen: eztrace-pioman.tpl
 	$(Q)eztrace_create_plugin -o eztrace_pioman -I $(srcdir)/include -I @abs_top_builddir@/include ./eztrace-pioman.tpl
 
 eztrace-build: eztrace-gen

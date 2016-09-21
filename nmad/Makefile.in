@@ -26,7 +26,7 @@ DIRS_NOMK  := $(filter-out $(DIRS_WITHMK), @nmad_alldirs@)
 SRC_FILES  := $(foreach d, src $(DIRS_NOMK), $(wildcard $(srcdir)/$(d)/*.c) $(wildcard $(srcdir)/$(d)/src/*.c))
 OBJ_FILES  := $(patsubst $(srcdir)/%.c, ./%.pic.o, $(SRC_FILES))
 DEP_FILES  := $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
-CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES)
+CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES) eztrace_nmad_core
 TARGET_DEP += $(DEP_FILES)
 INSTALL_INCLUDE += $(foreach d, $(DIRS_NOMK), $(wildcard $(srcdir)/$(d)/include/*.h))
 
@@ -56,7 +56,7 @@ eztrace: eztrace-install
 
 eztrace-gen: nmad-eztrace.tpl
 	$(Q)eztrace_create_plugin -o eztrace_nmad_core -I $(srcdir)/include -I @nmad_builddir@/include ./nmad-eztrace.tpl
-eztrace-build:
+eztrace-build: eztrace-gen
 	$(Q)$(MAKE) -C eztrace_nmad_core CC=$(CC) CFLAGS="$(CFLAGS)"
 
 eztrace-install: EZTRACE_LIBS = $(wildcard eztrace_nmad_core/libeztrace*nmad_core.so)

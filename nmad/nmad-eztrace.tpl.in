@@ -2,6 +2,7 @@ BEGIN_MODULE
 NAME nmad_core
 DESC "nmad core interface"
 LANGUAGE C
+ID 97
 
 BEGIN_INCLUDE
 #include "nm_core_interface.h"
@@ -14,7 +15,7 @@ END_CFLAGS
 int nm_core_init(int*argc, char**argv, nm_core_t *pp_core)
 BEGIN
   CALL_FUNC
-  EVENT("core init done")
+  EVENT("nm_core_init")
 END
 
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data)
@@ -24,11 +25,23 @@ BEGIN
   POP_STATE()
 END
 
+void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
+BEGIN
+  EVENT("nm_core_pack_submit")
+  CALL_FUNC
+END
+
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data)
 BEGIN
   PUSH_STATE("nm_core_unpack_data")
   CALL_FUNC
   POP_STATE()
+END
+
+int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_req_flag_t flags)
+BEGIN
+  EVENT("nm_core_unpack_submit")
+  CALL_FUNC
 END
 
 END_MODULE

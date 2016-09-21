@@ -20,13 +20,13 @@
 #define NM_DISPF(str, ...)	if(!(getenv("NMAD_QUIET") || getenv("PADICO_QUIET")))fprintf(stderr, str, ## __VA_ARGS__)
 
 #ifdef NDEBUG
-#define NM_WARN(str, ...)       (void)(0)
+#define NM_WARN( ...)       (void)(0)
 #else /* NDEBUG */
-#define NM_WARN(str, ...) {						\
+#define NM_WARN(...) {							\
     fprintf(stderr, "# nmad: WARNING- (%s)-", __TBX_FUNCTION__);	\
     fprintf(stderr, __VA_ARGS__);					\
     fprintf(stderr, "\n");						\
-}
+  }
 #endif /* NDEBUG */
 
 #define NM_TRACEF(str, ...)	padico_trace(str "\n", ## __VA_ARGS__)

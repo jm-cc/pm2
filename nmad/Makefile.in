@@ -54,8 +54,8 @@ endif
 
 eztrace: eztrace-install
 
-eztrace-gen: nmad-eztrace.tpl
-	$(Q)eztrace_create_plugin -o eztrace_nmad_core -I $(srcdir)/include -I @nmad_builddir@/include ./nmad-eztrace.tpl
+eztrace-gen: eztrace_nmad_core.tpl
+	$(Q)eztrace_create_plugin -o eztrace_nmad_core -I $(srcdir)/include -I @nmad_builddir@/include ./eztrace_nmad_core.tpl
 eztrace-build: eztrace-gen
 	$(Q)$(MAKE) -C eztrace_nmad_core CC=$(CC) CFLAGS="$(CFLAGS)"
 

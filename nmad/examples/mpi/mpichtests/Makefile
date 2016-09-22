@@ -19,7 +19,7 @@ TESTS_DATATYPE := \
   datatype/contigstruct datatype/struct-pack datatype/struct-no-real-types datatype/struct-verydeep datatype/struct-zero-count \
   datatype/get-elements datatype/getpartelm datatype/simple-size-extent datatype/simple-resized datatype/tresized datatype/tresized2 \
   datatype/lots-of-types datatype/gaddress datatype/zeroblks \
-  datatype/tfree
+  datatype/tfree datatype/contents datatype/hindexed_block_contents
 # datatype/zeroparms (1 node)
 #  datatype/large-count datatype/sizedtypes
 

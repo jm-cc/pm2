@@ -456,14 +456,14 @@ typedef struct nm_mpi_datatype_s
     struct
     {
       struct nm_mpi_datatype_s*p_old_type;
-      int stride;       /**< stride in multiple of datatype extent */
       int blocklength;
+      int stride;       /**< stride in multiple of datatype extent */
     } VECTOR;
     struct
     {
       struct nm_mpi_datatype_s*p_old_type;
-      MPI_Aint hstride; /**< stride in bytes */
       int blocklength;
+      MPI_Aint hstride; /**< stride in bytes */
     } HVECTOR;
     struct
     {

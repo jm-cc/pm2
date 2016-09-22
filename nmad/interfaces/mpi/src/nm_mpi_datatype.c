@@ -1282,22 +1282,22 @@ int mpi_type_get_envelope(MPI_Datatype datatype, int*num_integers, int*num_addre
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_INDEXED:
-      *num_integers  = p_datatype->count;
-      *num_addresses = p_datatype->count;
+      *num_integers  = 1 + 2 * p_datatype->count;
+      *num_addresses = 0;
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_HINDEXED:
-      *num_integers  = 1;
+      *num_integers  = 1 + p_datatype->count;
       *num_addresses = p_datatype->count;
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_INDEXED_BLOCK:
-      *num_integers  = 1;
-      *num_addresses = p_datatype->count;
+      *num_integers  = 2 + p_datatype->count;
+      *num_addresses = 0;
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_HINDEXED_BLOCK:
-      *num_integers  = 1;
+      *num_integers  = 2;
       *num_addresses = p_datatype->count;
       *num_datatypes = 1;
       break;
@@ -1310,6 +1310,9 @@ int mpi_type_get_envelope(MPI_Datatype datatype, int*num_integers, int*num_addre
       *num_integers  = p_datatype->count;
       *num_addresses = p_datatype->count;
       *num_datatypes = p_datatype->count;
+      break;
+    default:
+      NM_MPI_FATAL_ERROR("MPI_Type_get_envelope()- not supported for combiner %d.\n", p_datatype->combiner);
       break;
     }
   return MPI_SUCCESS;
@@ -1366,8 +1369,8 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 	if(max_integers < 3)
 	  return MPI_ERR_OTHER;
 	array_of_integers[0]  = p_datatype->count;
-	array_of_integers[1]  = p_datatype->VECTOR.stride;
-	array_of_integers[2]  = p_datatype->VECTOR.blocklength;
+	array_of_integers[1]  = p_datatype->VECTOR.blocklength;
+	array_of_integers[2]  = p_datatype->VECTOR.stride;
 	array_of_datatypes[0] = p_datatype->VECTOR.p_old_type->id;
       }
       break;
@@ -1389,24 +1392,81 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
       
     case MPI_COMBINER_INDEXED:
       {
-	NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
+	if(max_datatypes < 1)
+	  return MPI_ERR_OTHER;
+	if(max_integers < 1 + 2 * p_datatype->count)
+	  return MPI_ERR_OTHER;
+	array_of_datatypes[0] = p_datatype->INDEXED.p_old_type->id;
 	array_of_integers[0]  = p_datatype->count;
+	int i;
+	for(i = 0; i < p_datatype->count; i++)
+	  {
+	    array_of_integers[1 + i] = p_datatype->INDEXED.p_map[i].blocklength;
+	    array_of_integers[1 + p_datatype->count + i] = p_datatype->INDEXED.p_map[i].displacement;
+	  }
       }
       break;
+      
     case MPI_COMBINER_HINDEXED:
-      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
+      {
+	if(max_datatypes < 1)
+	  return MPI_ERR_OTHER;
+	if(max_integers < 1 + p_datatype->count)
+	  return MPI_ERR_OTHER;
+	if(max_addresses < p_datatype->count)
+	  return MPI_ERR_OTHER;
+	array_of_datatypes[0] = p_datatype->HINDEXED.p_old_type->id;
+	array_of_integers[0]  = p_datatype->count;
+	int i;
+	for(i = 0; i < p_datatype->count; i++)
+	  {
+	    array_of_integers[1 + i] = p_datatype->HINDEXED.p_map[i].blocklength;
+	    array_of_addresses[1 + p_datatype->count + i] = p_datatype->HINDEXED.p_map[i].displacement;
+	  }
+      }
       break;
+      
     case MPI_COMBINER_INDEXED_BLOCK:
-      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
+      {
+	if(max_datatypes < 1)
+	  return MPI_ERR_OTHER;
+	if(max_integers < 2 + p_datatype->count)
+	  return MPI_ERR_OTHER;
+	array_of_integers[0]  = p_datatype->count;
+	array_of_integers[1] = p_datatype->INDEXED_BLOCK.blocklength;
+	array_of_datatypes[0] = p_datatype->INDEXED_BLOCK.p_old_type->id;
+	int i;
+	for(i = 0; i < p_datatype->count; i++)
+	  {
+	    array_of_integers[2 + i] = p_datatype->INDEXED_BLOCK.array_of_displacements[i];
+	  }
+      }
       break;
+      
     case MPI_COMBINER_HINDEXED_BLOCK:
-      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
+      {
+	if(max_datatypes < 1)
+	  return MPI_ERR_OTHER;
+	if(max_integers < 2)
+	  return MPI_ERR_OTHER;
+	if(max_addresses < p_datatype->count)
+	  return MPI_ERR_OTHER;
+	array_of_integers[0]  = p_datatype->count;
+	array_of_integers[1] = p_datatype->HINDEXED_BLOCK.blocklength;
+	array_of_datatypes[0] = p_datatype->HINDEXED_BLOCK.p_old_type->id;
+	int i;
+	for(i = 0; i < p_datatype->count; i++)
+	  {
+	    array_of_addresses[i] = p_datatype->HINDEXED_BLOCK.array_of_displacements[i];
+	  }
+      }
       break;
+      
     case MPI_COMBINER_SUBARRAY:
-      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
+      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- SUBARRAY not supported yet.\n");
       break;
     case MPI_COMBINER_STRUCT:
-      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
+      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- STRUCT not supported yet.\n");
       break;
     default:
       NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported for combiner %d.\n", p_datatype->combiner);

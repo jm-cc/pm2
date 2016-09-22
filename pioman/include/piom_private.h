@@ -135,7 +135,7 @@ struct piom_trace_info_s
     struct piom_trace_info_s*parent;
 };
 
-TBX_INTERNAL void piom_trace_flush(void);
+void piom_trace_flush(void);
 
 TBX_INTERNAL void piom_trace_local_new(struct piom_trace_info_s*trace_info);
 

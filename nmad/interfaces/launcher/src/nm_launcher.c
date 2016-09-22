@@ -135,6 +135,11 @@ int nm_launcher_exit(void)
     return NM_ESUCCESS;
   exit_done = 1;
   nm_sr_exit((*launcher.r.driver->get_session)(launcher.r._status));
+
+#ifdef PIOMAN_TRACE
+  piom_trace_flush();
+#endif /* PIOMAN_TRACE */
+  
   free(launcher.gates);
   launcher.gates = NULL;
   puk_instance_destroy(launcher.instance);

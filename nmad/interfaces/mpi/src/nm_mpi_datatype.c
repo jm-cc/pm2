@@ -1321,36 +1321,72 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
     return MPI_ERR_TYPE;
-  NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
   switch(p_datatype->combiner)
     {
     case MPI_COMBINER_NAMED:
       break;
+
     case MPI_COMBINER_CONTIGUOUS:
-      array_of_datatypes[0] = p_datatype->CONTIGUOUS.p_old_type->id;
+      {
+	if(max_datatypes < 1)
+	  return MPI_ERR_OTHER;
+	array_of_datatypes[0] = p_datatype->CONTIGUOUS.p_old_type->id;
+      }
       break;
+
     case MPI_COMBINER_DUP:
-      array_of_integers[0]  = p_datatype->count;
-      array_of_datatypes[0] = p_datatype->DUP.p_old_type->id;
+      {
+	if(max_datatypes < 1)
+	  return MPI_ERR_OTHER;
+	if(max_integers < 1)
+	  return MPI_ERR_OTHER;
+	array_of_integers[0]  = p_datatype->count;
+	array_of_datatypes[0] = p_datatype->DUP.p_old_type->id;
+      }
       break;
+      
     case MPI_COMBINER_RESIZED:
-      array_of_integers[0]  = p_datatype->count;
-      array_of_datatypes[0] = p_datatype->RESIZED.p_old_type->id;
+      {
+	if(max_datatypes < 1)
+	  return MPI_ERR_OTHER;
+	if(max_integers < 1)
+	  return MPI_ERR_OTHER;
+	array_of_integers[0]  = p_datatype->count;
+	array_of_datatypes[0] = p_datatype->RESIZED.p_old_type->id;
+      }
       break;
+      
     case MPI_COMBINER_VECTOR:
-      array_of_integers[0]  = p_datatype->count;
-      array_of_integers[1]  = p_datatype->VECTOR.stride;
-      array_of_integers[2]  = p_datatype->VECTOR.blocklength;
-      array_of_datatypes[0] = p_datatype->VECTOR.p_old_type->id;
+      {
+	if(max_datatypes < 1)
+	  return MPI_ERR_OTHER;
+	if(max_integers < 3)
+	  return MPI_ERR_OTHER;
+	array_of_integers[0]  = p_datatype->count;
+	array_of_integers[1]  = p_datatype->VECTOR.stride;
+	array_of_integers[2]  = p_datatype->VECTOR.blocklength;
+	array_of_datatypes[0] = p_datatype->VECTOR.p_old_type->id;
+      }
       break;
+      
     case MPI_COMBINER_HVECTOR:
-      array_of_integers[0]  = p_datatype->count;
-      array_of_integers[1]  = p_datatype->HVECTOR.hstride;
-      array_of_integers[2]  = p_datatype->HVECTOR.blocklength;
-      array_of_datatypes[0] = p_datatype->HVECTOR.p_old_type->id;
+      {
+	if(max_datatypes < 1)
+	  return MPI_ERR_OTHER;
+	if(max_integers < 31)
+	  return MPI_ERR_OTHER;
+	array_of_integers[0]  = p_datatype->count;
+	array_of_integers[1]  = p_datatype->HVECTOR.hstride;
+	array_of_integers[2]  = p_datatype->HVECTOR.blocklength;
+	array_of_datatypes[0] = p_datatype->HVECTOR.p_old_type->id;
+      }
       break;
+      
     case MPI_COMBINER_INDEXED:
-      array_of_integers[0]  = p_datatype->count;
+      {
+	NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
+	array_of_integers[0]  = p_datatype->count;
+      }
       break;
     case MPI_COMBINER_HINDEXED:
       NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
@@ -1366,6 +1402,9 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
       break;
     case MPI_COMBINER_STRUCT:
       NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported yet.\n");
+      break;
+    default:
+      NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- not supported for combiner %d.\n", p_datatype->combiner);
       break;
     }
   return MPI_SUCCESS;

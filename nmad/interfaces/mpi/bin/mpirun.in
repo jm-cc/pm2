@@ -44,10 +44,15 @@ On exit, mpirun returns a status of zero unless mpirun detected a problem, in
 which case it returns a non-zero status.
 
 Environment variables:
-   - NMAD_DRIVER specifies the network driver to use. By default, the 
-     network is auto-detected.
-   - NMAD_STRATEGY specifies the scheduler strategy to be used. By
-     default, the strategy 'aggreg' is used.
+   - NMAD_DRIVER
+            specifies the network driver to use. By default, the 
+            network is auto-detected.
+   - NMAD_STRATEGY
+            specifies the scheduler strategy to be used. By
+            default, the strategy 'aggreg' is used.
+   - MPIEXEC_TIMEOUT
+            maximum number of second the job is allowed to run.
+            Unlimited by default.
 EOF
 }
 
@@ -62,6 +67,11 @@ fi
 # auto-detect whether to use --padico-nopreload
 if [ "x@with_pukabi@" = "xno" ]; then
     args="${args} --padico-nopreload"
+fi
+
+# timeout
+if [ "x${MPIEXEC_TIMEOUT}" != "x" ]; then
+    args="${args} --timeout ${MPIEXEC_TIMEOUT}"
 fi
 
 if [ $# = 0 ]; then

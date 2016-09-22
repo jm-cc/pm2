@@ -1262,12 +1262,12 @@ int mpi_type_get_envelope(MPI_Datatype datatype, int*num_integers, int*num_addre
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_DUP:
-      *num_integers  = 0;
+      *num_integers  = 1;
       *num_addresses = 0;
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_RESIZED:
-      *num_integers  = 0;
+      *num_integers  = 1;
       *num_addresses = 0;
       *num_datatypes = 1;
       break;
@@ -1278,7 +1278,7 @@ int mpi_type_get_envelope(MPI_Datatype datatype, int*num_integers, int*num_addre
       break;
     case MPI_COMBINER_HVECTOR:
       *num_integers  = 2;
-      *num_addresses = 0;
+      *num_addresses = 1;
       *num_datatypes = 1;
       break;
     case MPI_COMBINER_INDEXED:
@@ -1328,8 +1328,11 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 
     case MPI_COMBINER_CONTIGUOUS:
       {
+	if(max_integers < 1)
+	  return MPI_ERR_OTHER;
 	if(max_datatypes < 1)
 	  return MPI_ERR_OTHER;
+	array_of_integers[0]  = p_datatype->count;
 	array_of_datatypes[0] = p_datatype->CONTIGUOUS.p_old_type->id;
       }
       break;
@@ -1373,11 +1376,13 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
       {
 	if(max_datatypes < 1)
 	  return MPI_ERR_OTHER;
-	if(max_integers < 31)
+	if(max_integers < 2)
 	  return MPI_ERR_OTHER;
+	if(max_addresses < 1)
+	  return MPI_ERR_OTHER;
+	array_of_addresses[0] = p_datatype->HVECTOR.hstride;
 	array_of_integers[0]  = p_datatype->count;
-	array_of_integers[1]  = p_datatype->HVECTOR.hstride;
-	array_of_integers[2]  = p_datatype->HVECTOR.blocklength;
+	array_of_integers[1]  = p_datatype->HVECTOR.blocklength;
 	array_of_datatypes[0] = p_datatype->HVECTOR.p_old_type->id;
       }
       break;

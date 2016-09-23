@@ -63,18 +63,6 @@ static void nm_examples_init_topo(int*argc, char*argv[], enum nm_example_topo_e 
   nm_launcher_get_gate(peer, &p_gate);
 }
 
-static inline void nm_examples_init(int*argc, char*argv[])
-{
-  nm_examples_init_topo(argc, argv, NM_EXAMPLES_TOPO_RING);
-}
-
-static inline void nm_examples_exit(void)
-{
-  nm_launcher_exit();
-}
-
-/* ********************************************************* */
-
 /* barrier accross all nodes */
 static inline void nm_examples_barrier(nm_tag_t tag)
 {
@@ -84,6 +72,18 @@ static inline void nm_examples_barrier(nm_tag_t tag)
     }
   nm_coll_barrier(p_comm, tag);
 }
+
+static inline void nm_examples_init(int*argc, char*argv[])
+{
+  nm_examples_init_topo(argc, argv, NM_EXAMPLES_TOPO_RING);
+}
+
+static inline void nm_examples_exit(void)
+{
+  nm_examples_barrier(0xFFFF);
+  nm_launcher_exit();
+}
+
 
 /* ********************************************************* */
 

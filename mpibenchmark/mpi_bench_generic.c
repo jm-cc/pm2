@@ -99,11 +99,13 @@ static void mpi_bench_latency_calibrate(void)
   mpi_bench_tick_t t1, t2;
   int i;
   double lat = -1.0;
+  const char*s_loops = getenv("MPI_BENCH_CALIBRATE");
+  const int loops = s_loops ? atoi(s_loops) : LOOPS_CALIBRATE;
   if(!mpi_bench_common.is_server)
     {
-      printf("# ACK latency calibration...\n");
+      printf("# ACK latency calibration (%d)...\n", loops);
     }
-  for(i = 0; i < LOOPS_CALIBRATE; i++)
+  for(i = 0; i < loops; i++)
     {
       if(mpi_bench_common.is_server)
 	{
@@ -239,7 +241,7 @@ void mpi_bench_init(int*argc, char***argv, int threads)
     {
       char hostname[256];
       gethostname(hostname, 256);
-      printf("# MadMPI benchmark - copyright (C) 2015 INRIA\n");
+      printf("# MadMPI benchmark - copyright (C) 2015-2016 INRIA\n");
       printf("# This program comes with ABSOLUTELY NO WARRANTY.\n"
 	     "# This is free software, and you are welcome to redistribute it\n"
 	     "# under certain conditions; see file 'COPYING' for details.\n#\n");

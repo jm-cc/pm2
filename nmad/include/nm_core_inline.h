@@ -204,7 +204,7 @@ static inline int nm_event_matches(const struct nm_core_monitor_s*p_core_monitor
   const int matches =
     ( (p_core_monitor->monitor.mask & status) &&
       (p_core_monitor->matching.p_gate == NM_GATE_NONE || p_core_monitor->matching.p_gate == p_event->p_gate) &&
-      (nm_tag_match(p_event->tag, p_core_monitor->matching.tag, p_core_monitor->matching.tag_mask))
+      (nm_core_tag_match(p_event->tag, p_core_monitor->matching.tag, p_core_monitor->matching.tag_mask))
       );
   return matches;
 }

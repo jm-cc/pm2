@@ -30,19 +30,19 @@
 #endif
 
 /** checks whether tags are equal. */
-static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2);
+static inline int nm_core_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2);
 /** checks whether matching applies on tags- (recv_tag & mask) == lookup_tag */
-static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask);
+static inline int nm_core_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask);
 
 /* Implementation of tag-indexed container: as flat array */
 
 #ifdef NM_TAGS_AS_FLAT_ARRAY
 
-static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
+static inline int nm_core_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
 {
   return tag1 == tag2;
 }
-static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
+static inline int nm_core_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
 {
   assert((lookup_tag & mask) == lookup_tag);
   return ((recv_tag & mask) == lookup_tag);
@@ -81,17 +81,17 @@ static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag,
 
 #if defined(NM_TAGS_AS_HASHTABLE)
 
-static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
+static inline int nm_core_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
 {
   return tag1 == tag2;
 }
-static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
+static inline int nm_core_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
 {
   assert((lookup_tag & mask) == lookup_tag);
   return ((recv_tag & mask) == lookup_tag);
 }
 
-static uint32_t nm_tag_hash(const void*_tag)
+static uint32_t nm_core_tag_hash(const void*_tag)
 {
   /* use the tag itself as a hashing key, since patterns or
    * periods are likely to be powers of 2, and hashtable size
@@ -100,7 +100,7 @@ static uint32_t nm_tag_hash(const void*_tag)
   const nm_core_tag_t tag = (unsigned long)_tag;
   return (uint32_t)tag;
 }
-static int nm_tag_hasheq(const void*_tag1, const void*_tag2)
+static int nm_core_tag_hasheq(const void*_tag1, const void*_tag2)
 {
   const nm_core_tag_t tag1 = (intptr_t)_tag1;
   const nm_core_tag_t tag2 = (intptr_t)_tag2;
@@ -116,7 +116,7 @@ static int nm_tag_hasheq(const void*_tag1, const void*_tag2)
   };									\
   static inline void NAME##_table_init(struct NAME##_table_s*t)		\
   {									\
-    t->_h = puk_hashtable_new(&nm_tag_hash, &nm_tag_hasheq);		\
+    t->_h = puk_hashtable_new(&nm_core_tag_hash, &nm_core_tag_hasheq);	\
     t->_allocator = NAME##_entry_allocator_new(NM_TAGS_PREALLOC);	\
   }									\
   static inline void NAME##_table_destroy(struct NAME##_table_s*t)	\
@@ -152,24 +152,24 @@ static int nm_tag_hasheq(const void*_tag1, const void*_tag2)
 
 #if defined(NM_TAGS_AS_INDIRECT_HASH)
 
-static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
+static inline int nm_core_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
 {
   return ((tag1.hashcode == tag2.hashcode) && (tag1.tag == tag2.tag));
 }
-static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
+static inline int nm_core_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
 {
   assert((lookup_tag.tag & mask.tag) == lookup_tag.tag);
   return ( ((recv_tag.hashcode & mask.hashcode) == lookup_tag.hashcode) &&
 	   ((recv_tag.tag & mask.tag) == lookup_tag.tag) );
 }
 
-static uint32_t nm_tag_indirect_hash(const void*_tag)
+static uint32_t nm_core_tag_indirect_hash(const void*_tag)
 {
   const nm_core_tag_t*p_tag = (const nm_core_tag_t*)_tag;
   const uint32_t hash = p_tag->tag + p_tag->hashcode;
   return hash;
 }
-static int nm_tag_indirect_eq(const void*_tag1, const void*_tag2)
+static int nm_core_tag_indirect_eq(const void*_tag1, const void*_tag2)
 {
   const nm_core_tag_t*p_tag1 = (const nm_core_tag_t*)_tag1;
   const nm_core_tag_t*p_tag2 = (const nm_core_tag_t*)_tag2;
@@ -190,7 +190,7 @@ static int nm_tag_indirect_eq(const void*_tag1, const void*_tag2)
   };									\
   static inline void NAME##_table_init(struct NAME##_table_s*t)		\
   {									\
-    t->_h = puk_hashtable_new(&nm_tag_indirect_hash, &nm_tag_indirect_eq); \
+    t->_h = puk_hashtable_new(&nm_core_tag_indirect_hash, &nm_core_tag_indirect_eq); \
     t->_allocator = NAME##_entry_allocator_new(NM_TAGS_PREALLOC);	\
   }									\
   static inline void NAME##_table_destroy(struct NAME##_table_s*t)	\

@@ -129,14 +129,14 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
   /* We first try to find an existing packet to form an aggregate */
   puk_list_foreach(p_pw, &p_status->out_list)
     {
-      if(nm_so_pw_remaining_buf(p_pw) < NM_HEADER_CTRL_SIZE) 
+      if(nm_pw_remaining_buf(p_pw) < NM_HEADER_CTRL_SIZE) 
 	{
 	  /* There's not enough room to add our ctrl header to this paquet */
-	  nm_so_pw_finalize(p_pw);
+	  nm_pw_finalize(p_pw);
 	}
       else
 	{
-	  err = nm_so_pw_add_control(p_pw, p_ctrl);
+	  err = nm_pw_add_control(p_pw, p_ctrl);
 	  nb_ctrl_aggregation ++;
 	  goto out;
 	}
@@ -144,7 +144,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
 
   /* Simply form a new packet wrapper */
   p_pw = nm_pw_alloc_global_header();
-  err = nm_so_pw_add_control(p_pw, p_ctrl);
+  err = nm_pw_add_control(p_pw, p_ctrl);
   if(err != NM_ESUCCESS)
     goto out;
 
@@ -162,7 +162,7 @@ static int strat_aggreg_autoextended_flush(void*_status, nm_gate_t p_gate)
   puk_list_foreach(p_pw, &p_status->out_list)
     {
       NM_TRACEF("Marking pw %p as completed\n", p_pw);
-      nm_so_pw_finalize(p_pw);
+      nm_pw_finalize(p_pw);
     }
   return NM_ESUCCESS;
 }
@@ -187,30 +187,30 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
       /* small packet */
       puk_list_foreach(p_pw, &p_status->out_list)
 	{
-	  const nm_len_t rlen = nm_so_pw_remaining_buf(p_pw);
+	  const nm_len_t rlen = nm_pw_remaining_buf(p_pw);
 	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_so_aligned(len);
 	  if(size > rlen)
 	    {
-	      nm_so_pw_finalize(p_pw);
+	      nm_pw_finalize(p_pw);
 	    }
 	  else
 	    {
-	      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
+	      nm_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
 	      nb_data_aggregation ++;
 	      return;
 	    }
 	}
       /* cannot aggregate- create a new pw */
       p_pw = nm_pw_alloc_global_header();
-      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
+      nm_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
       nm_pkt_wrap_list_push_back(&p_status->out_list, p_pw);
     }
   else
     {
       /* large packet */
       p_pw = nm_pw_alloc_noheader();
-      nm_so_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
-      nm_so_pw_finalize(p_pw);
+      nm_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
+      nm_pw_finalize(p_pw);
       nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_pw);
       union nm_header_ctrl_generic_s ctrl;
       nm_header_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);

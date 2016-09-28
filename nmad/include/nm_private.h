@@ -147,11 +147,11 @@ void nm_drv_post_all(nm_drv_t p_drv);
 
 /** Process a complete successful outgoing request.
  */
-int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw);
+int nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw);
 
 /** Process complete incoming request.
  */
-int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s *p_pw);
+int nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw);
 
 __PUK_SYM_INTERNAL
 void nm_data_pkt_pack(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,

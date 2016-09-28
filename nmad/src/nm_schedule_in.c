@@ -71,7 +71,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 #ifdef PIOMAN_POLL
       piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
-      err = nm_so_process_complete_recv(p_core, p_pw);
+      err = nm_pw_process_complete_recv(p_core, p_pw);
     }
   else if(err == -NM_ECLOSED)
     {
@@ -126,7 +126,7 @@ static int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
 #ifdef NMAD_POLL
   /* always put the request in the list of pending requests,
    * even if it completes immediately. It will be removed from
-   * the list by nm_so_process_complete_recv().
+   * the list by nm_pw_process_complete_recv().
    */
   nm_pkt_wrap_list_push_back(&p_pw->p_drv->p_core->pending_recv_list, p_pw);
 #endif /* NMAD_POLL */
@@ -135,7 +135,7 @@ static int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
     {
       /* immediate succes, process request completion */
       NM_TRACEF("request completed immediately");
-      nm_so_process_complete_recv(p_pw->p_drv->p_core, p_pw);
+      nm_pw_process_complete_recv(p_pw->p_drv->p_core, p_pw);
     }
   else if(err == -NM_EAGAIN)
     {
@@ -242,7 +242,7 @@ int nm_piom_block_recv(struct nm_pkt_wrap_s  *p_pw)
   piom_ltask_completed(&p_pw->ltask);
 
   /* process complete request */
-  err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+  err = nm_pw_process_complete_recv(p_pw->p_gate->p_core, p_pw);
   
   return err;
 }

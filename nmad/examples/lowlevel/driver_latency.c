@@ -59,8 +59,8 @@ int main(int argc, char **argv)
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   char buffer = 42;
   struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
-  nm_so_pw_add_raw(p_pw, &buffer, sizeof(buffer), 0);
-  nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
+  nm_pw_add_raw(p_pw, &buffer, sizeof(buffer), 0);
+  nm_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
   
   p_pw->v[0].iov_base = &buffer;
   p_pw->v[0].iov_len  = sizeof(buffer);

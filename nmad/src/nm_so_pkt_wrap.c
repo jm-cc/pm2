@@ -42,23 +42,23 @@ PUK_ALLOCATOR_TYPE(nm_pw_buf, struct nm_pw_buf_s);
 static nm_pw_buf_allocator_t nm_pw_buf_allocator = NULL;
 
 
-/** Initialize the fast allocator structs for SO pkt wrapper.
+/** Initialize the fast allocator structs for pkt wrapper.
  *
  *  @param p_core a pointer to the NM core object.
  *  @return The NM status.
  */
-int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
+int nm_pw_alloc_init(struct nm_core *p_core TBX_UNUSED)
 {
   nm_pw_nohd_allocator = nm_pw_nohd_allocator_new(INITIAL_PKT_NUM);
   nm_pw_buf_allocator = nm_pw_buf_allocator_new(INITIAL_PKT_NUM);
   return NM_ESUCCESS;
 }
 
-/** Cleanup the fast allocator structs for SO pkt wrapper.
+/** Cleanup the fast allocator structs for pkt wrapper.
  *
  *  @return The NM status.
  */
-int nm_so_pw_exit(void)
+int nm_pw_alloc_exit(void)
 {
   nm_pw_nohd_allocator_delete(nm_pw_nohd_allocator);
   nm_pw_buf_allocator_delete(nm_pw_buf_allocator);
@@ -91,7 +91,7 @@ struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap_s*p_pw)
 
 
 /** Add short data to pw, with compact header */
-void nm_so_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 			     const void*data, nm_len_t len)
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
@@ -108,11 +108,11 @@ void nm_so_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_se
 }
 
 /** Add small data to pw, in header */
-void nm_so_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 				 const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t flags)
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
-  assert(len <= nm_so_pw_remaining_buf(p_pw));
+  assert(len <= nm_pw_remaining_buf(p_pw));
   struct iovec*hvec = &p_pw->v[0];
   struct nm_header_data_s *h = hvec->iov_base + hvec->iov_len;
   nm_header_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0xFFFF, len, chunk_offset);
@@ -129,7 +129,7 @@ void nm_so_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, n
 }
 
 /** Add small data to pw, in iovec */
-void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_pw_add_data_in_iovec(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 				const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t proto_flags)
 {
   struct iovec*hvec = &p_pw->v[0];
@@ -145,7 +145,7 @@ void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm
 }
 
 /** Add raw data to pw, without header */
-void nm_so_pw_add_raw(struct nm_pkt_wrap_s*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset)
+void nm_pw_add_raw(struct nm_pkt_wrap_s*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset)
 {
   assert(p_pw->flags & NM_PW_NOHEADER);
   struct iovec*vec = nm_pw_grow_iovec(p_pw);
@@ -155,7 +155,7 @@ void nm_so_pw_add_raw(struct nm_pkt_wrap_s*p_pw, const void*data, nm_len_t len, 
   p_pw->chunk_offset = chunk_offset;
 }
 
-int nm_so_pw_add_control(struct nm_pkt_wrap_s*p_pw, const union nm_header_ctrl_generic_s*p_ctrl)
+int nm_pw_add_control(struct nm_pkt_wrap_s*p_pw, const union nm_header_ctrl_generic_s*p_ctrl)
 {
   struct iovec*hvec = &p_pw->v[0];
   memcpy(hvec->iov_base + hvec->iov_len, p_ctrl, NM_HEADER_CTRL_SIZE);
@@ -301,7 +301,7 @@ int nm_pw_free(struct nm_pkt_wrap_s*p_pw)
 
 /** Split the data from p_pw into two parts between p_pw and p_pw2
  */
-int nm_so_pw_split_data(struct nm_pkt_wrap_s *p_pw,
+int nm_pw_split_data(struct nm_pkt_wrap_s *p_pw,
 			struct nm_pkt_wrap_s *p_pw2,
 			nm_len_t offset)
 {
@@ -326,7 +326,7 @@ int nm_so_pw_split_data(struct nm_pkt_wrap_s *p_pw,
 	    {
 	      /* consume the whole segment */
 	      const nm_len_t chunk_len = p_pw->v[idx_pw].iov_len;
-	      nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base, chunk_len, 0);
+	      nm_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base, chunk_len, 0);
 	      len += p_pw->v[idx_pw].iov_len;
 	      p_pw->length -= chunk_len;
 	      p_pw->v_nb--;
@@ -339,7 +339,7 @@ int nm_so_pw_split_data(struct nm_pkt_wrap_s *p_pw,
 	      /* cut in the middle of an iovec segment */
 	      const nm_len_t iov_offset = offset - len;
 	      const nm_len_t chunk_len = p_pw->v[idx_pw].iov_len - iov_offset;
-	      nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base + iov_offset, chunk_len, 0);
+	      nm_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base + iov_offset, chunk_len, 0);
 	      len += p_pw->v[idx_pw].iov_len;
 	      p_pw->v[idx_pw].iov_len = iov_offset;
 	      p_pw->length -= chunk_len;
@@ -371,7 +371,7 @@ int nm_so_pw_split_data(struct nm_pkt_wrap_s *p_pw,
  *  @param flags the flags controlling the way the fragment is appended.
  *  @return The NM status.
  */
-void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack, const void*ptr, nm_len_t chunk_len, nm_len_t chunk_offset, int flags)
+void nm_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack, const void*ptr, nm_len_t chunk_len, nm_len_t chunk_offset, int flags)
 {
   const nm_core_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;
@@ -419,17 +419,17 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack,
       else if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0))
 	{
 	  /* Small data case */
-	  nm_so_pw_add_short_data(p_pw, tag, seq, ptr, chunk_len);
+	  nm_pw_add_short_data(p_pw, tag, seq, ptr, chunk_len);
 	}
       else if(flags & NM_PW_DATA_USE_COPY)
 	{
 	  /* Data immediately follows its header */
-	  nm_so_pw_add_data_in_header(p_pw, tag, seq, ptr, chunk_len, chunk_offset, proto_flags);
+	  nm_pw_add_data_in_header(p_pw, tag, seq, ptr, chunk_len, chunk_offset, proto_flags);
 	}
       else 
 	{
 	  /* Data handled by a separate iovec entry */
-	  nm_so_pw_add_data_in_iovec(p_pw, tag, seq, ptr, chunk_len, chunk_offset, proto_flags);
+	  nm_pw_add_data_in_iovec(p_pw, tag, seq, ptr, chunk_len, chunk_offset, proto_flags);
 	}
     }
   else if(p_pw->flags & NM_PW_NOHEADER)
@@ -444,7 +444,7 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack,
       else
 	{
 	  /* ** Add raw data to pw, without header */
-	  nm_so_pw_add_raw(p_pw, ptr, chunk_len, chunk_offset);
+	  nm_pw_add_raw(p_pw, ptr, chunk_len, chunk_offset);
 	}
     }
 }
@@ -455,7 +455,7 @@ void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack,
  *  @param p_pw the pkt wrapper pointer.
  *  @return The NM status.
  */
-int nm_so_pw_finalize(struct nm_pkt_wrap_s *p_pw)
+int nm_pw_finalize(struct nm_pkt_wrap_s *p_pw)
 {
   assert(p_pw->p_unpack == NULL);
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);

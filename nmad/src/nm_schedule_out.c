@@ -101,7 +101,7 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
 
 /** Process a complete successful outgoing request.
  */
-int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
+int nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
 {
   nm_gate_t const p_gate = p_pw->p_gate;
   nmad_lock_assert();
@@ -159,7 +159,7 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 #ifdef NMAD_POLL
       nm_pkt_wrap_list_erase(&p_core->pending_send_list, p_pw);
 #endif /* NMAD_POLL */
-      nm_so_process_complete_send(p_core, p_pw);
+      nm_pw_process_complete_send(p_core, p_pw);
     }
   else if(err != -NM_EAGAIN)
     {
@@ -176,11 +176,11 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   nmad_lock_assert();
 
 #ifdef PIO_OFFLOAD
-  nm_so_pw_offloaded_finalize(p_pw);
+  nm_pw_offloaded_finalize(p_pw);
 #endif
 
   if(p_pw->flags & NM_PW_GLOBAL_HEADER)
-    nm_so_pw_finalize(p_pw);
+    nm_pw_finalize(p_pw);
 
   /* post request */
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
@@ -211,7 +211,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   else if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
-      nm_so_process_complete_send(p_core, p_pw);
+      nm_pw_process_complete_send(p_core, p_pw);
     }
   else
     {

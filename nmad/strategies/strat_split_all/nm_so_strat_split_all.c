@@ -215,7 +215,7 @@ strat_split_all_pack_ctrl(void *_status,
 //  int err;
 //
 //  /* First allocate a packet wrapper */
-//  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
+//  err = nm_pw_alloc_and_fill_with_data(tag + 128, seq,
 //                                          data, len, chunk_offset, is_last_chunk,
 //                                          NM_PW_DATA_DONT_USE_HEADER,
 //                                          &p_so_pw);
@@ -339,7 +339,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
   int flags = 0;
   int err;
 
-  err = nm_so_pw_alloc(flags, &p_so_pw);
+  err = nm_pw_alloc(flags, &p_so_pw);
   tbx_fast_list_for_each_entry_safe(p_req, p_req_next, reqs_list, link) {
     h = p_req->header;
     proto_id = *(uint8_t *)p_req->header;
@@ -357,7 +357,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 	h->len-=threshold;
       }
       struct nm_pkt_wrap_s *p_data_pw = NULL;
-      nm_so_pw_alloc_and_fill_with_data(h->proto_id, 
+      nm_pw_alloc_and_fill_with_data(h->proto_id, 
 					h->seq,
 					p_req->data+offset, 
 					len_to_send, 
@@ -378,9 +378,9 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 		     offset, 
 		     last);
       
-      err = nm_so_pw_add_control(p_so_pw, &ctrl);
+      err = nm_pw_add_control(p_so_pw, &ctrl);
       
-      nm_so_pw_finalize(p_so_pw);
+      nm_pw_finalize(p_so_pw);
       
       if(!need_split)
 	tbx_fast_list_del(&p_req->link);
@@ -404,7 +404,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 	    p_ssa_pw->cumulated_len -= padding;
 
 	    /* split the message! */
-	    nm_so_pw_add_data_chunk(p_so_pw,
+	    nm_pw_add_data_chunk(p_so_pw,
 				    h->proto_id, h->seq,
 				    p_req->data+h->chunk_offset,
 				    padding, // remaining space
@@ -434,7 +434,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
         flags = NM_PW_DATA_USE_COPY;
 
       h->is_last_chunk = tbx_true;
-      nm_so_pw_add_data_chunk(p_so_pw, proto_id, h->seq, p_req->data+h->chunk_offset, h->len, h->chunk_offset, flags);
+      nm_pw_add_data_chunk(p_so_pw, proto_id, h->seq, p_req->data+h->chunk_offset, h->len, h->chunk_offset, flags);
 
       struct iovec *vec;
       void *ptr;
@@ -453,12 +453,12 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 	int i;
 	
 	for(i = 0; i < nb_chunks+1 /* do not forget the multiack header */; i++){
-		nm_so_pw_add_control(p_so_pw, p_req->header + (i * NM_HEADER_CTRL_SIZE));
+		nm_pw_add_control(p_so_pw, p_req->header + (i * NM_HEADER_CTRL_SIZE));
 		p_ssa_pw->cumulated_len -= NM_HEADER_CTRL_SIZE;
 	}
 	
       } else {
-        nm_so_pw_add_control(p_so_pw, p_req->header);
+        nm_pw_add_control(p_so_pw, p_req->header);
 	p_ssa_pw->cumulated_len -= NM_HEADER_CTRL_SIZE;
       }
       
@@ -469,7 +469,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
   }
 
  out:
-  nm_so_pw_finalize(p_so_pw);
+  nm_pw_finalize(p_so_pw);
 
   p_so_pw->p_gate = p_gate;
 

@@ -149,7 +149,7 @@ static void nm_large_chunk_store(void*ptr, nm_len_t len, void*_context)
   struct nm_large_chunk_context_s*p_large_chunk = _context;
   struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
   p_pw->p_unpack = p_large_chunk->p_unpack;
-  nm_so_pw_add_raw(p_pw, ptr, len, p_large_chunk->chunk_offset);
+  nm_pw_add_raw(p_pw, ptr, len, p_large_chunk->chunk_offset);
   assert(p_pw->p_drv == NULL);
   p_pw->p_gate = p_large_chunk->p_gate;
   nm_pkt_wrap_list_push_back(&p_large_chunk->p_gate->pending_large_recv, p_pw);
@@ -711,7 +711,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s *p_rtr_pw, const struct nm_heade
 	      nm_pw_completion_add(p_pw2, p_large_pw->completions[0].p_pack, p_large_pw->completions[0].len - chunk_len);
 	      p_large_pw->completions[0].len = chunk_len; /* truncate the contrib */
 	      /* populate p_pw2 iovec */
-	      nm_so_pw_split_data(p_large_pw, p_pw2, chunk_len);
+	      nm_pw_split_data(p_large_pw, p_pw2, chunk_len);
 	      nmad_lock_assert();
 	      nm_pkt_wrap_list_push_front(&p_gate->pending_large_send, p_pw2);
 	    }
@@ -872,7 +872,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 
 /** Process a complete incoming request.
  */
-int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
+int nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
   nm_gate_t const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);

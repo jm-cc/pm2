@@ -140,7 +140,7 @@ static int nm_task_block_recv(void*_pw)
     {
       nmad_lock();
       piom_ltask_completed(&p_pw->ltask);
-      nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+      nm_pw_process_complete_recv(p_pw->p_gate->p_core, p_pw);
       nmad_unlock();
     }
   else if((p_pw->ltask.state & PIOM_LTASK_STATE_CANCELLED) || (err == -NM_ECLOSED))
@@ -184,7 +184,7 @@ static int nm_task_block_send(void*_pw)
   if(err == NM_ESUCCESS)
     {
       piom_ltask_completed(&p_pw->ltask);
-      nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
+      nm_pw_process_complete_send(p_pw->p_gate->p_core, p_pw);
     }
   else
     {

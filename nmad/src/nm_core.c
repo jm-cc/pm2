@@ -452,7 +452,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   p_core->nb_drivers = 0;
 
   /* Initialize "Lightning Fast" Packet Wrappers Manager */
-  nm_so_pw_init(p_core);
+  nm_pw_alloc_init(p_core);
 
   nm_core_monitor_vect_init(&p_core->monitors);
 
@@ -616,7 +616,7 @@ int nm_core_exit(nm_core_t p_core)
   nm_unexpected_clean(p_core);
 
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */
-  nm_so_pw_exit();
+  nm_pw_alloc_exit();
 
   nm_core_monitor_vect_destroy(&p_core->monitors);
 

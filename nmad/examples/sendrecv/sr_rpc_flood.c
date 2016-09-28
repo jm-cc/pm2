@@ -27,7 +27,7 @@ static char buf[256];
 struct rpc_flood_header_s
 {
   nm_len_t len;
-};
+} __attribute__((packed));
 
 #define MAX_REQS 500
 

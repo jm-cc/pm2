@@ -131,9 +131,9 @@ struct nm_pkt_wrap_s
 PUK_LIST_DECLARE_TYPE(nm_pkt_wrap);
 PUK_LIST_CREATE_FUNCS(nm_pkt_wrap);
 
-int nm_so_pw_init(struct nm_core*p_core);
+int nm_pw_alloc_init(struct nm_core*p_core);
 
-int nm_so_pw_exit(void);
+int nm_pw_alloc_exit(void);
 
 struct nm_pkt_wrap_s*nm_pw_alloc_buffer(void);
 
@@ -143,32 +143,32 @@ struct nm_pkt_wrap_s*nm_pw_alloc_global_header(void);
 
 int nm_pw_free(struct nm_pkt_wrap_s*p_pw);
 
-int nm_so_pw_split_data(struct nm_pkt_wrap_s *p_pw,
+int nm_pw_split_data(struct nm_pkt_wrap_s *p_pw,
 			struct nm_pkt_wrap_s *pp_pw2,
 			nm_len_t offset);
 
-void nm_so_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack,
+void nm_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack,
 			     const void *data, nm_len_t len, nm_len_t offset, int flags);
 
-void nm_so_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 			     const void*data, nm_len_t len);
 
-void nm_so_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 				 const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t flags);
 
-void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
+void nm_pw_add_data_in_iovec(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 				const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t proto_flags);
 
-void nm_so_pw_add_raw(struct nm_pkt_wrap_s*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset);
+void nm_pw_add_raw(struct nm_pkt_wrap_s*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset);
 
 struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap_s*p_pw);
 
 /* forward declaration to resolve dependancy */
 union nm_header_ctrl_generic_s;
 
-int nm_so_pw_add_control(struct nm_pkt_wrap_s*p_pw, const union nm_header_ctrl_generic_s*p_ctrl);
+int nm_pw_add_control(struct nm_pkt_wrap_s*p_pw, const union nm_header_ctrl_generic_s*p_ctrl);
 
-int nm_so_pw_finalize(struct nm_pkt_wrap_s *p_pw);
+int nm_pw_finalize(struct nm_pkt_wrap_s *p_pw);
 
 void nm_pw_completion_add(struct nm_pkt_wrap_s*p_pw, struct nm_req_s*p_pack, nm_len_t len);
 

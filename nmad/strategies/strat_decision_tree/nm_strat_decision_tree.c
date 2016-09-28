@@ -176,7 +176,7 @@ static void strat_decision_tree_pack_data(void*_status, struct nm_req_s*p_pack, 
 	puk_list_foreach(p_pw_trace, &p_status->out_list)
 	  {
 	    size_outlist = size_outlist + p_pw_trace->length;
-	    const int aux = nm_so_pw_remaining_buf(p_pw_trace);
+	    const int aux = nm_pw_remaining_buf(p_pw_trace);
 	    if (aux > max_reamaining_data_area )
 	      max_reamaining_data_area = aux;
 	    if (p_pw_trace->length < smaller_pw_size)
@@ -191,7 +191,7 @@ static void strat_decision_tree_pack_data(void*_status, struct nm_req_s*p_pack, 
 	.nb_pw             = nb_pw,
 	.size_outlist      = size_outlist,
 	.pw_length         = p_pw_trace ? p_pw_trace->length : 0,
-	.pw_remaining_data = p_pw_trace ? nm_so_pw_remaining_buf(p_pw_trace) : 0,
+	.pw_remaining_data = p_pw_trace ? nm_pw_remaining_buf(p_pw_trace) : 0,
 	.profile_latency   = p_drv->profile.latency,
 	.profile_bandwidth = p_drv->profile.bandwidth
       };
@@ -231,7 +231,7 @@ static int strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
   nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw, nb_pw, trace_co_id);
   nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Outlist_Pw_Size, size_outlist, trace_co_id);
   nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Next_Pw_Size, p_pw_trace->length, trace_co_id);
-  nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area, nm_so_pw_remaining_data(p_pw_trace), trace_co_id);
+  nm_trace_var(TOPO_CONNECTION, NM_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area, nm_pw_remaining_data(p_pw_trace), trace_co_id);
 #endif
   
   if((p_gdrv->active_send[NM_TRK_SMALL] == 0) && !(nm_pkt_wrap_list_empty(&p_status->out_list)))

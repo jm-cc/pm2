@@ -14,15 +14,15 @@ BEGIN_CFLAGS
 END_CFLAGS
 
 
-int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
+int nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
 BEGIN
-  EVENT("nm_so_process_complete_send")
+  EVENT("nm_pw_process_complete_send")
   CALL_FUNC
 END
 
-int nm_so_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s *p_pw)
+int nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s *p_pw)
 BEGIN
-  EVENT("nm_so_process_complete_recv")
+  EVENT("nm_pw_process_complete_recv")
   CALL_FUNC
 END
 

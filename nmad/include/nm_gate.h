@@ -18,21 +18,21 @@
 
 /** status of tags on each gate
  */
-struct nm_so_tag_s
+struct nm_gtag_s
 {
   nm_seq_t recv_seq_number; /**< next sequence number for recv */
   nm_seq_t send_seq_number; /**< next sequence number for send */
 };
-static inline void nm_so_tag_ctor(struct nm_so_tag_s*p_so_tag, nm_core_tag_t tag)
+static inline void nm_gtag_ctor(struct nm_gtag_s*p_so_tag, nm_core_tag_t tag)
 {
   p_so_tag->recv_seq_number = NM_SEQ_FIRST;
   p_so_tag->send_seq_number = NM_SEQ_FIRST;
 }
-static inline void nm_so_tag_dtor(struct nm_so_tag_s*p_so_tag)
+static inline void nm_gtag_dtor(struct nm_gtag_s*p_so_tag)
 {
 }
 
-NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
+NM_TAG_TABLE_TYPE(nm_gtag, struct nm_gtag_s);
 
 
 /** Per driver gate related data. */
@@ -77,7 +77,7 @@ struct nm_gate_s
   nm_gate_status_t status;
 
   /** table of tag status */
-  struct nm_so_tag_table_s tags;
+  struct nm_gtag_table_s tags;
 
   /** large messages waiting for Track 1 (or 2) to be free- list of pw */
   struct nm_pkt_wrap_list_s pending_large_recv;

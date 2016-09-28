@@ -282,7 +282,7 @@ strat_split_all_pack(void *_status, struct nm_req_s*p_pack)
   int err;
   int flags=0; 
 
-  nm_so_tag_get(&p_gate->tags, tag)->send[seq] = len;
+  nm_gtag_get(&p_gate->tags, tag)->send[seq] = len;
 
   p_req = tbx_malloc(nm_ssa_data_req_mem);
   header = tbx_malloc(nm_ssa_header_mem);
@@ -367,7 +367,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 					&p_data_pw);
       
       tbx_fast_list_add_tail(&p_data_pw->link,
-		    &(nm_so_tag_get(&p_gate->tags, proto_id-128)->pending_large_send));
+		    &(nm_gtag_get(&p_gate->tags, proto_id-128)->pending_large_send));
 
       /* Build the rdv pw */
       union nm_header_ctrl_generic_s ctrl;

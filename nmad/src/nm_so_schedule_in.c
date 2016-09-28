@@ -87,7 +87,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
   struct nm_unexpected_s*p_chunk;
   puk_list_foreach(p_chunk, &p_core->unexpected)
     {
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_chunk->p_gate->tags, p_chunk->tag);
+      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_chunk->p_gate->tags, p_chunk->tag);
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
       if(((p_unpack->p_gate == p_chunk->p_gate) || (p_unpack->p_gate == NM_ANY_GATE)) && /* gate matches */
 	 nm_core_tag_match(p_chunk->tag, p_unpack->tag, p_unpack->unpack.tag_mask) && /* tag matches */
@@ -113,7 +113,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
 static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t p_gate, nm_seq_t seq, nm_core_tag_t tag)
 {
   struct nm_req_s*p_unpack = NULL;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
+  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
   const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
   puk_list_foreach(p_unpack, &p_core->unpacks)
     {
@@ -470,7 +470,7 @@ int nm_core_iprobe(struct nm_core*p_core,
   struct nm_unexpected_s*p_chunk;
   puk_list_foreach(p_chunk, &p_core->unexpected)
     {
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_chunk->p_gate->tags, p_chunk->tag);
+      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_chunk->p_gate->tags, p_chunk->tag);
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
       if(((p_gate == p_chunk->p_gate) || (p_gate == NM_ANY_GATE)) && /* gate matches */
 	 nm_core_tag_match(p_chunk->tag, tag, tag_mask) && /* tag matches */

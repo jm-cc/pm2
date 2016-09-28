@@ -35,7 +35,7 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   p_gate->p_core = p_core;
   p_gate->ref    = NULL;
   nm_gdrv_vect_init(&p_gate->gdrv_array);
-  nm_so_tag_table_init(&p_gate->tags);
+  nm_gtag_table_init(&p_gate->tags);
 
   nm_pkt_wrap_list_init(&p_gate->pending_large_recv);
   nm_pkt_wrap_list_init(&p_gate->pending_large_send);

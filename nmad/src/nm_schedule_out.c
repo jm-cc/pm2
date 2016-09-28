@@ -50,7 +50,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   nmad_lock();
   assert(p_gate != NULL);
   nm_status_assert(p_pack, NM_STATUS_PACK_INIT);
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
+  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
   const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
   p_so_tag->send_seq_number = seq;
   nm_status_add(p_pack, NM_STATUS_PACK_POSTED);

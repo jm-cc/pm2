@@ -167,7 +167,7 @@ static inline void nm_core_event_notify(nm_core_t p_core, const struct nm_core_e
 	  locked = __sync_bool_compare_and_swap(&p_core_monitor->dispatching, 0, 1);
 	  if(locked)
 	    {
-	      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_event->p_gate->tags, p_event->tag);
+	      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_event->p_gate->tags, p_event->tag);
 	      const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
 	      if(p_event->seq == next_seq)
 		{

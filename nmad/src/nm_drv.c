@@ -323,7 +323,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
   /* close all gates */
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      nm_so_tag_table_destroy(&p_gate->tags);
+      nm_gtag_table_destroy(&p_gate->tags);
       puk_instance_destroy(p_gate->strategy_instance);
       nm_gdrv_vect_destroy(&p_gate->gdrv_array);
     }

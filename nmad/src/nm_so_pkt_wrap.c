@@ -120,7 +120,7 @@ void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_s
   p_pw->length  += NM_HEADER_DATA_SIZE;
   if(len)
     {
-      const nm_len_t size = nm_so_aligned(len);
+      const nm_len_t size = nm_aligned(len);
       memcpy(hvec->iov_base + hvec->iov_len, data, len);
       hvec->iov_len += size;
       p_pw->length  += size;

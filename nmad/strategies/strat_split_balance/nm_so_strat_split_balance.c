@@ -157,7 +157,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_req_s*p_pack,
       puk_list_foreach(p_pw, &status->out_list)
 	{
 	  const nm_len_t h_rlen = nm_pw_remaining_buf(p_pw);
-	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_so_aligned(len);
+	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_aligned(len);
 	  if(size <= h_rlen)
 	    {
 	      /* We can copy data into the header zone */

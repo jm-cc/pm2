@@ -88,7 +88,7 @@ static inline nm_seq_t nm_seq_prev(nm_seq_t seq)
 typedef uint16_t nm_drv_id_t;
 
 
-#include "nm_so_parameters.h"
+#include "nm_parameters.h"
 
 #include "nm_trk_cap.h"
 #include "nm_tags.h"
@@ -102,7 +102,7 @@ typedef uint16_t nm_drv_id_t;
 #endif
 
 #include "nm_strategy.h"
-#include "nm_so_headers.h"
+#include "nm_headers.h"
 #include "nm_gate.h"
 #include "nm_core.h"
 

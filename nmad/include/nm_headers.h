@@ -169,13 +169,13 @@ typedef union nm_header_data_generic_s nm_header_data_generic_t;
   sizeof(struct nm_header_pkt_data_s)
 
 #define NM_HEADER_DATA_SIZE				\
-  nm_so_aligned(sizeof(struct nm_header_data_s))
+  nm_aligned(sizeof(struct nm_header_data_s))
 
 #define NM_HEADER_SHORT_DATA_SIZE			\
-  nm_so_aligned(sizeof(struct nm_header_short_data_s))
+  nm_aligned(sizeof(struct nm_header_short_data_s))
 
 #define NM_HEADER_CTRL_SIZE				\
-  nm_so_aligned(sizeof(union nm_header_ctrl_generic_s))
+  nm_aligned(sizeof(union nm_header_ctrl_generic_s))
 
 static inline void nm_header_init_pkt_data(struct nm_header_pkt_data_s*p_header, nm_core_tag_t tag_id, nm_seq_t seq, uint8_t flags,
 					   nm_len_t len, nm_len_t chunk_offset)

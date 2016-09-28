@@ -36,7 +36,7 @@ static int  strat_aggreg_autoextended_try_and_commit(void*, nm_gate_t );
 static void strat_aggreg_autoextended_rdv_accept(void*, nm_gate_t );
 static int  strat_aggreg_autoextended_flush(void*, nm_gate_t );
 
-static const struct nm_strategy_iface_s nm_so_strat_aggreg_autoextended_driver =
+static const struct nm_strategy_iface_s nm_strat_aggreg_autoextended_driver =
   {
     .pack_chunk     = &strat_aggreg_autoextended_pack_chunk,
     .pack_ctrl      = &strat_aggreg_autoextended_pack_ctrl,
@@ -49,7 +49,7 @@ static const struct nm_strategy_iface_s nm_so_strat_aggreg_autoextended_driver =
 static void*strat_aggreg_autoextended_instantiate(puk_instance_t, puk_context_t);
 static void strat_aggreg_autoextended_destroy(void*);
 
-static const struct puk_component_driver_s nm_so_strat_aggreg_autoextended_component_driver =
+static const struct puk_component_driver_s nm_strat_aggreg_autoextended_component_driver =
   {
     .instantiate = &strat_aggreg_autoextended_instantiate,
     .destroy     = &strat_aggreg_autoextended_destroy
@@ -57,11 +57,11 @@ static const struct puk_component_driver_s nm_so_strat_aggreg_autoextended_compo
 
 /** Per-gate status for strat aggreg_autoextended instances.
  */
-struct nm_so_strat_aggreg_autoextended_gate {
+struct nm_strat_aggreg_autoextended_gate {
   /** List of raw outgoing packets. */
   struct nm_pkt_wrap_list_s out_list;
-  int nm_so_max_small;
-  int nm_so_copy_on_send_threshold;
+  int max_small;
+  int copy_on_send_threshold;
 };
 
 static int num_instances = 0;
@@ -73,10 +73,10 @@ static int nb_ctrl_aggregation = 0;
 static int nm_strat_aggreg_autoextended_load(void)
 {
   puk_component_declare("NewMad_Strategy_aggreg_autoextended",
-			puk_component_provides("PadicoComponent", "component", &nm_so_strat_aggreg_autoextended_component_driver),
-			puk_component_provides("NewMad_Strategy", "strat", &nm_so_strat_aggreg_autoextended_driver),
-			puk_component_attr("nm_so_max_small", "16342"),
-			puk_component_attr("nm_so_copy_on_send_threshold", "4096"));
+			puk_component_provides("PadicoComponent", "component", &nm_strat_aggreg_autoextended_component_driver),
+			puk_component_provides("NewMad_Strategy", "strat", &nm_strat_aggreg_autoextended_driver),
+			puk_component_attr("max_small", "16342"),
+			puk_component_attr("copy_on_send_threshold", "4096"));
   return NM_ESUCCESS;
 }
 
@@ -85,16 +85,16 @@ static int nm_strat_aggreg_autoextended_load(void)
  */
 static void*strat_aggreg_autoextended_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_so_strat_aggreg_autoextended_gate*p_status = TBX_MALLOC(sizeof(struct nm_so_strat_aggreg_autoextended_gate));
+  struct nm_strat_aggreg_autoextended_gate*p_status = TBX_MALLOC(sizeof(struct nm_strat_aggreg_autoextended_gate));
 
   num_instances++;
   nm_pkt_wrap_list_init(&p_status->out_list);
 
-  const char*nm_so_max_small = puk_instance_getattr(instance, "nm_so_max_small");
-  p_status->nm_so_max_small = atoi(nm_so_max_small);
+  const char*max_small = puk_instance_getattr(instance, "max_small");
+  p_status->max_small = atoi(max_small);
 
-  const char*nm_so_copy_on_send_threshold = puk_instance_getattr(instance, "nm_so_copy_on_send_threshold");
-  p_status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
+  const char*copy_on_send_threshold = puk_instance_getattr(instance, "copy_on_send_threshold");
+  p_status->copy_on_send_threshold = atoi(copy_on_send_threshold);
 
   return p_status;
 }
@@ -123,7 +123,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
                                                const union nm_header_ctrl_generic_s*p_ctrl)
 {
   struct nm_pkt_wrap_s*p_pw = NULL;
-  struct nm_so_strat_aggreg_autoextended_gate*p_status = _status;
+  struct nm_strat_aggreg_autoextended_gate*p_status = _status;
   int err;
 
   /* We first try to find an existing packet to form an aggregate */
@@ -158,7 +158,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
 static int strat_aggreg_autoextended_flush(void*_status, nm_gate_t p_gate)
 {
   struct nm_pkt_wrap_s*p_pw = NULL;
-  struct nm_so_strat_aggreg_autoextended_gate*p_status = _status;
+  struct nm_strat_aggreg_autoextended_gate*p_status = _status;
   puk_list_foreach(p_pw, &p_status->out_list)
     {
       NM_TRACEF("Marking pw %p as completed\n", p_pw);
@@ -169,26 +169,26 @@ static int strat_aggreg_autoextended_flush(void*_status, nm_gate_t p_gate)
 
 static int strat_aggreg_autoextended_todo(void*_status, nm_gate_t p_gate)
 {
-  struct nm_so_strat_aggreg_autoextended_gate*p_status = _status;
+  struct nm_strat_aggreg_autoextended_gate*p_status = _status;
   return !(nm_pkt_wrap_list_empty(&p_status->out_list));
 }
 
 /** push message chunk */
 static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset)
 {
-  struct nm_so_strat_aggreg_autoextended_gate*p_status = _status;
+  struct nm_strat_aggreg_autoextended_gate*p_status = _status;
   struct nm_pkt_wrap_s*p_pw = NULL;
   int flags = 0;
-  if(len <= p_status->nm_so_copy_on_send_threshold)
+  if(len <= p_status->copy_on_send_threshold)
     flags |= NM_PW_DATA_USE_COPY;
 
-  if(len <= p_status->nm_so_max_small)
+  if(len <= p_status->max_small)
     {
       /* small packet */
       puk_list_foreach(p_pw, &p_status->out_list)
 	{
 	  const nm_len_t rlen = nm_pw_remaining_buf(p_pw);
-	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_so_aligned(len);
+	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_aligned(len);
 	  if(size > rlen)
 	    {
 	      nm_pw_finalize(p_pw);
@@ -226,7 +226,7 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
  */
 static int strat_aggreg_autoextended_try_and_commit(void*_status, nm_gate_t p_gate)
 {
-  struct nm_so_strat_aggreg_autoextended_gate*p_status = _status;
+  struct nm_strat_aggreg_autoextended_gate*p_status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   if(p_gdrv->active_send[NM_TRK_SMALL] == 1)

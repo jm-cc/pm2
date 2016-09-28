@@ -99,8 +99,8 @@ static inline void nm_pw_ref_dec(struct nm_pkt_wrap_s *p_pw)
  * maybe later with PIO-offloading, on next nm_schedule()
  * without PIOMan).
  */
-static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap_s *p_pw, nm_gate_t p_gate, 
-					     nm_trk_id_t trk_id, nm_drv_t p_drv)
+static inline void nm_core_post_recv(struct nm_pkt_wrap_s *p_pw, nm_gate_t p_gate, 
+				     nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
   nm_pw_assign(p_pw, trk_id, p_drv, p_gate);
   nm_pw_post_lfqueue_enqueue(&p_drv->post_recv, p_pw);
@@ -167,8 +167,8 @@ static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
 
 /** Post a ready-to-receive
  */
-static inline void nm_so_post_rtr(nm_gate_t p_gate,  nm_core_tag_t tag, nm_seq_t seq,
-				  nm_drv_t p_drv, nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
+static inline void nm_core_post_rtr(nm_gate_t p_gate,  nm_core_tag_t tag, nm_seq_t seq,
+				    nm_drv_t p_drv, nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   nm_header_ctrl_generic_t h;
   int gdrv_index = -1, k = 0;
@@ -190,7 +190,7 @@ static inline void nm_so_post_rtr(nm_gate_t p_gate,  nm_core_tag_t tag, nm_seq_t
 
 /** Post an ACK
  */
-static inline void nm_so_post_ack(nm_gate_t p_gate, nm_core_tag_t tag, nm_seq_t seq)
+static inline void nm_core_post_ack(nm_gate_t p_gate, nm_core_tag_t tag, nm_seq_t seq)
 {
   nm_header_ctrl_generic_t h;
   nm_header_init_ack(&h, tag, seq);
@@ -198,7 +198,8 @@ static inline void nm_so_post_ack(nm_gate_t p_gate, nm_core_tag_t tag, nm_seq_t 
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }
 
-static inline int nm_event_matches(const struct nm_core_monitor_s*p_core_monitor, const struct nm_core_event_s*p_event)
+static inline int nm_core_event_matches(const struct nm_core_monitor_s*p_core_monitor,
+					const struct nm_core_event_s*p_event)
 {
   const nm_status_t status = p_event->status & ~NM_STATUS_FINALIZED;
   const int matches =

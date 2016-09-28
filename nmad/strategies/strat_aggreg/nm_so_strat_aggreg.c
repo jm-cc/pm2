@@ -84,9 +84,9 @@ static inline nm_len_t strat_aggreg_max_small(struct nm_core*p_core)
 	      nm_max_small = p_drv->driver->capabilities.max_unexpected;
 	    }
 	}
-      if(nm_max_small <= 0 || nm_max_small > (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_SO_ALIGN_FRONTIER))
+      if(nm_max_small <= 0 || nm_max_small > (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER))
 	{
-	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_SO_ALIGN_FRONTIER);
+	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER);
 	}
       NM_DISPF("# nmad: aggreg- max_small = %lu\n", nm_max_small);
     }

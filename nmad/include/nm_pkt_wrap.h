@@ -125,7 +125,7 @@ struct nm_pkt_wrap_s
 #endif /* PIO_OFFLOAD */
 
   /* The following field MUST be the LAST within the structure */
-  NM_SO_ALIGN_TYPE buf[1];
+  NM_ALIGN_TYPE buf[1];
 };
 
 PUK_LIST_DECLARE_TYPE(nm_pkt_wrap);

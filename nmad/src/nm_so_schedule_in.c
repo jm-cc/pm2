@@ -206,7 +206,7 @@ static inline void nm_so_data_flags_decode(struct nm_req_s*p_unpack, uint8_t fla
     }
   if((p_unpack->unpack.cumulated_len == 0) && (flags & NM_PROTO_FLAG_ACKREQ))
     {
-      nm_so_post_ack(p_unpack->p_gate, p_unpack->tag, p_unpack->seq);
+      nm_core_post_ack(p_unpack->p_gate, p_unpack->tag, p_unpack->seq);
     }
 }
 
@@ -813,7 +813,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	rc = NM_HEADER_DATA_SIZE;
 	if(h->skip == 0xFFFF)
 	  {
-	    const nm_len_t size = (proto_flag & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(h->len) : h->len;
+	    const nm_len_t size = (proto_flag & NM_PROTO_FLAG_ALIGNED) ? nm_aligned(h->len) : h->len;
 	    rc += size;
 	  }
 	struct nm_req_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, h->seq, h->tag_id);

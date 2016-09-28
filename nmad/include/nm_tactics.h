@@ -94,7 +94,7 @@ static inline struct nm_pkt_wrap_s*nm_tactic_try_to_aggregate(struct nm_pkt_wrap
   puk_list_foreach(p_pw, p_out_list)
     {
       const nm_len_t rlen = nm_pw_remaining_buf(p_pw);
-      if(message_len + NM_SO_ALIGN_FRONTIER < rlen)
+      if(message_len + NM_ALIGN_FRONTIER < rlen)
 	{
 	  return p_pw;
 	}
@@ -164,7 +164,7 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap_s*p_pw, int nb_chunks, 
 	{
 	  nm_pw_free(p_pw);
 	}
-      nm_so_post_rtr(p_gate, tag, seq, chunks[i].p_drv, chunks[i].trk_id, chunk_offset, chunks[i].len);
+      nm_core_post_rtr(p_gate, tag, seq, chunks[i].p_drv, chunks[i].trk_id, chunk_offset, chunks[i].len);
       chunk_offset += chunks[i].len;
       p_pw = p_pw2;
       p_pw2 = NULL;

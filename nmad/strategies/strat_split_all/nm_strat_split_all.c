@@ -65,7 +65,7 @@ static int strat_split_all_extended_rdv_accept(void*, nm_gate_t , nm_len_t, int 
 						   nm_drv_id_t *, nm_len_t *);
 static int strat_split_all_split_small(void *_status, nm_gate_t p_gate, void *link, int *nb_cores, struct nm_pkt_wrap_s **out_pw);
 
-static const struct nm_strategy_iface_s nm_so_strat_split_all_driver =
+static const struct nm_strategy_iface_s nm_strat_split_all_driver =
   {
     .pack               = &strat_split_all_pack,
     .pack_ctrl          = &strat_split_all_pack_ctrl,
@@ -82,26 +82,26 @@ static const struct nm_strategy_iface_s nm_so_strat_split_all_driver =
 static void*strat_split_all_instantiate(puk_instance_t, puk_context_t);
 static void strat_split_all_destroy(void*);
 
-static const struct puk_component_driver_s nm_so_strat_split_all_component_driver =
+static const struct puk_component_driver_s nm_strat_split_all_component_driver =
   {
     .instantiate = &strat_split_all_instantiate,
     .destroy     = &strat_split_all_destroy
   };
 
-struct nm_so_strat_split_all {
+struct nm_strat_split_all {
   /* list of raw outgoing packets */
   struct tbx_fast_list_head out_list;
-  int nm_so_max_small;
+  int max_small;
 };
 
 /* Initialization */
 static int nm_strat_split_all_init(void)
 {
   puk_component_declare("NewMad_Strategy_split_all",
-			puk_component_provides("PadicoComponent", "component", &nm_so_strat_split_all_component_driver),
-			puk_component_provides("NewMad_Strategy", "strat", &nm_so_strat_split_all_driver),
-			puk_component_attr("nm_so_max_small", NULL),
-			puk_component_attr("nm_so_copy_on_send_threshold", NULL));
+			puk_component_provides("PadicoComponent", "component", &nm_strat_split_all_component_driver),
+			puk_component_provides("NewMad_Strategy", "strat", &nm_strat_split_all_driver),
+			puk_component_attr("max_small", NULL),
+			puk_component_attr("copy_on_send_threshold", NULL));
 
   return NM_ESUCCESS;
 }
@@ -111,20 +111,20 @@ static int nm_strat_split_all_init(void)
  */
 static void*strat_split_all_instantiate(puk_instance_t ai, puk_context_t context)
 {
-  struct nm_so_strat_split_all *status = TBX_MALLOC(sizeof(struct nm_so_strat_split_all));
+  struct nm_strat_split_all *status = TBX_MALLOC(sizeof(struct nm_strat_split_all));
 
   TBX_INIT_FAST_LIST_HEAD(&status->out_list);
 
   tbx_malloc_init(&nm_ssa_data_req_mem,
-		  sizeof(struct nm_ssa_data_req), 10, "nmad/.../sched_opt/nm_so_strat_split_all/data_req");
+		  sizeof(struct nm_ssa_data_req), 10, "nmad/.../sched_opt/nm_strat_split_all/data_req");
   tbx_malloc_init(&nm_ssa_header_mem,
-		  HEADER_SIZE, 10, "nmad/.../sched_opt/nm_so_strat_split_all/header");
+		  HEADER_SIZE, 10, "nmad/.../sched_opt/nm_strat_split_all/header");
 
   tbx_malloc_init(&nm_ssa_pw_mem,
                   sizeof(struct nm_ssa_pw), 5, "strat_ssa/pw");
 
-  const char*nm_so_max_small = puk_context_getattr(context, "nm_so_max_small");
-  status->nm_so_max_small = atoi(nm_so_max_small);
+  const char*max_small = puk_context_getattr(context, "max_small");
+  status->max_small = atoi(max_small);
 
   return (void*)status;
 }
@@ -164,7 +164,7 @@ static int
 strat_split_all_pack_ctrl(void *_status,
 			      nm_gate_t p_gate,
 			      const union nm_header_ctrl_generic_s *p_ctrl){
-  struct nm_so_strat_split_all *status = _status;
+  struct nm_strat_split_all *status = _status;
   struct nm_ssa_pw *p_ssa_pw = NULL;
   struct nm_ssa_data_req *p_req = tbx_malloc(nm_ssa_data_req_mem);
   union nm_header_ctrl_generic_s *header = tbx_malloc(nm_ssa_header_mem);
@@ -209,7 +209,7 @@ strat_split_all_pack_ctrl(void *_status,
 //                              uint8_t tag, uint8_t seq,
 //                              void *data, nm_len_t len,
 //                              nm_len_t chunk_offset, uint8_t is_last_chunk){
-//  struct nm_so_strat_split_all*status = _status;
+//  struct nm_strat_split_all*status = _status;
 //  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->p_so_gate;
 //  struct nm_pkt_wrap_s *p_so_pw = NULL;
 //  int err;
@@ -257,7 +257,7 @@ strat_split_all_pack_ctrl(void *_status,
 static int strat_split_all_todo(void*_status,
 				nm_gate_t p_gate)
 {
-  struct nm_so_strat_split_all *status = _status;
+  struct nm_strat_split_all *status = _status;
   struct tbx_fast_list_head *out_list = &(status)->out_list;
   return !(tbx_fast_list_empty(out_list));
 }
@@ -269,7 +269,7 @@ strat_split_all_pack(void *_status, struct nm_req_s*p_pack)
 {
 #warning FIXME: strat_split_all->pack is not implemented !
  #if 0
- struct nm_so_strat_split_all *status = _status;
+ struct nm_strat_split_all *status = _status;
  
   struct tbx_fast_list_head *out_list = &status->out_list;
   struct nm_ssa_pw *p_ssa_pw = NULL;
@@ -297,11 +297,11 @@ strat_split_all_pack(void *_status, struct nm_req_s*p_pack)
     // free space in the header line : all data will be copied in contiguous here
     remaining_len = NM_SO_PREALLOC_IOV_LEN - p_ssa_pw->cumulated_len;
     // space required to add the current data
-    size = NM_HEADER_DATA_SIZE + nm_so_aligned(len);
+    size = NM_HEADER_DATA_SIZE + nm_aligned(len);
     
     if(size <= remaining_len){
       tbx_fast_list_add_tail(&p_req->link, &p_ssa_pw->reqs);
-      p_ssa_pw->cumulated_len += NM_HEADER_DATA_SIZE + nm_so_aligned(len);
+      p_ssa_pw->cumulated_len += NM_HEADER_DATA_SIZE + nm_aligned(len);
       goto out;
     }
   }
@@ -311,7 +311,7 @@ strat_split_all_pack(void *_status, struct nm_req_s*p_pack)
   p_ssa_pw = tbx_malloc(nm_ssa_pw_mem);
   TBX_INIT_FAST_LIST_HEAD(&p_ssa_pw->reqs);
   tbx_fast_list_add(&p_req->link, &p_ssa_pw->reqs);
-  p_ssa_pw->cumulated_len = NM_SO_GLOBAL_HEADER_SIZE + NM_HEADER_DATA_SIZE + nm_so_aligned(len);
+  p_ssa_pw->cumulated_len = NM_SO_GLOBAL_HEADER_SIZE + NM_HEADER_DATA_SIZE + nm_aligned(len);
   
   tbx_fast_list_add_tail(&p_ssa_pw->link, &status->out_list);
   
@@ -321,7 +321,7 @@ strat_split_all_pack(void *_status, struct nm_req_s*p_pack)
   return 0;
 }
 
-static int build_wrapper(struct nm_so_strat_split_all *status,
+static int build_wrapper(struct nm_strat_split_all *status,
                          nm_gate_t p_gate,
                          struct nm_ssa_pw *p_ssa_pw,
                          nm_len_t threshold,
@@ -344,7 +344,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
     h = p_req->header;
     proto_id = *(uint8_t *)p_req->header;
 
-    if(threshold > status->nm_so_max_small) {
+    if(threshold > status->max_small) {
       /* Large message, prepare the rdv */
 	    
       int len_to_send=threshold;
@@ -400,7 +400,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 	  
 	  if(p_so_pw->length + NM_HEADER_DATA_SIZE + h->len > threshold){
 #warning verifier que le seuil de rdv nest pas atteint
-	    int padding = nm_so_aligned(threshold - p_so_pw->length - NM_HEADER_DATA_SIZE);
+	    int padding = nm_aligned(threshold - p_so_pw->length - NM_HEADER_DATA_SIZE);
 	    p_ssa_pw->cumulated_len -= padding;
 
 	    /* split the message! */
@@ -492,7 +492,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 static int
 strat_split_all_try_and_commit(void *_status,
                                nm_gate_t p_gate){
-  struct nm_so_strat_split_all *status = _status;
+  struct nm_strat_split_all *status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
   struct nm_ssa_pw *p_ssa_pw = NULL;
   int nb_drivers = p_gate->p_core->nb_drivers;
@@ -550,7 +550,7 @@ strat_split_all_split_small(void *_status,
                             int *nb_cores,
                             struct nm_pkt_wrap_s **out_pw){
   /* only split in 2 chunks for the moment */
-  struct nm_so_strat_split_all *status = _status;
+  struct nm_strat_split_all *status = _status;
   struct nm_ssa_pw *p_ssa_pw = link;
   int drv_id = -1;
   nm_len_t split_ratio = 0;

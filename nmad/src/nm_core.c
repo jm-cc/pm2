@@ -160,7 +160,7 @@ void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor)
 static inline void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_core_monitor_s*p_core_monitor)
 {
   int locked = 0;
-  if(nm_event_matches(p_core_monitor, p_event))
+  if(nm_core_event_matches(p_core_monitor, p_event))
     {
       if(p_event->status & NM_STATUS_UNEXPECTED)
 	{

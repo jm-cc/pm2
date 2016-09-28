@@ -78,7 +78,7 @@ static void*strat_immediate_instantiate(puk_instance_t ai, puk_context_t context
 {
   struct nm_strat_immediate *status = TBX_MALLOC(sizeof(struct nm_strat_immediate));
   const char*max_small = puk_instance_getattr(ai, "max_small");
-  status->max_small = max_small ? atoi(max_small) : (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_SO_ALIGN_FRONTIER - 4);
+  status->max_small = max_small ? atoi(max_small) : (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER - 4);
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "copy_on_send_threshold");
   status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
   return (void*)status;

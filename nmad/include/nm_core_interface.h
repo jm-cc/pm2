@@ -165,16 +165,16 @@ typedef struct
 } __attribute__((packed)) nm_core_tag_t;
 #define NM_CORE_TAG_MASK_FULL ((nm_core_tag_t){ .tag = NM_TAG_MASK_FULL, .hashcode = NM_CORE_TAG_HASH_FULL })
 #define NM_CORE_TAG_NONE      ((nm_core_tag_t){ .tag = 0, .hashcode = 0x0 })
-static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
+static inline nm_core_tag_t nm_core_tag_build(uint32_t hashcode, nm_tag_t tag)
 {
   const nm_core_tag_t core_tag = { .tag = tag, .hashcode = hashcode };
   return core_tag;
 }
-static inline nm_tag_t nm_tag_get(nm_core_tag_t core_tag)
+static inline nm_tag_t nm_core_tag_get_tag(nm_core_tag_t core_tag)
 {
   return core_tag.tag;
 }
-static inline nm_tag_t nm_tag_get_hashcode(nm_core_tag_t core_tag)
+static inline nm_tag_t nm_core_tag_get_hashcode(nm_core_tag_t core_tag)
 {
   return core_tag.hashcode;
 }
@@ -183,16 +183,16 @@ static inline nm_tag_t nm_tag_get_hashcode(nm_core_tag_t core_tag)
 typedef nm_tag_t nm_core_tag_t;
 #define NM_CORE_TAG_MASK_FULL NM_TAG_MASK_FULL
 #define NM_CORE_TAG_NONE ((nm_tag_t)0)
-static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
+static inline nm_core_tag_t nm_core_tag_build(uint32_t hashcode, nm_tag_t tag)
 {
   const nm_core_tag_t core_tag = tag;
   return core_tag;
 }
-static inline nm_tag_t nm_tag_get(nm_core_tag_t core_tag)
+static inline nm_tag_t nm_core_tag_get_tag(nm_core_tag_t core_tag)
 {
   return core_tag;
 }
-static inline nm_tag_t nm_tag_get_hashcode(nm_core_tag_t core_tag)
+static inline nm_tag_t nm_core_tag_get_hashcode(nm_core_tag_t core_tag)
 {
   return 0;
 }

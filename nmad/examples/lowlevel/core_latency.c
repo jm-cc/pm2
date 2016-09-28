@@ -50,7 +50,7 @@ int main(int argc, char **argv)
   /* benchmark */
   nm_core_t p_core = p_session->p_core;
   char buffer = 42;
-  nm_core_tag_t tag = nm_tag_build(0, 1);
+  nm_core_tag_t tag = nm_core_tag_build(0, 1);
   struct nm_data_s data;
 
   if(is_server)

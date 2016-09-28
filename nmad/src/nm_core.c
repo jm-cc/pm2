@@ -176,7 +176,7 @@ static inline void nm_core_event_notify(nm_core_t p_core, const struct nm_core_e
 	      else
 		{
 		  fprintf(stderr, "# nmad: WARNING- delaying event dispatch; got seq = %d; expected = %d; tag = %lx:%lx\n",
-			  p_event->seq, next_seq, nm_tag_get_hashcode(p_event->tag), nm_tag_get(p_event->tag));
+			  p_event->seq, next_seq, nm_core_tag_get_hashcode(p_event->tag), nm_core_tag_get_tag(p_event->tag));
 		  nm_core_event_queue_append(&p_core->pending_events, *p_event);
 		  sleep(1);
 		  goto out;

@@ -31,8 +31,7 @@
 
 /** checks whether tags are equal. */
 static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2);
-/** checks whether matching applies on tags- (recv_tag & mask) == lookup_tag
- */
+/** checks whether matching applies on tags- (recv_tag & mask) == lookup_tag */
 static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask);
 
 /* Implementation of tag-indexed container: as flat array */

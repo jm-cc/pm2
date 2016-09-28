@@ -218,8 +218,8 @@ int nm_sr_probe(nm_session_t p_session,
 		nm_len_t*p_out_len)
 {
   nm_core_t p_core = p_session->p_core;
-  const nm_core_tag_t core_tag = nm_tag_build(p_session->hash_code, tag);
-  const nm_core_tag_t core_mask = nm_tag_build(p_session->hash_code, mask);
+  const nm_core_tag_t core_tag = nm_core_tag_build(p_session->hash_code, tag);
+  const nm_core_tag_t core_mask = nm_core_tag_build(p_session->hash_code, mask);
 
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
@@ -233,7 +233,7 @@ int nm_sr_probe(nm_session_t p_session,
   if(pp_out_gate)
     *pp_out_gate = p_out_gate;
   if(p_out_tag)
-    *p_out_tag = nm_tag_get(out_core_tag);
+    *p_out_tag = nm_core_tag_get_tag(out_core_tag);
   if(p_out_len)
     *p_out_len = out_size;
 
@@ -257,8 +257,8 @@ int nm_sr_session_monitor_set(nm_session_t p_session, const struct nm_sr_monitor
   p_core_monitor->matching = (struct nm_core_event_matching_s)
     {
       .p_gate   = p_sr_monitor->p_gate,
-      .tag      = nm_tag_build(p_session->hash_code, p_sr_monitor->tag),
-      .tag_mask = nm_tag_build(NM_CORE_TAG_HASH_FULL, p_sr_monitor->tag_mask)
+      .tag      = nm_core_tag_build(p_session->hash_code, p_sr_monitor->tag),
+      .tag_mask = nm_core_tag_build(NM_CORE_TAG_HASH_FULL, p_sr_monitor->tag_mask)
     };
   nmad_lock();
   nm_core_monitor_vect_push_back(&p_sr_session->core_monitors, p_core_monitor);
@@ -449,10 +449,10 @@ static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, 
 static void nm_sr_event_handler(const struct nm_core_event_s*const p_event, void*_ref)
 {
   struct nm_sr_monitor_s*p_monitor = _ref;
-  const uint32_t hashcode = nm_tag_get_hashcode(p_event->tag);
+  const uint32_t hashcode = nm_core_tag_get_hashcode(p_event->tag);
   nm_session_t p_session = nm_session_lookup(hashcode);
   assert(p_session != NULL);
-  const nm_tag_t sr_tag = nm_tag_get(p_event->tag);
+  const nm_tag_t sr_tag = nm_core_tag_get_tag(p_event->tag);
   const nm_sr_event_info_t info =
     { 
       .recv_unexpected.p_gate    = p_event->p_gate,

@@ -146,7 +146,7 @@ static void nm_ns_eager_send_copy(nm_drv_t p_drv, nm_gate_t p_gate, const void*p
 { 
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_core_tag_t tag = nm_tag_build(0, 0);
+  const nm_core_tag_t tag = nm_core_tag_build(0, 0);
   const uint8_t seq  = 0;
   struct nm_pkt_wrap_s*p_pw = NULL;
   if(len <= NM_MAX_SMALL)
@@ -178,7 +178,7 @@ static void nm_ns_eager_send_iov(nm_drv_t p_drv, nm_gate_t p_gate, const void*pt
 { 
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_core_tag_t tag = nm_tag_build(0, 0);
+  const nm_core_tag_t tag = nm_core_tag_build(0, 0);
   const uint8_t seq  = 0;
   struct nm_pkt_wrap_s*p_pw = NULL;
   if(len <= NM_MAX_SMALL)
@@ -267,7 +267,7 @@ static void nm_ns_eager_send_aggreg(nm_drv_t p_drv, nm_gate_t p_gate, const void
   const size_t len = _len / 2;
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_core_tag_t tag = nm_tag_build(0, 0);
+  const nm_core_tag_t tag = nm_core_tag_build(0, 0);
   const uint8_t seq  = 0;
   struct nm_pkt_wrap_s*p_pw = NULL;
   if(_len <= NM_MAX_SMALL)

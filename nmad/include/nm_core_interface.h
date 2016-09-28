@@ -150,18 +150,18 @@ typedef uint16_t nm_seq_t;
 
 /* ** tags ************************************************* */
 
-/** the hash part in tags, used to multiplex sessions */
-typedef uint32_t nm_tag_hash_t;
+/** a session hashcode in tags, used to multiplex sessions */
+typedef uint32_t nm_session_hash_t;
 
 /** mask for all sessions */
-#define NM_CORE_TAG_HASH_FULL ((nm_tag_hash_t)0xFFFFFFFF)
+#define NM_CORE_TAG_HASH_FULL ((nm_session_hash_t)0xFFFFFFFF)
 
 #if defined(NM_TAGS_AS_INDIRECT_HASH)
 /** An internal tag */
 typedef struct
 {
-  nm_tag_t tag;           /**< the interface level tag */
-  nm_tag_hash_t hashcode; /**< the session hashcode */
+  nm_tag_t tag;               /**< the user-supplied tag */
+  nm_session_hash_t hashcode; /**< the session hashcode */
 } __attribute__((packed)) nm_core_tag_t;
 #define NM_CORE_TAG_MASK_FULL ((nm_core_tag_t){ .tag = NM_TAG_MASK_FULL, .hashcode = NM_CORE_TAG_HASH_FULL })
 #define NM_CORE_TAG_NONE      ((nm_core_tag_t){ .tag = 0, .hashcode = 0x0 })

@@ -1,7 +1,7 @@
 # autoconf-based makefile for pioman
 
 srcdir := @srcdir@
-VPATH  := $(srcdir)/source
+VPATH  := $(srcdir)/src
 
 include @abs_top_builddir@/common_vars.mk
 
@@ -19,8 +19,8 @@ CPPFLAGS += -I@srcdir@/include
 CFLAGS   += @PIOMAN_CFLAGS@ @PIOMAN_EXT_CFLAGS@
 LIBS     += @PIOMAN_EXT_LIBS@
 
-SRC_FILES := $(wildcard $(srcdir)/source/*.c )
-OBJ_FILES := $(patsubst $(srcdir)/source/%.c, ./%.pic.o, $(SRC_FILES))
+SRC_FILES := $(wildcard $(srcdir)/src/*.c )
+OBJ_FILES := $(patsubst $(srcdir)/src/%.c, ./%.pic.o, $(SRC_FILES))
 
 include @abs_top_builddir@/common_rules.mk
 

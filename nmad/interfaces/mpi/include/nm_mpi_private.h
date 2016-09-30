@@ -647,7 +647,7 @@ struct nm_mpi_window_s
   nm_mpi_win_epoch_t*exposure;
   /** pending closing exposing epoch requests */
   nm_mpi_request_t**end_reqs;
-  /** counter to recieve the amount of messages to be expected from a given distant window */
+  /** counter to receive the amount of messages to be expected from a given distant window */
   uint64_t*msg_count;
   /** management queue for passive target */
   nm_mpi_win_pass_mngmt_t waiting_queue;

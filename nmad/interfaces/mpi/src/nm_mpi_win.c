@@ -1395,7 +1395,7 @@ int mpi_win_start(MPI_Group group, int assert, MPI_Win win)
   p_win->p_group          = p_group->p_nm_group;
   nm_session_t  p_session = nm_mpi_communicator_get_session(p_win->p_comm);
   const int     comm_size = nm_group_size(p_win->p_group);
-  nm_mpi_request_t p_reqs[comm_size];
+  nm_sr_request_t p_reqs[comm_size];
   int             targets[comm_size];
   for(i = 0; i < comm_size; ++i)
     {
@@ -1406,24 +1406,13 @@ int mpi_win_start(MPI_Group group, int assert, MPI_Win win)
 	}
       targets[i] = nm_mpi_communicator_get_dest(p_win->p_comm, gate);
       tag        = nm_mpi_rma_create_tag(p_win->win_ids[targets[i]], 0, NM_MPI_TAG_PRIVATE_RMA_START);
-      p_reqs[i].gate                    = nm_group_get_gate(p_win->p_group, i);
-      p_reqs[i].sbuf                    = NULL;
-      p_reqs[i].count                   = 0;
-      p_reqs[i].p_comm                  = p_win->p_comm;
-      p_reqs[i].user_tag                = tag;
-      p_reqs[i].p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
-      p_reqs[i].request_type            = NM_MPI_REQUEST_RECV;
-      p_reqs[i].request_source          = targets[i];
-      p_reqs[i].communication_mode      = NM_MPI_MODE_IMMEDIATE;
-      ++p_reqs[i].p_datatype->refcount;
-      nm_sr_recv_init(p_session, &p_reqs[i].request_nmad);
-      nm_sr_recv_unpack_contiguous(p_session, &p_reqs[i].request_nmad, NULL, 0);
-      err = nm_sr_recv_irecv(p_session, &p_reqs[i].request_nmad, p_reqs[i].gate, tag, tag_mask);
+      nm_sr_recv_init(p_session, &p_reqs[i]);
+      nm_sr_recv_unpack_contiguous(p_session, &p_reqs[i], NULL, 0);
+      err = nm_sr_recv_irecv(p_session, &p_reqs[i], gate, tag, tag_mask);
     }
   for(i = 0; i < comm_size; ++i)
     {
-      err = nm_sr_rwait(p_session, &p_reqs[i].request_nmad);
-      p_reqs[i].request_error = err;
+      err = nm_sr_rwait(p_session, &p_reqs[i]);
       p_win->access[targets[i]].mode    = NM_MPI_WIN_ACTIVE_TARGET;
       assert(p_win->access[i].nmsg == 0);
     }
@@ -1432,15 +1421,16 @@ int mpi_win_start(MPI_Group group, int assert, MPI_Win win)
 
 /**
  * Blocking call to finish an access epoch (but should not block as
- * the message is send in eager mode).
+ * the message is sent in eager mode).
  */
 int mpi_win_complete(MPI_Win win)
 {
   int i, err = MPI_SUCCESS;
   nm_tag_t  tag;
   nm_gate_t gate;
+  void     *sbuf;
   uint64_t zero = 0;
-  nm_mpi_request_t req;
+  nm_sr_request_t req;
   nm_mpi_window_t*p_win = nm_mpi_window_get(win);
   if(NULL == p_win)
     return MPI_ERR_WIN;
@@ -1456,20 +1446,11 @@ int mpi_win_complete(MPI_Win win)
 	  return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
 	}
       tag = nm_mpi_rma_create_tag(p_win->win_ids[i], 0, NM_MPI_TAG_PRIVATE_RMA_END);
-      req.gate                    = gate;
-      req.sbuf                    = (MPI_WIN_FLAVOR_SHARED == p_win->flavor) ? &zero : &p_win->access[i].nmsg;
-      req.count                   = 1;
-      req.p_comm                  = p_win->p_comm;
-      req.user_tag                = tag;
-      req.p_datatype              = nm_mpi_datatype_get(MPI_UINT64_T);
-      req.request_type            = NM_MPI_REQUEST_SEND;
-      req.request_source          = i;
-      req.communication_mode      = NM_MPI_MODE_IMMEDIATE;
-      ++req.p_datatype->refcount;
-      nm_sr_send_init(p_session, &req.request_nmad);
-      nm_sr_send_pack_contiguous(p_session, &req.request_nmad, req.sbuf, req.p_datatype->size);
-      err = nm_sr_send_isend(p_session, &req.request_nmad, req.gate, tag);
-      err = nm_sr_swait(p_session, &req.request_nmad);
+      sbuf = (MPI_WIN_FLAVOR_SHARED == p_win->flavor) ? &zero : &p_win->access[i].nmsg;
+      nm_sr_send_init(p_session, &req);
+      nm_sr_send_pack_contiguous(p_session, &req, sbuf, sizeof(uint64_t));
+      err = nm_sr_send_isend(p_session, &req, gate, tag);
+      err = nm_sr_swait(p_session, &req);
       p_win->access[i].mode       = NM_MPI_WIN_UNUSED;
       p_win->access[i].nmsg       = 0;
       p_win->access[i].completed  = 0;
@@ -1507,7 +1488,7 @@ int mpi_win_post(MPI_Group group, int assert, MPI_Win win)
   nm_tag_t         tag;
   nm_gate_t        gate;
   int              target;
-  nm_mpi_request_t p_reqs[comm_size];
+  nm_sr_request_t p_reqs[comm_size];
   nm_mpi_request_t *p_req_end;
   for(i = 0; i < comm_size; ++i)
     {
@@ -1517,36 +1498,28 @@ int mpi_win_post(MPI_Group group, int assert, MPI_Win win)
 	  return NM_MPI_WIN_ERROR(win, MPI_ERR_OTHER);
 	}
       target = nm_mpi_communicator_get_dest(p_win->p_comm, gate);
-      tag    = nm_mpi_rma_create_tag(p_win->win_ids[target], 0, NM_MPI_TAG_PRIVATE_RMA_START);
-      p_reqs[i].gate                    = gate;
-      p_reqs[i].sbuf                    = NULL;
-      p_reqs[i].count                   = 0;
-      p_reqs[i].p_comm                  = p_win->p_comm;
-      p_reqs[i].user_tag                = tag;
-      p_reqs[i].p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
-      p_reqs[i].request_type            = NM_MPI_REQUEST_SEND;
-      p_reqs[i].request_source          = target;
-      p_reqs[i].communication_mode      = NM_MPI_MODE_IMMEDIATE;
-      ++p_reqs[i].p_datatype->refcount;
-      nm_sr_send_init(p_session, &p_reqs[i].request_nmad);
-      nm_sr_send_pack_contiguous(p_session, &p_reqs[i].request_nmad, NULL, 0);
-      err = nm_sr_send_isend(p_session, &p_reqs[i].request_nmad, gate, tag);
-      p_reqs[i].request_error = err;
       /* Closing requests */
       tag       = nm_mpi_rma_create_tag(p_win->id, 0, NM_MPI_TAG_PRIVATE_RMA_END);
       p_req_end = nm_mpi_request_alloc();
       nm_sr_recv_init(p_session, &p_req_end->request_nmad);
       nm_sr_recv_unpack_contiguous(p_session, &p_req_end->request_nmad,
 				   &p_win->msg_count[target], sizeof(uint64_t));
-      nm_sr_recv_irecv(p_session, &p_req_end->request_nmad, gate, tag, NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+      nm_sr_recv_irecv(p_session, &p_req_end->request_nmad, gate, tag,
+		       NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+      /* Init epoch parameters */
       p_win->end_reqs[target]           = p_req_end;
       p_win->exposure[target].mode      = NM_MPI_WIN_ACTIVE_TARGET;
       p_win->exposure[target].nmsg      = 0;
       p_win->exposure[target].completed = 0;
+      /* Send starting epoch message */
+      tag = nm_mpi_rma_create_tag(p_win->win_ids[target], 0, NM_MPI_TAG_PRIVATE_RMA_START);
+      nm_sr_send_init(p_session, &p_reqs[i]);
+      nm_sr_send_pack_contiguous(p_session, &p_reqs[i], NULL, 0);
+      err = nm_sr_send_isend(p_session, &p_reqs[i], gate, tag);
     }
   for(i = 0; i < comm_size; ++i)
     {
-      nm_sr_swait(p_session, &p_reqs[i].request_nmad);
+      nm_sr_swait(p_session, &p_reqs[i]);
     }
   return err;
 }
@@ -1568,10 +1541,12 @@ int mpi_win_wait(MPI_Win win)
       err = nm_sr_rwait(p_session, &p_win->end_reqs[i]->request_nmad);
       if(NM_ESUCCESS == err)
 	{
+	  /* Check that every message has arrived */
 	  while(p_win->exposure[i].nmsg < p_win->msg_count[i])
 	    {
 	      nm_sr_progress(p_session);
 	    }
+	  /* Check that every message has been dealt with */
 	  nm_mpi_win_flush(p_win, i);
 	  p_win->exposure[i].mode      = NM_MPI_WIN_UNUSED;
 	  p_win->exposure[i].nmsg      = 0;
@@ -1634,7 +1609,7 @@ int mpi_win_lock(int lock_type, int rank, int assert, MPI_Win win)
   nm_mpi_window_t*p_win = nm_mpi_window_get(win);
   if(NULL == p_win)
     return MPI_ERR_WIN;
-  if(nm_mpi_win_is_ready(&p_win->access[rank]) && !nm_mpi_win_completed_epoch(&p_win->access[rank])
+  if((nm_mpi_win_is_ready(&p_win->access[rank]) && !nm_mpi_win_completed_epoch(&p_win->access[rank]))
      || NULL != p_win->end_reqs[rank])
     {
       /* Check if there is really an active  exposure / access epoch currently pending */

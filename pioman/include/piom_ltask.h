@@ -191,15 +191,19 @@ static inline void piom_ltask_create(struct piom_ltask*task,
 				     piom_ltask_func_t func_ptr, void*data_ptr,
 				     piom_ltask_option_t options)
 {
-    task->func_ptr = func_ptr;
-    task->data_ptr = data_ptr;
+    assert((options & PIOM_LTASK_OPTION_REPEAT) ||
+	   (options & PIOM_LTASK_OPTION_ONESHOT));
+    assert((options & PIOM_LTASK_OPTION_ONESHOT) ||
+	   !(options & PIOM_LTASK_OPTION_DESTROY));
+    task->func_ptr      = func_ptr;
+    task->data_ptr      = data_ptr;
     task->blocking_func = NULL;
-    task->options = options;
-    task->state = PIOM_LTASK_STATE_NONE;
-    task->binding = NULL;
-    task->queue = NULL;
-    task->name = NULL;
-    task->destructor = NULL;
+    task->options       = options;
+    task->state         = PIOM_LTASK_STATE_NONE;
+    task->binding       = NULL;
+    task->queue         = NULL;
+    task->name          = NULL;
+    task->destructor    = NULL;
     piom_cond_init(&task->done, 0);
 }
 static inline void piom_ltask_set_binding(struct piom_ltask*task, piom_topo_obj_t binding)

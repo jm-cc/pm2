@@ -95,10 +95,11 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
     const int hint2 = (PIOM_MAX_LTASK + queue->submit_queue._head - queue->submit_queue._tail) % PIOM_MAX_LTASK;
     const int hint = ((hint1 > 0)?hint1:1) + ((hint2 > 0)?hint2:1);
     const int count = (full != 0) ? hint : 1;
+    int success = 0;
     int i;
-    for(i = 0; i < count; i++)
+    for(i = 0; (i < count) && !success; i++)
 	{
-	    int success = 0, again = 0;
+	    int again = 0;
 	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue_single_reader(&queue->submit_queue);
 	    if(task == NULL)
 		task = piom_ltask_lfqueue_dequeue_single_reader(&queue->ltask_queue);

@@ -47,7 +47,9 @@ static inline void nmad_lock(void)
       abort();
     }
 #endif
-  piom_spin_lock(&piom_big_lock);
+  int rc = piom_spin_lock(&piom_big_lock);
+  if(rc != 0)
+    NM_FATAL("cannot get spinlock- rc = %d\n", rc);
 #ifdef DEBUG
   piom_big_lock_holder = PIOM_SELF;
 #endif
@@ -79,7 +81,9 @@ static inline void nmad_unlock(void)
   assert(piom_big_lock_holder == PIOM_SELF);
   piom_big_lock_holder = PIOM_THREAD_NULL;
 #endif
-  piom_spin_unlock(&piom_big_lock);
+  int rc = piom_spin_unlock(&piom_big_lock);
+  if(rc != 0)
+    NM_FATAL("error in spin_unlock- rc = %d\n", rc);
 #endif
 }
 

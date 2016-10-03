@@ -21,6 +21,7 @@ static void mpi_bench_put_passive_server(void*buf, size_t len)
 {
   MPI_Win_create(buf, len, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
   MPI_Win_free(&win);
+  mpi_bench_ack_recv();
 }
 
 static void mpi_bench_put_passive_client(void*buf, size_t len)
@@ -30,6 +31,7 @@ static void mpi_bench_put_passive_client(void*buf, size_t len)
   MPI_Put(buf, len, MPI_BYTE, mpi_bench_common.peer, 0, len, MPI_BYTE, win);
   MPI_Win_unlock(mpi_bench_common.peer, win);
   MPI_Win_free(&win);
+  mpi_bench_ack_send();
 }
 
 static void mpi_bench_put_passive_init(void*buf, size_t len, int count)
@@ -44,7 +46,7 @@ const struct mpi_bench_s mpi_bench_rma_put_passive =
   {
     .label    = "mpi_bench_rma_put_passive",
     .name     = "MPI RMA Put passive",
-    .rtt      = 0,
+    .rtt      = MPI_BENCH_RTT_SUBLAT,
     .server   = &mpi_bench_put_passive_server,
     .client   = &mpi_bench_put_passive_client,
     .init     = &mpi_bench_put_passive_init,

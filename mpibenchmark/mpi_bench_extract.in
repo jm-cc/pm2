@@ -81,10 +81,11 @@ param_delimiter='%'
 if [ "x${rma}" = "x" ]; then
     expected_bench_list="mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_overlap_Nload"
 else
-    expected_bench_list="mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_target mpi_bench_rmaoverlap_put_passive mpi_bench_rmaoverlap_put_noncontig mpi_bench_rmaoverlap_get mpi_bench_rmaoverlap_accumulate"
+    expected_bench_list="mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_target mpi_bench_rmaoverlap_put_passive mpi_bench_rmaoverlap_put_noncontig mpi_bench_rmaoverlap_get_active mpi_bench_rmaoverlap_accumulate"
+    base_bench_list="mpi_bench_rmaoverlap_accumulate%0 mpi_bench_rmaoverlap_put_passive%0 mpi_bench_rmaoverlap_get_active%0 mpi_bench_rmaoverlap_put_active%0 mpi_bench_rmaoverlap_put_noncontig%0"
 fi
 
-base_bench_list="mpi_bench_sendrecv mpi_bench_send_overhead mpi_bench_noncontig${noncontig_suffix} mpi_bench_rma_put_active mpi_bench_rma_put_passive mpi_bench_rma_accumulate_active mpi_bench_rma_put_noncontig${param_delimiter}32 mpi_bench_rma_get_active"
+base_bench_list="${base_bench_list} mpi_bench_sendrecv mpi_bench_send_overhead mpi_bench_noncontig${noncontig_suffix} mpi_bench_rma_put_active mpi_bench_rma_put_passive mpi_bench_rma_accumulate_active mpi_bench_rma_put_noncontig${param_delimiter}32 mpi_bench_rma_get_active"
 
 echo
 echo "# ## generating normalized files..."
@@ -139,26 +140,12 @@ for b in ${expected_bench_list}; do
 	echo
 	continue
     fi
+    # benchref: reference benchmark without overlap
+    # lat0: ack latency to substract from rtt (not from benchref)
     case ${b} in
-	*rmaoverlap_put_passive)
-	    benchref=mpi_bench_rma_put_passive
-	    lat0=$( mpi_bench_extract_line mpi_bench_rma_put_passive 0 | cut -f 2 )
-	    ;;
-	*rmaoverlap_put_noncontig)
-	    benchref="mpi_bench_rma_put_noncontig${param_delimiter}32"
-	    lat0=$( mpi_bench_extract_line mpi_bench_rma_put_active 0 | cut -f 2 )
-	    ;;
-	*rmaoverlap_get*)
-	    benchref=mpi_bench_rma_get_active
-	    lat0=$( mpi_bench_extract_line mpi_bench_rma_get_active 0 | cut -f 2 )
-	    ;;
-	*rmaoverlap_accumulate*)
-	    benchref=mpi_bench_rma_accumulate_active
-	    lat0=$( mpi_bench_extract_line mpi_bench_rma_accumulate_active 0 | cut -f 2 )
-	    ;;
 	*rmaoverlap*)
-	    benchref=mpi_bench_rma_put_active
-	    lat0=$( mpi_bench_extract_line mpi_bench_rma_put_active 0 | cut -f 2 )
+	    benchref=${b}%0
+	    lat0=0
 	    ;;
 	mpi_bench_overlap_send_overhead)
 	    benchref=mpi_bench_send_overhead

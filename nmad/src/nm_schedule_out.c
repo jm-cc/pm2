@@ -231,7 +231,7 @@ void nm_drv_post_send(nm_drv_t p_drv)
   do
     {
       NM_TRACEF("posting outbound requests");
-      p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_send);
+      p_pw = nm_pw_post_lfqueue_dequeue_single_reader(&p_drv->post_send);
       if(p_pw)
 	{
 	  nm_pw_post_send(p_pw);

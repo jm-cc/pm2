@@ -82,7 +82,7 @@ if [ "x${rma}" = "x" ]; then
     expected_bench_list="mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_overlap_Nload"
 else
     expected_bench_list="mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_target mpi_bench_rmaoverlap_put_passive mpi_bench_rmaoverlap_put_noncontig mpi_bench_rmaoverlap_get_active mpi_bench_rmaoverlap_accumulate"
-    base_bench_list="mpi_bench_rmaoverlap_accumulate%0 mpi_bench_rmaoverlap_put_passive%0 mpi_bench_rmaoverlap_get_active%0 mpi_bench_rmaoverlap_put_active%0 mpi_bench_rmaoverlap_put_noncontig%0"
+    base_bench_list="mpi_bench_rmaoverlap_accumulate%0 mpi_bench_rmaoverlap_put_origin%0 mpi_bench_rmaoverlap_put_target%0 mpi_bench_rmaoverlap_put_passive%0 mpi_bench_rmaoverlap_get_active%0 mpi_bench_rmaoverlap_put_active%0 mpi_bench_rmaoverlap_put_noncontig%0"
 fi
 
 base_bench_list="${base_bench_list} mpi_bench_sendrecv mpi_bench_send_overhead mpi_bench_noncontig${noncontig_suffix} mpi_bench_rma_put_active mpi_bench_rma_put_passive mpi_bench_rma_accumulate_active mpi_bench_rma_put_noncontig${param_delimiter}32 mpi_bench_rma_get_active"

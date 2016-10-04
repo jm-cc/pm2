@@ -14,6 +14,7 @@
  */
 
 #include "mpi_bench_generic.h"
+#include <string.h>
 
 static MPI_Win win;
 static MPI_Group world_group, grp_peer, grp_other;

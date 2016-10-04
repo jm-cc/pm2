@@ -14,6 +14,7 @@
  */
 
 #include "mpi_bench_generic.h"
+#include <string.h>
 
 #define BLOCKSIZE 32
 

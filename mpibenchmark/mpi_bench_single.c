@@ -24,7 +24,7 @@
 #include <mpi.h>
 #include "mpi_bench_generic.h"
 
-static void mpi_bench_usage(const char**argv)
+static void mpi_bench_usage(char**argv)
 {
   fprintf(stderr, "Usage: %s [<option> <...>]\n", argv[0]);
   fprintf(stderr, "  -S START     set start length to START [default %d]\n", MIN_DEFAULT);

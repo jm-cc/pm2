@@ -17,7 +17,7 @@
 
 static MPI_Win win;
 
-static int compute = 500;
+static int compute = MIN_COMPUTE;
 
 static const struct mpi_bench_param_bounds_s param_bounds =
   {
@@ -61,7 +61,6 @@ static void mpi_bench_rmaoverlap_put_passive_init(void*buf, size_t len, int coun
 
 static void mpi_bench_rmaoverlap_put_passive_finalize(void)
 {
-  MPI_Win_free(&win);
 }
 
 const struct mpi_bench_s mpi_bench_rmaoverlap_put_passive =

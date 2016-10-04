@@ -288,7 +288,13 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
       if(mpi_bench->setparam)
 	{
 	  if(!mpi_bench_common.is_server)
-	    printf("# bench: %s%%%d begin\n", mpi_bench->label, p);
+	    {
+	      printf("# bench: %s%%%d begin\n", mpi_bench->label, p);
+	      if(mpi_bench->param_label)
+		{
+		  printf("# parameter value = %d; label = %s\n", p, mpi_bench->param_label);
+		}
+	    }
 	  fflush(stdout);
 	  (*mpi_bench->setparam)(p);
 	}

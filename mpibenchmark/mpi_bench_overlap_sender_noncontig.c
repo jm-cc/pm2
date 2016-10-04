@@ -75,14 +75,15 @@ static void mpi_bench_overlap_sender_noncontig_client(void*buf, size_t len)
 
 const struct mpi_bench_s mpi_bench_overlap_sender_noncontig =
   {
-    .label      = "mpi_bench_overlap_sender_noncontig",
-    .name       = "MPI overlap sender non-contig",
-    .rtt        = 1,
-    .init       = &mpi_bench_overlap_sender_noncontig_init,
-    .finalize   = &mpi_bench_overlap_sender_noncontig_finalize,
-    .server     = &mpi_bench_overlap_sender_noncontig_server,
-    .client     = &mpi_bench_overlap_sender_noncontig_client,
-    .setparam   = &mpi_bench_overlap_sender_noncontig_setparam,
-    .getparams  = &mpi_bench_overlap_sender_noncontig_getparams
+    .label       = "mpi_bench_overlap_sender_noncontig",
+    .name        = "MPI overlap, sender side, non-contig datatype",
+    .rtt         = 1,
+    .param_label = "computation time (usec.)",
+    .init        = &mpi_bench_overlap_sender_noncontig_init,
+    .finalize    = &mpi_bench_overlap_sender_noncontig_finalize,
+    .server      = &mpi_bench_overlap_sender_noncontig_server,
+    .client      = &mpi_bench_overlap_sender_noncontig_client,
+    .setparam    = &mpi_bench_overlap_sender_noncontig_setparam,
+    .getparams   = &mpi_bench_overlap_sender_noncontig_getparams
   };
 

@@ -24,16 +24,17 @@
 #include <mpi.h>
 #include "mpi_bench_generic.h"
 
-static void usage_ping(void)
+static void mpi_bench_usage(const char**argv)
 {
-  fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
-  fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
-  fprintf(stderr, "-I incr - length increment [%d]\n", INCR_DEFAULT);
-  fprintf(stderr, "-M mult - length multiplier [%g]\n", MULT_DEFAULT);
+  fprintf(stderr, "Usage: %s [<option> <...>]\n", argv[0]);
+  fprintf(stderr, "  -S START     set start length to START [default %d]\n", MIN_DEFAULT);
+  fprintf(stderr, "  -E END       set end length to END [default %d]\n", MAX_DEFAULT);
+  fprintf(stderr, "  -I INCR      set length increment to INCR [default %d]\n", INCR_DEFAULT);
+  fprintf(stderr, "  -M MULT      set length multiplier to MULT [default %g]\n", MULT_DEFAULT);
   fprintf(stderr, "\tNext(0)      = 1+increment\n");
   fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
-  fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
-  fprintf(stderr, "-P param - fixed parameter\n");
+  fprintf(stderr, "  -N ITER      set iterations per length to ITER [default %d]\n", LOOPS_DEFAULT);
+  fprintf(stderr, "  -P PARAM     set benchmark parameter to fixed value PARAM\n");
 }
 
 /* variable defined in stub */
@@ -57,12 +58,10 @@ int main(int argc, char**argv)
       params.iterations = LOOPS_DEFAULT_PARAM;
     }
 
-  mpi_bench_init(&argc, &argv, mpi_bench_default->threads);
-  
   if (argc > 1 && strcmp(argv[1], "--help") == 0)
     {
-      usage_ping();
-      MPI_Abort(mpi_bench_common.comm, -1);
+      mpi_bench_usage(argv);
+      exit(0);
     }
   
   int i;
@@ -95,11 +94,13 @@ int main(int argc, char**argv)
       else
 	{
 	  fprintf(stderr, "%s: illegal argument %s\n", argv[0], argv[i]);
-	  usage_ping();
+	  mpi_bench_usage(argv);
 	  MPI_Abort(mpi_bench_common.comm, -1);
 	}
     }
-  
+
+  mpi_bench_init(&argc, &argv, mpi_bench_default->threads);
+    
   mpi_bench_run(mpi_bench_default, &params);
 
   mpi_bench_finalize();

@@ -80,11 +80,9 @@ param_delimiter='%'
 bench_list_overlap="mpi_bench_overlap_sender mpi_bench_overlap_recv mpi_bench_overlap_bidir mpi_bench_overlap_sender_noncontig mpi_bench_overlap_send_overhead mpi_bench_overlap_Nload"
 bench_list_rmaoverlap="mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_target mpi_bench_rmaoverlap_put_passive mpi_bench_rmaoverlap_put_noncontig mpi_bench_rmaoverlap_get_active mpi_bench_rmaoverlap_accumulate"
 
-bench_list_sendrecv="mpi_bench_sendrecv mpi_bench_send_overhead mpi_bench_noncontig${noncontig_suffix}"
+bench_list_sendrecv="mpi_bench_sendrecv mpi_bench_send_overhead mpi_bench_noncontig${noncontig_suffix} mpi_bench_multi mpi_bench_multi_hetero"
 bench_list_rma="mpi_bench_rma_put_active mpi_bench_rma_put_passive mpi_bench_rma_accumulate_active mpi_bench_rma_put_noncontig${param_delimiter}32 mpi_bench_rma_get_active"
 bench_list_refrma="mpi_bench_rmaoverlap_accumulate%0 mpi_bench_rmaoverlap_put_origin%0 mpi_bench_rmaoverlap_put_target%0 mpi_bench_rmaoverlap_put_passive%0 mpi_bench_rmaoverlap_get_active%0 mpi_bench_rmaoverlap_put_active%0 mpi_bench_rmaoverlap_put_noncontig%0"
-
-base_bench_list="${base_bench_list} mpi_bench_sendrecv mpi_bench_send_overhead mpi_bench_noncontig${noncontig_suffix} mpi_bench_rma_put_active mpi_bench_rma_put_passive mpi_bench_rma_accumulate_active mpi_bench_rma_put_noncontig${param_delimiter}32 mpi_bench_rma_get_active"
 
 echo
 echo "# ## generating normalized files..."
@@ -108,6 +106,10 @@ EOF
     fi
 done
 
+if [[ "${detected_bench_list}" =~ mpi_bench_sendrecv ]]; then
+    enable_sendrecv=yes
+    expected_bench_list="${expected_bench_list} mpi_bench_sendrecv"
+fi
 if [[ "${detected_bench_list}" =~ mpi_bench_overlap ]]; then
     enable_overlap=yes
     expected_bench_list="${expected_bench_list} ${bench_list_overlap}"
@@ -156,7 +158,7 @@ for b in ${expected_bench_list}; do
     # benchref: reference benchmark without overlap
     # lat0: ack latency to substract from rtt (not from benchref)
     case ${b} in
-	*rmaoverlap*)
+	mpi_bench_rmaoverlap*)
 	    benchref=${b}%0
 	    lat0=0
 	    ;;
@@ -164,48 +166,72 @@ for b in ${expected_bench_list}; do
 	    benchref=mpi_bench_send_overhead
 	    lat0=0
 	    ;;
-	*bidir*)
+	mpi_bench_overlap_bidir)
 	    benchref=mpi_bench_sendrecv
 	    lat0=0
 	    ;;
-	*noncontig*)
+	mpi_bench_overlap*noncontig*)
 	    benchref="mpi_bench_noncontig${noncontig_suffix}"
 	    lat0=$( mpi_bench_extract_line mpi_bench_sendrecv 0 | cut -f 2 )
 	    ;;
-	*Nload*)
+	mpi_bench_overlap_Nload)
 	    benchref=mpi_bench_sendrecv
 	    lat0=0
 	    ;;
-	*)
+	mpi_bench_overlap_*)
 	    benchref=mpi_bench_sendrecv
 	    lat0=$( mpi_bench_extract_line mpi_bench_sendrecv 0 | cut -f 2 )
+	    ;;
+	mpi_bench_*)
+	    benchref="-"
+	    lat0=0
 	    ;;
     esac
     echo "# ## benchmark: ${b}"
     benchfile=${outdir}/${b}.dat
     echo "# file ${benchfile}"
-    size_list=$( mpi_bench_extract_sizes ${benchref} )
-    echo "# sizes: ${size_list}"
-    params=$( sed -e "s/^# bench: ${b}${param_delimiter}\(.*\) begin/\1/p;d" ${benchfile} | tr '\n' ' ' )
-    echo "# params list: ${params}"
-    echo "# generated from ${b} and ${benchref}"       > ${outdir}/${b}-ref.dat
-    echo "# size | comp.time | rtt | lat_ref"         >> ${outdir}/${b}-ref.dat
-    echo -n "# extracting size: "
-    for s in ${size_list}; do
-	echo -n "${s} "
-	latref=$( mpi_bench_extract_line ${benchref} ${s} | cut -f 2 )
-	mkdir -p ${outdir}/${b}-series
-	echo "# generated from ${b} for size=${s}" > ${outdir}/${b}-series/${b}-s${s}.dat
-	echo "# reference latency: ${latref}"     >> ${outdir}/${b}-series/${b}-s${s}.dat
-	echo "# comp.time | ratio | rtt."         >> ${outdir}/${b}-series/${b}-s${s}.dat
-	for p in ${params}; do
-	    rtt=$( mpi_bench_extract_line_param ${b} ${s} ${p} | cut -f 2 )
-	    echo "${s} ${p} ${rtt} ${latref}"          >> ${outdir}/${b}-ref.dat
-	    echo "${p} ${ratio} ${rtt}"                >> ${outdir}/${b}-series/${b}-s${s}.dat
+    if [ "x${benchref}" != "x-" ]; then
+	size_list=$( mpi_bench_extract_sizes ${benchref} )
+	echo "# sizes: ${size_list}"
+	params=$( sed -e "s/^# bench: ${b}${param_delimiter}\(.*\) begin/\1/p;d" ${benchfile} | tr '\n' ' ' )
+	echo "# params list: ${params}"
+	echo "# generated from ${b} and ${benchref}"       > ${outdir}/${b}-ref.dat
+	echo "# size | comp.time | rtt | lat_ref"         >> ${outdir}/${b}-ref.dat
+	echo -n "# extracting size: "
+	for s in ${size_list}; do
+	    echo -n "${s} "
+	    latref=$( mpi_bench_extract_line ${benchref} ${s} | cut -f 2 )
+	    mkdir -p ${outdir}/${b}-series
+	    echo "# generated from ${b} for size=${s}" > ${outdir}/${b}-series/${b}-s${s}.dat
+	    echo "# reference latency: ${latref}"     >> ${outdir}/${b}-series/${b}-s${s}.dat
+	    echo "# comp.time | ratio | rtt."         >> ${outdir}/${b}-series/${b}-s${s}.dat
+	    for p in ${params}; do
+		rtt=$( mpi_bench_extract_line_param ${b} ${s} ${p} | cut -f 2 )
+		echo "${s} ${p} ${rtt} ${latref}"          >> ${outdir}/${b}-ref.dat
+		echo "${p} ${ratio} ${rtt}"                >> ${outdir}/${b}-series/${b}-s${s}.dat
+	    done
+	    echo  >> ${outdir}/${b}-ref.dat
 	done
-	echo  >> ${outdir}/${b}-ref.dat
-    done
+    else
+	echo "# no series to extract"
+    fi
     echo
+
+    case ${b} in
+	mpi_bench_overlap_Nload)
+	    gpscript=nload
+	    ;;
+	mpi_bench_overlap*|mpi_bench_rmaoverlap*)
+	    gpscript=overlap
+	    ;;
+	mpi_bench_sendrecv)
+	    gpscript=sendrecv
+	    ;;
+	*)
+	    echo "# cannot trace bench: ${b}"
+	    exit 1
+	    ;;
+    esac
 
     cat > ${outdir}/${b}.gp <<EOF
 # -*- mode: Gnuplot;-*-
@@ -218,7 +244,7 @@ reset
 load "@srcdir@/plot/term-${out}.gp"
 benchref = "${benchref}"
 lat0 = ${lat0}
-call "@srcdir@/plot/trace-$( if [ ${b} != mpi_bench_overlap_Nload ]; then echo overlap; else echo nload; fi ).gp" "${file}" "${b}"
+call "@srcdir@/plot/trace-${gpscript}.gp" "${file}" "${b}"
 
 EOF
     if [ "x@GNUPLOT@" != "x" -a -r ${outdir}/${b}.gp ]; then

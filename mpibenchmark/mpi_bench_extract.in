@@ -36,9 +36,6 @@ while [ "x${1}" != "x" ]; do
 	    usage
 	    exit
 	    ;;
-	--rma)
-	    rma=true
-	    ;;
 	-*)
 	    usage
 	    exit 1

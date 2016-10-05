@@ -20,6 +20,8 @@ unset LANG
 
 out=png
 
+enable_sendrecv=no
+enable_rma=no
 enable_overlap=no
 enable_rmaoverlap=no
 
@@ -109,6 +111,10 @@ done
 if [[ "${detected_bench_list}" =~ mpi_bench_sendrecv ]]; then
     enable_sendrecv=yes
     expected_bench_list="${expected_bench_list} mpi_bench_sendrecv"
+fi
+if [[ "${detected_bench_list}" =~ mpi_bench_rma_ ]]; then
+    enable_rma=yes
+    expected_bench_list="${expected_bench_list} mpi_bench_rma_put_active mpi_bench_rma_put_passive mpi_bench_rma_get_active mpi_bench_rma_accumulate_active"
 fi
 if [[ "${detected_bench_list}" =~ mpi_bench_overlap ]]; then
     enable_overlap=yes
@@ -224,7 +230,7 @@ for b in ${expected_bench_list}; do
 	mpi_bench_overlap*|mpi_bench_rmaoverlap*)
 	    gpscript=overlap
 	    ;;
-	mpi_bench_sendrecv)
+	mpi_bench_sendrecv|mpi_bench_rma_*)
 	    gpscript=sendrecv
 	    ;;
 	*)
@@ -262,6 +268,12 @@ done
 
 if [ ${out} = png ]; then
     echo "# ## generating global plot..."
+    if [ ${enable_rma} = yes ]; then
+	echo "# rma base..."
+	gm convert -size 800x768 label:"${file}\n - rma latency" $( for b in ${bench_list_rma}; do if [ -s ${outdir}/${b}-lat.png ]; then echo ${outdir}/${b}-lat.png; else echo "-size 1024x768 label:${b}"; fi; done ) +append ${outdir}/rma-lat.png
+	gm convert -size 800x768 label:"${file}\n - rma bandwidth" $( for b in ${bench_list_rma}; do if [ -s ${outdir}/${b}-bw.png ]; then echo ${outdir}/${b}-bw.png; else echo "-size 1024x768 label:${b}"; fi; done ) +append ${outdir}/rma-bw.png
+	outs="${outs} ${outdir}/rma-lat.png ${outdir}/rma-bw.png"
+    fi
     if [ ${enable_overlap} = yes ]; then
 	echo "# overlap..."
 	gm convert -size 800x768 label:"${file}\n - overlap" $( for b in ${bench_list_overlap}; do if [ -s ${outdir}/${b}.png ]; then echo ${outdir}/${b}.png; else echo "-size 1024x768 label:${b}"; fi; done ) +append ${outdir}/overlap.png

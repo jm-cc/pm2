@@ -179,22 +179,22 @@ int mpi_bench_get_threads(void)
 /** barrier that ensures that server will be ready first
  * (when _client_ starts the clock, server is assumed to be ready)
  */
-static void mpi_bench_barrier(void)
+static void mpi_bench_barrier_client(int stop)
 {
   static const int tag_barrier = 0x1234;
-  char dummy = 0;
-  if(mpi_bench_common.is_server)
-    {
-      /* server */
-      MPI_Recv(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      MPI_Send(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
-    }
-  else
-    {
-      /* client */
-      MPI_Send(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
-      MPI_Recv(&dummy, 0, MPI_CHAR, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
+  int dummy = 0;
+  assert(!mpi_bench_common.is_server);
+  MPI_Send(&stop, 1, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
+  MPI_Recv(&dummy, 0, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+}
+static int mpi_bench_barrier_server(void)
+{
+  static const int tag_barrier = 0x1234;
+  int stop, dummy;
+  assert(mpi_bench_common.is_server);
+  MPI_Recv(&stop, 1, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  MPI_Send(&dummy, 0, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
+  return stop;
 }
 
 /* ** Benchmark ******************************************** */
@@ -312,11 +312,13 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      if(mpi_bench->init != NULL)
 		(*mpi_bench->init)(buf, len, iterations);
 	      /* warmup */
-	      mpi_bench_barrier();
+	      mpi_bench_barrier_server();
 	      (*mpi_bench->server)(buf, len);
 	      for(k = 0; k < iterations; k++)
 		{
-		  mpi_bench_barrier();
+		  int stop = mpi_bench_barrier_server();
+		  if(stop)
+		    break;
 		  (*mpi_bench->server)(buf, len);
 		}
 	      if(mpi_bench->finalize != NULL)
@@ -340,18 +342,22 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	  size_t len;
 	  for(len = params->start_len; len <= params->end_len; len = _next(len, params->multiplier, params->increment))
 	    {
-	      char* buf = malloc(len);
+	      double total_delay = 0.0;
+	      char*buf = malloc(len);
 	      fill_buffer(buf, len);
 	      iterations = _iterations(iterations, len);
 	      int k;
 	      if(mpi_bench->init != NULL)
 		(*mpi_bench->init)(buf, len, iterations);
 	      /* warmup */
-	      mpi_bench_barrier();
+	      mpi_bench_barrier_client(0);
 	      (*mpi_bench->client)(buf, len);
 	      for(k = 0; k < iterations; k++)
 		{
-		  mpi_bench_barrier();
+		  int stop = (total_delay > (LOOPS_TIMEOUT_SECONDS * 1000000.0));
+		  mpi_bench_barrier_client(stop);
+		  if(stop)
+		    break;
 		  mpi_bench_get_tick(&t1);
 		  (*mpi_bench->client)(buf, len);
 		  mpi_bench_get_tick(&t2);
@@ -372,6 +378,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 		      abort();
 		    }
 		  lats[k] = t;
+		  total_delay += delay;
 		}
 	      if(mpi_bench->finalize != NULL)
 		(*mpi_bench->finalize)();

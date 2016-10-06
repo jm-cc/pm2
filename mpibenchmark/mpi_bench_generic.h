@@ -39,6 +39,8 @@
 
 #define LOOPS_CALIBRATE     10000
 
+#define LOOPS_TIMEOUT_SECONDS 3
+
 /* ********************************************************* */
 
 /** parameters for a benchmark */

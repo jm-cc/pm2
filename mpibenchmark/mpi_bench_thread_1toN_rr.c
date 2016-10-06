@@ -78,7 +78,7 @@ static void mpi_bench_thread_1toN_rr_endparam(void)
   threads = 0;
 }
 
-static void mpi_bench_thread_1toN_rr_init(void*buf, size_t len, int count)
+static void mpi_bench_thread_1toN_rr_init(void*buf, size_t len)
 {
   global.buf = buf;
   global.len = len;

@@ -59,7 +59,7 @@ static void mpi_bench_rmaoverlap_put_noncontig_client(void*buf, size_t len)
   mpi_bench_ack_recv();
 }
 
-static void mpi_bench_rmaoverlap_put_noncontig_init(void*buf, size_t len, int count)
+static void mpi_bench_rmaoverlap_put_noncontig_init(void*buf, size_t len)
 {
   MPI_Comm_group(mpi_bench_common.comm, &world_group);
   MPI_Group_excl(world_group, 1, &mpi_bench_common.self, &grp_other);

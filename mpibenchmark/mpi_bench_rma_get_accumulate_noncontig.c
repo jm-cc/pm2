@@ -54,7 +54,7 @@ static void mpi_bench_get_accumulate_noncontig_client(void*buf, size_t len)
   MPI_Wait(&request, MPI_STATUS_IGNORE);
 }
 
-static void mpi_bench_get_accumulate_noncontig_init(void*buf, size_t len, int count)
+static void mpi_bench_get_accumulate_noncontig_init(void*buf, size_t len)
 {
   const size_t bufsize   = 2 * len + blocksize;
   sparse_buf = malloc(bufsize);

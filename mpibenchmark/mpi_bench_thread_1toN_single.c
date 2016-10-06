@@ -59,7 +59,7 @@ static void mpi_bench_thread_1toN_single_endparam(void)
   threads = 0;
 }
 
-static void mpi_bench_thread_1toN_single_init(void*buf, size_t len, int count)
+static void mpi_bench_thread_1toN_single_init(void*buf, size_t len)
 {
   if(mpi_bench_common.is_server)
     {

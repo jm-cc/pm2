@@ -29,7 +29,7 @@ static void mpi_bench_get_accumulate_passive_client(void*buf, size_t len)
   MPI_Wait(&request, MPI_STATUS_IGNORE);
 }
 
-static void mpi_bench_get_accumulate_passive_init(void*buf, size_t len, int count)
+static void mpi_bench_get_accumulate_passive_init(void*buf, size_t len)
 {
   if(mpi_bench_common.is_server)
     {

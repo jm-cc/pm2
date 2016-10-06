@@ -18,7 +18,7 @@
 static int value = -1;
 static MPI_Request req;
 
-static void mpi_bench_noise_posted_recv_init(void*buf, size_t len, int count)
+static void mpi_bench_noise_posted_recv_init(void*buf, size_t len)
 {
   MPI_Irecv(&value, 1, MPI_INT, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, &req);
 }

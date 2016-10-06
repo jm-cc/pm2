@@ -27,7 +27,7 @@ static void mpi_bench_fence_client(void*buf, size_t len)
   MPI_Win_fence(0, win);
 }
 
-static void mpi_bench_fence_init(void*buf, size_t len, int count)
+static void mpi_bench_fence_init(void*buf, size_t len)
 {
   MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
 }

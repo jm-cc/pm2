@@ -79,7 +79,7 @@ struct mpi_bench_s
   const int threads; /**< whether we need MPI_THREAD_MULTIPLE */
   void (*server)(void*buf, size_t len);
   void (*client)(void*buf, size_t len);
-  void (*init)(void*buf, size_t len, int count); /**< called before a round with a given set of param+size */
+  void (*init)(void*buf, size_t len); /**< called before a round with a given set of param+size */
   void (*finalize)(void);      /**< called at the end of a round for a given param+size */
   void (*setparam)(int param); /**< set a new param */
   void (*endparam)(void);      /**< called at the end of a round for a given param */

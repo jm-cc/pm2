@@ -19,7 +19,7 @@
 
 static int chunk = 0;
 
-static void mpi_bench_multi_init(void*buf, size_t len, int count)
+static void mpi_bench_multi_init(void*buf, size_t len)
 {
   chunk = len / NB_PACKS;
 }

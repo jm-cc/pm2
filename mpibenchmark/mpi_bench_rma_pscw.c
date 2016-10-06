@@ -34,7 +34,7 @@ static void mpi_bench_pscw_client(void*buf, size_t len)
   MPI_Win_wait(win);
 }
 
-static void mpi_bench_pscw_init(void*buf, size_t len, int count)
+static void mpi_bench_pscw_init(void*buf, size_t len)
 {
   MPI_Comm_group(mpi_bench_common.comm, &world_group);
   MPI_Group_excl(world_group, 1, &mpi_bench_common.self, &grp_other);

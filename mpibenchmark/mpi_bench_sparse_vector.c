@@ -36,7 +36,7 @@ static void mpi_bench_sparse_vector_setparam(int param)
   blocksize = param;
 }
 
-static void mpi_bench_sparse_vector_init(void*buf, size_t len, int count)
+static void mpi_bench_sparse_vector_init(void*buf, size_t len)
 {
   sparse_buf = malloc(len * 2 + blocksize);
   MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &dtype);

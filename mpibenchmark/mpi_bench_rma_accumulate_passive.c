@@ -26,7 +26,7 @@ static void mpi_bench_accumulate_passive_client(void*buf, size_t len)
   MPI_Win_unlock(mpi_bench_common.peer, win);
  }
 
-static void mpi_bench_accumulate_passive_init(void*buf, size_t len, int count)
+static void mpi_bench_accumulate_passive_init(void*buf, size_t len)
 {
   MPI_Win_create(buf, len, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
   MPI_Barrier(mpi_bench_common.comm);

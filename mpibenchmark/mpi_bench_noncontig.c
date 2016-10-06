@@ -39,7 +39,7 @@ static void mpi_bench_noncontig_setparam(int param)
   blocksize = param;
 }
 
-static void mpi_bench_noncontig_init(void*buf, size_t len, int count)
+static void mpi_bench_noncontig_init(void*buf, size_t len)
 {
   const int sparse_size = len * 2 + blocksize;
   sparse_buf = malloc(sparse_size);

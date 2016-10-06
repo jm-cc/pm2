@@ -25,11 +25,10 @@
 static int threads = 0;
 static struct
 {
-  int iterations;
   void*buf;
   size_t len;
   int dest;
-} global = { .iterations = -1, .buf = NULL, .len = 0, .dest = 0 };
+} global = { .buf = NULL, .len = 0, .dest = 0 };
 
 static struct mpi_bench_param_bounds_s param_bounds =
   {
@@ -45,12 +44,19 @@ static pthread_t tids[THREADS_MAX];
 static void*ping_thread(void*_i)
 {
   const int i = (uintptr_t)_i; /* thread id */
-  const int iterations = global.iterations;
-  int k;
-  for(k = i; k < iterations; k += threads)
+  for(;;)
     {
+      int dummy;
+      void*buf = (global.len > 0) ? global.buf : &dummy;
+      int len = (global.len > 0) ? global.len : 1;
       MPI_Status status;
-      MPI_Recv(global.buf, global.len, MPI_CHAR, mpi_bench_common.peer, TAG + i, MPI_COMM_WORLD, &status);
+      MPI_Recv(buf, len, MPI_CHAR, mpi_bench_common.peer, TAG + i, MPI_COMM_WORLD, &status);
+      int count;
+      MPI_Get_count(&status, MPI_CHAR, &count);
+      if(count != global.len)
+	{
+	  return NULL;
+	}
       MPI_Send(global.buf, 0, MPI_CHAR, mpi_bench_common.peer, TAG + i, MPI_COMM_WORLD);
     }
   return NULL;
@@ -74,7 +80,6 @@ static void mpi_bench_thread_1toN_rr_endparam(void)
 
 static void mpi_bench_thread_1toN_rr_init(void*buf, size_t len, int count)
 {
-  global.iterations = count;
   global.buf = buf;
   global.len = len;
   global.dest = 0;
@@ -93,11 +98,24 @@ static void mpi_bench_thread_1toN_rr_finalize(void)
 {
   if(mpi_bench_common.is_server)
     {
-      /* stop previous threads */
+      /* stop all threads */
       int i;
       for(i = 0; i < threads; i++)
 	{
 	  pthread_join(tids[i], NULL);
+	}
+    }
+  else
+    {
+      /* stop remote threads- convention used: 
+       * send 0 bytes if bytes are expected, send 1 byte if 0 expected
+       * note: receiver shoud post recv > 0 even if 0 byte expected */
+      int i;
+      for(i = 0; i < threads; i++)
+	{
+	  int dummy = 0;
+	  int count = (global.len > 0) ? 0 : 1;
+	  MPI_Send(&dummy, count, MPI_CHAR, mpi_bench_common.peer, TAG + i, MPI_COMM_WORLD);
 	}
     }
 }

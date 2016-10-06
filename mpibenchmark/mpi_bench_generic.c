@@ -36,11 +36,13 @@ struct mpi_bench_common_s mpi_bench_common =
 
 static inline long long _iterations(long long iterations, size_t len)
 {
-  const uint64_t max_data = 512 * 1024 * 1024;
+  const uint64_t max_data = LOOPS_MAX_DATA;
   if(len <= 0)
     len = 1;
+  if(iterations < 2)
+    iterations = 2;
   uint64_t data_size = ((uint64_t)iterations * (uint64_t)len);
-  if(data_size  > max_data)
+  if(data_size > max_data)
     {
       iterations = (max_data / (uint64_t)len);
       if(iterations < 2)
@@ -318,7 +320,10 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 		{
 		  int stop = mpi_bench_barrier_server();
 		  if(stop)
-		    break;
+		    {
+		      iterations = k;
+		      break;
+		    }
 		  (*mpi_bench->server)(buf, len);
 		}
 	      if(mpi_bench->finalize != NULL)
@@ -357,7 +362,10 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 		  int stop = (total_delay > (LOOPS_TIMEOUT_SECONDS * 1000000.0));
 		  mpi_bench_barrier_client(stop);
 		  if(stop)
-		    break;
+		    {
+		      iterations = k;
+		      break;
+		    }
 		  mpi_bench_get_tick(&t1);
 		  (*mpi_bench->client)(buf, len);
 		  mpi_bench_get_tick(&t2);
@@ -378,7 +386,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 		      abort();
 		    }
 		  lats[k] = t;
-		  total_delay += delay;
+		  total_delay += delay + mpi_bench_latency_get();
 		}
 	      if(mpi_bench->finalize != NULL)
 		(*mpi_bench->finalize)();

@@ -40,6 +40,7 @@
 #define LOOPS_CALIBRATE     10000
 
 #define LOOPS_TIMEOUT_SECONDS 3
+#define LOOPS_MAX_DATA        ((uint64_t)(512 * 1024 * 1024))
 
 /* ********************************************************* */
 

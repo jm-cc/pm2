@@ -77,7 +77,7 @@ int nm_sr_exit(nm_session_t p_session)
  *  @param request the request to check.
  *  @return The NM status.
  */
-int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
+int nm_sr_stest(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   int rc = NM_ESUCCESS;
 #ifdef DEBUG
@@ -100,7 +100,7 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
   return rc;
 }
 
-extern int nm_sr_flush(struct nm_core *p_core)
+extern int nm_sr_flush(struct nm_core*p_core)
 {
   int ret = NM_EAGAIN;
   nm_gate_t p_gate = NULL;
@@ -147,7 +147,7 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t*p_request)
   return NM_ESUCCESS;
 }
 
-int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request) 
+int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t*p_request) 
 {
   return -NM_ENOTIMPL;
 }
@@ -159,7 +159,7 @@ int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request)
  *  @param request the request to check.
  *  @return The NM status.
  */
-int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request) 
+int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t*p_request) 
 {
   int rc = NM_ESUCCESS;
 #ifdef DEBUG
@@ -185,7 +185,7 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
   return rc;
 }
 
-int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
+int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_core_t p_core = p_session->p_core;
 #ifdef DEBUG
@@ -205,7 +205,7 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
   return rc;
 }
 
-int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
+int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t*p_request, nm_gate_t*pp_gate)
 {
   if(pp_gate)
     *pp_gate = p_request->req.p_gate;
@@ -213,7 +213,7 @@ int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gat
 }
 
 int nm_sr_probe(nm_session_t p_session,
-		nm_gate_t p_gate, nm_gate_t *pp_out_gate,
+		nm_gate_t p_gate, nm_gate_t*pp_out_gate,
 		nm_tag_t tag, nm_tag_t mask, nm_tag_t*p_out_tag,
 		nm_len_t*p_out_len)
 {
@@ -270,7 +270,7 @@ int nm_sr_session_monitor_set(nm_session_t p_session, const struct nm_sr_monitor
 int nm_sr_session_monitor_remove(nm_session_t p_session, const struct nm_sr_monitor_s*p_sr_monitor)
 {
   struct nm_sr_session_s*p_sr_session = p_session->ref;
-  const struct nm_core_monitor_s*p_core_monitor = NULL;
+  struct nm_core_monitor_s*p_core_monitor = NULL;
   nm_core_monitor_vect_itor_t i;
   puk_vect_foreach(i, nm_core_monitor, &p_sr_session->core_monitors)
     {
@@ -294,7 +294,7 @@ int nm_sr_session_monitor_remove(nm_session_t p_session, const struct nm_sr_moni
 }
 
 
-int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
+int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t*p_request,
 			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
   if(p_request->monitor.notifier != NULL)
@@ -395,7 +395,7 @@ int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t**out_req)
  *  -NM_EALREADY    receipt is already completed
  *  -NM_ECANCELED   receipt was already canceled
  */
-int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
+int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_core_t p_core = p_session->p_core;
   int err = -NM_ENOTIMPL;

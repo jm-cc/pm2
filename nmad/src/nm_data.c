@@ -323,6 +323,9 @@ void nm_data_coroutine_generator(const struct nm_data_s*p_data, void*_generator)
   p_generator->p_coroutine->generator_context.uc_stack.ss_sp = p_generator->stack;
   p_generator->p_coroutine->generator_context.uc_stack.ss_size = NM_DATA_COROUTINE_STACK;
   makecontext(&p_generator->p_coroutine->generator_context, (void*)&nm_data_coroutine_trampoline, 2, p_data, p_generator->p_coroutine);
+#ifdef __ia64__
+#error setjmp/longjmp not supported on Itanium. TODO- write a version based on switchcontext()
+#endif /* __ia64__ */
   if(_setjmp(p_generator->p_coroutine->caller_context) == 0)
     {
       setcontext(&p_generator->p_coroutine->generator_context);

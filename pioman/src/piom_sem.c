@@ -1,7 +1,7 @@
 
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008-2012 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008-2016 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,26 @@
 
 static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t mask)
 {
-  while(!(piom_cond_test(cond, mask)))
+  struct piom_waitsem_s waitsem;
+  piom_sem_init(&waitsem.sem, 0);
+  waitsem.mask = mask;
+  piom_spin_lock(&cond->lock);
+  if(piom_cond_test(cond, mask))
     {
-      piom_sem_P(&cond->sem);
+      piom_spin_unlock(&cond->lock);
+      return;
     }
+  if(cond->p_waitsem != NULL)
+    {
+      PIOM_FATAL("waiting on cond- sem = %p", cond->p_waitsem);
+      abort();
+    }
+  cond->p_waitsem = &waitsem;
+  piom_spin_unlock(&cond->lock);
+  
+  piom_sem_P(&waitsem.sem);
+  assert(piom_cond_test(cond, mask));
+  cond->p_waitsem = NULL;
 }
 
 #ifdef PIOMAN_MARCEL
@@ -67,7 +83,7 @@ static inline void piom_cond_wait_blocking_prio(piom_cond_t*cond, piom_cond_valu
 #endif /* PIOMAN_PTHREAD */
 
 /** adaptive wait on piom cond */
-void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
+void piom_cond_wait(piom_cond_t*cond, piom_cond_value_t mask)
 {
   /* First, let's poll for a while before blocking */
   tbx_tick_t t1;
@@ -79,8 +95,6 @@ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 	{
 	  if(piom_cond_test(cond, mask))
 	    {
-	      /* consume the semaphore */
-	      piom_sem_P(&cond->sem);
 	      return;
 	    }
 	  piom_ltask_schedule(PIOM_POLL_POINT_BUSY);

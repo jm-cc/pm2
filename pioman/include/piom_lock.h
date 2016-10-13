@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001-2016 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,23 +37,31 @@
 
 /* ** cond ************************************************* */
 
+/** value (bitmask) of cond */
 typedef uint16_t piom_cond_value_t;
 
 #if defined(PIOMAN_MULTITHREAD)
+typedef volatile int piom_mask_t;
+
+struct piom_waitsem_s
+{
+  piom_sem_t sem;
+  piom_cond_value_t mask;
+};
 typedef struct
 {
-    volatile piom_cond_value_t value;
-    piom_sem_t sem;
+  volatile piom_cond_value_t value;
+  struct piom_waitsem_s*p_waitsem;
+  piom_spinlock_t lock;
 } piom_cond_t;
 #else /* PIOMAN_MULTITHREAD */
 typedef piom_cond_value_t piom_cond_t;
+typedef int piom_mask_t;
 #endif	/* PIOMAN_MULTITHREAD */
 
 /* ** mask ************************************************* */
 
 #ifdef PIOMAN_MULTITHREAD
-
-typedef volatile int piom_mask_t;
 
 static inline void piom_mask_init(piom_mask_t*mask)
 {
@@ -78,29 +86,36 @@ static inline int piom_mask_acquire(piom_mask_t*mask)
 }
 
 /** add a bit to the value, without signaling */
-static inline void piom_cond_add(piom_cond_t *cond, piom_cond_value_t mask)
+static inline void piom_cond_add(piom_cond_t*cond, piom_cond_value_t mask)
 {
   __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
 }
 /** add a bit and signal */
-static inline void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
+static inline void piom_cond_signal(piom_cond_t*cond, piom_cond_value_t mask)
 {
+  piom_spin_lock(&cond->lock);
   __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
-  piom_sem_V(&cond->sem);
+  struct piom_waitsem_s*const p_waitsem = cond->p_waitsem;
+  piom_spin_unlock(&cond->lock);
+  if(p_waitsem && (p_waitsem->mask & mask))
+    {
+      piom_sem_V(&p_waitsem->sem);
+    }
 }
 /** tests whether a bit is set */
-static inline int piom_cond_test(const piom_cond_t *cond, piom_cond_value_t mask)
+static inline int piom_cond_test(const piom_cond_t*cond, piom_cond_value_t mask)
 {
   return cond->value & mask;
 }
 
-static inline void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial)
+static inline void piom_cond_init(piom_cond_t*cond, piom_cond_value_t initial)
 {
   cond->value = initial;
-  piom_sem_init(&cond->sem, 0);
+  cond->p_waitsem = NULL;
+  piom_spin_init(&cond->lock);
 }
 
-static inline void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
+static inline void piom_cond_mask(piom_cond_t*cond, piom_cond_value_t mask)
 {
   __sync_fetch_and_and(&cond->value, mask); /* cond->value &= mask; */
 }
@@ -108,8 +123,6 @@ static inline void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
 extern void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask);
 
 #else /* PIOMAN_MULTITHREAD */
-
-typedef int piom_mask_t;
 
 static inline void piom_mask_init(piom_mask_t*mask)
 {

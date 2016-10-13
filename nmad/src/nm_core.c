@@ -242,6 +242,21 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
 {
   if(p_req)
     {
+#if 0
+      const nm_status_t notified_bits = p_event->status &  p_req->monitor.mask;
+      const nm_status_t signaled_bits = p_event->status & ~p_req->monitor.mask;
+      assert((notified_bits | signaled_bits) == p_event->status);
+      if(notified_bits)
+	{
+	  nm_status_add(p_req, notified_bits);
+	  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	}
+      if(signaled_bits)
+	{
+	  nm_status_signal(p_req, p_event->status);
+	}
+#endif
+#if 1
       if(p_event->status & NM_STATUS_FINALIZED)
 	{
 	  /* signal event if finalized */
@@ -265,12 +280,13 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
       else
 	{
 	  /* not finalized, only add bitmask */
-	  nm_status_add(p_req, p_event->status);
+	  nm_status_signal(p_req, p_event->status);
 	  if(p_req->monitor.mask & p_event->status)
 	    {
 	      (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
 	    }
 	}
+#endif
     }
   else
     {

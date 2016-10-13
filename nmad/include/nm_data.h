@@ -27,6 +27,18 @@
 #define _NM_DATA_CONTENT_SIZE 64
 #define _NM_DATA_GENERATOR_SIZE 64
 
+#ifndef __ia64__
+#define NM_DATA_USE_COROUTINE
+#define NM_DATA_USE_COROUTINE_SLICER
+#else
+/* setjmp/longjmp is not properly supported on Itanium. 
+ * It works ok to unwind on the same stack but not for stack jumping.
+ * (register stack is not saved/restored)
+ * But who uses Itanium anyway? :-)
+ */
+#warning "Disable coroutines on Itanium. setjmp/longjmp not available."
+#endif
+
 struct nm_data_s;
 /** function apply to each data chunk upon traversal */
 typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
@@ -78,17 +90,12 @@ struct nm_data_chunk_s nm_data_coroutine_next(const struct nm_data_s*p_data, voi
 /** @internal */
 void                   nm_data_coroutine_generator_destroy(const struct nm_data_s*p_data, void*_generator);
 
-#ifndef __ia64__
-#define NM_DATA_USE_COROUTINE
-#else
-#warning "disable coroutines on Itanium. setjmp/longjmp not available."
-#endif
-
 #ifdef NM_DATA_USE_COROUTINE
 #define nm_data_default_generator         &nm_data_coroutine_generator
 #define nm_data_default_next              &nm_data_coroutine_next
 #define nm_data_default_generator_destroy &nm_data_coroutine_generator_destroy
 #else /* NM_DATA_USE_COROUTINE */
+#warning "fallback to generic generator"
 #define nm_data_default_generator         &nm_data_generic_generator
 #define nm_data_default_next              &nm_data_generic_next
 #define nm_data_default_generator_destroy NULL
@@ -261,22 +268,20 @@ static inline int nm_data_slicer_isnull(const nm_data_slicer_t*p_slicer)
   return (p_slicer->p_data == NULL);
 }
 
-
-#define USE_COROUTINE_SLICER
-
-#ifdef USE_COROUTINE_SLICER
+#ifdef NM_DATA_USE_COROUTINE_SLICER
 #define nm_data_slicer_init      nm_data_slicer_coroutine_init
 #define nm_data_slicer_forward   nm_data_slicer_coroutine_forward
 #define nm_data_slicer_copy_from nm_data_slicer_coroutine_copy_from
 #define nm_data_slicer_copy_to   nm_data_slicer_coroutine_copy_to
 #define nm_data_slicer_destroy   nm_data_slicer_coroutine_destroy
-#else
+#else /* NM_DATA_USE_COROUTINE_SLICER */
+#warning "fallback to generic slicer"
 #define nm_data_slicer_init      nm_data_slicer_generator_init
 #define nm_data_slicer_forward   nm_data_slicer_generator_forward
 #define nm_data_slicer_copy_from nm_data_slicer_generator_copy_from
 #define nm_data_slicer_copy_to   nm_data_slicer_generator_copy_to
 #define nm_data_slicer_destroy   nm_data_slicer_generator_destroy
-#endif
+#endif /* NM_DATA_USE_COROUTINE_SLICER */
 
 void nm_data_slicer_init(nm_data_slicer_t*p_slicer, const struct nm_data_s*p_data);
 

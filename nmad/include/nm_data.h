@@ -78,17 +78,21 @@ struct nm_data_chunk_s nm_data_coroutine_next(const struct nm_data_s*p_data, voi
 /** @internal */
 void                   nm_data_coroutine_generator_destroy(const struct nm_data_s*p_data, void*_generator);
 
+#ifndef __ia64__
 #define NM_DATA_USE_COROUTINE
+#else
+#warning "disable coroutines on Itanium. setjmp/longjmp not available."
+#endif
 
 #ifdef NM_DATA_USE_COROUTINE
 #define nm_data_default_generator         &nm_data_coroutine_generator
 #define nm_data_default_next              &nm_data_coroutine_next
 #define nm_data_default_generator_destroy &nm_data_coroutine_generator_destroy
-#else
+#else /* NM_DATA_USE_COROUTINE */
 #define nm_data_default_generator         &nm_data_generic_generator
 #define nm_data_default_next              &nm_data_generic_next
 #define nm_data_default_generator_destroy NULL
-#endif
+#endif /* NM_DATA_USE_COROUTINE */
 
 /** block of static properties for a given data descriptor */
 struct nm_data_properties_s

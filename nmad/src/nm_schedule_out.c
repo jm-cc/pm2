@@ -114,6 +114,7 @@ int nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_
     {
       const struct nm_pw_completion_s*p_completion = &p_pw->completions[i];
       struct nm_req_s*p_pack = p_completion->p_pack;
+      assert(nm_status_test(p_pack, NM_STATUS_PACK_POSTED));
       p_pack->pack.done += p_completion->len;
       if(p_pack->pack.done == p_pack->pack.len)
 	{

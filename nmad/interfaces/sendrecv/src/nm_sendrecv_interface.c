@@ -202,6 +202,7 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t*p_request)
       nm_status_spinwait(&p_request->req, NM_STATUS_FINALIZED);
       rc = nm_sr_rtest(p_session, p_request);
     }
+  assert(nm_status_test(&p_request->req, NM_STATUS_FINALIZED));
   return rc;
 }
 

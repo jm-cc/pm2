@@ -259,13 +259,13 @@ void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor);
 /** a generic pack/unpack request */
 struct nm_req_s
 {
-  const struct nm_data_s*p_data;
-  nm_gate_t p_gate;
-  nm_core_tag_t tag;
-  struct nm_monitor_s monitor;
   PUK_LIST_LINK(nm_req);
+  const struct nm_data_s*p_data;
+  struct nm_monitor_s monitor;
   nm_core_status_t status;
   nm_req_flag_t flags;
+  nm_gate_t p_gate;
+  nm_core_tag_t tag;
   nm_seq_t seq;
   union
   {

@@ -242,51 +242,29 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
 {
   if(p_req)
     {
-#if 0
-      const nm_status_t notified_bits = p_event->status &  p_req->monitor.mask;
-      const nm_status_t signaled_bits = p_event->status & ~p_req->monitor.mask;
-      assert((notified_bits | signaled_bits) == p_event->status);
-      if(notified_bits)
+      const nm_status_t notified_bits1 = (p_event->status &  p_req->monitor.mask) & ~NM_STATUS_FINALIZED;
+      const nm_status_t notified_bits2 = (p_event->status &  p_req->monitor.mask) &  NM_STATUS_FINALIZED;
+      const nm_status_t signaled_bits  =  p_event->status & ~p_req->monitor.mask;
+      assert((notified_bits1 | notified_bits2 | signaled_bits) == p_event->status);
+      if(notified_bits1)
 	{
-	  nm_status_add(p_req, notified_bits);
+	  /* add bits (no signal) and notify, for bits with a monitor listening, 
+	   * except FINALIZED (should be last) */
+	  nm_status_add(p_req, notified_bits1);
 	  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
 	}
       if(signaled_bits)
 	{
+	  /* signal bits with no monitors */
 	  nm_status_signal(p_req, p_event->status);
 	}
-#endif
-#if 1
-      if(p_event->status & NM_STATUS_FINALIZED)
+      if(notified_bits2)
 	{
-	  /* signal event if finalized */
-	  if(p_req->monitor.mask & NM_STATUS_FINALIZED)
-	    {
-	      /* a monitor is listening to FINALIZED events- signal without FINALIZED, then notify monitor */
-	      nm_status_signal(p_req, p_event->status & ~NM_STATUS_FINALIZED);
-	      (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
-	    }
-	  else
-	    {
-	      /* no monitor on FINALIZED- add bitmask, notify, then signal */
-	      nm_status_add(p_req, p_event->status & ~NM_STATUS_FINALIZED);
-	      if(p_req->monitor.mask & p_event->status)
-		{
-		  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
-		}
-	      nm_status_signal(p_req, p_event->status);
-	    }
+	  /* add & notify FINALIZED _last_, if a monitor listening
+	   * (if no monitor, FINALIZED is signaled) */
+	  nm_status_add(p_req, notified_bits2);
+	  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
 	}
-      else
-	{
-	  /* not finalized, only add bitmask */
-	  nm_status_signal(p_req, p_event->status);
-	  if(p_req->monitor.mask & p_event->status)
-	    {
-	      (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
-	    }
-	}
-#endif
     }
   else
     {

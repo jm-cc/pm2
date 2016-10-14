@@ -93,10 +93,19 @@ static inline void piom_cond_add(piom_cond_t*cond, piom_cond_value_t mask)
 /** add a bit and signal */
 static inline void piom_cond_signal(piom_cond_t*cond, piom_cond_value_t mask)
 {
+  /* WARNING- order matters here!
+   * 1. check whether somebody is waiting on the cond with spinlock.
+   *    (to ensure waiter atomically checks for status & sets waitsem)
+   * 2. add bitmask to cond value. Do not ever access cond after
+   *    (not even a spin unlock). Waiter me be busy-waiting and free
+   *    and free the cond immediately after the bit is set.
+   * 3. signal on the semaphore. The semaphore must not have been freed
+   *    since a waiter that sets waitsem _must_ wait on a sem_P.
+   */
   piom_spin_lock(&cond->lock);
-  __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
   struct piom_waitsem_s*const p_waitsem = cond->p_waitsem;
   piom_spin_unlock(&cond->lock);
+  __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
   if(p_waitsem && (p_waitsem->mask & mask))
     {
       piom_sem_V(&p_waitsem->sem);

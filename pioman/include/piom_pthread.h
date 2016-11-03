@@ -29,23 +29,58 @@
 
 /* ** spinlocks for pthread ******************************** */
 
-#ifdef PIOMAN_PTHREAD_SPINLOCK
+#if defined(PIOMAN_PTHREAD_SPINLOCK)
 
-#define piom_spinlock_t           pthread_spinlock_t
-#define piom_spin_init(lock)      pthread_spin_init(lock, 0)
+struct piom_spinlock_s
+{
+  pthread_spinlock_t spinlock;
+#ifdef DEBUG
+  pthread_t owner;
+#endif
+};
+typedef struct piom_spinlock_s piom_spinlock_t;
+
+static inline void piom_spin_init(piom_spinlock_t*lock)
+{
+  int err = pthread_spin_init(&lock->spinlock, 0);
+  assert(!err);
+#ifdef DEBUG
+  lock->owner = PIOM_THREAD_NULL;
+#endif
+}
 
 static inline int piom_spin_lock(piom_spinlock_t*lock)
 {
-  return pthread_spin_lock(lock);
+  int err = pthread_spin_lock(&lock->spinlock);
+  assert(!err);
+#ifdef DEBUG
+  assert(lock->owner == PIOM_THREAD_NULL);
+  lock->owner = PIOM_SELF;
+#endif
+  return err;
 }
 static inline int piom_spin_unlock(piom_spinlock_t*lock)
 {
-  int rc = pthread_spin_unlock(lock);
-  return rc;
+#ifdef DEBUG
+  assert(lock->owner == PIOM_SELF);
+  lock->owner = PIOM_THREAD_NULL;
+#endif
+  int err = pthread_spin_unlock(&lock->spinlock);
+  assert(!err);
+  return err;
 }
 static inline int piom_spin_trylock(piom_spinlock_t*lock)
 {
-  int rc = (pthread_spin_trylock(lock) == 0);
+  int err = pthread_spin_trylock(&lock->spinlock);
+  int rc = (err == 0);
+#ifdef DEBUG
+  assert((err == 0) || (err == EBUSY));
+  if(rc)
+    {
+      assert(lock->owner == PIOM_THREAD_NULL);
+      lock->owner = PIOM_SELF;
+    }
+#endif
   return rc;
 }
 

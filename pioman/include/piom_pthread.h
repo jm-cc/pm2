@@ -171,7 +171,7 @@ typedef sem_t piom_sem_t;
 #endif /* PIOMAN_SEM_COND */
 
 
-static inline void piom_sem_P(piom_sem_t *sem)
+static inline void piom_sem_P(piom_sem_t*sem)
 {
 #ifdef PIOMAN_SEM_COND
   pthread_mutex_lock(&sem->mutex);
@@ -182,12 +182,13 @@ static inline void piom_sem_P(piom_sem_t *sem)
     }
   pthread_mutex_unlock(&sem->mutex);
 #else /* PIOMAN_SEM_COND */
-  while(sem_wait(sem) == -1)
-    ;
+  int err = sem_wait(sem);
+  if(err)
+    fprintf(stderr, "# sem_wait() - err = %d\n", err);
 #endif /* PIOMAN_SEM_COND */
 }
 
-static inline void piom_sem_V(piom_sem_t *sem)
+static inline void piom_sem_V(piom_sem_t*sem)
 {
 #ifdef PIOMAN_SEM_COND
   pthread_mutex_lock(&sem->mutex);
@@ -195,18 +196,31 @@ static inline void piom_sem_V(piom_sem_t *sem)
   pthread_cond_signal(&sem->cond);
   pthread_mutex_unlock(&sem->mutex);
 #else /* PIOMAN_SEM_COND */
-  sem_post(sem);
+  int err = sem_post(sem);
+  assert(err == 0);
 #endif /* PIOMAN_SEM_COND */
 }
 
-static inline void piom_sem_init(piom_sem_t *sem, int initial)
+static inline void piom_sem_init(piom_sem_t*sem, int initial)
 {
 #ifdef PIOMAN_SEM_COND
   pthread_mutex_init(&sem->mutex, NULL);
   pthread_cond_init(&sem->cond, NULL);
   sem->n = initial;
 #else /* PIOMAN_SEM_COND */
-  sem_init(sem, 0, initial);
+  int err = sem_init(sem, 0, initial);
+  assert(err == 0);
+#endif /* PIOMAN_SEM_COND */
+}
+
+static inline void piom_sem_destroy(piom_sem_t*sem)
+{
+#ifdef PIOMAN_SEM_COND
+  pthread_mutex_destroy(&sem->mutex);
+  pthread_cond_destroy(&sem->cond);
+#else /* PIOMAN_SEM_COND */
+  int err = sem_destroy(sem);
+  assert(err == 0);
 #endif /* PIOMAN_SEM_COND */
 }
 

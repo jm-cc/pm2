@@ -41,6 +41,7 @@ static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t m
   piom_sem_P(&waitsem.sem);
   assert(piom_cond_test(cond, mask));
   cond->p_waitsem = NULL;
+  piom_sem_destroy(&waitsem.sem);
 }
 
 #ifdef PIOMAN_MARCEL

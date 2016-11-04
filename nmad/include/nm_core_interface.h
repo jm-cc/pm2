@@ -338,8 +338,10 @@ static inline void nm_status_init(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   piom_cond_init(&p_req->status, bitmask);
 }
-static inline nm_status_t nm_status_test(const struct nm_req_s*p_req, nm_status_t bitmask)
+static inline nm_status_t nm_status_test(struct nm_req_s*p_req, nm_status_t bitmask)
 {
+  if(bitmask & NM_STATUS_FINALIZED)
+    return piom_cond_test_locked(&p_req->status, bitmask);
   return piom_cond_test(&p_req->status, bitmask);
 }
 static inline void nm_status_add(struct nm_req_s*p_req, nm_status_t bitmask)
@@ -350,9 +352,9 @@ static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm
 {
   piom_cond_wait(&p_req->status, bitmask);
 }
-static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t mask)
+static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t bitmask)
 {
-  piom_cond_signal(&p_req->status, mask);
+  piom_cond_signal(&p_req->status, bitmask);
 }
 #else /* PIOMAN_POLL */
 static inline void nm_status_init(struct nm_req_s*p_req, nm_status_t bitmask)
@@ -381,18 +383,18 @@ static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm
 #endif /* PIOMAN_POLL */
 /* ** convenient frontends to deal with status */
 
-static inline void nm_status_assert(const struct nm_req_s*p_req, nm_status_t value)
+static inline void nm_status_assert(struct nm_req_s*p_req, nm_status_t value)
 {
   assert(nm_status_test(p_req, NM_STATUS_MASK_FULL) == value);
 }
 
-static inline void nm_status_spinwait(const struct nm_req_s*p_req, nm_status_t status)
+static inline void nm_status_spinwait(struct nm_req_s*p_req, nm_status_t status)
 {
   while(!nm_status_test(p_req, status))
     {  }
 }
 
-static inline int nm_status_testall(const struct nm_req_s*p_req, nm_status_t bitmask)
+static inline int nm_status_testall(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   return (nm_status_test(p_req, bitmask) == bitmask);
 }

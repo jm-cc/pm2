@@ -24,7 +24,7 @@
 
 #define piom_thread_t                  marcel_t
 #define PIOM_THREAD_NULL               NULL
-#define PIOM_SELF                      marcel_self()
+#define PIOM_THREAD_SELF                      marcel_self()
 
 /* ** locks for Marcel ************************************* */
 

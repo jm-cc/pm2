@@ -25,7 +25,7 @@
 #define piom_thread_t      pthread_t
 #define piom_thread_attr_t pthread_attr_t
 #define PIOM_THREAD_NULL ((pthread_t)(-1))
-#define PIOM_SELF          pthread_self()
+#define PIOM_THREAD_SELF          pthread_self()
 
 /* ** spinlocks for pthread ******************************** */
 
@@ -57,14 +57,14 @@ static inline int piom_spin_lock(piom_spinlock_t*lock)
   assert(!err);
 #ifdef DEBUG
   assert(lock->owner == PIOM_THREAD_NULL);
-  lock->owner = PIOM_SELF;
+  lock->owner = PIOM_THREAD_SELF;
 #endif
   return err;
 }
 static inline int piom_spin_unlock(piom_spinlock_t*lock)
 {
 #ifdef DEBUG
-  assert(lock->owner == PIOM_SELF);
+  assert(lock->owner == PIOM_THREAD_SELF);
   lock->owner = PIOM_THREAD_NULL;
 #endif
   int err __attribute__((unused));
@@ -82,7 +82,7 @@ static inline int piom_spin_trylock(piom_spinlock_t*lock)
   if(rc)
     {
       assert(lock->owner == PIOM_THREAD_NULL);
-      lock->owner = PIOM_SELF;
+      lock->owner = PIOM_THREAD_SELF;
     }
 #endif
   return rc;

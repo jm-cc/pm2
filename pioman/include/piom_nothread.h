@@ -24,7 +24,7 @@
 
 #define piom_thread_t     int
 #define PIOM_THREAD_NULL  0
-#define PIOM_SELF         1
+#define PIOM_THREAD_SELF         1
 
 /* ** spinlocks for no-thread ****************************** */
 

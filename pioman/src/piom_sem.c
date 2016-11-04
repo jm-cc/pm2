@@ -53,14 +53,14 @@ static inline void piom_cond_wait_blocking_prio(piom_cond_t*cond, piom_cond_valu
      is scheduled (almost) immediatly when done */
   struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
   struct marcel_sched_param old_param;
-  marcel_sched_getparam(PIOM_SELF, &old_param);
-  marcel_sched_setparam(PIOM_SELF, &sched_param);
+  marcel_sched_getparam(PIOM_THREAD_SELF, &old_param);
+  marcel_sched_setparam(PIOM_THREAD_SELF, &sched_param);
   if(ma_in_atomic())
     {
       PIOM_FATAL("trying to wait while in scheduling hook.\n");
     }
   piom_cond_wait_blocking(cond, mask);
-  marcel_sched_setparam(PIOM_SELF, &old_param);
+  marcel_sched_setparam(PIOM_THREAD_SELF, &old_param);
 }
 #endif /* PIOMAN_MARCEL */
 

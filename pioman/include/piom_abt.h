@@ -24,7 +24,7 @@
 
 typedef ABT_thread piom_thread_t;
 #define PIOM_THREAD_NULL  ABT_THREAD_NULL
-#define PIOM_SELF         piom_self()
+#define PIOM_THREAD_SELF         piom_self()
 
 static inline ABT_thread piom_self(void)
 {

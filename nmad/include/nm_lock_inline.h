@@ -41,7 +41,7 @@ static inline void nmad_lock(void)
 {
 #ifdef NM_LOCK_BIGLOCK
 #ifdef DEBUG
-  if(PIOM_SELF == piom_big_lock_holder)
+  if(PIOM_THREAD_SELF == piom_big_lock_holder)
     {
       fprintf(stderr, "nmad: FATAL- deadlock detected. Self already holds spinlock.\n");
       abort();
@@ -51,7 +51,7 @@ static inline void nmad_lock(void)
   if(rc != 0)
     NM_FATAL("cannot get spinlock- rc = %d\n", rc);
 #ifdef DEBUG
-  piom_big_lock_holder = PIOM_SELF;
+  piom_big_lock_holder = PIOM_THREAD_SELF;
 #endif
 #endif
 }
@@ -65,7 +65,7 @@ static inline int nmad_trylock(void)
   int rc = piom_spin_trylock(&piom_big_lock);
 #ifdef DEBUG
   if(rc == 1)
-    piom_big_lock_holder = PIOM_SELF;
+    piom_big_lock_holder = PIOM_THREAD_SELF;
 #endif
   return rc;
 #else
@@ -78,7 +78,7 @@ static inline void nmad_unlock(void)
 {
 #ifdef NM_LOCK_BIGLOCK
 #ifdef DEBUG
-  assert(piom_big_lock_holder == PIOM_SELF);
+  assert(piom_big_lock_holder == PIOM_THREAD_SELF);
   piom_big_lock_holder = PIOM_THREAD_NULL;
 #endif
   int rc = piom_spin_unlock(&piom_big_lock);
@@ -99,7 +99,7 @@ static inline void nmad_lock_assert(void)
 {
 #ifdef NM_LOCK_BIGLOCK
 #ifdef DEBUG
-  assert(PIOM_SELF == piom_big_lock_holder);
+  assert(PIOM_THREAD_SELF == piom_big_lock_holder);
 #endif
 #endif
 }

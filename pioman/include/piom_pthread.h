@@ -42,7 +42,8 @@ typedef struct piom_spinlock_s piom_spinlock_t;
 
 static inline void piom_spin_init(piom_spinlock_t*lock)
 {
-  int err = pthread_spin_init(&lock->spinlock, 0);
+  int err __attribute__((unused));
+  err = pthread_spin_init(&lock->spinlock, 0);
   assert(!err);
 #ifdef DEBUG
   lock->owner = PIOM_THREAD_NULL;
@@ -51,7 +52,8 @@ static inline void piom_spin_init(piom_spinlock_t*lock)
 
 static inline int piom_spin_lock(piom_spinlock_t*lock)
 {
-  int err = pthread_spin_lock(&lock->spinlock);
+  int err __attribute__((unused));
+  err = pthread_spin_lock(&lock->spinlock);
   assert(!err);
 #ifdef DEBUG
   assert(lock->owner == PIOM_THREAD_NULL);
@@ -65,13 +67,15 @@ static inline int piom_spin_unlock(piom_spinlock_t*lock)
   assert(lock->owner == PIOM_SELF);
   lock->owner = PIOM_THREAD_NULL;
 #endif
-  int err = pthread_spin_unlock(&lock->spinlock);
+  int err __attribute__((unused));
+  err = pthread_spin_unlock(&lock->spinlock);
   assert(!err);
   return err;
 }
 static inline int piom_spin_trylock(piom_spinlock_t*lock)
 {
-  int err = pthread_spin_trylock(&lock->spinlock);
+  int err __attribute__((unused));
+  err = pthread_spin_trylock(&lock->spinlock);
   int rc = (err == 0);
 #ifdef DEBUG
   assert((err == 0) || (err == EBUSY));
@@ -184,7 +188,7 @@ static inline void piom_sem_P(piom_sem_t*sem)
 #else /* PIOMAN_SEM_COND */
   int err = sem_wait(sem);
   if(err)
-    fprintf(stderr, "# sem_wait() - err = %d\n", err);
+    PIOM_FATAL("sem_wait() - err = %d; errno = %d\n", err, errno);
 #endif /* PIOMAN_SEM_COND */
 }
 
@@ -197,7 +201,8 @@ static inline void piom_sem_V(piom_sem_t*sem)
   pthread_mutex_unlock(&sem->mutex);
 #else /* PIOMAN_SEM_COND */
   int err = sem_post(sem);
-  assert(err == 0);
+  if(err)
+    PIOM_FATAL("sem_post() - err = %d; errno = %d\n", err, errno);
 #endif /* PIOMAN_SEM_COND */
 }
 
@@ -209,7 +214,8 @@ static inline void piom_sem_init(piom_sem_t*sem, int initial)
   sem->n = initial;
 #else /* PIOMAN_SEM_COND */
   int err = sem_init(sem, 0, initial);
-  assert(err == 0);
+  if(err)
+    PIOM_FATAL("sem_init() - err = %d; errno = %d\n", err, errno);
 #endif /* PIOMAN_SEM_COND */
 }
 
@@ -220,7 +226,8 @@ static inline void piom_sem_destroy(piom_sem_t*sem)
   pthread_cond_destroy(&sem->cond);
 #else /* PIOMAN_SEM_COND */
   int err = sem_destroy(sem);
-  assert(err == 0);
+  if(err)
+    PIOM_FATAL("sem_destroy() - err = %d; errno = %d\n", err, errno);
 #endif /* PIOMAN_SEM_COND */
 }
 

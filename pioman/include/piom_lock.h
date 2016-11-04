@@ -97,24 +97,35 @@ static inline void piom_cond_signal(piom_cond_t*cond, piom_cond_value_t mask)
    * 1. check whether somebody is waiting on the cond with spinlock.
    *    (to ensure waiter atomically checks for status & sets waitsem)
    * 2. add bitmask to cond value. Do not ever access cond after
-   *    (not even a spin unlock). Waiter me be busy-waiting and free
-   *    and free the cond immediately after the bit is set.
+   *    (not even a spin unlock). Waiter may be busy-waiting and may
+   *    free the cond immediately after the bit is set.
    * 3. signal on the semaphore. The semaphore must not have been freed
    *    since a waiter that sets waitsem _must_ wait on a sem_P.
    */
   piom_spin_lock(&cond->lock);
-  struct piom_waitsem_s*const p_waitsem = cond->p_waitsem;
-  piom_spin_unlock(&cond->lock);
+  struct piom_waitsem_s*p_waitsem = cond->p_waitsem;
+  const piom_cond_value_t waitmask = p_waitsem ? (p_waitsem->mask & mask) : 0;
   __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
-  if(p_waitsem && (p_waitsem->mask & mask))
+  piom_spin_unlock(&cond->lock);
+  if(waitmask)
     {
       piom_sem_V(&p_waitsem->sem);
     }
 }
 /** tests whether a bit is set */
-static inline int piom_cond_test(const piom_cond_t*cond, piom_cond_value_t mask)
+static inline piom_cond_value_t piom_cond_test(const piom_cond_t*cond, piom_cond_value_t mask)
 {
   return cond->value & mask;
+}
+/** tests whether a bit is set, whit lock 
+ * (needed to prevent race condition between cond destroy and 'finalized' state signal)
+ */
+static inline piom_cond_value_t piom_cond_test_locked(piom_cond_t*cond, piom_cond_value_t mask)
+{
+  piom_spin_lock(&cond->lock);
+  piom_cond_value_t val = cond->value & mask;
+  piom_spin_unlock(&cond->lock);
+  return val;
 }
 
 static inline void piom_cond_init(piom_cond_t*cond, piom_cond_value_t initial)
@@ -170,7 +181,11 @@ static inline void piom_cond_signal(piom_cond_t*cond, piom_cond_value_t mask)
 {
   *cond |= mask;
 }
-static inline int piom_cond_test(const piom_cond_t*cond, piom_cond_value_t mask)
+static inline piom_cond_value_t piom_cond_test(const piom_cond_t*cond, piom_cond_value_t mask)
+{
+  return *cond & mask;
+}
+static inline piom_cond_value_t piom_cond_test_locked(piom_cond_t*cond, piom_cond_value_t mask)
 {
   return *cond & mask;
 }
@@ -178,7 +193,6 @@ static inline void piom_cond_init(piom_cond_t*cond, piom_cond_value_t initial)
 {
   *cond = initial;
 }
-
 static inline void piom_cond_mask(piom_cond_t*cond, piom_cond_value_t mask)
 {
   *cond &= mask;

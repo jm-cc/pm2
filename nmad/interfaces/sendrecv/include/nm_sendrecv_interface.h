@@ -124,6 +124,12 @@ static inline int nm_sr_request_get_gate(nm_sr_request_t*p_request, nm_gate_t*pp
 /** Returns the session this request belongs to. */
 static inline int nm_sr_request_get_session(nm_sr_request_t*p_request, nm_session_t*pp_session);
 
+/** Wait for request completion (or cancelation) */
+static inline void nm_sr_request_wait(nm_sr_request_t*p_request);
+
+/** Tests whether the given status bits are set in request */
+static inline int nm_sr_request_test(nm_sr_request_t*p_request, nm_status_t status);
+
 /** legacy symbol name */
 #define nm_sr_get_stag(SESSION, REQ, TAG)  nm_sr_request_get_tag(REQ, TAG)
 /** legacy symbol name */

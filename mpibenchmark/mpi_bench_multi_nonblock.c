@@ -26,6 +26,8 @@ static const struct mpi_bench_param_bounds_s param_bounds =
 static int nb_packs = 2;
 static int chunk = 0;
 
+static MPI_Request*reqs = NULL;
+
 static const struct mpi_bench_param_bounds_s*mpi_bench_multi_nonblock_getparams(void)
 {
   return &param_bounds;
@@ -34,6 +36,7 @@ static const struct mpi_bench_param_bounds_s*mpi_bench_multi_nonblock_getparams(
 static void mpi_bench_multi_nonblock_setparam(int param)
 {
   nb_packs = param;
+  reqs = realloc(reqs, nb_packs * sizeof(MPI_Request));
 }
 
 static void mpi_bench_multi_nonblock_init(void*buf, size_t len)
@@ -43,26 +46,34 @@ static void mpi_bench_multi_nonblock_init(void*buf, size_t len)
 
 static void mpi_bench_multi_nonblock_server(void*buf, size_t len)
 {
-  MPI_Request reqs[nb_packs];
   int i;
   for(i = 0; i < nb_packs; i++)
-    MPI_Irecv(buf + i * chunk, chunk, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, &reqs[i]);
-  MPI_Waitall(nb_packs, reqs, MPI_STATUS_IGNORE);
+    {
+      assert((i+1) * chunk <= len);
+      MPI_Irecv(buf + i * chunk, chunk, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, &reqs[i]);
+    }
+  int rc = MPI_Waitall(nb_packs, reqs, MPI_STATUS_IGNORE);
+  assert(rc == MPI_SUCCESS);
   for(i = 0; i < nb_packs; i++)
     MPI_Isend(buf + i * chunk, chunk, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, &reqs[i]);
-  MPI_Waitall(nb_packs, reqs, MPI_STATUS_IGNORE);
+  rc = MPI_Waitall(nb_packs, reqs, MPI_STATUS_IGNORE);
+  assert(rc == MPI_SUCCESS);
 }
 
 static void mpi_bench_multi_nonblock_client(void*buf, size_t len)
 {
-  MPI_Request reqs[nb_packs];
   int i;
   for(i = 0; i < nb_packs; i++)
     MPI_Isend(buf + i * chunk, chunk, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, &reqs[i]);
-  MPI_Waitall(nb_packs, reqs, MPI_STATUS_IGNORE);
+  int rc = MPI_Waitall(nb_packs, reqs, MPI_STATUS_IGNORE);
+  assert(rc == MPI_SUCCESS);
   for(i = 0; i < nb_packs; i++)
-    MPI_Irecv(buf + i * chunk, chunk, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, &reqs[i]);
-  MPI_Waitall(nb_packs, reqs, MPI_STATUS_IGNORE);
+    {
+      assert((i+1) * chunk <= len);
+      MPI_Irecv(buf + i * chunk, chunk, MPI_CHAR, mpi_bench_common.peer, 0, MPI_COMM_WORLD, &reqs[i]);
+    }
+  rc = MPI_Waitall(nb_packs, reqs, MPI_STATUS_IGNORE);
+  assert(rc == MPI_SUCCESS);
 }
 
 const struct mpi_bench_s mpi_bench_multi_nonblock =

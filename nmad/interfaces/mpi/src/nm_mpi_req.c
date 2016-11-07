@@ -203,17 +203,37 @@ int mpi_wait(MPI_Request*request, MPI_Status*status)
 
 int mpi_waitall(int count, MPI_Request*array_of_requests, MPI_Status*array_of_statuses)
 {
+  if(count <= 0)
+    return MPI_ERR_COUNT;
+  nm_sr_request_t**p_nm_requests = malloc(count * sizeof(nm_sr_request_t*));
   int err = NM_ESUCCESS;
   int i;
   for(i = 0; i < count; i++)
     {
-      err = mpi_wait(&(array_of_requests[i]),
-		     (array_of_statuses == MPI_STATUSES_IGNORE) ? MPI_STATUS_IGNORE : &array_of_statuses[i]);
+      nm_mpi_request_t*p_req = nm_mpi_request_get(array_of_requests[i]);
+      if(p_req == NULL)
+	{
+	  free(p_nm_requests);
+	  return MPI_ERR_REQUEST;
+	}
+      p_nm_requests[i] = &p_req->request_nmad;
+    }
+  nm_sr_request_wait_all(p_nm_requests, count);
+  for(i = 0; i < count; i++)
+    {
+      nm_mpi_request_t*p_req = nm_mpi_request_get(array_of_requests[i]);
+      if(array_of_statuses != MPI_STATUS_IGNORE)
+	{
+	  err = nm_mpi_set_status(p_req, &array_of_statuses[i]);
+	}
+      nm_mpi_request_complete(p_req);
+      nm_mpi_request_free(p_req);
       if(err != NM_ESUCCESS)
 	{
 	  break;
 	}
     }
+  free(p_nm_requests);
   return err;
 }
 

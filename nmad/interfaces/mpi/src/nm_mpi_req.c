@@ -526,13 +526,10 @@ int nm_mpi_request_wait(nm_mpi_request_t*p_req)
     {
       err = MPI_SUCCESS;
     }
-  else if(p_req->request_type == NM_MPI_REQUEST_RECV)
+  else if((p_req->request_type == NM_MPI_REQUEST_RECV) || (p_req->request_type == NM_MPI_REQUEST_SEND))
     {
-      err = nm_sr_rwait(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
-    }
-  else if(p_req->request_type == NM_MPI_REQUEST_SEND) 
-    {
-      err = nm_sr_swait(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
+      nm_sr_request_wait(&p_req->request_nmad);
+      err = MPI_SUCCESS;
     }
   else
     {

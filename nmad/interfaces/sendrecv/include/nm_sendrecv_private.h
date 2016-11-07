@@ -133,6 +133,17 @@ static inline int nm_sr_request_get_size(nm_sr_request_t*p_request, nm_len_t*siz
     return -NM_EINVAL;
 }
 
+static inline void nm_sr_request_wait(nm_sr_request_t*p_request)
+{
+  nm_status_wait(&p_request->req,
+		 NM_STATUS_FINALIZED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_CANCELLED,
+		 p_request->p_session->p_core);
+}
+static inline int nm_sr_request_test(nm_sr_request_t*p_request, nm_status_t status)
+{
+  return nm_status_test_allbits(&p_request->req, status);
+}
+
 /* ** Send inline ****************************************** */
 
 static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_request)

@@ -334,10 +334,12 @@ int nm_core_flush(nm_gate_t p_gate);
 /* ** Status transition ************************************ */
 
 #if defined(PIOMAN_POLL)
+/* ** status with pioman */
 static inline void nm_status_init(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   piom_cond_init(&p_req->status, bitmask);
 }
+/** query for given bits in req status; returns matched bits */
 static inline nm_status_t nm_status_test(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   if(bitmask & NM_STATUS_FINALIZED)
@@ -348,6 +350,7 @@ static inline void nm_status_add(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   piom_cond_add(&p_req->status, bitmask);
 }
+/** wait for _any bit_ matching in req status */
 static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm_core_t p_core)
 {
   piom_cond_wait(&p_req->status, bitmask);
@@ -356,7 +359,17 @@ static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   piom_cond_signal(&p_req->status, bitmask);
 }
+/** wait for _all reqs_, _any bit_ in bitmask */
+static inline void nm_status_wait_multiple(struct nm_req_s**p_req, int n, nm_status_t bitmask, nm_core_t p_core)
+{
+  int i;
+  for(i = 0; i < n; i++)
+    {
+      piom_cond_wait(&p_req[i]->status, bitmask);
+    }
+}
 #else /* PIOMAN_POLL */
+/* ** status without pioman */
 static inline void nm_status_init(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   p_req->status = bitmask;
@@ -380,6 +393,14 @@ static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm
       nm_schedule(p_core);
     }
 }
+static inline void nm_status_wait_multiple(struct nm_req_s**p_req, int n, nm_status_t bitmask, nm_core_t p_core)
+{
+  int i;
+  for(i = 0; i < n; i++)
+    {
+      nm_status_wait(&p_req[i]->status, bitmask);
+    }
+}
 #endif /* PIOMAN_POLL */
 /* ** convenient frontends to deal with status */
 
@@ -393,8 +414,8 @@ static inline void nm_status_spinwait(struct nm_req_s*p_req, nm_status_t status)
   while(!nm_status_test(p_req, status))
     {  }
 }
-
-static inline int nm_status_testall(struct nm_req_s*p_req, nm_status_t bitmask)
+/** tests for all given bits in status */
+static inline int nm_status_test_allbits(struct nm_req_s*p_req, nm_status_t bitmask)
 {
   return (nm_status_test(p_req, bitmask) == bitmask);
 }

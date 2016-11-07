@@ -87,14 +87,14 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t*p_request)
     }
   else
 #endif
-  if(nm_status_testall(&p_request->req, NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED))
+  if(nm_status_test_allbits(&p_request->req, NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED))
     {
       rc = NM_ESUCCESS;
     }
   else
     {
       nm_sr_progress(p_session);
-      rc = (nm_status_testall(&p_request->req, NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED)) ?
+      rc = (nm_status_test_allbits(&p_request->req, NM_STATUS_PACK_COMPLETED | NM_STATUS_FINALIZED)) ?
 	NM_ESUCCESS : -NM_EAGAIN;
     }
   return rc;
@@ -127,7 +127,7 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t*p_request)
 #endif /* DEBUG */
   const nm_status_t status = (p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS) ?
     (NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED) : (NM_STATUS_PACK_COMPLETED);
-  if(!nm_status_testall(&p_request->req, status | NM_STATUS_FINALIZED))
+  if(!nm_status_test_allbits(&p_request->req, status | NM_STATUS_FINALIZED))
     {
       nm_sr_flush(p_core);
       if(p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS)
@@ -169,7 +169,7 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t*p_request)
     }
   else
 #endif
-  if(nm_status_testall(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_FINALIZED))
+  if(nm_status_test_allbits(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_FINALIZED))
     {
       rc = NM_ESUCCESS;
     }

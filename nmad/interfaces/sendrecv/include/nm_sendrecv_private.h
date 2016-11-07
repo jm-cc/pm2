@@ -139,6 +139,20 @@ static inline void nm_sr_request_wait(nm_sr_request_t*p_request)
 		 NM_STATUS_FINALIZED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_CANCELLED,
 		 p_request->p_session->p_core);
 }
+static inline void nm_sr_request_wait_all(nm_sr_request_t**p_requests, int n)
+{
+  assert(n >= 1);
+  struct nm_req_s**p_reqs = malloc(n * sizeof(struct nm_req_s*));
+  int i;
+  for(i = 0; i < n; i++)
+    {
+      p_reqs[i] = &p_requests[i]->req;
+    }
+  nm_status_wait_multiple(p_reqs, n,
+			  NM_STATUS_FINALIZED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_CANCELLED,
+			  p_requests[0]->p_session->p_core);
+  free(p_reqs);
+}
 static inline int nm_sr_request_test(nm_sr_request_t*p_request, nm_status_t status)
 {
   return nm_status_test_allbits(&p_request->req, status);

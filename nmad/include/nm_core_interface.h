@@ -398,7 +398,7 @@ static inline void nm_status_wait_multiple(struct nm_req_s**p_req, int n, nm_sta
   int i;
   for(i = 0; i < n; i++)
     {
-      nm_status_wait(&p_req[i]->status, bitmask);
+      nm_status_wait(p_req[i], bitmask, p_core);
     }
 }
 #endif /* PIOMAN_POLL */

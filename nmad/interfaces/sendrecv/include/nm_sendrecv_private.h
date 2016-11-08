@@ -138,6 +138,7 @@ static inline void nm_sr_request_wait(nm_sr_request_t*p_request)
   nm_status_wait(&p_request->req,
 		 NM_STATUS_FINALIZED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_CANCELLED,
 		 p_request->p_session->p_core);
+  assert(nm_status_test(&p_request->req, NM_STATUS_FINALIZED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_CANCELLED));
 }
 static inline void nm_sr_request_wait_all(nm_sr_request_t**p_requests, int n)
 {

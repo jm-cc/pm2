@@ -425,6 +425,7 @@ static inline void nm_status_add(struct nm_req_s*p_req, nm_status_t bitmask)
 static inline void nm_status_wait(struct nm_req_s*p_req, nm_status_t bitmask, nm_core_t p_core)
 {
   nm_cond_wait(&p_req->status, bitmask, p_core);
+  assert(nm_status_test(p_req, bitmask) != 0);
 }
 static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t bitmask)
 {

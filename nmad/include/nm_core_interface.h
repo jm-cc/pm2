@@ -431,9 +431,12 @@ static inline void nm_status_signal(struct nm_req_s*p_req, nm_status_t bitmask)
   nm_cond_signal(&p_req->status, bitmask);
 }
 /** wait for _all reqs_, _any bit_ in bitmask */
-static inline void nm_status_wait_multiple(struct nm_req_s**p_reqs, int n, nm_status_t bitmask, nm_core_t p_core)
+static inline void nm_status_wait_multiple(void**pp_reqs, int n, uintptr_t offset,
+					   nm_status_t bitmask, nm_core_t p_core)
 {
-  nm_cond_wait_multiple((void**)p_reqs, n, (uintptr_t)&p_reqs[0]->status - (uintptr_t)p_reqs[0], bitmask, p_core);
+  const struct nm_req_s*p_req = NULL;
+  const uintptr_t status_offset = (uintptr_t)&p_req->status - (uintptr_t)p_req; /* offset of 'status' in nm_req_s */
+  nm_cond_wait_multiple(pp_reqs, n, offset + status_offset, bitmask, p_core);
 }
 static inline void nm_status_assert(struct nm_req_s*p_req, nm_status_t value)
 {

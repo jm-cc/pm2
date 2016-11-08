@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -142,16 +142,11 @@ static inline void nm_sr_request_wait(nm_sr_request_t*p_request)
 static inline void nm_sr_request_wait_all(nm_sr_request_t**p_requests, int n)
 {
   assert(n >= 1);
-  struct nm_req_s**p_reqs = malloc(n * sizeof(struct nm_req_s*));
-  int i;
-  for(i = 0; i < n; i++)
-    {
-      p_reqs[i] = &p_requests[i]->req;
-    }
-  nm_status_wait_multiple(p_reqs, n,
+  const nm_sr_request_t*p_req = NULL;
+  const uintptr_t offset = (uintptr_t)&p_req->req - (uintptr_t)p_req;  /* offset of 'req' in nm_sr_request_t */
+  nm_status_wait_multiple((void**)p_requests, n, offset,
 			  NM_STATUS_FINALIZED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_CANCELLED,
 			  p_requests[0]->p_session->p_core);
-  free(p_reqs);
 }
 static inline int nm_sr_request_test(nm_sr_request_t*p_request, nm_status_t status)
 {

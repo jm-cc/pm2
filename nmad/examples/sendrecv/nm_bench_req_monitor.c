@@ -20,19 +20,19 @@ static const nm_tag_t data_tag = 0x01;
 
 static void req_monitor_completion_signal(nm_sr_event_t event, const nm_sr_event_info_t*event_info, void*_ref)
 {
-  piom_sem_t*sem = _ref;
-  piom_sem_V(sem);
+  nm_cond_status_t*p_cond = _ref;
+  nm_cond_signal(p_cond, NM_STATUS_FINALIZED);
 }
 
 static void req_monitor_bench_server(void*buf, nm_len_t len)
 {
   nm_sr_request_t sreq, rreq;
-  piom_sem_t sem;
-  piom_sem_init(&sem, 0);
+  nm_cond_status_t cond;
+  nm_cond_init(&cond, 0);
   nm_sr_irecv(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, buf, len, &rreq);
-  nm_sr_request_set_ref(&rreq, &sem);
+  nm_sr_request_set_ref(&rreq, &cond);
   nm_sr_request_monitor(nm_bench_common.p_session, &rreq, NM_SR_EVENT_FINALIZED, &req_monitor_completion_signal);
-  piom_sem_P(&sem);
+  nm_cond_wait(&cond, NM_STATUS_FINALIZED,  nm_bench_common.p_session->p_core);
 
   nm_sr_isend(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, buf, len, &sreq);
   nm_sr_swait(nm_bench_common.p_session, &sreq);
@@ -41,16 +41,15 @@ static void req_monitor_bench_server(void*buf, nm_len_t len)
 static void req_monitor_bench_client(void*buf, nm_len_t len)
 {
   nm_sr_request_t sreq, rreq;
-  piom_sem_t sem;
+  nm_cond_status_t cond;
   nm_sr_isend(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, buf, len, &sreq);
   nm_sr_swait(nm_bench_common.p_session, &sreq);
 
-  piom_sem_init(&sem, 0);
+  nm_cond_init(&cond, 0);
   nm_sr_irecv(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, buf, len, &rreq);
-  nm_sr_request_set_ref(&rreq, &sem);
+  nm_sr_request_set_ref(&rreq, &cond);
   nm_sr_request_monitor(nm_bench_common.p_session, &rreq, NM_SR_EVENT_FINALIZED, &req_monitor_completion_signal);
-  piom_sem_P(&sem);
-
+  nm_cond_wait(&cond, NM_STATUS_FINALIZED, nm_bench_common.p_session->p_core);
 }
 
 const struct nm_bench_s nm_bench =

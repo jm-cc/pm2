@@ -362,12 +362,7 @@ static inline void nm_cond_signal(nm_cond_status_t*p_cond, nm_status_t bitmask)
 }
 static inline void nm_cond_wait_multiple(void**pp_conds, int n, uintptr_t offset, nm_status_t bitmask, nm_core_t p_core)
 {
-  int i;
-  for(i = 0; i < n; i++)
-    {
-      nm_cond_status_t*p_cond = (pp_conds[i] + offset);
-      piom_cond_wait(p_cond, bitmask);
-    }
+  piom_cond_wait_all(pp_conds, n, offset, bitmask);
 }
 #else /* PIOMAN_POLL */
 /* ** status without pioman */

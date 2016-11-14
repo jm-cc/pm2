@@ -142,6 +142,8 @@ static inline void piom_cond_mask(piom_cond_t*cond, piom_cond_value_t mask)
 
 extern void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask);
 
+extern void piom_cond_wait_all(void**pp_conds, int n, uintptr_t offset, piom_cond_value_t mask);
+
 #else /* PIOMAN_MULTITHREAD */
 
 static inline void piom_mask_init(piom_mask_t*mask)
@@ -172,6 +174,15 @@ static inline void piom_cond_wait(piom_cond_t*cond, piom_cond_value_t mask)
 {
   while(!(*cond & mask))
     piom_ltask_schedule(PIOM_POLL_POINT_BUSY);		
+}
+static inline void piom_cond_wait_all(void**pp_conds, int n, uintptr_t offset, piom_cond_value_t mask)
+{
+  int i;
+  for(i = 0; i < n; i++)
+    {
+      piom_cond_t*p_cond = (pp_conds[i] + offset);
+      piom_cond_wait(p_cond, mask);
+    }  
 }
 static inline void piom_cond_add(piom_cond_t*cond, piom_cond_value_t mask)
 {

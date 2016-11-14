@@ -122,4 +122,54 @@ void piom_cond_wait(piom_cond_t*cond, piom_cond_value_t mask)
 #endif
 }
 
+/** wait all conds */
+void piom_cond_wait_all(void**pp_conds, int n, uintptr_t offset, piom_cond_value_t mask)
+{
+  int i;
+  tbx_tick_t t1;
+  int busy_wait = 1;
+  do
+    {
+      int i;
+      for(i = 0; (piom_parameters.busy_wait_usec < 0) || (i < piom_parameters.busy_wait_granularity) ; i++)
+	{
+	  int done = 0;
+	  for(i = 0; i < n; i++)
+	    {
+	      piom_cond_t*p_cond = (pp_conds[i] + offset);
+	      if(piom_cond_test(p_cond, mask))
+		{
+		  done++;
+		}
+	    }
+	  if(done == n)
+	    return;
+	  piom_ltask_schedule(PIOM_POLL_POINT_BUSY);
+	}
+      /* amortize cost of TBX_GET_TICK() */
+      if(busy_wait == 1)
+	{
+	  TBX_GET_TICK(t1);
+	  busy_wait = 2;
+	}
+      else
+	{
+	  tbx_tick_t t2;
+	  TBX_GET_TICK(t2);
+	  if(TBX_TIMING_DELAY(t1, t2) > piom_parameters.busy_wait_usec)
+	    busy_wait = 0;
+	}
+    }
+  while(busy_wait);
+  for(i = 0; i < n; i++)
+    {
+      piom_cond_t*p_cond = (pp_conds[i] + offset);
+#ifdef PIOM_BLOCKING_PRIO
+      piom_cond_wait_blocking_prio(p_cond, mask);
+#else
+      piom_cond_wait_blocking(p_cond, mask);
+#endif
+    }
+}
+
 #endif /* PIOMAN_MULTITHREAD */

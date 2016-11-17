@@ -189,7 +189,7 @@ void piom_topo_exit_ltasks(void)
       for (i = 0; i < hwloc_get_nbobjs_by_depth(__piom_topology.topology, d); i++)
 	{
 	  hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_topology.topology, d, i);
-	  const struct piom_ltask_locality_s*local = o->userdata;
+	  struct piom_ltask_locality_s*local = o->userdata;
 	  if(local)
 	      {
 		  piom_ltask_queue_t*queue = local->queue;

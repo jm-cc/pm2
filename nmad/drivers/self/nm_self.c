@@ -210,7 +210,7 @@ static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw)
       fprintf(stderr, "nmad: self- iovec not supported on recv side yet.\n");
       abort();
     }
-  return nm_self_poll_recv(_status, p_pw);
+  return nm_self_poll_recv(status, p_pw);
 }
 
 static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap_s *p_pw)

@@ -10,24 +10,25 @@ for any question, mailto: Alexandre.Denis@inria.fr
 Installation
 ------------
 
-nmad requires other pm2 modules: tbx, Puk, PukABI, (optionnally) pioman.
-PadicoTM may be used as a launcher, and should be built *after* nmad.
+module nmad requires other pm2 modules: tbx, Puk, PukABI (optionnal),
+pioman (optionnal). PadicoTM is the prefered launcher, and should be
+built *after* nmad.
 
 Requirements:
   - autoconf (v 2.50 or later)
   - pkg-config
-  - hwloc (optional)
+  - hwloc (optional, recommended)
   - libnuma (optional)
   - ibverbs for IB support (set $IBHOME if not installed in /usr)
   - MX for Myrinet support (set $MX_DIR if not installed in /usr)
 
 **Automated build** (recommended):
-To build multiple modules at once, we recommend to use the build script
-located in pm2/scripts/pm2-build-packages using a given or a custom
-configuration file, e.g.:
+To build multiple pm2 modules at once, we recommend to use the build
+script located in pm2/scripts/pm2-build-packages using a given or a
+custom configuration file, e.g.:
 
      % cd pm2/scripts
-     % ./pm2-build-packages ./bench-nmad+pioman+pthread.conf --prefix=$HOME/soft/x86_64
+     % ./pm2-build-packages ./madmpi.conf --prefix=$HOME/soft/x86_64
 
 
 Manual build (not recommended). For each module:
@@ -38,7 +39,8 @@ Manual build (not recommended). For each module:
     make
     make install
 
-*Note*: nmad purposely cannot be configured in its source directory
+*Note*: nmad purposely cannot be configured in its source
+ directory. Please use a separate build directory.
 
 Usefull configure flags (see ./configure --help)
 
@@ -55,8 +57,11 @@ Usefull configure flags (see ./configure --help)
 Building application code
 -------------------------
 
-To build an application using NewMadeleine, get the required flags
-through pkg-config. For CFLAGS:
+For an MPI applicatiion using MadMPI, use the standard `mpicc`,
+`mpif77` and `mpif90` compiler frontends to build and link.
+
+To build an application using native NewMadeleine interface, get the
+required flags through pkg-config. For CFLAGS:
 
     % pkg-config --cflags nmad
 
@@ -64,16 +69,16 @@ For libraries:
 
     % pkg-config --libs nmad
 
-For an MPI applicatiion using Mad-MPI, use the standard `mpicc`,
-`mpif77` and `mpif90` compiler frontends to build and link.
-
 
 Launcher
 --------
 
-If upper layers do not provide their own launcher, it is recommended
-to use `padico-launch` as a launcher for nmad. It accepts parameters
-similar to `mpirun`. Please see `padico-launch --help` for up-to-date
+For MadMPI use the standard `mpirun` as launcher. Please see `mpirun --help`
+for up-to-date documentation.
+
+For native NewMadeleine applications, it is recommended to use
+`padico-launch` as a launcher for nmad. It accepts parameters similar
+to `mpirun`. Please see `padico-launch --help` for up-to-date
 documentation.
 
 Environment variables may be set using -D parameters, e.g.:
@@ -82,9 +87,6 @@ Environment variables may be set using -D parameters, e.g.:
 
 starts program 'sr_bench' on hosts jack0 and jack1, using multi-rail
 over Infiniband and Myrinet.
-
-For Mad-MPI use the standard `mpirun` as launcher. Please see `mpirun --help`
-for up-to-date documentation.
 
 
 Strategy

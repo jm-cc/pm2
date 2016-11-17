@@ -6,7 +6,12 @@ PM2 is an umbrella software suite for high-performance runtime
 systems. Modules may be installed and used together or separately.
 
 For installation instructions, please see README in the directory for
-the module you are interested in.
+the module you are interested in:
+
+nmad/        NewMadeleine and MadMPI
+pioman/      PIOMan generic I/O manager
+PadicoTM/    PadicoTM communication library for grids
+marcel/      Marcel thread scheduler
 
 For more information, please see PM2 homepage:
   http://pm2.gforge.inria.fr/

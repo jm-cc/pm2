@@ -307,9 +307,7 @@ nm_tcp_address_fill(struct sockaddr_in	*address,
         struct hostent *host_entry;
 
         if (!(host_entry = gethostbyname(host_name))) {
-                char *msg = NULL;
-
-                msg	= nm_tcp_h_errno_to_str();
+                char *msg = nm_tcp_h_errno_to_str();
                 NM_WARN("gethostbyname error: %s", msg);
         }
 

@@ -63,8 +63,6 @@ struct nm_strat_aggreg_s
 };
 
 static int num_instances = 0;
-static int nb_data_aggregation = 0;
-static int nb_ctrl_aggregation = 0;
 
 
 static inline nm_len_t strat_aggreg_max_small(struct nm_core*p_core)
@@ -144,7 +142,6 @@ static int strat_aggreg_pack_ctrl(void*_status, nm_gate_t p_gate,
   if(p_pw)
     {
       nm_pw_add_control(p_pw, p_ctrl);
-      nb_ctrl_aggregation++;
     }
   else
     {

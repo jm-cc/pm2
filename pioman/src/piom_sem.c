@@ -19,6 +19,44 @@
 
 #if defined(PIOMAN_MULTITHREAD)
 
+/** wait all conds */
+static inline void piom_cond_wait_all_blocking(void**pp_conds, int n, uintptr_t offset, piom_cond_value_t mask)
+{
+  struct piom_waitsem_s waitsem;
+  piom_sem_init(&waitsem.sem, 1 - n);
+  waitsem.mask = mask;
+  int ready = 0;
+  int i;
+  for(i = 0; i < n; i++)
+    {
+      piom_cond_t*p_cond = (pp_conds[i] + offset);
+      piom_spin_lock(&p_cond->lock);
+      if(piom_cond_test(p_cond, mask))
+	{
+	  ready++;
+	}
+      if(p_cond->p_waitsem != NULL)
+	{
+	  PIOM_FATAL("waiting on cond- sem = %p", p_cond->p_waitsem);
+	  abort();
+	}
+      p_cond->p_waitsem = &waitsem;
+      piom_spin_unlock(&p_cond->lock);
+    }
+  if(ready < n)
+    {
+      piom_sem_P(&waitsem.sem);
+    }
+  for(i = 0; i < n; i++)
+    {
+      piom_cond_t*p_cond = (pp_conds[i] + offset);
+      assert(piom_cond_test(p_cond, mask));
+      p_cond->p_waitsem = NULL;
+    }
+  return;
+  piom_sem_destroy(&waitsem.sem);
+}
+
 static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t mask)
 {
   struct piom_waitsem_s waitsem;
@@ -125,7 +163,6 @@ void piom_cond_wait(piom_cond_t*cond, piom_cond_value_t mask)
 /** wait all conds */
 void piom_cond_wait_all(void**pp_conds, int n, uintptr_t offset, piom_cond_value_t mask)
 {
-  int i;
   tbx_tick_t t1;
   int busy_wait = 1;
   do
@@ -161,6 +198,8 @@ void piom_cond_wait_all(void**pp_conds, int n, uintptr_t offset, piom_cond_value
 	}
     }
   while(busy_wait);
+#if 1
+  int i;
   for(i = 0; i < n; i++)
     {
       piom_cond_t*p_cond = (pp_conds[i] + offset);
@@ -170,6 +209,17 @@ void piom_cond_wait_all(void**pp_conds, int n, uintptr_t offset, piom_cond_value
       piom_cond_wait_blocking(p_cond, mask);
 #endif
     }
+#else
+
+  /* disabled by default */
+  
+  /* blocking wait on all conds */
+  piom_cond_wait_all_blocking(pp_conds, n, offset, mask);
+  
+#endif
+
+
+  
 }
 
 #endif /* PIOMAN_MULTITHREAD */

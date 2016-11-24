@@ -20,6 +20,8 @@
 #error "inconsistency detected: PIOMAN_PTHREAD not defined in piom_pthread.h"
 #endif /* PIOMAN_PTHREAD */
 
+#include <errno.h>
+
 /* ** base pthread types *********************************** */
 
 #define piom_thread_t      pthread_t

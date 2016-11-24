@@ -27,7 +27,8 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 	.idle_granularity   = 5,
 	.idle_distrib       = PIOM_BIND_DISTRIB_ALL,
 	.timer_period       = 4000,
-	.spare_lwp          = 0
+	.spare_lwp          = 0,
+	.mckernel           = 0
     };
 
 static int piom_init_done = 0;
@@ -60,6 +61,14 @@ void pioman_init(int*argc, char**argv)
 	return;
     if(getenv("PADICO_QUIET") == NULL)
        setenv("PIOM_VERBOSE", "1", 0);
+
+    struct stat proc_mckernel;
+    int rc = stat("/proc/mckernel", &proc_mckernel);
+    if(rc == 0)
+	{
+	    piom_parameters.mckernel = 1;
+	    PIOM_DISP("running on mckernel\n");
+	}
 
 #ifdef MCKERNEL
     piom_parameters.timer_period = -1;

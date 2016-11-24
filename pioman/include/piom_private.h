@@ -112,6 +112,7 @@ TBX_INTERNAL struct piom_parameters_s
 	} idle_distrib;     /**< binding distribution for idle threads */
     int timer_period;       /**< period for timer-based polling (in usec); default: 4000 */
     int spare_lwp;          /**< number of spare LWPs for blocking calls; default: 0 */
+    int mckernel;           /**< whether we are running on mckernel */
 } piom_parameters;
 
 enum piom_trace_event_e

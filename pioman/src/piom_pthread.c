@@ -58,7 +58,7 @@ static pthread_t*__piom_pthread_create(const pthread_attr_t*attr, void*(*start_r
     int err = pthread_create(thread, attr, start_routine, arg);
     if(err)
 	{
-	    PIOM_FATAL("cannot create threads- error %d\n", err);
+	    PIOM_FATAL("cannot create threads- error %d (%s)\n", err, strerror(err));
 	}
     return thread;
 }
@@ -76,7 +76,7 @@ static void*__piom_ltask_timer_worker(void*_dummy)
     const int prio_enable = ((rc == 0) && (max_prio != old_prio));
     if(rc != 0)
 	{
-	    PIOM_WARN("timer thread could not get priority %d.\n", max_prio);
+	    PIOM_WARN("timer thread could not get priority %d (err=%d, %s).\n", max_prio, rc, strerror(rc));
 	}
     piom_ltask_queue_t*global_queue = piom_topo_get_queue(piom_topo_current_obj());
     while(global_queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
@@ -108,7 +108,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
     const int granularity0 = piom_parameters.idle_granularity;
     if(rc != 0)
 	{
-	    PIOM_WARN("idle thread could not get priority %d.\n", min_prio);
+	    PIOM_WARN("idle thread could not get priority %d (err=%d, %s).\n", min_prio, rc, strerror(rc));
 	}
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
@@ -164,19 +164,20 @@ static void*__piom_ltask_lwp_worker(void*_dummy)
 
 void piom_pthread_init_ltasks(void)
 {
-      /* ** timer-based polling */
+    /* ** timer-based polling */
     if(piom_parameters.timer_period > 0)
 	{
+	    PIOM_DISP(" starting timer worker (period=%d)\n", piom_parameters.timer_period);
 	    __piom_pthread_create(NULL, &__piom_ltask_timer_worker, NULL);
 	}
     /* ** idle polling */
     if(piom_parameters.idle_granularity >= 0)
 	{
 #if defined(PIOMAN_TOPOLOGY_NONE)
+	    PIOM_WARN("no hwloc, using global queue. Running in degraded mode.\n");
 	    piom_ltask_queue_t*queue = piom_topo_get_queue(piom_topo_full);
 	    pthread_t*idle_thread = __piom_pthread_create(NULL, &__piom_ltask_idle_worker, queue);
 	    pthread_setschedprio(*idle_thread, sched_get_priority_min(SCHED_OTHER));
-	    PIOM_WARN("no hwloc, using global queue. Running in degraded mode.\n");
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
 	    hwloc_topology_t topo = piom_topo_get();
 	    const hwloc_obj_type_t level = piom_parameters.binding_level;
@@ -200,8 +201,15 @@ void piom_pthread_init_ltasks(void)
 			    pthread_attr_t attr;
 			    pthread_attr_init(&attr);
 #ifdef SCHED_IDLE
-			    pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
-			    pthread_attr_setschedpolicy(&attr, SCHED_IDLE);
+			    if(!piom_parameters.mckernel)
+				{
+				    pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+				    pthread_attr_setschedpolicy(&attr, SCHED_IDLE);
+				}
+			    else
+				{
+				    PIOM_WARN("idle thread not set as SCHED_IDLE on mckernel.\n");
+				}
 #endif /* SCHED_IDLE */
 			    pthread_t*idle_thread = __piom_pthread_create(&attr, &__piom_ltask_idle_worker, queue);
 			    int rc = hwloc_set_thread_cpubind(topo, *idle_thread, o->cpuset, HWLOC_CPUBIND_THREAD);

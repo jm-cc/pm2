@@ -30,7 +30,7 @@
 #define NM_DCFA_MAX_SG_SQ    1
 #define NM_DCFA_MAX_SG_RQ    1
 #define NM_DCFA_MAX_INLINE   16
-#define NM_DCFA_MTU          IBV_MTU_1024
+#define NM_DCFA_MTU          IBV_MTU_2048
 
 /** timeout to receive connection check after sending ACK and check (in msec.) */
 #define NM_DCFA_TIMEOUT_CHECK 20

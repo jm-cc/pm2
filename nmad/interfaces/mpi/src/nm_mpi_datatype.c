@@ -84,11 +84,11 @@ static        void     nm_mpi_datatype_request_free(nm_sr_event_t event, const n
 						    void*ref);
 
 static struct nm_sr_monitor_s nm_mpi_datatype_requests_monitor = 
-  (struct nm_sr_monitor_s) { .p_notifier = &nm_mpi_datatype_request_recv,
-			     .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
-			     .p_gate     = NM_ANY_GATE,
-			     .tag        = NM_MPI_TAG_PRIVATE_TYPE_ADD,
-			     .tag_mask   = NM_MPI_TAG_PRIVATE_BASE | 0x0F };
+  { .p_notifier = &nm_mpi_datatype_request_recv,
+    .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
+    .p_gate     = NM_ANY_GATE,
+    .tag        = NM_MPI_TAG_PRIVATE_TYPE_ADD,
+    .tag_mask   = NM_MPI_TAG_PRIVATE_BASE | 0x0F };
 
 /** store builtin datatypes */
 static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*name);

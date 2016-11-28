@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014 (see AUTHORS file)
+ * Copyright (C) 2014-2016 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -452,14 +452,19 @@ struct nm_data_slicer_coroutine_s
       NM_SLICER_OP_COPY_FROM,
       NM_SLICER_OP_COPY_TO
     } op;
+  const struct nm_data_s*p_data;
   void*ptr;                     /**< pointer to copy from/to contiguous data */
   volatile nm_len_t slice_len;  /**< length of the current slice */
-  jmp_buf caller_context;
-  jmp_buf traversal_context;
-  ucontext_t generator_context;
+  jmp_buf trampoline_context;   /**< initial context of trampoline function */
+  jmp_buf caller_context;       /**< context to go back to the application stack */
+  jmp_buf traversal_context;    /**< context of the coroutine for data traversal */
+  ucontext_t init_context;
   void*stack;
   nm_len_t done;                /**< length of data processed so far */
 };
+PUK_LFQUEUE_TYPE(nm_data_slicer_coroutine, struct nm_data_slicer_coroutine_s*, NULL, 8);
+static struct nm_data_slicer_coroutine_lfqueue_s nm_data_slicer_coroutine_cache = PUK_LFQUEUE_INITIALIZER(NULL);
+
 static void nm_data_slicer_coroutine_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_data_slicer_coroutine_s*p_coroutine = _context;
@@ -504,41 +509,68 @@ static void nm_data_slicer_coroutine_apply(void*ptr, nm_len_t len, void*_context
 	}
     }
 }
-static void nm_data_slicer_coroutine_trampoline(const struct nm_data_s*p_data, struct nm_data_slicer_coroutine_s*p_coroutine)
+static void nm_data_slicer_coroutine_trampoline(struct nm_data_slicer_coroutine_s*p_coroutine)
 {
-  if(_setjmp(p_coroutine->traversal_context) == 0)
+  if(_setjmp(p_coroutine->trampoline_context) == 0)
     {
-      /* init */
+      /* back to coroutine alloc */
       _longjmp(p_coroutine->caller_context, 1);
     }
   else
     {
-      /* back from longjmp- perform traversal */
-      nm_data_traversal_apply(p_data, &nm_data_slicer_coroutine_apply, p_coroutine);
-      fprintf(stderr, "# slicer_coroutine_trampoline- ### after traversal ###\n");
-      abort();
+      if(_setjmp(p_coroutine->traversal_context) == 0)
+	{
+	  /* back to slicer init */
+	  _longjmp(p_coroutine->caller_context, 1);
+	}
+      else
+	{
+	  /* back from longjmp- perform traversal */
+	  nm_data_traversal_apply(p_coroutine->p_data, &nm_data_slicer_coroutine_apply, p_coroutine);
+	  fprintf(stderr, "# slicer_coroutine_trampoline- ### after traversal ###\n");
+	  abort();
+	}
     }
 }
-void nm_data_slicer_coroutine_init(nm_data_slicer_t*p_slicer, const struct nm_data_s*p_data)
+struct nm_data_slicer_coroutine_s*nm_data_slicer_coroutine_alloc(void)
 {
-  p_slicer->p_data = p_data;
-  struct nm_data_slicer_coroutine_s*p_coroutine = malloc(sizeof(struct nm_data_slicer_coroutine_s));
-  p_slicer->p_coroutine = p_coroutine;
+  struct nm_data_slicer_coroutine_s*p_coroutine = nm_data_slicer_coroutine_lfqueue_dequeue(&nm_data_slicer_coroutine_cache);
+  if(p_coroutine == NULL)
+    {
+      /* cache miss */
+      p_coroutine = malloc(sizeof(struct nm_data_slicer_coroutine_s));
+      /* create new coroutine context */
+      getcontext(&p_coroutine->init_context);
+      p_coroutine->stack = malloc(NM_DATA_COROUTINE_STACK);
+      p_coroutine->init_context.uc_stack.ss_sp = p_coroutine->stack;
+      p_coroutine->init_context.uc_stack.ss_size = NM_DATA_COROUTINE_STACK;
+      makecontext(&p_coroutine->init_context, (void*)&nm_data_slicer_coroutine_trampoline, 1, p_coroutine);
+      if(_setjmp(p_coroutine->caller_context) == 0)
+	{
+	  setcontext(&p_coroutine->init_context);
+	  fprintf(stderr, "# nmad: nm_data_slicer_coroutine_alloc()- internal error: after trampoline ### \n");
+	  abort();
+	}
+    }
+  /* init coroutine */
 #ifdef DEBUG
   p_coroutine->done = 0;
 #endif
   p_coroutine->op = NM_SLICER_OP_NONE;
   p_coroutine->ptr = NULL;
   p_coroutine->slice_len = 0;
-  getcontext(&p_coroutine->generator_context);
-  p_coroutine->stack = malloc(NM_DATA_COROUTINE_STACK);
-  p_coroutine->generator_context.uc_stack.ss_sp = p_coroutine->stack;
-  p_coroutine->generator_context.uc_stack.ss_size = NM_DATA_COROUTINE_STACK;
-  makecontext(&p_coroutine->generator_context, (void*)&nm_data_slicer_coroutine_trampoline, 2, p_data, p_coroutine);
-  if(_setjmp(p_coroutine->caller_context) == 0)
+  return p_coroutine;
+}
+void nm_data_slicer_coroutine_init(nm_data_slicer_t*p_slicer, const struct nm_data_s*p_data)
+{
+  p_slicer->p_data = p_data;
+  p_slicer->p_coroutine = nm_data_slicer_coroutine_alloc();
+  p_slicer->p_coroutine->p_data = p_data;
+  if(_setjmp(p_slicer->p_coroutine->caller_context) == 0)
     {
-      setcontext(&p_coroutine->generator_context);
-      fprintf(stderr, "# ### nm_data_slicer_coroutine: after trampoline ### \n");
+      /* jump to trampoline once to initialize traversal_context */
+      _longjmp(p_slicer->p_coroutine->trampoline_context, 1);
+      fprintf(stderr, "# nmad: nm_data_slicer_coroutine_init()- internal error: after trampoline ### \n");
       abort();
     }
 }
@@ -577,10 +609,18 @@ void nm_data_slicer_coroutine_forward(nm_data_slicer_t*p_slicer, nm_len_t offset
 void nm_data_slicer_coroutine_destroy(nm_data_slicer_t*p_slicer)
 {
   struct nm_data_slicer_coroutine_s*p_coroutine = p_slicer->p_coroutine;
-  free(p_coroutine->stack);
-  free(p_coroutine);
   p_slicer->p_coroutine = NULL;
   p_slicer->p_data = NULL;
+  p_coroutine->p_data = NULL;
+  p_coroutine->op = NM_SLICER_OP_NONE;
+  p_coroutine->ptr = NULL;
+  int rc = nm_data_slicer_coroutine_lfqueue_enqueue(&nm_data_slicer_coroutine_cache, p_coroutine);
+  if(rc)
+    {
+      /* cache full- free coroutine */
+      free(p_coroutine->stack);
+      free(p_coroutine);
+    }
 }
 
 

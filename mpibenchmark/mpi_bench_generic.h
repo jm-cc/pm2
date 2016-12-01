@@ -109,13 +109,14 @@ extern struct mpi_bench_common_s mpi_bench_common;
 
 /* Use POSIX clock_gettime to measure time. Some MPI 
  * implementations still use gettimeofday for MPI_Wtime(), 
- * we cannot rely on it.
+ * we cannot rely on it. Use RDTSC on mckernel (and
+ * assume constant_tsc).
  */
 
-typedef struct timespec mpi_bench_tick_t;
-
-static inline void mpi_bench_get_tick(mpi_bench_tick_t*t)
-{
+#ifdef MCKERNEL
+#define USE_CLOCK_RDTSC
+#else
+#define USE_CLOCK_GETTIME
 #if defined(__bg__)
 #  define CLOCK_TYPE CLOCK_REALTIME
 #elif defined(CLOCK_MONOTONIC_RAW)
@@ -123,11 +124,57 @@ static inline void mpi_bench_get_tick(mpi_bench_tick_t*t)
 #else
 #  define CLOCK_TYPE CLOCK_MONOTONIC
 #endif
-  clock_gettime(CLOCK_TYPE, t);
-}
-static inline double mpi_bench_timing_delay(const mpi_bench_tick_t*const t1, const mpi_bench_tick_t*const t2)
+#endif
+
+#if defined(USE_CLOCK_GETTIME)
+typedef struct timespec mpi_bench_tick_t;
+#elif defined(USE_CLOCK_RDTSC)
+typedef uint64_t mpi_bench_tick_t;
+#else
+#error no clock
+#endif
+
+static inline void mpi_bench_get_tick(mpi_bench_tick_t*t)
 {
+#if defined(USE_CLOCK_GETTIME)
+  clock_gettime(CLOCK_TYPE, t);
+#elif defined(USE_CLOCK_RDTSC)
+#ifdef __i386
+  uint64_t r;
+  __asm__ volatile ("rdtsc" : "=A" (r));
+  *t = r;
+#elif defined __amd64
+  uint64_t a, d;
+  __asm__ volatile ("rdtsc" : "=a" (a), "=d" (d));
+  *t = (d<<32) | a;
+#else
+#error
+#endif
+#else
+#error
+#endif
+}
+static inline double mpi_bench_timing_delay(const mpi_bench_tick_t* t1, const mpi_bench_tick_t* t2)
+{
+#if defined(USE_CLOCK_GETTIME)
   const double delay = 1000000.0 * (t2->tv_sec - t1->tv_sec) + (t2->tv_nsec - t1->tv_nsec) / 1000.0;
+#elif defined(USE_CLOCK_RDTSC)
+  static double scale = -1;
+  if(scale < 0)
+    {  
+      uint64_t s1, s2;
+      struct timespec ts = { 0, 10000000 /* 10 ms */ };
+      mpi_bench_get_tick(&s1);
+      nanosleep(&ts, NULL);
+      mpi_bench_get_tick(&s2);
+      scale = (ts.tv_sec * 1e6 + ts.tv_nsec / 1e3) / (double)(s2 - s1);
+    }
+  uint64_t tick_diff = *t2 - *t1;
+  double raw_delay = (tick_diff * scale);
+  const double delay = raw_delay;
+#else
+#error
+#endif
   return delay;
 }
 

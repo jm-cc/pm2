@@ -35,7 +35,7 @@
 #endif /* TBX */
 
 
-#if defined(__MIC__) && defined(MCKERNEL)
+#if defined(MCKERNEL)
 #define TBX_USE_RDTSC
 #undef TBX_USE_CLOCK_GETTIME
 #endif

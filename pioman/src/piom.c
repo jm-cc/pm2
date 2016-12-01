@@ -68,13 +68,10 @@ void pioman_init(int*argc, char**argv)
 	{
 	    piom_parameters.mckernel = 1;
 	    PIOM_DISP("running on mckernel\n");
+	    piom_parameters.enable_progression = 0;
+	    PIOM_WARN("progression disabled by default. Enable it with PIOM_ENABLE_PROGRESSION=1");
 	}
 
-#ifdef MCKERNEL
-    piom_parameters.timer_period = -1;
-    piom_parameters.idle_granularity = -1;
-    piom_parameters.busy_wait_usec = 1000 * 1000 * 1000;
-#endif /* MCKERNEL */
     const char*s_busy_wait_usec        = getenv("PIOM_BUSY_WAIT_USEC");
     const char*s_busy_wait_granularity = getenv("PIOM_BUSY_WAIT_GRANULARITY");
     const char*s_enable_progression    = getenv("PIOM_ENABLE_PROGRESSION");

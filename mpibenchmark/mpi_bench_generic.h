@@ -169,9 +169,8 @@ static inline double mpi_bench_timing_delay(const mpi_bench_tick_t* t1, const mp
       mpi_bench_get_tick(&s2);
       scale = (ts.tv_sec * 1e6 + ts.tv_nsec / 1e3) / (double)(s2 - s1);
     }
-  uint64_t tick_diff = *t2 - *t1;
-  double raw_delay = (tick_diff * scale);
-  const double delay = raw_delay;
+  const uint64_t tick_diff = *t2 - *t1;
+  const double delay = (tick_diff * scale);
 #else
 #error
 #endif

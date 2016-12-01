@@ -69,7 +69,7 @@ void pioman_init(int*argc, char**argv)
 	    piom_parameters.mckernel = 1;
 	    PIOM_DISP("running on mckernel\n");
 	    piom_parameters.enable_progression = 0;
-	    PIOM_WARN("progression disabled by default. Enable it with PIOM_ENABLE_PROGRESSION=1");
+	    PIOM_WARN("progression disabled by default on mckernel. Enable it with PIOM_ENABLE_PROGRESSION=1\n");
 	}
 
     const char*s_busy_wait_usec        = getenv("PIOM_BUSY_WAIT_USEC");

@@ -320,7 +320,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 {
   if((p_unpack->seq == NM_SEQ_NONE) || (p_unpack->p_gate == NM_GATE_NONE) || !(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
     {
-      NM_WARN(stderr, "# nmad: WARNING- cannot peek unmatched request.\n");
+      NM_WARN("# nmad: WARNING- cannot peek unmatched request.\n");
       return -NM_EINVAL;
     }
   nm_len_t peek_len = nm_data_size(p_data);

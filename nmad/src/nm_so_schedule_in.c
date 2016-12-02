@@ -57,7 +57,7 @@ void nm_unexpected_clean(struct nm_core*p_core)
   while(p_chunk)
     {
 #ifdef DEBUG
-      fprintf(stderr, "nmad: WARNING- chunk %p is still in use (gate = %p; seq = %d; tag = %llx:%llx)\n",
+      NM_DISPF("nmad: WARNING- chunk %p is still in use (gate = %p; seq = %d; tag = %llx:%llx)\n",
 	      p_chunk, p_chunk->p_gate, p_chunk->seq,
 	      (unsigned long long)nm_core_tag_get_hashcode(p_chunk->tag), (unsigned long long)nm_core_tag_get_tag(p_chunk->tag));
 #endif /* DEBUG */
@@ -184,8 +184,8 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
     }
   else if(p_unpack->unpack.cumulated_len > p_unpack->unpack.expected_len)
     {
-      fprintf(stderr, "# nmad: FATAL- copied more data than expected in unpack (unpacked = %lu; expected = %lu; chunk = %lu).\n",
-	      p_unpack->unpack.cumulated_len, p_unpack->unpack.expected_len, chunk_len);
+      NM_FATAL("copied more data than expected in unpack (unpacked = %lu; expected = %lu; chunk = %lu).\n",
+	       p_unpack->unpack.cumulated_len, p_unpack->unpack.expected_len, chunk_len);
       abort();
     }
 }
@@ -196,8 +196,8 @@ static inline void nm_so_data_flags_decode(struct nm_req_s*p_unpack, uint8_t fla
   const nm_len_t chunk_end = chunk_offset + chunk_len;
   if(chunk_end > p_unpack->unpack.expected_len)
     {
-      fprintf(stderr, "# nmad: FATAL- received more data than expected (received = %lu; expected = %lu).\n",
-	      chunk_offset + chunk_len, p_unpack->unpack.expected_len);
+      NM_FATAL("received more data than expected (received = %lu; expected = %lu).\n",
+	       chunk_offset + chunk_len, p_unpack->unpack.expected_len);
       abort();
     }
   assert(p_unpack->unpack.expected_len != NM_LEN_UNDEFINED);
@@ -230,9 +230,9 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
   const long unsigned int nm_unexpected_mem_size = nm_unexpected_list_size(&p_core->unexpected);
   if(nm_unexpected_mem_size > 32*1024)
     {
-      fprintf(stderr, "nmad: WARNING- %lu unexpected chunks allocated.\n", nm_unexpected_mem_size);
+      NM_WARN("%lu unexpected chunks allocated.\n", nm_unexpected_mem_size);
       if(nm_unexpected_mem_size > 64*1024)
-	NM_FATAL("nmad: FATAL- %lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
+	NM_FATAL("%lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
     }
 #endif /* DEBUG */
   nmad_lock_assert();
@@ -303,7 +303,7 @@ int nm_core_unpack_iprobe(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
   if(!(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
     {
-      NM_WARN("# nmad: WARNING- cannot probe unmatched request.\n");
+      NM_WARN("cannot probe unmatched request.\n");
       return -NM_EINVAL;
     }
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
@@ -320,7 +320,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 {
   if((p_unpack->seq == NM_SEQ_NONE) || (p_unpack->p_gate == NM_GATE_NONE) || !(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
     {
-      NM_WARN("# nmad: WARNING- cannot peek unmatched request.\n");
+      NM_WARN("cannot peek unmatched request.\n");
       return -NM_EINVAL;
     }
   nm_len_t peek_len = nm_data_size(p_data);
@@ -746,7 +746,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s *p_rtr_pw, const struct nm_heade
 	  return;
 	}
     }
-  fprintf(stderr, "nmad: FATAL- cannot find matching packet for received RTR: seq = %d; offset = %lu- dumping pending large packets\n", seq, chunk_offset);
+  NM_WARN("FATAL- cannot find matching packet for received RTR: seq = %d; offset = %lu- dumping pending large packets\n", seq, chunk_offset);
   puk_list_foreach(p_large_pw, &p_gate->pending_large_send)
     {
       const struct nm_req_s*p_pack = p_large_pw->completions[0].p_pack;

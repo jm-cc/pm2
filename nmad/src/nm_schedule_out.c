@@ -188,12 +188,21 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   if((p_pw->p_data != NULL) &&
      ((p_pw->flags & NM_PW_DATA_USE_COPY) || !p_pw->p_drv->trk_caps[p_pw->trk_id].supports_data))
     {
-      void*buf = malloc(p_pw->length);
-      nm_data_copy_from(p_pw->p_data, p_pw->chunk_offset, p_pw->length, buf);
+      const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pw->p_data);
+      void*buf = NULL;
+      if(p_props->is_contig)
+	{
+	  buf = nm_data_baseptr_get(p_pw->p_data) + p_pw->chunk_offset;
+	}
+      else
+	{
+	  buf = malloc(p_pw->length);
+	  nm_data_copy_from(p_pw->p_data, p_pw->chunk_offset, p_pw->length, buf);
+	  p_pw->flags |= NM_PW_DYNAMIC_V0;
+	}
       struct iovec*vec = nm_pw_grow_iovec(p_pw);
       vec->iov_base = (void*)buf;
       vec->iov_len = p_pw->length;
-      p_pw->flags |= NM_PW_DYNAMIC_V0;
       p_pw->p_data = NULL;
     }
   int err = (*r->driver->post_send_iov)(r->_status, p_pw);

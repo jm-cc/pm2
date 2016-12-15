@@ -194,11 +194,12 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
   const char*s_link_rate = "unknown";
   switch(port_attr.active_speed)
     {
-    case 0x01: link_rate = 2;  s_link_rate = "SDR"; break;
-    case 0x02: link_rate = 4;  s_link_rate = "DDR"; break;
-    case 0x04: link_rate = 8;  s_link_rate = "QDR"; break;
-    case 0x08: link_rate = 14; s_link_rate = "FDR"; break;
-    case 0x10: link_rate = 25; s_link_rate = "EDR"; break;
+    case 0x01: link_rate = 2;  s_link_rate = "SDR";   break; /* 2.5 Gbps on the wire + 8/10 encoding */
+    case 0x02: link_rate = 4;  s_link_rate = "DDR";   break; /* 5 Gbps on the wire + 8/10 encoding  */
+    case 0x04: link_rate = 8;  s_link_rate = "QDR";   break; /* 10 Gbps on the wire + 8/10 encoding  */
+    case 0x08: link_rate = 10; s_link_rate = "FDR10"; break; /* 64/66 encoding */
+    case 0x10: link_rate = 14; s_link_rate = "FDR";   break; /* 64/66 encoding */
+    case 0x20: link_rate = 25; s_link_rate = "EDR";   break; /* 64/66 encoding */
     }
   p_hca->ib_caps.data_rate = link_width * link_rate;
 

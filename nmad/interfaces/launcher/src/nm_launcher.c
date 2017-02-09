@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2016 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include <nm_public.h>
+#include <nm_private.h>
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_core_interface.h>
@@ -102,10 +102,15 @@ int nm_launcher_init(int *argc, char**argv)
   if(getenv("PADICO_NOPRELOAD") != NULL)
     {
       padico_rc_t rc = padico_puk_mod_resolve(&launcher.boot_mod, "PadicoBootLib");
-      assert(launcher.boot_mod);
-      assert(!padico_rc_iserror(rc));
+      if((launcher.boot_mod == NULL) || padico_rc_iserror(rc))
+	{
+	  NM_FATAL("launcher: cannot resolve module PadicoBootLib.\n");
+	}
       rc = padico_puk_mod_load(launcher.boot_mod);
-      assert(!padico_rc_iserror(rc));
+      if(padico_rc_iserror(rc))
+	{
+	  NM_FATAL("launcher: cannot load module PadicoBootLib.\n");
+	}
     }
 
   const char*launcher_name =

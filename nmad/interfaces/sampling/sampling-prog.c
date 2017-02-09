@@ -33,7 +33,6 @@
 
 static const int param_min_size = 1;
 static const int param_max_size = (32*1024*1024);
-static const int param_dryrun_count = 2;
 
 static unsigned char*data_send = NULL;
 static unsigned char*data_recv = NULL;

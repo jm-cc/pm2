@@ -79,14 +79,19 @@ for up-to-date documentation.
 For native NewMadeleine applications, it is recommended to use
 `padico-launch` as a launcher for nmad. It accepts parameters similar
 to `mpirun`. Please see `padico-launch --help` for up-to-date
-documentation.
+documentation. For example:
+
+    % padico-launch -n 2 -nodelist jack0,jack1 nm_bench_sendrecv
+
+starts program 'nm_bench_sendrecv' on hosts jack0 and jack1, using
+auto-detected network.
 
 Environment variables may be set using -D parameters, e.g.:
 
-    % padico-launch -c -n 2 -nodelist jack0,jack1 -DNMAD_DRIVER=ib+mx -DNMAD_STRATEGY=split_balance sr_bench
+    % padico-launch -c -p -n 2 -nodelist jack0,jack1 -DNMAD_DRIVER=ib+mx -DNMAD_STRATEGY=split_balance nm_bench_sendrecv
 
-starts program 'sr_bench' on hosts jack0 and jack1, using multi-rail
-over Infiniband and Myrinet.
+starts program 'nm_bench_sendrecv' on hosts jack0 and jack1, using multi-rail
+over Infiniband and Myrinet, using one console per process.
 
 
 Strategy

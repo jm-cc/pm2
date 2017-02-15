@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2016 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -197,6 +197,10 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
       else
 	{
 	  buf = malloc(p_pw->length);
+	  if(buf == NULL)
+	    {
+	      NM_FATAL("out of memory.\n");
+	    }
 	  nm_data_copy_from(p_pw->p_data, p_pw->chunk_offset, p_pw->length, buf);
 	  p_pw->flags |= NM_PW_DYNAMIC_V0;
 	}

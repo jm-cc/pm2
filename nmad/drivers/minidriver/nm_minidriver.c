@@ -182,6 +182,10 @@ static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *par
       p_minidriver_context->trks_array[i].props.profile.cpuset = NULL;
 #endif /* PM2_TOPOLOGY */
       (*minidriver_iface->getprops)(p_drv->index, &p_minidriver_context->trks_array[i].props);
+      /* sanity check */
+      assert( ((minidriver_iface->send_data == NULL) && (p_minidriver_context->trks_array[i].props.capabilities.supports_data == 0)) ||
+	      ((minidriver_iface->send_data != NULL) && (p_minidriver_context->trks_array[i].props.capabilities.supports_data != 0)) );
+      
     }
 
   

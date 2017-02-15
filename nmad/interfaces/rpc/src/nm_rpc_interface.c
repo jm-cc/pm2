@@ -63,7 +63,7 @@ void nm_rpc_isend(nm_session_t p_session, nm_sr_request_t*p_request,
 		  nm_gate_t p_gate, nm_tag_t tag,
 		  void*hptr, nm_len_t hlen, struct nm_data_s*p_body)
 {
-  struct nm_data_s rpc_data;
+  struct nm_data_s rpc_data; /* safe as temp var; will be copied by nm_sr_send_pack_data() */
   nm_rpc_data_build(&rpc_data, hptr, hlen, p_body);
   nm_sr_send_init(p_session, p_request);
   nm_sr_send_pack_data(p_session, p_request, &rpc_data);

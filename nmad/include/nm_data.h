@@ -163,6 +163,23 @@ struct nm_data_s
 
 /* ** Built-in data types ********************************** */
 
+/** data descriptor for 'null' data
+ */
+struct nm_data_null_s
+{
+  /* empty */
+};
+extern const struct nm_data_ops_s nm_data_ops_null;
+NM_DATA_TYPE(null, struct nm_data_null_s, &nm_data_ops_null);
+static inline void nm_data_null_build(struct nm_data_s*p_data)
+{
+  nm_data_null_set(p_data, (struct nm_data_null_s){  });
+}
+static inline int nm_data_isnull(struct nm_data_s*p_data)
+{
+  return (p_data->ops.p_traversal == nm_data_ops_null.p_traversal);
+}
+
 /** data descriptor for contiguous data 
  */
 struct nm_data_contiguous_s

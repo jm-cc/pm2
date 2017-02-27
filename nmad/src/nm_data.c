@@ -26,6 +26,21 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 
 /* ********************************************************* */
+/* ** null data */
+
+static void nm_data_null_traversal(const void*_content, nm_data_apply_t apply, void*_context)
+{
+  /* empty */
+}
+const struct nm_data_ops_s nm_data_ops_null =
+  {
+    .p_traversal = &nm_data_null_traversal,
+    .p_generator = NULL,
+    .p_next      = NULL
+  };
+
+
+/* ********************************************************* */
 /* ** contiguous data */
 
 struct nm_data_contiguous_generator_s

@@ -129,6 +129,7 @@ static inline nm_len_t nm_rpc_get_size(struct nm_rpc_token_s*p_token)
 
 static inline void nm_rpc_recv_data(struct nm_rpc_token_s*p_token, struct nm_data_s*p_body)
 {
+  assert(nm_data_isnull(&p_token->body));
   p_token->body = *p_body;
   nm_rpc_data_build(&p_token->rpc_data, p_token->p_service->header_ptr, p_token->p_service->hlen, &p_token->body);
   nm_sr_recv_unpack_data(p_token->p_service->p_session, &p_token->request, &p_token->rpc_data);

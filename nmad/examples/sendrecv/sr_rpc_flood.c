@@ -37,7 +37,7 @@ static void rpc_flood_handler(nm_rpc_token_t p_token)
   const nm_len_t rlen = p_header->len;
   struct nm_data_s body;
   nm_data_contiguous_build(&body, (void*)buf, rlen);
-  nm_rpc_recv_data(p_token, &body);
+  nm_rpc_irecv_data(p_token, &body);
 }
 
 static void rpc_flood_finalizer(nm_rpc_token_t p_token)

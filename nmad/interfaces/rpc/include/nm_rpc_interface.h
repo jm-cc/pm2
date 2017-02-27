@@ -61,9 +61,10 @@ static inline nm_tag_t nm_rpc_get_tag(struct nm_rpc_token_s*p_token);
 /** get the size of the body for the received request; to be called from a handler */
 static inline nm_len_t nm_rpc_get_size(struct nm_rpc_token_s*p_token);
 
-/** posts the recv for the body of a received request; to be called from a handler;
- *  data will be actually received in finalizer */
-static inline void nm_rpc_recv_data(struct nm_rpc_token_s*p_token, struct nm_data_s*p_body);
+/** asynchronously posts the recv for the body of a received request; to be called from a handler;
+ * there is no guarantee that data is available when this function completes.
+ * data will be actually received in 'finalizer' */
+static inline void nm_rpc_irecv_data(struct nm_rpc_token_s*p_token, struct nm_data_s*p_body);
 
 
 

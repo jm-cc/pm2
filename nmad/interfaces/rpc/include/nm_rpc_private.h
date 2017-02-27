@@ -74,7 +74,7 @@ static inline nm_len_t nm_rpc_get_size(struct nm_rpc_token_s*p_token)
   return size - p_token->p_service->hlen;
 }
 
-static inline void nm_rpc_recv_data(struct nm_rpc_token_s*p_token, struct nm_data_s*p_body)
+static inline void nm_rpc_irecv_data(struct nm_rpc_token_s*p_token, struct nm_data_s*p_body)
 {
   assert(nm_data_isnull(&p_token->body));
   p_token->body = *p_body;

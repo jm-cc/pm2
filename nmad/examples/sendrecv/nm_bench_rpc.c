@@ -29,7 +29,7 @@ static void bench_rpc_handler(nm_rpc_token_t p_token)
   const nm_len_t rlen = *p_rlen;
   struct nm_data_s body;
   nm_data_contiguous_build(&body, rbuf, rlen);
-  nm_rpc_recv_data(p_token, &body);
+  nm_rpc_irecv_data(p_token, &body);
 }
 
 static void bench_rpc_finalizer(nm_rpc_token_t p_token)

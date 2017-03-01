@@ -178,6 +178,7 @@ static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *par
       char s_index[16];
       sprintf(s_index, "%d", p_drv->index);
       puk_context_putattr(conn->context, "index", s_index);
+      p_minidriver_context->trks_array[i].props.capabilities = (struct nm_drv_cap_s){ 0 };
 #ifdef PM2_TOPOLOGY
       p_minidriver_context->trks_array[i].props.profile.cpuset = NULL;
 #endif /* PM2_TOPOLOGY */

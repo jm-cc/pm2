@@ -32,12 +32,12 @@ PADICO_MODULE_HOOK(NewMad_Core);
 
 static struct
 {
-  puk_instance_t instance;
-  struct puk_receptacle_NewMad_Launcher_s r;
-  nm_gate_t *gates;
-  int size;
-  puk_mod_t boot_mod;
-  int puk_init; /**< whether we initialized Puk ourself */
+  puk_instance_t instance;                   /**< instance of NewMad_Launcher component */
+  struct puk_receptacle_NewMad_Launcher_s r; /**< receptacle for launcher component */
+  nm_gate_t*gates;     /**< pointer to the gate array *in the launcher component* */
+  int size;            /**< number of gates */
+  puk_mod_t boot_mod;  /**< the mod that was used for init */
+  int puk_init;        /**< whether we initialized Puk ourself */
 } launcher =
   {
     .instance = NULL, .gates = NULL, .size = -1, .boot_mod = NULL, .puk_init = 0

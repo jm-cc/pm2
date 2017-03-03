@@ -26,6 +26,30 @@
  */
 
 
+/* ** Front-end functions for easier component indirections */
+
+/** Initializes everything. */
+int nm_launcher_init(int*argc, char**argv);
+
+/** Cleans session. Returns NM_ESUCCESS or EXIT_FAILURE. */
+int nm_launcher_exit(void);
+
+/** Returns process rank */
+int nm_launcher_get_rank(int*);
+
+/** Returns the number of nodes */
+int nm_launcher_get_size(int*);
+
+/** Returns the default root session. Use nm_session_open() to create a private session. */
+int nm_launcher_get_session(nm_session_t*p_session);
+
+/** Returns the gate for the process dest */
+int nm_launcher_get_gate(int dest, nm_gate_t*gate);
+
+/** Abort all processes */
+void nm_launcher_abort(void);
+
+
 /** Component interface definition: 'NewMad_Launcher' */
 struct newmad_launcher_driver_s
 {
@@ -45,29 +69,6 @@ struct newmad_launcher_driver_s
 
 PUK_IFACE_TYPE(NewMad_Launcher, struct newmad_launcher_driver_s);
 
-
-/* ** Front-end functions for easier component indirections */
-
-/** Initializes everything. */
-int nm_launcher_init(int *argc, char **argv);
-
-/** Cleans session. Returns NM_ESUCCESS or EXIT_FAILURE. */
-int nm_launcher_exit(void);
-
-/** Returns process rank */
-int nm_launcher_get_rank(int *);
-
-/** Returns the number of nodes */
-int nm_launcher_get_size(int *);
-
-/** Returns the send/receive interface */
-int nm_launcher_get_session(nm_session_t *p_session);
-
-/** Returns the gate for the process dest */
-int nm_launcher_get_gate(int dest, nm_gate_t *gate);
-
-/** Abort all processes */
-void nm_launcher_abort(void);
 
 /* @} */
 

@@ -34,13 +34,15 @@ static struct
 {
   puk_instance_t instance;                   /**< instance of NewMad_Launcher component */
   struct puk_receptacle_NewMad_Launcher_s r; /**< receptacle for launcher component */
-  nm_gate_t*gates;     /**< pointer to the gate array *in the launcher component* */
-  int size;            /**< number of gates */
-  puk_mod_t boot_mod;  /**< the mod that was used for init */
-  int puk_init;        /**< whether we initialized Puk ourself */
+  nm_gate_t*gates;         /**< pointer to the gate array, filled by the launcher component */
+  int size;                /**< number of gates */
+  puk_hashtable_t reverse; /**< reverse table: p_gate -> rank */
+  puk_mod_t boot_mod;      /**< the mod that was used for init */
+  int puk_init;            /**< whether we initialized Puk ourself */
 } launcher =
   {
-    .instance = NULL, .gates = NULL, .size = -1, .boot_mod = NULL, .puk_init = 0
+    .instance = NULL, .gates = NULL, .size = -1, .reverse = NULL,
+    .boot_mod = NULL, .puk_init = 0
   };
 
 int nm_launcher_get_rank(int *rank)
@@ -71,6 +73,20 @@ int nm_launcher_get_gate(int dest, nm_gate_t*pp_gate)
   nm_gate_t p_gate = launcher.gates[dest];
   *pp_gate = p_gate;
   return NM_ESUCCESS;
+}
+
+int nm_launcher_get_dest(nm_gate_t p_gate, int*dest)
+{
+  intptr_t rank_as_ptr = (intptr_t)puk_hashtable_lookup(launcher.reverse, p_gate);
+  if(rank_as_ptr > 0)
+    {
+      *dest = (rank_as_ptr - 1);
+      return NM_ESUCCESS;
+    }
+  else
+    {
+      return -NM_EINVAL;
+    }
 }
 
 void nm_launcher_abort(void)
@@ -128,7 +144,15 @@ int nm_launcher_init(int *argc, char**argv)
 
   launcher.size = (*launcher.r.driver->get_size)(launcher.r._status);
   launcher.gates = TBX_MALLOC(launcher.size * sizeof(nm_gate_t));
+  launcher.reverse = puk_hashtable_new_ptr();
   (*launcher.r.driver->get_gates)(launcher.r._status, launcher.gates);
+  int j;
+  for(j = 0; j < launcher.size; j++)
+    {
+      nm_gate_t p_gate = launcher.gates[j];
+      const intptr_t rank_as_ptr = j + 1;
+      puk_hashtable_insert(launcher.reverse, p_gate, (void*)rank_as_ptr);
+    }
   
   return NM_ESUCCESS;
 }

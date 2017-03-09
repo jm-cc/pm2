@@ -32,9 +32,9 @@ static void rpc_hello_handler(nm_rpc_token_t p_token)
 {
   struct rpc_hello_header_s*p_header = nm_rpc_get_header(p_token);
   const nm_len_t rlen = p_header->len;
-  fprintf(stderr, "rpc_hello_handler()- header = %d\n", rlen);
+  fprintf(stderr, "rpc_hello_handler()- header = %lu\n", rlen);
 
-  void*buf = malloc(rlen);
+  char*buf = malloc(rlen);
   nm_rpc_token_set_ref(p_token, buf);
   struct nm_data_s body;
   nm_data_contiguous_build(&body, buf, rlen);
@@ -43,14 +43,14 @@ static void rpc_hello_handler(nm_rpc_token_t p_token)
 
 static void rpc_hello_finalizer(nm_rpc_token_t p_token)
 {
-  void*buf = nm_rpc_token_get_ref(p_token);
+  char*buf = nm_rpc_token_get_ref(p_token);
   fprintf(stderr, "received: %s\n", buf);
   free(buf);
 }
 
 int main(int argc, char**argv)
 {
-  nm_len_t len = sizeof(nm_len_t) + strlen(msg) + 1;
+  nm_len_t len = strlen(msg) + 1;
   struct rpc_hello_header_s header = { .len = len };
   nm_examples_init(&argc, argv);
 

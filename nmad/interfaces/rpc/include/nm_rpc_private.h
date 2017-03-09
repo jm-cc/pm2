@@ -85,7 +85,7 @@ static inline void*nm_rpc_token_get_ref(struct nm_rpc_token_s*p_token)
   return p_token->ref;
 }
 
-static inline void*nm_rpc_token_set_ref(struct nm_rpc_token_s*p_token, void*ref)
+static inline void nm_rpc_token_set_ref(struct nm_rpc_token_s*p_token, void*ref)
 {
   p_token->ref = ref;
 }

@@ -62,7 +62,7 @@ static inline nm_tag_t nm_rpc_get_tag(struct nm_rpc_token_s*p_token);
 static inline nm_len_t nm_rpc_get_size(struct nm_rpc_token_s*p_token);
 
 /** attach a user reference to a token */
-static inline void*nm_rpc_token_set_ref(struct nm_rpc_token_s*p_token, void*ref);
+static inline void nm_rpc_token_set_ref(struct nm_rpc_token_s*p_token, void*ref);
 
 /** get a user reference previously attached to the token */
 static inline void*nm_rpc_token_get_ref(struct nm_rpc_token_s*p_token);

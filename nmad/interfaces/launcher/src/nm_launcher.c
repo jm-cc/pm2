@@ -77,6 +77,7 @@ int nm_launcher_get_gate(int dest, nm_gate_t*pp_gate)
 
 int nm_launcher_get_dest(nm_gate_t p_gate, int*dest)
 {
+  assert(p_gate != NULL);
   intptr_t rank_as_ptr = (intptr_t)puk_hashtable_lookup(launcher.reverse, p_gate);
   if(rank_as_ptr > 0)
     {
@@ -85,6 +86,7 @@ int nm_launcher_get_dest(nm_gate_t p_gate, int*dest)
     }
   else
     {
+      *dest = -1;
       return -NM_EINVAL;
     }
 }

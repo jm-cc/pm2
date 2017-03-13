@@ -79,7 +79,7 @@ static inline void nm_rpc_irecv_data(struct nm_rpc_token_s*p_token, struct nm_da
 
 /* ********************************************************* */
 
-/** @internal include private header for inling */
+/** @internal include private header for inlining */
 #include <nm_rpc_private.h>
 
 #endif /* NM_RPC_INTERFACE_H */

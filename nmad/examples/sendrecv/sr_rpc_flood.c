@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2016 (see AUTHORS file)
+ * Copyright (C) 2016-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 
 const char msg[] = "Hello, world!";
 const nm_tag_t tag = 0x02;
-static char buf[256];
 struct rpc_flood_header_s
 {
   nm_len_t len;
@@ -33,16 +32,20 @@ struct rpc_flood_header_s
 
 static void rpc_flood_handler(nm_rpc_token_t p_token)
 {
-  struct rpc_flood_header_s*p_header = nm_rpc_get_header(p_token);
+  const struct rpc_flood_header_s*p_header = nm_rpc_get_header(p_token);
   const nm_len_t rlen = p_header->len;
+  char*buf = malloc(rlen);
+  nm_rpc_token_set_ref(p_token, buf);
   struct nm_data_s body;
-  nm_data_contiguous_build(&body, (void*)buf, rlen);
+  nm_data_contiguous_build(&body, buf, rlen);
   nm_rpc_irecv_data(p_token, &body);
 }
 
 static void rpc_flood_finalizer(nm_rpc_token_t p_token)
 {
+  char*buf = nm_rpc_token_get_ref(p_token);
   /*  fprintf(stderr, "received: %s\n", buf); */
+  free(buf);
 }
 
 int main(int argc, char**argv)

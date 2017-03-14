@@ -451,7 +451,7 @@ static inline int nm_status_test_allbits(struct nm_req_s*p_req, nm_status_t bitm
 }
 
 
-/* @} */
+/** @} */
 
 #endif /* NM_CORE_INTERFACE_H */
 

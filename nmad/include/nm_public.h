@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,10 @@
  *
  * The API for end-users are defined in the 'interfaces' directory.
  *
+ */
+
+/** @ingroup core_interface
+ * @{
  */
 
 #ifndef NMAD
@@ -90,6 +94,7 @@ typedef uint64_t nm_len_t;
 
 #include <nm_data.h>
 
+/** @} */
 
 #endif /* NM_PUBLIC_H */
 

@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "../sendrecv/sr_examples_helper.h"
+#include "../common/nm_examples_helper.h"
 
 #ifdef PIOMAN
 #include <pioman.h>

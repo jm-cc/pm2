@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "sr_examples_helper.h"
+#include "../common/nm_examples_helper.h"
 
 PUK_ALLOCATOR_TYPE(nm_sr_req, nm_sr_request_t);
 

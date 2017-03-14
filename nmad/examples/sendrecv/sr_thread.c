@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 #include <pthread.h>
-#include "sr_examples_helper.h"
+#include "../common/nm_examples_helper.h"
 
 #define N 500000
 

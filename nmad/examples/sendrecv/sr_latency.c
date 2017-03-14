@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <values.h>
 
-#include "sr_examples_helper.h"
+#include "../common/nm_examples_helper.h"
 
 #define LOOPS   50000
 

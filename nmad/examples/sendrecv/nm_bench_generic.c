@@ -21,7 +21,7 @@
 #include <values.h>
 
 #include "nm_bench_generic.h"
-#include "sr_examples_helper.h"
+#include "../common/nm_examples_helper.h"
 
 #define MIN_DEFAULT     0
 #define MAX_DEFAULT     (512 * 1024 * 1024)

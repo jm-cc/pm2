@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "sr_examples_helper.h"
+#include "../common/nm_examples_helper.h"
 
 #define LOOPS      2000
 #define PAGE_SIZE (65 * 1024)

@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "sr_examples_helper.h"
+#include "../common/nm_examples_helper.h"
 
 const char msg[] = "Hello, world!";
 

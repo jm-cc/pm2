@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "sr_examples_helper.h"
+#include "../common/nm_examples_helper.h"
 #include <nm_launcher.h>
 
 //#define STAR_DEBUG

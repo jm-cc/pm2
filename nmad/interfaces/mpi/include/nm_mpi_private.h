@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2016 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,56 +87,56 @@ typedef struct nm_mpi_errhandler_s
 #define FREE_AND_SET_NULL(p) do { free(p); p = NULL; } while (0/*CONSTCOND*/)
 
 /** Maximum value of the tag specified by the end-user */
-#define NM_MPI_TAG_MAX           0x7FFFFFFF
+#define NM_MPI_TAG_MAX                   ((nm_tag_t)(0x7FFFFFFF))
 /** Mask for private tags */
-#define NM_MPI_TAG_PRIVATE_BASE  0xF0000000
-#define NM_MPI_TAG_PRIVATE_BARRIER       (NM_MPI_TAG_PRIVATE_BASE | 0x01)
-#define NM_MPI_TAG_PRIVATE_BCAST         (NM_MPI_TAG_PRIVATE_BASE | 0x02)
-#define NM_MPI_TAG_PRIVATE_GATHER        (NM_MPI_TAG_PRIVATE_BASE | 0x03)
-#define NM_MPI_TAG_PRIVATE_GATHERV       (NM_MPI_TAG_PRIVATE_BASE | 0x04)
-#define NM_MPI_TAG_PRIVATE_SCATTER       (NM_MPI_TAG_PRIVATE_BASE | 0x05)
-#define NM_MPI_TAG_PRIVATE_SCATTERV      (NM_MPI_TAG_PRIVATE_BASE | 0x06)
-#define NM_MPI_TAG_PRIVATE_ALLTOALL      (NM_MPI_TAG_PRIVATE_BASE | 0x07)
-#define NM_MPI_TAG_PRIVATE_ALLTOALLV     (NM_MPI_TAG_PRIVATE_BASE | 0x08)
-#define NM_MPI_TAG_PRIVATE_REDUCE        (NM_MPI_TAG_PRIVATE_BASE | 0x09)
-#define NM_MPI_TAG_PRIVATE_REDUCESCATTER (NM_MPI_TAG_PRIVATE_BASE | 0x0A)
-#define NM_MPI_TAG_PRIVATE_ALLGATHER     (NM_MPI_TAG_PRIVATE_BASE | 0x0B)
-#define NM_MPI_TAG_PRIVATE_TYPE_ADD      (NM_MPI_TAG_PRIVATE_BASE | 0x0C) /**< add a datatype */
-#define NM_MPI_TAG_PRIVATE_TYPE_ADD_ACK  (NM_MPI_TAG_PRIVATE_BASE | 0x0D) /**< answer to add request */
-#define NM_MPI_TAG_PRIVATE_WIN_INIT      (NM_MPI_TAG_PRIVATE_BASE | 0x0E)
-#define NM_MPI_TAG_PRIVATE_WIN_FENCE     (NM_MPI_TAG_PRIVATE_BASE | 0x0F)
-#define NM_MPI_TAG_PRIVATE_WIN_BARRIER   (NM_MPI_TAG_PRIVATE_BASE | 0x10)
-#define NM_MPI_TAG_PRIVATE_COMMSPLIT     (NM_MPI_TAG_PRIVATE_BASE | 0xF1)
-#define NM_MPI_TAG_PRIVATE_COMMCREATE    (NM_MPI_TAG_PRIVATE_BASE | 0xF2)
+#define NM_MPI_TAG_PRIVATE_BASE          ((nm_tag_t)(0xF0000000))
+#define NM_MPI_TAG_PRIVATE_BARRIER       ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x01))
+#define NM_MPI_TAG_PRIVATE_BCAST         ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x02))
+#define NM_MPI_TAG_PRIVATE_GATHER        ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x03))
+#define NM_MPI_TAG_PRIVATE_GATHERV       ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x04))
+#define NM_MPI_TAG_PRIVATE_SCATTER       ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x05))
+#define NM_MPI_TAG_PRIVATE_SCATTERV      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x06))
+#define NM_MPI_TAG_PRIVATE_ALLTOALL      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x07))
+#define NM_MPI_TAG_PRIVATE_ALLTOALLV     ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x08))
+#define NM_MPI_TAG_PRIVATE_REDUCE        ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x09))
+#define NM_MPI_TAG_PRIVATE_REDUCESCATTER ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x0A))
+#define NM_MPI_TAG_PRIVATE_ALLGATHER     ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x0B))
+#define NM_MPI_TAG_PRIVATE_TYPE_ADD      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x0C)) /**< add a datatype */
+#define NM_MPI_TAG_PRIVATE_TYPE_ADD_ACK  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x0D)) /**< answer to add request */
+#define NM_MPI_TAG_PRIVATE_WIN_INIT      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x0E))
+#define NM_MPI_TAG_PRIVATE_WIN_FENCE     ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x0F))
+#define NM_MPI_TAG_PRIVATE_WIN_BARRIER   ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x10))
+#define NM_MPI_TAG_PRIVATE_COMMSPLIT     ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0xF1))
+#define NM_MPI_TAG_PRIVATE_COMMCREATE    ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0xF2))
 /** Masks for RMA-communication tags */
-#define NM_MPI_TAG_PRIVATE_RMA_BASE      (NM_MPI_TAG_PRIVATE_BASE | 0x08000000)
-#define NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC (NM_MPI_TAG_PRIVATE_BASE | 0x04000000)
-#define NM_MPI_TAG_PRIVATE_RMA_MASK_OP   (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x0F) /**< rma operation mask */
-#define NM_MPI_TAG_PRIVATE_RMA_MASK_AOP  (NM_MPI_TAG_PRIVATE_RMA_BASE | 0xF0) /**< acc operation mask */
-#define NM_MPI_TAG_PRIVATE_RMA_MASK_FOP  (NM_MPI_TAG_PRIVATE_RMA_MASK_OP    | \
-					  NM_MPI_TAG_PRIVATE_RMA_MASK_AOP)    /**< full operation mask */
-#define NM_MPI_TAG_PRIVATE_RMA_MASK_SEQ  (NM_MPI_TAG_PRIVATE_RMA_BASE | 0xFFFF00)
-#define NM_MPI_TAG_PRIVATE_RMA_MASK_WIN  (0xFFFFFFFF00000000 | NM_MPI_TAG_PRIVATE_RMA_BASE)
-#define NM_MPI_TAG_PRIVATE_RMA_MASK_USER (NM_MPI_TAG_PRIVATE_RMA_MASK_FOP   | \
-					  NM_MPI_TAG_PRIVATE_RMA_MASK_SEQ)
-#define NM_MPI_TAG_PRIVATE_RMA_MASK      (NM_MPI_TAG_PRIVATE_RMA_MASK_WIN   | \
-					  NM_MPI_TAG_PRIVATE_RMA_MASK_USER)
-#define NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0xFFFFFFFF000000FF)
-#define NM_MPI_TAG_PRIVATE_RMA_START     (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x01)
-#define NM_MPI_TAG_PRIVATE_RMA_END       (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x02)
-#define NM_MPI_TAG_PRIVATE_RMA_LOCK      (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x13) /**< lock request */
-#define NM_MPI_TAG_PRIVATE_RMA_LOCK_R    (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x04) /**< lock ACK */
-#define NM_MPI_TAG_PRIVATE_RMA_UNLOCK    (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x05) /**< unlock request */
-#define NM_MPI_TAG_PRIVATE_RMA_UNLOCK_R  (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x06) /**< unlock ACK */
+#define NM_MPI_TAG_PRIVATE_RMA_BASE      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x08000000))
+#define NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x04000000))
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_OP   ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x0F)) /**< rma operation mask */
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_AOP  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0xF0)) /**< acc operation mask */
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_FOP  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_MASK_OP    | \
+						     NM_MPI_TAG_PRIVATE_RMA_MASK_AOP))    /**< full operation mask */
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_SEQ  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0xFFFF00))
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_WIN  ((nm_tag_t)(0xFFFFFFFF00000000 | NM_MPI_TAG_PRIVATE_RMA_BASE))
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_USER ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_MASK_FOP   | \
+						     NM_MPI_TAG_PRIVATE_RMA_MASK_SEQ))
+#define NM_MPI_TAG_PRIVATE_RMA_MASK      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_MASK_WIN   | \
+						     NM_MPI_TAG_PRIVATE_RMA_MASK_USER))
+#define NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0xFFFFFFFF000000FF))
+#define NM_MPI_TAG_PRIVATE_RMA_START     ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x01))
+#define NM_MPI_TAG_PRIVATE_RMA_END       ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x02))
+#define NM_MPI_TAG_PRIVATE_RMA_LOCK      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x13)) /**< lock request */
+#define NM_MPI_TAG_PRIVATE_RMA_LOCK_R    ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x04)) /**< lock ACK */
+#define NM_MPI_TAG_PRIVATE_RMA_UNLOCK    ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x05)) /**< unlock request */
+#define NM_MPI_TAG_PRIVATE_RMA_UNLOCK_R  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x06)) /**< unlock ACK */
 /** If dynamic window, tells if target address is valid */
-#define NM_MPI_TAG_PRIVATE_RMA_OP_CHECK  (NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x0F) 
-#define NM_MPI_TAG_PRIVATE_RMA_PUT       (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x1)
-#define NM_MPI_TAG_PRIVATE_RMA_GET_REQ   (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x2)
-#define NM_MPI_TAG_PRIVATE_RMA_ACC       (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x3) /**< accumulate */
-#define NM_MPI_TAG_PRIVATE_RMA_GACC_REQ  (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x4) /**< get_accumulate */
-#define NM_MPI_TAG_PRIVATE_RMA_FAO_REQ   (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x5) /**< fetch and op */
-#define NM_MPI_TAG_PRIVATE_RMA_CAS_REQ   (NM_MPI_TAG_PRIVATE_RMA_BASE | 0x6) /**< compare and swap */
-#define NM_MPI_TAG_PRIVATE_RMA_REQ_RESP  (NM_MPI_TAG_PRIVATE_RMA_BASE | 0xF)
+#define NM_MPI_TAG_PRIVATE_RMA_OP_CHECK  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x0F)) 
+#define NM_MPI_TAG_PRIVATE_RMA_PUT       ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x1))
+#define NM_MPI_TAG_PRIVATE_RMA_GET_REQ   ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x2))
+#define NM_MPI_TAG_PRIVATE_RMA_ACC       ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x3)) /**< accumulate */
+#define NM_MPI_TAG_PRIVATE_RMA_GACC_REQ  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x4)) /**< get_accumulate */
+#define NM_MPI_TAG_PRIVATE_RMA_FAO_REQ   ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x5)) /**< fetch and op */
+#define NM_MPI_TAG_PRIVATE_RMA_CAS_REQ   ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x6)) /**< compare and swap */
+#define NM_MPI_TAG_PRIVATE_RMA_REQ_RESP  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0xF))
 
 /** content for MPI_Info */
 struct nm_mpi_info_s

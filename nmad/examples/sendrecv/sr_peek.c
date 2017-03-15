@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2016 (see AUTHORS file)
+ * Copyright (C) 2016-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "../common/nm_examples_helper.h"
 
@@ -47,7 +48,7 @@ int main(int argc, char**argv)
       nm_sr_recv_unpack_contiguous(p_session, &request, buf, len);
       nm_sr_recv_post(p_session, &request);
       nm_sr_rwait(p_session, &request);
-      printf("buffer contents: %s\n", buf + sizeof(int));
+      printf("buffer contents: %s\n", (char*)(buf + sizeof(int)));
     }
   else
     {

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015-2016 (see AUTHORS file)
+ * Copyright (C) 2015-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <values.h>
-#include <assert.h>
 
 #include <mpi.h>
 #include "mpi_bench_generic.h"

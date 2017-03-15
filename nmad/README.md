@@ -18,8 +18,7 @@ Requirements:
   - autoconf (v 2.50 or later)
   - pkg-config
   - hwloc (optional, recommended)
-  - libnuma (optional)
-  - ibverbs for IB support (set $IBHOME if not installed in /usr)
+  - ibverbs/OFED for IB support (set $IBHOME if not installed in /usr)
   - MX for Myrinet support (set $MX_DIR if not installed in /usr)
 
 **Automated build** (recommended):
@@ -124,17 +123,16 @@ An optionnal board number may be given if multiple boards with the
 same driver are present, e.g. NMAD_DRIVER=ibverbs:0+ibverbs:1 for
 dual-IB.
 
-2. if nmad is launched through the newmadico nmad launcher (default
-choice if session is started with padico-launch), then PadicoTM
+2. if nmad is launched mpirun or padico-launch, then PadicoTM
 default NetSelector rules apply:
   + intra-process uses 'self'
   + intra-node inter-process uses 'shm'
-  + inter-node uses 'ibverbs' if InfinibandVerbs is loaded
-    (i.e. "-net ib" was given to padico-launch) and nodes are on the
-    same IB subnet (same subnet manager).
-  + inter-node uses 'mx' if PSP-MX is loaded (i.e. "-net mx" was given
-    to padico-launch) and nodes are on the same Myrinet network (same
-    mapper).
+  + inter-node uses 'ibverbs' if InfiniBand is present (auto-detected)
+    and nodes are on the same IB subnet (same subnet manager). Thus it
+    is important to configure subnet GID prefix and not keep the
+    factory default GID prefix in opensm.
+  + inter-node uses 'mx' if Myrinet is auto-detetected and nodes are
+    on the same Myrinet network (same mapper).
   + inter-node uses 'tcp' if IP is available, and neither IB nor MX
     are available.
   + as last resort, routed messages over control channel is used if
@@ -143,9 +141,10 @@ Usual NetSelector customization is possible.
 
 3. if nmad is launched through the cmdline launcher, then a
 "-R <string>" parameter is taken as a railstring, with the same syntax
-as NMAD_DRIVER
+as NMAD_DRIVER. Please note that cmdline launcher is only for debug
+purpose and manages only 2 nodes.
 
-4. if another launcher is used, it may set a selector using the
+4. if another custom launcher is used, it may set a selector using the
 'sesion' interface.
 
 5. in any other case, 'self' is used for intra-process; 'tcp' for
@@ -178,6 +177,7 @@ subnet GID on all nodes of the subnet.
 Tags
 ----
 
+The tag width may be configured as follows:
 - tag_as_flat_array: tags are 8 bits, stored in flat arrays.
 - tag_as_hashtable: tags are 32 bits, stored in hashtables. It is
   expected that the tags actually used will be sparse.

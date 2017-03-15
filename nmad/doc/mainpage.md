@@ -40,7 +40,7 @@ or the native NewMadeleine APIs:
 
 the internal interfaces no designed for end-users:
   - the @ref core_interface for direct access to nmad packet scheduler. This is the interface upon all other interfaces rely.
-  - the @ref launcher_interface to explictely interface with launcher. This is normally not needed by end-users which should use sessions instead.
+  - the @ref launcher_interface to explicitely interface with launcher. This is normally not needed by end-users which should use sessions instead.
   - the @ref pack_interface for compatibility with legacy Mad3 interface. This has been obsoleted for a long time.
 
 Getting the source code

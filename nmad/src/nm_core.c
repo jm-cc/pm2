@@ -322,7 +322,7 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
   else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "shm") == 0))
     {
       static const char minidriver_shm[] = 
-	"<puk:composite id=\"nm:shm\">"
+	"<puk:composite id=\"nm:shm-pipe\">"
 	"  <puk:component id=\"0\" name=\"Minidriver_shm\"/>"
 	"  <puk:component id=\"1\" name=\"Minidriver_largeshm\"/>"
 	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
@@ -340,7 +340,7 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
   else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "cma") == 0))
     {
       static const char minidriver_cma[] = 
-	"<puk:composite id=\"nm:shm\">"
+	"<puk:composite id=\"nm:shm-cma\">"
 	"  <puk:component id=\"0\" name=\"Minidriver_shm\"/>"
 	"  <puk:component id=\"1\" name=\"Minidriver_CMA\"/>"
 	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"

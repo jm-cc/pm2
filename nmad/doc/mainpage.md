@@ -35,6 +35,7 @@ Several APIs are provided to NewMadeleine users:
 
 or the native NewMadeleine APIs:
   - the @ref sr_interface as general purpose messaging interface based on send/receive.
+  - the @ref rpc_interface for asynchronous Remote Procedure Calls (RPC).
   - the @ref session_interface to init NewMadeleine and open sessions.
   - the @ref coll_interface for collective operations
 

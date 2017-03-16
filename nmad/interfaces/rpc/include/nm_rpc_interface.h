@@ -20,6 +20,15 @@
 #include <nm_sendrecv_interface.h>
 #include <nm_session_interface.h>
 
+/** @defgroup rpc_interface RPC interface
+ * This is the RPC-based interface, for remote procedure calls.
+ * @example nm_rpc_hello.c
+ */
+
+/** @ingroup rpc_interface
+ * @{
+ */
+
 /** a RPC token given to handlers */
 typedef struct nm_rpc_token_s*nm_rpc_token_t;
 
@@ -75,6 +84,7 @@ static inline void*nm_rpc_service_get_ref(struct nm_rpc_token_s*p_token);
  * data will be actually received in 'finalizer' */
 static inline void nm_rpc_irecv_data(struct nm_rpc_token_s*p_token, struct nm_data_s*p_body);
 
+/** @} */
 
 
 /* ********************************************************* */

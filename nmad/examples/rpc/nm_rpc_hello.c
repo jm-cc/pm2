@@ -23,11 +23,13 @@
 
 const char msg[] = "Hello, world!";
 const nm_tag_t tag = 0x02;
+/** header of requests used by this example */
 struct rpc_hello_header_s
 {
   nm_len_t len;
 }  __attribute__((packed));
 
+/** handler called upon incoming RPC request */
 static void rpc_hello_handler(nm_rpc_token_t p_token)
 {
   const struct rpc_hello_header_s*p_header = nm_rpc_get_header(p_token);
@@ -41,6 +43,7 @@ static void rpc_hello_handler(nm_rpc_token_t p_token)
   nm_rpc_irecv_data(p_token, &body);
 }
 
+/** handler called after all data for the incoming RPC request was received */
 static void rpc_hello_finalizer(nm_rpc_token_t p_token)
 {
   char*buf = nm_rpc_token_get_ref(p_token);
@@ -50,6 +53,7 @@ static void rpc_hello_finalizer(nm_rpc_token_t p_token)
 
 int main(int argc, char**argv)
 {
+  /* generic nmad init */
   nm_launcher_init(&argc, argv);
   nm_session_t p_session = NULL;
   nm_launcher_get_session(&p_session);
@@ -61,16 +65,20 @@ int main(int argc, char**argv)
 
   nm_comm_t p_comm = nm_comm_dup(nm_comm_world());
 
-  nm_len_t len = strlen(msg) + 1;
-  struct rpc_hello_header_s header = { .len = len };
-
+  /* register the RPC service */
   nm_rpc_service_t p_service = nm_rpc_register(p_session, tag, NM_TAG_MASK_FULL, sizeof(struct rpc_hello_header_s),
 					       &rpc_hello_handler, &rpc_hello_finalizer, NULL);
 
+  /* create a header */
+  nm_len_t len = strlen(msg) + 1;
+  struct rpc_hello_header_s header = { .len = len };
+  /* create a message body descriptor */
   struct nm_data_s data;
   nm_data_contiguous_build(&data, (void*)msg, len);
+  /* send the RPC request */
   nm_rpc_send(p_session, p_gate, tag, &header, sizeof(struct rpc_hello_header_s), &data);
 
+  /* generic nmad termination */
   nm_coll_barrier(p_comm, 0xF2);
   nm_rpc_unregister(p_service);
   nm_launcher_exit();

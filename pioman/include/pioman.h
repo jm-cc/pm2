@@ -89,7 +89,6 @@ extern void piom_ltask_schedule(int point);
 #include "piom_log.h"
 #include "piom_lock.h"
 #include "piom_ltask.h"
-#include "piom_io_task.h"
 
 /** @} */
 

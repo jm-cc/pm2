@@ -16,6 +16,8 @@
 #ifndef NM_RPC_PRIVATE_H
 #define NM_RPC_PRIVATE_H
 
+#include <assert.h>
+
 /** @internal */
 void nm_rpc_data_build(struct nm_data_s*p_rpc_data, void*hptr, nm_len_t hlen, const struct nm_data_s*p_body);
 

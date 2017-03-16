@@ -120,6 +120,7 @@ nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t 
       .tag_mask   = tag_mask,
       .ref        = p_service
     };
+  p_service->token.p_service = NULL;
   nm_data_contiguous_build(&p_service->header, p_service->header_ptr, p_service->hlen);
   nm_sr_session_monitor_set(p_session, &p_service->monitor);
   return p_service;

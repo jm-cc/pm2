@@ -50,6 +50,8 @@ static inline void nm_rpc_send(nm_session_t p_session, nm_gate_t p_gate, nm_tag_
 
 static inline void*nm_rpc_get_header(struct nm_rpc_token_s*p_token)
 {
+  assert(p_token != NULL);
+  assert(p_token->p_service != NULL);
   return p_token->p_service->header_ptr;
 }
 

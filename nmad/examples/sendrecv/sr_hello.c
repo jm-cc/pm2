@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,41 +24,35 @@
 
 const char *msg	= "hello, world";
 
-int
-main(int	  argc,
-     char	**argv) {
-        char		*buf	= NULL;
-        uint64_t	 len;
+int main(int argc, char**argv)
+{ 
+  nm_examples_init(&argc, argv);
 
-        nm_examples_init(&argc, argv);
+  uint64_t len = 1 + strlen(msg);
+  char*buf = malloc((size_t)len);
+  
+  if(is_server)
+    {
+      /* server side */
+      nm_sr_request_t request;
+      memset(buf, 0, len);
+      
+      nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, len, &request);
+      nm_sr_rwait(p_session, &request);
 
-        len = 1+strlen(msg);
-        buf = malloc((size_t)len);
-
-        if (is_server) {
-	  nm_sr_request_t request;
-          /* server
-           */
-          memset(buf, 0, len);
-
-          nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, len, &request);
-          nm_sr_rwait(p_session, &request);
-
-        } else {
-	  nm_sr_request_t request;
-          /* client
-           */
-          strcpy(buf, msg);
-
-          nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
-          nm_sr_swait(p_session, &request);
-        }
-
-        if (is_server) {
-                printf("buffer contents: %s\n", buf);
-        }
-
-	free(buf);
-        nm_examples_exit();
-        exit(0);
+      printf("buffer contents: %s\n", buf);
+    }
+  else
+    {
+      /* client side */
+      nm_sr_request_t request;
+      strcpy(buf, msg);
+      
+      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_swait(p_session, &request);
+    }
+ 
+  free(buf);
+  nm_examples_exit();
+  exit(0);
 }

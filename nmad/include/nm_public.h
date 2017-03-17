@@ -27,19 +27,34 @@
  * @{
  */
 
-#ifndef NMAD
-#error NMAD flags not defined. Please compile with flags returned by pkg-config --cflags nmad
-#endif /* NMAD */
-
-#if ((!defined(__pic__)) && (!defined(__PIC__)))
-#  error "nmad needs Position Independant Code; please build with -fPIC compilation flag."
-#endif
 
 /* don't include pm2_common.h or tbx.h here. They are not needed and not ISO C compliant */
 #include <stdlib.h>
 #include <stdint.h>
 #include <nm_errno.h>
 #include <nm_config.h>
+
+/* ** Sanity checks */
+
+#if !defined(NMAD)
+#error NMAD flags not defined. Please compile with flags returned by 'pkg-config --cflags nmad'
+#endif /* NMAD */
+
+#if ((!defined(__pic__)) && (!defined(__PIC__)))
+#  error "nmad needs Position Independant Code; please build with -fPIC compilation flag."
+#endif
+
+#if defined(NMAD_PIOMAN) && !defined(PIOMAN)
+#  error "nmad was configured with pioman support; cannot build without pioman flags."
+#endif
+
+#if defined(PIOMAN) && !defined(NMAD_PIOMAN)
+#  error "nmad was configured without pioman support; cannot build with pioman flags."
+#endif
+
+#if defined(NMAD_MARCEL) && !defined(MARCEL)
+#  error "nmad was configured with Marcel threads; cannot build without Marcel flags."
+#endif
 
 #ifdef NMAD_ABT
 #define main __abt_app_main

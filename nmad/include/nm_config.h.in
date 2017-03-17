@@ -32,4 +32,12 @@
 /* include ROMIO in mpi.h */
 #undef NMAD_MPI_ENABLE_ROMIO
 
+/* build nmad with pioman */
+#undef NMAD_PIOMAN
+
+/* pioman built against Marcel threads */
+#undef NMAD_MARCEL
+
+/* pioman built against abt */
 #undef NMAD_ABT
+

@@ -166,10 +166,12 @@ if test "x${with_pioman}" = "xyes"; then
   AC_MSG_RESULT([yes])
   PKG_CHECK_MODULES([pioman], [ pioman ])
   requires_pioman="pioman"
+  AC_DEFINE([NMAD_PIOMAN], [1], [use Pioman progression engine])
   AC_MSG_CHECKING([whether PIOMan is linked against Marcel.])
   has_marcel="`pkg-config --cflags pioman | grep -i PIOMAN_MARCEL`"
   if test "x${has_marcel}" != "x" ; then
      AC_MSG_RESULT([yes])
+     AC_DEFINE([NMAD_MARCEL], [1], [use Marcel multithreading])
   else
      AC_MSG_RESULT([no])
   fi

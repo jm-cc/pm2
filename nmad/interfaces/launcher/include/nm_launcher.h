@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@
 /* ** Front-end functions for easier component indirections */
 
 /** Initializes everything. */
-int nm_launcher_init(int*argc, char**argv);
+static inline int nm_launcher_init(int*argc, char**argv);
 
 /** Cleans session. Returns NM_ESUCCESS or EXIT_FAILURE. */
 int nm_launcher_exit(void);
@@ -71,6 +71,15 @@ struct newmad_launcher_driver_s
 };
 
 PUK_IFACE_TYPE(NewMad_Launcher, struct newmad_launcher_driver_s);
+
+int nm_launcher_init_checked(int*argc, char**argv, const struct nm_abi_config_s*p_nm_abi_config);
+
+static inline int nm_launcher_init(int*argc, char**argv)
+{
+  /* capture ABI config in application context 
+   * and compare with nmad builtin ABI config */
+  return nm_launcher_init_checked(argc, argv, &nm_abi_config);
+}
 
 
 /* @} */

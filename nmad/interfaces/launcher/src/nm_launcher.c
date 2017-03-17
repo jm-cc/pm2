@@ -97,8 +97,9 @@ void nm_launcher_abort(void)
   (*launcher.r.driver->abort)(launcher.r._status);
 }
 
-int nm_launcher_init(int *argc, char**argv)
+int nm_launcher_init_checked(int *argc, char**argv, const struct nm_abi_config_s*p_nm_abi_config)
 {
+  nm_abi_config_check(p_nm_abi_config);
   static int init_done = 0;
   if(init_done)
     return NM_ESUCCESS;

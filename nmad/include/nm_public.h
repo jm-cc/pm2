@@ -30,11 +30,12 @@
 
 /* don't include pm2_common.h or tbx.h here. They are not needed and not ISO C compliant */
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <nm_errno.h>
 #include <nm_config.h>
 
-/* ** Sanity checks */
+/* ** Config sanity checks ********************************* */
 
 #if !defined(NMAD)
 #error NMAD flags not defined. Please compile with flags returned by 'pkg-config --cflags nmad'
@@ -67,6 +68,76 @@
 #ifdef NMAD_ABT
 #define main __abt_app_main
 #endif /* PIOMAN_ABT */
+
+/** config options that impact nmad ABI */
+struct nm_abi_config_s
+{
+  int enable_pioman;
+  int enable_pthread;
+  int enable_marcel;
+  int enable_pukabi;
+  int tags;
+};
+const static struct nm_abi_config_s nm_abi_config =
+  {
+    .enable_pioman =
+#if defined(PIOMAN)
+    1
+#else /* PIOMAN */
+    0
+#endif /* PIOMAN */
+    ,
+    .enable_pthread =
+    0 /* TODO */
+    ,
+    .enable_marcel =
+#if defined(MARCEL)
+    1
+#else /* MARCEL */
+    0
+#endif
+    ,
+    .enable_pukabi =
+#if defined(PUKABI)
+    1
+#else /* PUKABI */
+    0
+#endif
+    ,
+    .tags =
+#if defined(NM_TAGS_AS_FLAT_ARRAY)
+    8
+#elif defined(NM_TAGS_AS_HASHTABLE)
+    32
+#elif defined(NM_TAGS_AS_INDIRECT_HASH)
+    64
+#else
+#error
+#endif
+  };
+static inline void nm_abi_config_check(const struct nm_abi_config_s*p_nm_abi_config)
+{
+  if( (nm_abi_config.enable_pioman  != p_nm_abi_config->enable_pioman)  ||
+      (nm_abi_config.enable_pthread != p_nm_abi_config->enable_pthread) ||
+      (nm_abi_config.enable_marcel  != p_nm_abi_config->enable_marcel)  ||
+      (nm_abi_config.enable_pukabi  != p_nm_abi_config->enable_pukabi)  ||
+      (nm_abi_config.tags           != p_nm_abi_config->tags) )
+    {
+      fprintf(stderr, "# nmad: FATAL ERROR- ABI inconsistency detected between application and libnmad.\n"
+	      "#               libnmad / application\n"
+	      "# enable_pioman    %2d   /   %2d\n"
+	      "# enable_pthread   %2d   /   %2d\n"
+	      "# enable_marcel    %2d   /   %2d\n"
+	      "# enable_pukabi    %2d   /   %2d\n"
+      	      "# tags width       %2d   /   %2d\n",
+	      nm_abi_config.enable_pioman,  p_nm_abi_config->enable_pioman,
+	      nm_abi_config.enable_pthread, p_nm_abi_config->enable_pthread,
+	      nm_abi_config.enable_marcel,  p_nm_abi_config->enable_marcel,
+	      nm_abi_config.enable_pukabi,  p_nm_abi_config->enable_pukabi,
+	      nm_abi_config.tags,           p_nm_abi_config->tags);
+      abort();
+    }
+}
 
 /* ** Driver *********************************************** */
 

@@ -168,6 +168,14 @@ if test "x${with_pioman}" = "xyes"; then
   PKG_CHECK_MODULES([pioman], [ pioman ])
   requires_pioman="pioman"
   AC_DEFINE([NMAD_PIOMAN], [1], [use Pioman progression engine])
+  AC_MSG_CHECKING([whether PIOMan is linked against pthread.])
+  has_pthread="`pkg-config --cflags pioman | grep -i PIOMAN_PTHREAD`"
+  if test "x${has_pthread}" != "x" ; then
+     AC_MSG_RESULT([yes])
+     AC_DEFINE([NMAD_PTHREAD], [1], [use pthread multithreading])
+  else
+     AC_MSG_RESULT([no])
+  fi
   AC_MSG_CHECKING([whether PIOMan is linked against Marcel.])
   has_marcel="`pkg-config --cflags pioman | grep -i PIOMAN_MARCEL`"
   if test "x${has_marcel}" != "x" ; then

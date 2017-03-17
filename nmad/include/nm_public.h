@@ -88,7 +88,11 @@ const static struct nm_abi_config_s nm_abi_config =
 #endif /* PIOMAN */
     ,
     .enable_pthread =
-    0 /* TODO */
+#if defined(NMAD_PTHREAD)
+    1
+#else /* PTHREAD */
+    0
+#endif /* PTHREAD */
     ,
     .enable_marcel =
 #if defined(MARCEL)

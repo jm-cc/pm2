@@ -41,3 +41,4 @@
 /* pioman built against abt */
 #undef NMAD_ABT
 
+#undef NMAD_PUKABI

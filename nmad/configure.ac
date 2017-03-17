@@ -154,6 +154,7 @@ else
   AC_MSG_RESULT([yes])
   PKG_CHECK_MODULES([PukABI], [ PukABI ])
   requires_pukabi="PukABI"
+  AC_DEFINE([NMAD_PUKABI], [1], [interface with PukABI interposer])
 fi
 AC_SUBST([requires_pukabi])
 AC_SUBST(with_pukabi)

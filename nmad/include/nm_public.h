@@ -56,18 +56,29 @@
 #  error "nmad was configured with Marcel threads; cannot build without Marcel flags."
 #endif
 
+#if defined(NMAD_PUKABI) && !defined(PUKABI)
+#  error "nmad was configured with PuABI support; cannot build without PukABI flags."
+#endif
+
+#if defined(PUKABI) && !defined(NMAD_PUKABI)
+#  error "nmad was configured without PuABI support; cannot build with PukABI flags."
+#endif
+
 #ifdef NMAD_ABT
 #define main __abt_app_main
 #endif /* PIOMAN_ABT */
 
 /* ** Driver *********************************************** */
 
+/** a nmad driver; opaque type for the user */
 typedef struct nm_drv_s*nm_drv_t;
 
 /* ** Gates ************************************************ */
 
+/** a gate; opaque type to designate a peer node */
 typedef struct nm_gate_s*nm_gate_t;
 
+/** no gate */
 #define NM_GATE_NONE ((nm_gate_t)NULL)
 
 #define NM_ANY_GATE NM_GATE_NONE
@@ -94,11 +105,14 @@ typedef uint64_t nm_tag_t;
 #  error NewMad: no container type defined for tag-indexed tables
 #endif
 
+/** tag mask that matches all bits */
 #define NM_TAG_MASK_FULL ((nm_tag_t)-1)
+/** tag mask that matches no bits */
 #define NM_TAG_MASK_NONE ((nm_tag_t)0)
 
 /* ** packets length and offsets *************************** */
 
+/** data length used by nmad */
 typedef uint64_t nm_len_t;
 
 /** length is undefined */

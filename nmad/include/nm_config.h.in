@@ -3,13 +3,13 @@
  */
 
 /* use 8 bits tags in arrays */
-#undef CONFIG_TAG_AS_FLAT_ARRAY
+#undef NM_TAGS_AS_FLAT_ARRAY
 
 /* use 32 bits tags in hashtable */
-#undef CONFIG_TAG_AS_HASHTABLE
+#undef NM_TAGS_AS_HASHTABLE
 
 /* use 64 bits tags in hashtable */
-#undef CONFIG_TAG_HUGE
+#undef NM_TAGS_AS_INDIRECT_HASH
 
 /* enable Mad-MPI */
 #undef MAD_MPI

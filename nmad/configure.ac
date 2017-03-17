@@ -66,32 +66,32 @@ AC_PADICO_OPTIMIZE
 dnl -- tag container
 dnl --
 AC_MSG_CHECKING([for tag container])
-tag_container="TAG_HUGE"
+tag_container="taghuge"
 AC_ARG_ENABLE(taghuge,
 	      [AS_HELP_STRING([--enable-taghuge], [Enable 64 bit tags @<:@default@:>@]) ],
               [ if test $enableval = yes; then
-                    tag_container="TAG_HUGE";
+                    tag_container="taghuge";
                 fi
               ],
 	      [])
 AC_ARG_ENABLE(tagarray,
 	      [AS_HELP_STRING([--enable-tagarray], [Enable 8 bit tags in flat array]) ],
               [ if test $enableval = yes; then
-                    tag_container="TAG_AS_FLAT_ARRAY";
+                    tag_container="tagarray";
                 fi
               ],
 	      [])
 AC_ARG_ENABLE(taghashtable,
 	      [AS_HELP_STRING([--enable-taghashtable], [Enable 32 bit tags in hashtable]) ],
               [ if test $enableval = yes; then
-                    tag_container="TAG_AS_HASHTABLE";
+                    tag_container="taghashtable";
                 fi
               ],
 	      [])
 case ${tag_container} in
-     TAG_AS_FLAT_ARRAY) AC_DEFINE([CONFIG_TAG_AS_FLAT_ARRAY], [1], [use 8 bits tags in arrays]);;
-     TAG_AS_HASHTABLE)  AC_DEFINE([CONFIG_TAG_AS_HASHTABLE],  [1], [use 32 bits tags in hashtable]);;
-     TAG_HUGE)          AC_DEFINE([CONFIG_TAG_HUGE],          [1], [use 64 bits tags in hashtable]);;
+     tagarray)     AC_DEFINE([NM_TAGS_AS_FLAT_ARRAY],    [1], [use 8 bits tags in arrays]);;
+     taghashtable) AC_DEFINE([NM_TAGS_AS_HASHTABLE],     [1], [use 32 bits tags in hashtable]);;
+     taghuge)      AC_DEFINE([NM_TAGS_AS_INDIRECT_HASH], [1], [use 64 bits tags in hashtable]);;
 esac
 AC_MSG_RESULT([${tag_container}])
 

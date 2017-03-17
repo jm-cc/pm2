@@ -72,6 +72,7 @@ struct newmad_launcher_driver_s
 
 PUK_IFACE_TYPE(NewMad_Launcher, struct newmad_launcher_driver_s);
 
+/** @internal init launcher with ABI check */
 int nm_launcher_init_checked(int*argc, char**argv, const struct nm_abi_config_s*p_nm_abi_config);
 
 static inline int nm_launcher_init(int*argc, char**argv)

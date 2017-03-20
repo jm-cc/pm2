@@ -50,9 +50,9 @@ struct nm_core
   int nb_drivers;
 
 #ifdef NMAD_POLL
-  /* if PIOMan is enabled, it already manages a list of requests to poll */
-  struct nm_pkt_wrap_list_s pending_send_list;  /**< Outgoing active pw. */
-  struct nm_pkt_wrap_list_s pending_recv_list;  /**< recv pw */
+  /* if PIOMan is enabled, it already manages a list of pw to poll */
+  struct nm_pkt_wrap_list_s pending_send_list;  /**< active pw for send to poll */
+  struct nm_pkt_wrap_list_s pending_recv_list;  /**< active pw for recv to poll */
 #endif /* NMAD_POLL */
 
   /** whether schedopt is enabled atop drivers */

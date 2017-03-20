@@ -160,7 +160,7 @@ static int strat_aggreg_todo(void*_status, nm_gate_t p_gate)
 static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset)
 {
   struct nm_strat_aggreg_s*p_status = _status;
-  const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pack->p_data);
+  const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
 #warning TODO- max block count and header size are rough estimates
   /* maximum header length- real length depends on block size */
   const nm_len_t max_blocks = (p_props->blocks > chunk_len) ? chunk_len : p_props->blocks;
@@ -178,19 +178,19 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
       
 #warning TODO- select pack strategy depending on data sparsity
       
-      nm_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
+      nm_pw_add_data_chunk(p_pw, p_pack, &p_pack->data, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
       assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
     }
   else
     {
       /* ** large send */
       nm_pw_flag_t flags = NM_PW_NOHEADER | NM_PW_DATA_ITERATOR;
-      if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->p_data->ops.p_generator == NULL))
+      if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->data.ops.p_generator == NULL))
 	{
 	  flags |= NM_PW_DATA_USE_COPY;
 	}
       struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
-      nm_pw_add_data_chunk(p_pw, p_pack, p_pack->p_data, chunk_len, chunk_offset, flags);
+      nm_pw_add_data_chunk(p_pw, p_pack, &p_pack->data, chunk_len, chunk_offset, flags);
       nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_pw);
       union nm_header_ctrl_generic_s ctrl;
       nm_header_init_rdv(&ctrl, p_pack, chunk_len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);

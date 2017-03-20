@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2016 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -263,7 +263,7 @@ void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor);
 struct nm_req_s
 {
   PUK_LIST_LINK(nm_req);
-  const struct nm_data_s*p_data;
+  struct nm_data_s data;
   struct nm_monitor_s monitor;
   nm_cond_status_t status;
   nm_req_flag_t flags;

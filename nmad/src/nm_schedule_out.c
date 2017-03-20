@@ -27,8 +27,8 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
 {
   nm_status_init(p_pack, NM_STATUS_PACK_INIT);
   p_pack->flags     = NM_FLAG_PACK;
-  p_pack->p_data    = p_data;
-  p_pack->pack.len  = nm_data_size(p_data);
+  p_pack->data      = *p_data;
+  p_pack->pack.len  = nm_data_size(&p_pack->data);
   p_pack->pack.done = 0;
   p_pack->pack.scheduled = 0;
   p_pack->monitor   = NM_MONITOR_NULL;
@@ -72,7 +72,7 @@ void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
       fprintf(stderr, "# nmad: nm_core_pack_header not support with selected strategy (need pack_data).\n");
       abort();
     }
-  const nm_len_t size = nm_data_size(p_pack->p_data);
+  const nm_len_t size = nm_data_size(&p_pack->data);
   assert(hlen <= size);
   if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
     (*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
@@ -87,13 +87,13 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
   nm_core_polling_level(p_core);
   if(r->driver->pack_data != NULL)
     {
-      const nm_len_t size = nm_data_size(p_pack->p_data) - p_pack->pack.scheduled;
+      const nm_len_t size = nm_data_size(&p_pack->data) - p_pack->pack.scheduled;
       (*r->driver->pack_data)(r->_status, p_pack, size, p_pack->pack.scheduled);
     }
   else
     {
       assert(p_pack->pack.scheduled == 0);
-      nm_data_aggregator_traversal(p_pack->p_data, &nm_core_pack_chunk, p_pack);
+      nm_data_aggregator_traversal(&p_pack->data, &nm_core_pack_chunk, p_pack);
     }
   nmad_unlock();
 }

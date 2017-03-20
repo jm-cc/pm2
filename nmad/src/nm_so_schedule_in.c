@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2016 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -172,7 +172,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
       nm_core_polling_level(p_core);
       if((p_pw != NULL) && (p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
 	{
-	  nm_data_copy_to(p_unpack->p_data, 0 /* offset */, chunk_len, p_pw->v[0].iov_base);
+	  nm_data_copy_to(&p_unpack->data, 0 /* offset */, chunk_len, p_pw->v[0].iov_base);
 	}
       const struct nm_core_event_s event =
 	{
@@ -260,8 +260,10 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
 void nm_core_unpack_init(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
   nm_status_init(p_unpack, NM_STATUS_UNPACK_INIT);
+#ifdef DEBUG
+  nm_data_null_build(&p_unpack->data);
+#endif
   p_unpack->flags   = NM_FLAG_UNPACK;
-  p_unpack->p_data  = NULL;
   p_unpack->monitor = NM_MONITOR_NULL;
   p_unpack->unpack.cumulated_len = 0;
   p_unpack->unpack.expected_len  = NM_LEN_UNDEFINED;
@@ -270,7 +272,7 @@ void nm_core_unpack_init(struct nm_core*p_core, struct nm_req_s*p_unpack)
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data)
 {
   nm_status_assert(p_unpack, NM_STATUS_UNPACK_INIT);
-  p_unpack->p_data = p_data;
+  p_unpack->data = *p_data;
   p_unpack->unpack.expected_len = nm_data_size(p_data);
 }
 
@@ -577,7 +579,7 @@ static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct 
 	{
 	  assert(nm_status_test(*pp_unpack, NM_STATUS_UNPACK_POSTED));
 	  nm_so_data_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-	  nm_data_pkt_unpack((*pp_unpack)->p_data, h, p_pw, chunk_offset, chunk_len);
+	  nm_data_pkt_unpack(&(*pp_unpack)->data, h, p_pw, chunk_offset, chunk_len);
 	  nm_so_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
 	}
     }
@@ -601,7 +603,7 @@ static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
 	  const uint8_t flags = NM_PROTO_FLAG_LASTCHUNK;
 	  const void*ptr = ((void*)h) + NM_HEADER_SHORT_DATA_SIZE;
 	  nm_so_data_flags_decode(*pp_unpack, flags, chunk_offset, chunk_len);
-	  nm_data_copy_to((*pp_unpack)->p_data, chunk_offset, chunk_len, ptr);
+	  nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
 	  nm_so_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
 	}
     }
@@ -627,7 +629,7 @@ static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
       if(!nm_status_test(*pp_unpack, NM_STATUS_UNPACK_CANCELLED))
 	{
 	  nm_so_data_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-	  nm_data_copy_to((*pp_unpack)->p_data, chunk_offset, chunk_len, ptr);
+	  nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
 	  nm_so_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
 	}
     }
@@ -648,9 +650,9 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
   if(p_unpack)
     {
       assert(p_unpack->p_gate != NULL);
-      assert(p_unpack->p_data != NULL);
+      assert(!nm_data_isnull(&p_unpack->data));
       nm_drv_t p_drv = nm_drv_default(p_gate);
-      const struct nm_data_properties_s*p_props = nm_data_properties_get(p_unpack->p_data);
+      const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_unpack->data);
       const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : p_props->size; /* average block size */
       nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
       if(p_drv->trk_caps[NM_TRK_LARGE].supports_data || density < NM_LARGE_MIN_DENSITY)
@@ -660,7 +662,7 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
 	  p_large_pw->p_unpack     = p_unpack;
 	  p_large_pw->length       = chunk_len;
 	  p_large_pw->chunk_offset = chunk_offset;
-	  p_large_pw->p_data       = p_unpack->p_data;
+	  p_large_pw->p_data       = &p_unpack->data;
 	  p_large_pw->p_gate       = p_gate;
 	  nm_pkt_wrap_list_push_back(&p_gate->pending_large_recv, p_large_pw);
 	}
@@ -668,7 +670,7 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
 	{
 	  /* one rdv per chunk */
 	  struct nm_large_chunk_context_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
-	  nm_data_chunk_extractor_traversal(p_unpack->p_data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+	  nm_data_chunk_extractor_traversal(&p_unpack->data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
 	}
     }
   else

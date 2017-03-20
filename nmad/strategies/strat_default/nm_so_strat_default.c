@@ -121,7 +121,7 @@ static int strat_default_todo(void* _status, nm_gate_t p_gate)
 static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset)
 {
   struct nm_strat_default_s*p_status = _status;
-  const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pack->p_data);
+  const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
   const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
   if(chunk_len + max_header_len <= p_status->nm_max_small)
     {

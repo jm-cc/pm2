@@ -74,7 +74,6 @@ struct nm_sr_event_monitor_s
 struct nm_sr_request_s
 {
   struct nm_req_s req; /**< inlined core pack/unpack request to avoid dynamic allocation */
-  struct nm_data_s data;
   nm_session_t p_session;               /**< session this request belongs to */
   struct nm_sr_event_monitor_s monitor; /**< events triggered on status transitions */
   void*ref;                             /**< reference usable by end-user */
@@ -165,22 +164,21 @@ static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_req
 static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
 {
   nm_core_t p_core = p_session->p_core;
-  p_request->data = *p_data;
-  nm_core_pack_data(p_core, &p_request->req, &p_request->data);
+  nm_core_pack_data(p_core, &p_request->req, p_data);
 }
 static inline void nm_sr_send_pack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
 					      const void*ptr, nm_len_t len)
 {
-  nm_core_t p_core = p_session->p_core;
-  nm_data_contiguous_build(&p_request->data, (void*)ptr, len);
-  nm_core_pack_data(p_core, &p_request->req, &p_request->data);
+  struct nm_data_s data;
+  nm_data_contiguous_build(&data, (void*)ptr, len);
+  nm_sr_send_pack_data(p_session, p_request, &data);
 }
 static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 				       const struct iovec*v, int n)
 {
-  nm_core_t p_core = p_session->p_core;
-  nm_data_iov_build(&p_request->data, v, n);
-  nm_core_pack_data(p_core, &p_request->req, &p_request->data);
+  struct nm_data_s data;
+  nm_data_iov_build(&data, v, n);
+  nm_sr_send_pack_data(p_session, p_request, &data);
 }
 
 static inline int nm_sr_send_dest(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -243,27 +241,26 @@ static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_req
   p_request->p_session = p_session;
 }
 
-static inline void nm_sr_recv_unpack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
-						void*data, nm_len_t len)
+static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_data_contiguous_build(&p_request->data, data, len);
-  nm_core_unpack_data(p_core, &p_request->req, &p_request->data);
+  nm_core_unpack_data(p_core, &p_request->req, p_data);
+}
+
+static inline void nm_sr_recv_unpack_contiguous(nm_session_t p_session, nm_sr_request_t*p_request, 
+						void*ptr, nm_len_t len)
+{
+  struct nm_data_s data;
+  nm_data_contiguous_build(&data, ptr, len);
+  nm_sr_recv_unpack_data(p_session, p_request, &data);
 }
 
 static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 					 const struct iovec*v, int n)
 {
-  nm_core_t p_core = p_session->p_core;
-  nm_data_iov_build(&p_request->data, v, n);
-  nm_core_unpack_data(p_core, &p_request->req, &p_request->data);
-}
-
-static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
-{
-  nm_core_t p_core = p_session->p_core;
-  p_request->data = *p_data;
-  nm_core_unpack_data(p_core, &p_request->req, &p_request->data);
+  struct nm_data_s data;
+  nm_data_iov_build(&data, v, n);
+  nm_sr_recv_unpack_data(p_session, p_request, &data);
 }
 
 static inline int nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,

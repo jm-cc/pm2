@@ -39,17 +39,22 @@
 #warning "Disable coroutines on Itanium. setjmp/longjmp not available."
 #endif
 
+/* forward declaration so that operators declared inside struct nm_data_s may
+ * take struct nm_data_s* as parameters
+ */
 struct nm_data_s;
-/** function apply to each data chunk upon traversal */
+
+/** function to apply to each data chunk upon traversal */
 typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
 
-/** funtion to traverse data with app layout, i.e. map op
+/** funtion to traverse data with app layout, i.e. ='map' functional operation
  * @param p_data data descriptor
  * @param apply function to apply to all chunks
  * @param _context context pointer given to apply function
  */
 typedef void (*nm_data_traversal_t)(const void*_content, const nm_data_apply_t apply, void*_context);
 
+/** space to store thet state of a data generator (generic version = block of bytes) */
 struct nm_data_generator_s
 {
   char _bytes[_NM_DATA_GENERATOR_SIZE];
@@ -60,8 +65,8 @@ typedef void (*nm_data_generator_init_t)(const struct nm_data_s*p_data, void*_ge
 /** chunk of data returned by generators */
 struct nm_data_chunk_s
 {
-  void*ptr;
-  nm_len_t len;
+  void*ptr;     /**< pointer to chunk */
+  nm_len_t len; /**< length of chunk */
 };
 #define NM_DATA_CHUNK_NULL ((struct nm_data_chunk_s){ .ptr = NULL, .len = 0 })
 static inline int nm_data_chunk_isnull(const struct nm_data_chunk_s*p_chunk)

@@ -17,7 +17,7 @@
 #define NM_STRATEGY_H
 
 
-/* Driver for 'NewMad_Strategy' component interface
+/** Driver for 'NewMad_Strategy' component interface
  */
 struct nm_strategy_iface_s
 {

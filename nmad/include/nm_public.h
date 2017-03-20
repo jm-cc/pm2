@@ -38,12 +38,8 @@
 /* ** Config sanity checks ********************************* */
 
 #if !defined(NMAD)
-#error NMAD flags not defined. Please compile with flags returned by 'pkg-config --cflags nmad'
+#  error "nmad CFLAGS not defined; please compile with CFLAGS returned by 'pkg-config --cflags nmad'"
 #endif /* NMAD */
-
-#if ((!defined(__pic__)) && (!defined(__PIC__)))
-#  error "nmad needs Position Independant Code; please build with -fPIC compilation flag."
-#endif
 
 #if defined(NMAD_PIOMAN) && !defined(PIOMAN)
 #  error "nmad was configured with pioman support; cannot build without pioman flags."
@@ -69,7 +65,9 @@
 #define main __abt_app_main
 #endif /* PIOMAN_ABT */
 
-/** config options that impact nmad ABI */
+/** config options that impact nmad ABI 
+ * (content of structures exposed in API or used in inline code)
+ */
 struct nm_abi_config_s
 {
   int enable_pioman;

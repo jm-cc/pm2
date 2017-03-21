@@ -60,7 +60,7 @@ typedef union
     nm_tag_t tag;
     nm_len_t len;
     nm_session_t p_session;
-    const struct nm_core_event_s*p_core_event;
+    const struct nm_core_event_s*p_core_event; /**< @internal core nmad event used internally for packet matching */
   } recv_unexpected; /**< field for global event NM_SR_EVENT_RECV_UNEXPECTED */
   struct
   {
@@ -72,14 +72,15 @@ typedef union
  * Received ref comes from monitor->ref in case of session monitor, and request->ref in case of request monitor */
 typedef void (*nm_sr_event_notifier_t)(nm_sr_event_t event, const nm_sr_event_info_t*event_info, void*ref);
 
+/** a global monitor to listen to events on the full session */
 struct nm_sr_monitor_s
 {
-  nm_sr_event_notifier_t p_notifier;
-  nm_sr_event_t event_mask;
-  nm_gate_t p_gate;        /**< listen for events on given gate; NM_ANY_GATE for any */
-  nm_tag_t tag;            /**< tag value for event filter */
-  nm_tag_t tag_mask;       /**< tag mask for event filter- fire event when event.tag & monitor.tag_mask == monitor.tag; set tag = 0 && tag_mask = NM_TAG_MASK_NONE to catch any tag; set tag_mask = NM_TAG_MASK_FULL to catch a given tag */
-  void*ref;                /**< reference for user */
+  nm_sr_event_notifier_t p_notifier; /**< the function to call when a matching event happen */
+  nm_sr_event_t event_mask; /**< a bitmask containing events kinds to listen to */
+  nm_gate_t p_gate;         /**< listen for events on given gate; NM_ANY_GATE for any */
+  nm_tag_t tag;             /**< tag value for event filter */
+  nm_tag_t tag_mask;        /**< tag mask for event filter- fire event when event.tag & monitor.tag_mask == monitor.tag; set tag = 0 && tag_mask = NM_TAG_MASK_NONE to catch any tag; set tag_mask = NM_TAG_MASK_FULL to catch a given tag */
+  void*ref;                 /**< reference for user */
 };
 
 /** open a new session ready for sendrecv */

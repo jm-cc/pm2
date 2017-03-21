@@ -41,25 +41,31 @@ static struct
 /* ********************************************************* */
 
 #if defined(PIOMAN_PTHREAD)
-static void piom_tasklet_mask(void)
+static void piom_ltask_hook_preinvoke(void)
 {
+#ifdef DEBUG
+    piom_pthread_preinvoke();
+#endif
 }
-static void piom_tasklet_unmask(void)
+static void piom_ltask_hook_postinvoke(void)
 {
+#ifdef DEBUG
+    piom_pthread_postinvoke();
+#endif
 }
 #elif defined(PIOMAN_MARCEL)
-static void piom_tasklet_mask(void)
+static void piom_ltask_hook_preinvoke(void)
 {
     marcel_tasklet_disable();
 }
-static void piom_tasklet_unmask(void)
+static void piom_ltask_hook_postinvoke(void)
 {
     marcel_tasklet_enable();
 }
 #else /* PIOMAN_MARCEL */
-static void piom_tasklet_mask(void)
+static void piom_ltask_hook_preinvoke(void)
 { }
-static void piom_tasklet_unmask(void)
+static void piom_ltask_hook_postinvoke(void)
 { }
 #endif /* PIOMAN_PTHREAD/MARCEL */
 
@@ -122,7 +128,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 			{
 			    /* wait is pending: poll */
 			    piom_trace_local_state(PIOM_TRACE_STATE_POLL);
-			    piom_tasklet_mask();
+			    piom_ltask_hook_preinvoke();
 			    const int options = task->options;
 #ifdef UNLOCK_QUEUES
 			    piom_mask_release(&queue->mask); /* unlock queue to schedule- will be re-acquired later */
@@ -132,12 +138,12 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 				{
 				    /* ltask was destroyed by handler */
 				    task = NULL;
-				    piom_tasklet_unmask();
+				    piom_ltask_hook_postinvoke();
 				    success = 1;
 				}
 			    else if((options & PIOM_LTASK_OPTION_REPEAT) && !(task->state & PIOM_LTASK_STATE_SUCCESS))
 				{
-				    piom_tasklet_unmask();
+				    piom_ltask_hook_postinvoke();
 				    /* If another thread is currently stopping the queue don't repost the task */
 				    piom_ltask_state_unset(task, PIOM_LTASK_STATE_SCHEDULED);
 				    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
@@ -172,7 +178,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 					    (*task->destructor)(task);
 					}
 				    task = NULL;
-				    piom_tasklet_unmask();
+				    piom_ltask_hook_postinvoke();
 				    success = 1;
 				}
 #ifdef UNLOCK_QUEUES

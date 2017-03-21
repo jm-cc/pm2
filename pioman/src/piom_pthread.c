@@ -33,11 +33,21 @@ static struct
     pthread_t all_threads[PIOM_PTHREAD_MAX_THREADS];
     /** size of above array */
     int n_threads;
+#ifdef DEBUG
+    /** thread local debug information */
+    pthread_key_t threadstate_key;
+#endif /* DEBUG */
 } __piom_pthread =
     {
 	.lwps_num  = 0,
 	.n_threads = 0
     };
+
+struct piom_pthread_threadstate_s
+{
+    int dispatching; /**< whether the pthread is currently dispatching an ltask */
+};
+
 #endif /* PIOMAN_PTHREAD */
 
     
@@ -162,8 +172,54 @@ static void*__piom_ltask_lwp_worker(void*_dummy)
     return NULL;
 }
 
+void piom_pthread_preinvoke(void)
+{
+#ifdef DEBUG
+    struct piom_pthread_threadstate_s*p_threadstate = pthread_getspecific(__piom_pthread.threadstate_key);
+    if(p_threadstate == NULL)
+	{
+	    p_threadstate = malloc(sizeof(struct piom_pthread_threadstate_s));
+	    p_threadstate->dispatching = 0;
+	    pthread_setspecific(__piom_pthread.threadstate_key, p_threadstate);
+	}
+    assert(p_threadstate->dispatching == 0);
+    p_threadstate->dispatching++;
+#endif
+}
+void piom_pthread_postinvoke(void)
+{
+#ifdef DEBUG
+    struct piom_pthread_threadstate_s*p_threadstate = pthread_getspecific(__piom_pthread.threadstate_key);
+    assert(p_threadstate != NULL);
+    assert(p_threadstate->dispatching == 1);
+    p_threadstate->dispatching--;
+#endif
+}
+void piom_pthread_check_wait(void)
+{
+#ifdef DEBUG
+    struct piom_pthread_threadstate_s*p_threadstate = pthread_getspecific(__piom_pthread.threadstate_key);
+    if(p_threadstate != NULL && p_threadstate->dispatching)
+	{
+	    fprintf(stderr, "pioman: deadlock detected- cannot wait while dispatching ltask.\n");
+	    abort();
+	}
+#endif /* DEBUG */
+}
+#ifdef DEBUG
+static void __piom_pthread_state_destructor(void*_p_threadstate)
+{
+    struct piom_pthread_threadstate_s*p_threadstate = _p_threadstate;
+    assert(p_threadstate != NULL);
+    assert(p_threadstate->dispatching == 0);
+    free(p_threadstate);
+}
+#endif /* DEBUG */
 void piom_pthread_init_ltasks(void)
 {
+#ifdef DEBUG
+    pthread_key_create(&__piom_pthread.threadstate_key, &__piom_pthread_state_destructor);
+#endif
     /* ** timer-based polling */
     if(piom_parameters.timer_period > 0)
 	{

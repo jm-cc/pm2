@@ -143,8 +143,6 @@ int nm_launcher_init_checked(int *argc, char**argv, const struct nm_abi_config_s
   puk_instance_indirect_NewMad_Launcher(launcher.instance, NULL, &launcher.r);
   (*launcher.r.driver->init)(launcher.r._status, argc, argv, "NewMadeleine");
 
-  nm_sr_init((*launcher.r.driver->get_session)(launcher.r._status));
-
   launcher.size = (*launcher.r.driver->get_size)(launcher.r._status);
   launcher.gates = TBX_MALLOC(launcher.size * sizeof(nm_gate_t));
   launcher.reverse = puk_hashtable_new_ptr();
@@ -166,7 +164,6 @@ int nm_launcher_exit(void)
   if(exit_done)
     return NM_ESUCCESS;
   exit_done = 1;
-  nm_sr_exit((*launcher.r.driver->get_session)(launcher.r._status));
 
 #ifdef PIOMAN_TRACE
   piom_trace_flush();

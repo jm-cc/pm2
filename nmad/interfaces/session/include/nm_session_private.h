@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@ struct nm_session_s
   struct nm_core*p_core;       /**< the current nmad object */
   nm_session_hash_t hash_code; /**< hash of session label, used as ID on the wire */
   const char*label;            /**< plain text session name */
-  void*ref;                    /**< reference to be used by session user (mostly sendrecv) */
+  void*p_sr_session;           /**< reference to be used by 'sendrecv' per-session state */
+  void (*p_sr_destructor)(struct nm_session_s*); /**< function to call before session destroy */
 };
 
 #endif /* NM_SESSION_PRIVATE_H */

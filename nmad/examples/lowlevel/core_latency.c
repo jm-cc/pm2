@@ -45,7 +45,7 @@ int main(int argc, char **argv)
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 
   /* prevent the sendrecv interface from catching signals for us. */
-  nm_sr_exit(p_session);
+  assert(p_session->p_sr_session == NULL);
 
   /* benchmark */
   nm_core_t p_core = p_session->p_core;

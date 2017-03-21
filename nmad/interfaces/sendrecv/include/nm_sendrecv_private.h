@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2016 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,13 +42,11 @@ static inline nm_session_t nm_sr_session_open(const char*label)
       fprintf(stderr, "# nmad: WARNING- cannot open session *%s*; already in use.\n", label);
       return NULL;
     }
-  nm_sr_init(p_session);
   return p_session;
 }
 
 static inline void nm_sr_session_close(nm_session_t p_session)
 {
-  nm_sr_exit(p_session);
   nm_session_destroy(p_session);
 }
 

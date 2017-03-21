@@ -183,7 +183,8 @@ int nm_session_open(nm_session_t*pp_session, const char*label)
   p_session->label = strdup(label);
   p_session->hash_code = hash_code;
   p_session->p_core = nm_session.p_core;
-  p_session->ref = NULL;
+  p_session->p_sr_session = NULL;
+  p_session->p_sr_destructor = NULL;
   puk_hashtable_insert(nm_session.sessions, &p_session->hash_code, p_session);
   nm_session.ref_count++;
   *pp_session = p_session;
@@ -218,7 +219,8 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
   p_session->p_core = NULL;
   p_session->label = strdup(label);
   p_session->hash_code = hash_code;
-  p_session->ref = NULL;
+  p_session->p_sr_session = NULL;
+  p_session->p_sr_destructor = NULL;
   puk_hashtable_insert(nm_session.sessions, &p_session->hash_code, p_session);
   if(nm_session.p_core == NULL)
     {
@@ -380,6 +382,16 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 
 int nm_session_destroy(nm_session_t p_session)
 {
+  uint32_t hashcode = p_session->hash_code;
+  if(puk_hashtable_lookup(nm_session.sessions, &hashcode) == NULL)
+    {
+      NM_FATAL("session: cannot find session hash=%d; p_session=%p in session base- cannot destroy.\n",
+	       hashcode, p_session);
+    }
+  if(p_session->p_sr_destructor)
+    {
+      (*p_session->p_sr_destructor)(p_session);
+    }
   puk_hashtable_remove(nm_session.sessions, &p_session->hash_code);
   TBX_FREE((void*)p_session->label);
   TBX_FREE(p_session);

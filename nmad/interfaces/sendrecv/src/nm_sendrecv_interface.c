@@ -38,27 +38,28 @@ struct nm_sr_session_s
 
 static void nm_sr_event_req_handler(const struct nm_core_event_s*const event, void*_ref);
 static void nm_sr_event_handler(const struct nm_core_event_s*const event, void*_ref);
+static void nm_sr_session_destructor(nm_session_t p_session);
 
-/* User interface */
 
-int nm_sr_init(nm_session_t p_session)
+/** @internal get the 'sendrecv' per-session status; lazy allocate/init if needed */
+static inline struct nm_sr_session_s*nm_sr_session_get(struct nm_session_s*p_session)
 {
-  if(p_session->ref != NULL)
+  struct nm_sr_session_s*p_sr_session = p_session->p_sr_session;
+  if(!p_sr_session)
     {
-      fprintf(stderr, "nmad: FATAL- sendrecv cannot use session %p; ref is non-empty.\n", p_session);
-      abort();
+      p_sr_session = malloc(sizeof(struct nm_sr_session_s));
+      nm_sr_request_lfqueue_init(&p_sr_session->completed_rreq);
+      nm_sr_request_lfqueue_init(&p_sr_session->completed_sreq);
+      nm_core_monitor_vect_init(&p_sr_session->core_monitors);
+      p_session->p_sr_session = p_sr_session;
+      p_session->p_sr_destructor = &nm_sr_session_destructor;
     }
-  struct nm_sr_session_s*p_sr_session = malloc(sizeof(struct nm_sr_session_s));
-  nm_sr_request_lfqueue_init(&p_sr_session->completed_rreq);
-  nm_sr_request_lfqueue_init(&p_sr_session->completed_sreq);
-  nm_core_monitor_vect_init(&p_sr_session->core_monitors);
-  p_session->ref = p_sr_session;
-  return NM_ESUCCESS;
+  return p_sr_session;
 }
 
-int nm_sr_exit(nm_session_t p_session)
+static void nm_sr_session_destructor(nm_session_t p_session)
 {
-  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  struct nm_sr_session_s*p_sr_session = p_session->p_sr_session;
   assert(p_sr_session != NULL);
   while(!nm_core_monitor_vect_empty(&p_sr_session->core_monitors))
     {
@@ -67,9 +68,9 @@ int nm_sr_exit(nm_session_t p_session)
       nm_sr_session_monitor_remove(p_session, p_sr_monitor);
     }
   nm_core_monitor_vect_destroy(&p_sr_session->core_monitors);
+  p_session->p_sr_session = NULL;
+  p_session->p_sr_destructor = NULL;
   free(p_sr_session);
-  p_session->ref = NULL;
-  return NM_ESUCCESS;
 }
 
 /** Test for the completion of a non blocking send request.
@@ -247,7 +248,7 @@ int nm_sr_probe(nm_session_t p_session,
 
 int nm_sr_session_monitor_set(nm_session_t p_session, const struct nm_sr_monitor_s*p_sr_monitor)
 {
-  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  struct nm_sr_session_s*p_sr_session = nm_sr_session_get(p_session);
   struct nm_core_monitor_s*p_core_monitor = malloc(sizeof(struct nm_core_monitor_s));
   p_core_monitor->monitor = (struct nm_monitor_s)
     {
@@ -270,7 +271,7 @@ int nm_sr_session_monitor_set(nm_session_t p_session, const struct nm_sr_monitor
 
 int nm_sr_session_monitor_remove(nm_session_t p_session, const struct nm_sr_monitor_s*p_sr_monitor)
 {
-  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  struct nm_sr_session_s*p_sr_session = nm_sr_session_get(p_session);
   struct nm_core_monitor_s*p_core_monitor = NULL;
   nm_core_monitor_vect_itor_t i;
   puk_vect_foreach(i, nm_core_monitor, &p_sr_session->core_monitors)
@@ -322,7 +323,7 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t*p_request,
 static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info_t*event_info, void*_ref)
 {
   nm_sr_request_t*p_request = event_info->req.p_request;
-  struct nm_sr_session_s*p_sr_session = p_request->p_session->ref;
+  struct nm_sr_session_s*p_sr_session = nm_sr_session_get(p_request->p_session);
   if(event & NM_SR_EVENT_RECV_COMPLETED)
     {
       int rc = nm_sr_request_lfqueue_enqueue(&p_sr_session->completed_rreq, p_request);
@@ -358,7 +359,7 @@ int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t
 
 int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t**out_req)
 {
-  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  struct nm_sr_session_s*p_sr_session = nm_sr_session_get(p_session);
   if(nm_sr_request_lfqueue_empty(&p_sr_session->completed_rreq))
     {
       nm_sr_progress(p_session);
@@ -374,7 +375,7 @@ int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t**out_req)
 
 int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t**out_req)
 {
-  struct nm_sr_session_s*p_sr_session = p_session->ref;
+  struct nm_sr_session_s*p_sr_session = nm_sr_session_get(p_session);
   if(nm_sr_request_lfqueue_empty(&p_sr_session->completed_sreq))
     {
       nm_sr_progress(p_session);

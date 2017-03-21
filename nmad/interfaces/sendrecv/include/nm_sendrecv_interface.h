@@ -89,12 +89,6 @@ static inline nm_session_t nm_sr_session_open(const char*label);
 /** close a sendrecv session */
 static inline void nm_sr_session_close(nm_session_t p_session);
 
-/** Initialize the sendrecv interface for the given session */
-extern int nm_sr_init(nm_session_t p_session);
-
-/** Shutdown the sendrecv interface for the given session. */
-extern int nm_sr_exit(nm_session_t p_session);
-
 
 /* ** Operations on requests (send or recv) **************** */
 

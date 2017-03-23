@@ -87,6 +87,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
   struct nm_unexpected_s*p_chunk;
   assert(nm_status_test(p_unpack, NM_STATUS_UNPACK_POSTED));
   assert(!nm_status_test(p_unpack, NM_STATUS_FINALIZED));
+  nmad_lock_assert();
   puk_list_foreach(p_chunk, &p_core->unexpected)
     {
       struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_chunk->p_gate->tags, p_chunk->tag);

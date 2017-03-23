@@ -25,7 +25,7 @@
 
 #define NM_WARN(...)							\
   {									\
-    fprintf(stderr, "# nmad: WARNING- (%s)-", __TBX_FUNCTION__);	\
+    fprintf(stderr, "# nmad: WARNING- (%s)-", __func__);		\
     fprintf(stderr, __VA_ARGS__);					\
     fprintf(stderr, "\n");						\
   }
@@ -36,7 +36,7 @@
 #define NM_TRACE_STR(str, str2)	NM_TRACEF("%s: %s", str, str2)
 
 #define NM_FATAL(...) {							\
-    fprintf(stderr, "\n# nmad: FATAL- %s\n\t", __TBX_FUNCTION__);	\
+    fprintf(stderr, "\n# nmad: FATAL- %s\n\t", __func__);		\
     fprintf(stderr, __VA_ARGS__);					\
     fprintf(stderr, "\n\n");						\
     void*buffer[100];							\

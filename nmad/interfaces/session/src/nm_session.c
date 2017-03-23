@@ -19,7 +19,6 @@
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
 #include <Padico/Puk.h>
-#include <tbx.h>
 
 #include <string.h>
 #include <assert.h>
@@ -74,8 +73,7 @@ static void nm_session_init_strategy(void)
   int err = nm_core_set_strategy(nm_session.p_core, strategy);
   if(err != NM_ESUCCESS)
     {
-      fprintf(stderr, "# session: error %d while loading strategy %s.\n", err, strategy_name);
-      abort();
+      NM_FATAL("# session: error %d while loading strategy '%s'.\n", err, strategy_name);
     }
 }
 
@@ -95,8 +93,7 @@ void nm_session_add_driver(puk_component_t component, int index)
   int err = nm_core_driver_load_init(nm_session.p_core, component, &param, &p_drv, &driver_url);
   if(err != NM_ESUCCESS)
     {
-      fprintf(stderr, "# session: error %d while loading driver %s\n", err, component->name);
-      abort();
+      NM_FATAL("# session: error %d while loading driver '%s'.\n", err, component->name);
     }
   if(nm_session.url_string == NULL)
     {
@@ -163,13 +160,12 @@ static void nm_session_init_drivers(void)
 int nm_session_open(nm_session_t*pp_session, const char*label)
 {
 #ifndef NM_TAGS_AS_INDIRECT_HASH
-  fprintf(stderr, "# session: nm_session_open()- current flavor does not support multiple sessions. Please activate configure option '--enable-taghuge'.\n");
+  NM_FATAL("# session: nm_session_open()- current flavor does not support multiple sessions. Please activate configure option '--enable-taghuge'.\n");
   abort();
 #endif /* NM_TAG_AS_INDIRECT_HASH */
   if(nm_session.sessions == NULL || nm_session.p_core == NULL)
     {
-      fprintf(stderr, "# session: FATAL- not yet initialized. Cannot open new session.\n");
-      abort();
+      NM_FATAL("# session: module not yet initialized. Cannot open new session.\n");
     }
   const int len = strlen(label);
   const uint32_t hash_code = puk_hash_oneatatime((void*)label, len);
@@ -179,7 +175,7 @@ int nm_session_open(nm_session_t*pp_session, const char*label)
       *pp_session = NULL;
       return -NM_EALREADY;
     }
-  p_session = TBX_MALLOC(sizeof(struct nm_session_s));
+  p_session = malloc(sizeof(struct nm_session_s));
   p_session->label = strdup(label);
   p_session->hash_code = hash_code;
   p_session->p_core = nm_session.p_core;
@@ -204,18 +200,16 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
   struct nm_session_s*p_session = puk_hashtable_lookup(nm_session.sessions, &hash_code);
   if(p_session != NULL)
     {
-      fprintf(stderr, "# session: collision detected while creating session %s- a session with hashcode %d already exist (%s)\n",
+      NM_FATAL("# session: collision detected while creating session %s- a session with hashcode %d already exist (%s)\n",
 	      label, hash_code, p_session->label);
-      abort();
     }
 #ifndef NM_TAGS_AS_INDIRECT_HASH
   if(puk_hashtable_size(nm_session.sessions) > 0)
     {
-      fprintf(stderr, "# session: current flavor does not support multiple sessions. Please activate configure option '--enable-taghuge'.\n");
-      abort();
+      NM_FATAL("# session: current flavor does not support multiple sessions. Please activate configure option '--enable-taghuge'.\n");
     }
 #endif /* NM_TAG_AS_INDIRECT_HASH */
-  p_session = TBX_MALLOC(sizeof(struct nm_session_s));
+  p_session = malloc(sizeof(struct nm_session_s));
   p_session->p_core = NULL;
   p_session->label = strdup(label);
   p_session->hash_code = hash_code;
@@ -230,8 +224,7 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
       int err = nm_core_init(&fake_argc, fake_argv, &nm_session.p_core);
       if(err != NM_ESUCCESS)
 	{
-	  fprintf(stderr, "# session: error %d while initializing nmad core.\n", err);
-	  abort();
+	  NM_FATAL("# session: error %d while initializing nmad core.\n", err);
 	}
     }
   p_session->p_core = nm_session.p_core;
@@ -299,7 +292,7 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
 	    }
 	  else
 	    {
-	      fprintf(stderr, "# session: peer node does not advertise any url for driver %s in url '%s'- skipping.\n",
+	      NM_WARN("# session: peer node does not advertise any url for driver %s in url '%s'- skipping.\n",
 		      driver_name, peer_url);
 	      continue;
 	    }
@@ -316,9 +309,8 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
   nm_drv_vect_t v = (*nm_session.selector)(url, nm_session.selector_arg);
   if(nm_drv_vect_empty(v))
     {
-      fprintf(stderr, "# session: no common driver found for local (%s) and peer (%s) node. Abort.\n",
-	      nm_session.local_url, url);
-      abort();
+      NM_FATAL("# session: no common driver found for local (%s) and peer (%s) node. Abort.\n",
+	       nm_session.local_url, url);
    }
   assert(nm_session.p_core != NULL);
   /* create gate */
@@ -339,8 +331,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       driver_url++;
       if(puk_hashtable_lookup(url_table, driver_name))
 	{
-	  fprintf(stderr, "# session: duplicate driver %s in url '%s'.\n", driver_name, url);
-	  abort();
+	  NM_FATAL("# session: duplicate driver '%s' in url '%s'.\n", driver_name, url);
 	}
       puk_hashtable_insert(url_table, driver_name, driver_url);
       token = strtok(NULL, "+");
@@ -358,8 +349,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
       if(err != NM_ESUCCESS)
 	{
-	  fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
-	  abort();
+	  NM_FATAL("# session: error %d while connecting driver '%s'.\n", err, driver_name);
 	}
     }
   /* destroy the url hashtable */
@@ -393,8 +383,8 @@ int nm_session_destroy(nm_session_t p_session)
       (*p_session->p_sr_destructor)(p_session);
     }
   puk_hashtable_remove(nm_session.sessions, &p_session->hash_code);
-  TBX_FREE((void*)p_session->label);
-  TBX_FREE(p_session);
+  free((void*)p_session->label);
+  free(p_session);
   nm_session.ref_count--;
   if(nm_session.ref_count == 0)
     {

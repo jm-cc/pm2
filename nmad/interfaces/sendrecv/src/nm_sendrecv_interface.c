@@ -284,8 +284,7 @@ int nm_sr_session_monitor_remove(nm_session_t p_session, const struct nm_sr_moni
     }
   if(p_core_monitor == NULL)
     {
-      fprintf(stderr, "# nmad: cannot remove session monitor %p; not found.\n", p_sr_monitor);
-      abort();
+      NM_FATAL("# sendrecv: cannot remove session monitor %p; not found in table.\n", p_sr_monitor);
     }
   nmad_lock();
   nm_core_monitor_vect_erase(&p_sr_session->core_monitors, i);
@@ -301,7 +300,7 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t*p_request,
 {
   if(p_request->monitor.notifier != NULL)
     {
-      fprintf(stderr, "# nmad: WARNING- duplicate request monitor.\n");
+      NM_WARN("# sendrecv: duplicate request monitor on request %p. Only 1 monitor per request is supported.\n", p_request);
       return -NM_EINVAL;
     }
   assert(!(mask & NM_SR_EVENT_RECV_UNEXPECTED));

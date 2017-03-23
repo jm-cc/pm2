@@ -92,8 +92,7 @@ static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info,
   int rc = nm_sr_recv_peek(p_session, &p_token->request, &p_service->header);
   if(rc != NM_ESUCCESS)
     {
-      fprintf(stderr, "# nm_rpc: rc = %d in nm_sr_recv_peek()\n", rc);
-      abort();
+      NM_FATAL("# nm_rpc: rc = %d in nm_sr_recv_peek()\n", rc);
     }
   nm_sr_request_set_ref(&p_token->request, p_token);
   nm_sr_request_monitor(p_session, &p_token->request, NM_STATUS_FINALIZED, &nm_rpc_finalizer);

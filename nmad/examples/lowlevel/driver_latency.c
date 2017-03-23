@@ -23,7 +23,6 @@
 #include <values.h>
 
 #include <nm_private.h>
-#include <nm_session_interface.h>
 #include <nm_launcher.h>
 
 const int roundtrips = 100000;
@@ -32,8 +31,6 @@ int main(int argc, char **argv)
 {
   /* launch nmad session, get gate and driver */
   nm_launcher_init(&argc, argv);
-  nm_session_t p_session = NULL;
-  nm_launcher_get_session(&p_session);
   int rank = -1;
   nm_launcher_get_rank(&rank);
   const int is_server = !rank;

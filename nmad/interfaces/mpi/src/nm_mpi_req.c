@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014-2016 (see AUTHORS file)
+ * Copyright (C) 2014-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,6 +61,7 @@ __PUK_SYM_INTERNAL
 nm_mpi_request_t*nm_mpi_request_alloc(void)
 {
   nm_mpi_request_t*p_req = nm_mpi_handle_request_alloc(&nm_mpi_requests);
+  nm_mpi_request_list_cell_init(p_req);
   p_req->status = 0;
   return p_req;
 }

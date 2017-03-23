@@ -456,7 +456,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 
   /* allocate core object and init lists */
 
-  struct nm_core *p_core = TBX_MALLOC(sizeof(struct nm_core));
+  struct nm_core*p_core = malloc(sizeof(struct nm_core));
   memset(p_core, 0, sizeof(struct nm_core));
 
   nm_gate_list_init(&p_core->gate_list);

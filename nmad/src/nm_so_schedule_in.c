@@ -47,8 +47,9 @@ static inline struct nm_unexpected_s*nm_unexpected_alloc(void)
     {
       nm_unexpected_allocator = nm_unexpected_allocator_new(NM_UNEXPECTED_PREALLOC);
     }
-  struct nm_unexpected_s*chunk = nm_unexpected_malloc(nm_unexpected_allocator);
-  return chunk;
+  struct nm_unexpected_s*p_unexpected = nm_unexpected_malloc(nm_unexpected_allocator);
+  nm_unexpected_list_cell_init(p_unexpected);
+  return p_unexpected;
 }
 
 void nm_unexpected_clean(struct nm_core*p_core)
@@ -265,6 +266,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
 void nm_core_unpack_init(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
   nm_status_init(p_unpack, NM_STATUS_UNPACK_INIT);
+  nm_req_list_cell_init(p_unpack);
 #ifdef DEBUG
   nm_data_null_build(&p_unpack->data);
 #endif

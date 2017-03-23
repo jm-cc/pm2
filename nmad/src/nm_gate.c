@@ -29,7 +29,7 @@ PADICO_MODULE_HOOK(NewMad_Core);
  */
 int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 {
-  nm_gate_t p_gate = TBX_MALLOC(sizeof(struct nm_gate_s));
+  nm_gate_t p_gate = nm_gate_new();
 
   p_gate->status = NM_GATE_STATUS_INIT;
   p_gate->p_core = p_core;

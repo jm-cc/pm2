@@ -26,6 +26,7 @@ PADICO_MODULE_HOOK(NewMad_Core);
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data)
 {
   nm_status_init(p_pack, NM_STATUS_PACK_INIT);
+  nm_req_list_cell_init(p_pack);
   p_pack->flags     = NM_FLAG_PACK;
   p_pack->data      = *p_data;
   p_pack->pack.len  = nm_data_size(&p_pack->data);

@@ -194,13 +194,16 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
 static inline void nm_so_data_flags_decode(struct nm_req_s*p_unpack, uint8_t flags, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   const nm_len_t chunk_end = chunk_offset + chunk_len;
+  assert(p_unpack->unpack.expected_len != NM_LEN_UNDEFINED);
   if(chunk_end > p_unpack->unpack.expected_len)
     {
-      NM_FATAL("received more data than expected (received = %lu; expected = %lu).\n",
-	       chunk_offset + chunk_len, p_unpack->unpack.expected_len);
+      NM_FATAL("received more data than expected-"
+	       "   received: chunk offset = %lu; chunk len = %lu; chunk end = %lu\n"
+	       "   matched request = %p; expected len = %lu; already received = %lu\n",
+	       chunk_offset, chunk_len, chunk_end,
+	       p_unpack, p_unpack->unpack.expected_len, p_unpack->unpack.cumulated_len);
       abort();
     }
-  assert(p_unpack->unpack.expected_len != NM_LEN_UNDEFINED);
   assert(chunk_end <= p_unpack->unpack.expected_len);
   assert(p_unpack->unpack.cumulated_len + chunk_len <= p_unpack->unpack.expected_len);
   if(flags & NM_PROTO_FLAG_LASTCHUNK)

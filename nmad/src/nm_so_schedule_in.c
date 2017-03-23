@@ -118,6 +118,7 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
   struct nm_req_s*p_unpack = NULL;
   struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
   const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+  nmad_lock_assert();
   puk_list_foreach(p_unpack, &p_core->unpacks)
     {
       assert(nm_status_test(p_unpack, NM_STATUS_UNPACK_POSTED));

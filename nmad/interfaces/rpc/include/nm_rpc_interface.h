@@ -70,6 +70,9 @@ static inline nm_tag_t nm_rpc_get_tag(struct nm_rpc_token_s*p_token);
 /** get the size of the body for the received request; to be called from a handler */
 static inline nm_len_t nm_rpc_get_size(struct nm_rpc_token_s*p_token);
 
+/** get the session on which the given request has arrived */
+static inline nm_session_t nm_rpc_get_session(struct nm_rpc_token_s*p_token);
+
 /** attach a user reference to a token */
 static inline void nm_rpc_token_set_ref(struct nm_rpc_token_s*p_token, void*ref);
 

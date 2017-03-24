@@ -84,6 +84,11 @@ static inline nm_len_t nm_rpc_get_size(struct nm_rpc_token_s*p_token)
   return size - p_token->p_service->hlen;
 }
 
+static inline nm_session_t nm_rpc_get_session(struct nm_rpc_token_s*p_token)
+{
+  return p_token->p_service->p_session;
+}
+
 static inline void*nm_rpc_token_get_ref(struct nm_rpc_token_s*p_token)
 {
   return p_token->ref;

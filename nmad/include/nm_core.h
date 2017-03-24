@@ -19,9 +19,10 @@
 
 PUK_VECT_TYPE(nm_core_monitor, struct nm_core_monitor_s*);
 
+/** a pending event, not dispatched immediately because it was received out of order */
 PUK_LIST_TYPE(nm_core_pending_event,
-	      struct nm_core_event_s event;
-	      struct nm_core_monitor_s*p_core_monitor;
+	      struct nm_core_event_s event;             /**< the event to dispatch */
+	      struct nm_core_monitor_s*p_core_monitor;  /**< the monitor to fire (event matching already checked) */
 	      );
 
 /** a chunk of unexpected message to be stored */

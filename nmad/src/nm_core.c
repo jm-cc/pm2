@@ -48,6 +48,43 @@ void nm_drv_post_all(nm_drv_t p_drv)
   nm_drv_post_recv(p_drv);
 }
 
+/** try to schedule pending out-of-order events */
+static void nm_core_pending_event_recover(nm_core_t p_core)
+{
+  nmad_lock_assert();
+  nm_core_pending_event_itor_t i;
+  int matched = 0;
+ restart:
+  matched = 0;
+  puk_list_foreach(i, &p_core->pending_events)
+    {
+      struct nm_core_pending_event_s*p_pending_event = i;
+      /* only matching events are supposed to be enqueued; check anyway */
+      assert(nm_core_event_matches(p_pending_event->p_core_monitor, &p_pending_event->event));
+      assert(p_pending_event->event.status & NM_STATUS_UNEXPECTED);
+      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pending_event->event.p_gate->tags, p_pending_event->event.tag);
+      const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+      if(p_pending_event->event.seq == next_seq)
+	{
+	  int locked = __sync_bool_compare_and_swap(&p_pending_event->p_core_monitor->dispatching, 0, 1);
+	  if(locked)
+	    {
+	      matched = 1;
+	      p_so_tag->recv_seq_number = next_seq;
+	      nm_core_pending_event_list_erase(&p_core->pending_events, p_pending_event);
+	      (p_pending_event->p_core_monitor->monitor.notifier)(&p_pending_event->event, p_pending_event->p_core_monitor->monitor.ref);
+	      __sync_fetch_and_sub(&p_pending_event->p_core_monitor->dispatching, 1);
+	    }
+	}
+      if(matched)
+	{
+	  nm_core_pending_event_delete(p_pending_event);
+	  p_pending_event = NULL;
+	  goto restart; /* exit the foreach loop so as not to break the iterator, retry to find another matching event */
+	}
+    }
+}
+
 /** apply strategy
  */
 void nm_strat_apply(struct nm_core*p_core)
@@ -69,15 +106,9 @@ void nm_strat_apply(struct nm_core*p_core)
 
 	}
     }
-  if(!nm_core_event_queue_empty(&p_core->pending_events))
-    {
-      /* schedule front event */
-      const struct nm_core_event_s event = nm_core_event_queue_retrieve(&p_core->pending_events); 
-      fprintf(stderr, "# nmad: WARNING- invoking pending event... seq = %d; pending count = %d\n",
-	      event.seq, nm_core_event_queue_size(&p_core->pending_events));
-      assert(nm_core_event_queue_size(&p_core->pending_events) < 16);
-      nm_core_status_event(p_core, &event, NULL);
-    }
+  /* schedule pending out-of-order events */
+  if(!nm_core_pending_event_list_empty(&p_core->pending_events))
+     nm_core_pending_event_recover(p_core);
 }
 
 /** Main function of the core scheduler loop.
@@ -156,46 +187,54 @@ void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor)
     }
 }
 
-/** dispatch global events */
-static inline void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_core_monitor_s*p_core_monitor)
+/** dispatch a global event that matches the given monitor */
+static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_core_monitor_s*p_core_monitor)
 {
   int locked = 0;
-  if(nm_core_event_matches(p_core_monitor, p_event))
+  int pending = 0; /* mark event as pending */
+  assert(nm_core_event_matches(p_core_monitor, p_event));
+  if(p_event->status & NM_STATUS_UNEXPECTED)
     {
-      if(p_event->status & NM_STATUS_UNEXPECTED)
+      locked = __sync_bool_compare_and_swap(&p_core_monitor->dispatching, 0, 1);
+      if(locked)
 	{
-	  locked = __sync_bool_compare_and_swap(&p_core_monitor->dispatching, 0, 1);
-	  if(locked)
+	  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_event->p_gate->tags, p_event->tag);
+	  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+	  if(p_event->seq == next_seq)
 	    {
-	      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_event->p_gate->tags, p_event->tag);
-	      const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-	      if(p_event->seq == next_seq)
-		{
-		  p_so_tag->recv_seq_number = next_seq;
-		}
-	      else
-		{
-		  fprintf(stderr, "# nmad: WARNING- delaying event dispatch; got seq = %d; expected = %d; tag = %lx:%lx\n",
-			  p_event->seq, next_seq, nm_core_tag_get_hashcode(p_event->tag), nm_core_tag_get_tag(p_event->tag));
-		  nm_core_event_queue_append(&p_core->pending_events, *p_event);
-		  sleep(1);
-		  goto out;
-		}
+	      p_so_tag->recv_seq_number = next_seq;
 	    }
 	  else
 	    {
-	      fprintf(stderr, "# nmad: WARNING- delaying event dispatch; already in progress\n");
-	      nm_core_event_queue_append(&p_core->pending_events, *p_event);
-	      sleep(1);
+	      /*
+	      fprintf(stderr, "# nmad: WARNING- delaying event dispatch; got seq = %d; expected = %d; tag = %lx:%lx; pending_events = %d\n",
+		      p_event->seq, next_seq, nm_core_tag_get_hashcode(p_event->tag), nm_core_tag_get_tag(p_event->tag),
+		      nm_core_pending_event_list_size(&p_core->pending_events));
+	      */
+	      pending = 1;
 	      goto out;
 	    }
-	}	      
-      (p_core_monitor->monitor.notifier)(p_event, p_core_monitor->monitor.ref);
+	}
+      else
+	{
+	  fprintf(stderr, "# nmad: WARNING- delaying event dispatch; already in progress\n");
+	  pending = 1;
+	  goto out;
+	}
     }
+  (p_core_monitor->monitor.notifier)(p_event, p_core_monitor->monitor.ref);
  out:
   if(locked)
     {
       __sync_fetch_and_sub(&p_core_monitor->dispatching, 1);
+    }
+  if(pending)
+    {
+      struct nm_core_pending_event_s*p_pending_event = nm_core_pending_event_new();
+      p_pending_event->event = *p_event;
+      p_pending_event->p_core_monitor = p_core_monitor;
+      nm_core_pending_event_list_push_back(&p_core->pending_events, p_pending_event);
+      nm_core_pending_event_recover(p_core);
     }
 }
 
@@ -219,7 +258,10 @@ void nm_core_monitor_add(nm_core_t p_core, struct nm_core_monitor_s*p_core_monit
 		  .seq    = p_chunk->seq,
 		  .len    = p_chunk->msg_len
 		};
-	      nm_core_event_notify(p_core, &event, p_core_monitor);
+	      if(nm_core_event_matches(p_core_monitor, &event))
+		{
+		  nm_core_event_notify(p_core, &event, p_core_monitor);
+		}
 	    }
 	}
     }
@@ -269,10 +311,24 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
   else
     {
       /* fire global monitors */
+#ifdef DEBUG
+      int matched = 0;
+#endif /* DEBUG */
       nm_core_monitor_vect_itor_t i;
       puk_vect_foreach(i, nm_core_monitor, &p_core->monitors)
 	{
-	  nm_core_event_notify(p_core, p_event, *i);
+	  struct nm_core_monitor_s*p_core_monitor = *i;
+	  if(nm_core_event_matches(p_core_monitor, p_event))
+	    {
+#ifdef DEBUG
+	      if(matched != 0)
+		{
+		  NM_FATAL("multiple monitors match the same core event.\n");
+		}
+	      matched++;
+#endif /* DEBUG */
+	      nm_core_event_notify(p_core, p_event, p_core_monitor);
+	    }
 	}
     }
 }
@@ -471,7 +527,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_req_list_init(&p_core->unpacks);
   nm_req_list_init(&p_core->pending_packs);
   nm_unexpected_list_init(&p_core->unexpected);
-  nm_core_event_queue_init(&p_core->pending_events, 8);
+  nm_core_pending_event_list_init(&p_core->pending_events);
   
 #ifdef NMAD_POLL
   nm_pkt_wrap_list_init(&p_core->pending_recv_list);

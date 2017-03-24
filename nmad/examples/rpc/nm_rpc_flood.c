@@ -28,13 +28,15 @@ struct rpc_flood_header_s
   nm_len_t len;
 } __attribute__((packed));
 
-#define MAX_REQS 500
+#define MAX_REQS   20000
+#define ITERATIONS 100
 
 static void rpc_flood_handler(nm_rpc_token_t p_token)
 {
   const struct rpc_flood_header_s*p_header = nm_rpc_get_header(p_token);
   const nm_len_t rlen = p_header->len;
   char*buf = malloc(rlen);
+  memset(buf, 0, rlen);
   nm_rpc_token_set_ref(p_token, buf);
   struct nm_data_s body;
   nm_data_contiguous_build(&body, buf, rlen);
@@ -44,7 +46,11 @@ static void rpc_flood_handler(nm_rpc_token_t p_token)
 static void rpc_flood_finalizer(nm_rpc_token_t p_token)
 {
   char*buf = nm_rpc_token_get_ref(p_token);
-  /*  fprintf(stderr, "received: %s\n", buf); */
+  if(memcmp(buf, msg, strlen(msg)) != 0)
+    {
+      fprintf(stderr, "received: %s\n", buf);
+      abort();
+    }
   free(buf);
 }
 
@@ -61,7 +67,7 @@ int main(int argc, char**argv)
 
   nm_comm_t p_comm = nm_comm_dup(nm_comm_world());
 
-  nm_len_t len = sizeof(nm_len_t) + strlen(msg) + 1;
+  nm_len_t len = strlen(msg) + 1;
   struct rpc_flood_header_s header = { .len = len };
   void*buf = malloc(len);
 
@@ -72,20 +78,24 @@ int main(int argc, char**argv)
 
   struct nm_data_s data;
   nm_data_contiguous_build(&data, (void*)msg, len);
-  int k;
-  for(k = 0; k < 100000; k++)
+  int burst;
+  for(burst = 1; burst < MAX_REQS; burst = burst * 1.5 + 1)
     {
-      if(k % 1000 == 0)
-	fprintf(stderr, "# k = %d\n", k);
-      nm_sr_request_t reqs[MAX_REQS];
-      int i;
-      for(i = 0; i < MAX_REQS; i++)
+      fprintf(stderr, "# req bursts = %d\n", burst);
+      int k;
+      for(k = 0; k < ITERATIONS; k++)
 	{
-	  nm_rpc_isend(p_session, &reqs[i], p_gate, tag, &header, sizeof(struct rpc_flood_header_s), &data);
-	}
-      for(i = 0; i < MAX_REQS; i++)
-	{
-	  nm_sr_swait(p_session, &reqs[i]);
+	  nm_sr_request_t*reqs = malloc(sizeof(nm_sr_request_t) * burst);
+	  int i;
+	  for(i = 0; i < burst; i++)
+	    {
+	      nm_rpc_isend(p_session, &reqs[i], p_gate, tag, &header, sizeof(struct rpc_flood_header_s), &data);
+	    }
+	  for(i = 0; i < burst; i++)
+	    {
+	      nm_sr_swait(p_session, &reqs[i]);
+	    }
+	  free(reqs);
 	}
     }
 

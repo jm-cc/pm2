@@ -50,14 +50,14 @@ static struct
 
 int nm_session_code_eq(const void*key1, const void*key2)
 {
-  const uint32_t*p_code1 = key1;
-  const uint32_t*p_code2 = key2;
+  const nm_session_hash_t*p_code1 = key1;
+  const nm_session_hash_t*p_code2 = key2;
   return (*p_code1 == *p_code2);
 }
 
 uint32_t nm_session_code_hash(const void*key)
 {
-  const uint32_t*p_hash_code = key;
+  const nm_session_hash_t*p_hash_code = key;
   return *p_hash_code;
 }
 
@@ -397,7 +397,7 @@ int nm_session_destroy(nm_session_t p_session)
   return NM_ESUCCESS;
 }
 
-nm_session_t nm_session_lookup(uint32_t hashcode)
+nm_session_t nm_session_lookup(nm_session_hash_t hashcode)
 {
   struct nm_session_s*p_session = puk_hashtable_lookup(nm_session.sessions, &hashcode);
   return p_session;

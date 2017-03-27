@@ -17,6 +17,7 @@
 #define NM_SESSION_INTERFACE_H
 
 #include <nm_public.h>
+#include <nm_core_interface.h>
 #include <Padico/Puk.h>
 
 /** @defgroup session_interface Session interface
@@ -71,7 +72,7 @@ int nm_session_destroy(nm_session_t p_session);
 
 /** Lookup a session by hashcode
 */
-nm_session_t nm_session_lookup(uint32_t hashcode);
+nm_session_t nm_session_lookup(nm_session_hash_t hashcode);
 
 /* @} */
 

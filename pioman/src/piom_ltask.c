@@ -62,6 +62,20 @@ static void piom_ltask_hook_postinvoke(void)
 {
     marcel_tasklet_enable();
 }
+#elif defined(PIOMAN_NOTHREAD)
+int piom_nothread_dispatching = 0;
+static void piom_ltask_hook_preinvoke(void)
+{
+#ifdef DEBUG
+    piom_nothread_dispatching++;
+#endif
+}
+static void piom_ltask_hook_postinvoke(void)
+{
+#ifdef DEBUG
+    piom_nothread_dispatching--;
+#endif
+}
 #else /* PIOMAN_MARCEL */
 static void piom_ltask_hook_preinvoke(void)
 { }

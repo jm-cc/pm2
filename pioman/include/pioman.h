@@ -53,6 +53,7 @@
 #  define PIOMAN_MULTITHREAD
 #elif defined(PIOMAN)
 #  undef  PIOMAN_MULTITHREAD
+#  define PIOMAN_NOTHREAD
 #  define PIOMAN_TOPOLOGY_NONE 1
 #else
 #  error "PIOMan: PIOMAN flags are not defined."

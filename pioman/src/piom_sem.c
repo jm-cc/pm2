@@ -124,9 +124,13 @@ static inline void piom_cond_wait_blocking_prio(piom_cond_t*cond, piom_cond_valu
 /** adaptive wait on piom cond */
 void piom_cond_wait(piom_cond_t*cond, piom_cond_value_t mask)
 {
-#if defined(PIOMAN_PTHREAD) && defined(DEBUG)
+#if defined(DEBUG)
+#  if defined(PIOMAN_PTHREAD)
   piom_pthread_check_wait();
-#endif  
+#elif defined(PIOMAN_NOTHREAD)
+  piom_nothread_check_wait();
+#  endif
+#endif /* DEBUG */
   /* First, let's poll for a while before blocking */
   tbx_tick_t t1;
   int busy_wait = 1;

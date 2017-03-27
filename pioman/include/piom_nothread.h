@@ -83,4 +83,17 @@ static inline void piom_sem_init(piom_sem_t*sem, int initial)
   (*sem) = initial;
 }
 
+/* ** check wait while dispatching ************************* */
+
+extern int piom_nothread_dispatching;
+
+static inline void piom_nothread_check_wait(void)
+{
+  if(piom_nothread_dispatching > 0)
+    {
+      fprintf(stderr, "pioman: deadlock detected- cannot wait while dispatching ltask.\n");
+      abort();
+    }
+}
+
 #endif /* PIOM_NOTHREAD_H */

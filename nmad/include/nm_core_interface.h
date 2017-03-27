@@ -212,21 +212,21 @@ struct nm_core_event_s
   nm_core_tag_t tag;
   nm_seq_t seq;
   nm_len_t len;
-  struct nm_req_s*p_req;
+  struct nm_req_s*p_req; /**< the request that matched the event- NULL in case of unexpected packets */
 };
 
 /** an event notifier, fired upon status transition */
 typedef void (*nm_core_event_notifier_t)(const struct nm_core_event_s*const event, void*ref);
 
-/** matching info for monitors */
+/** matching info for global monitors */
 struct nm_core_event_matching_s
 {
-  nm_gate_t p_gate;
-  nm_core_tag_t tag;
-  nm_core_tag_t tag_mask;
+  nm_gate_t p_gate;       /**< the gate to listen to, or NM_ANY_GATE for any */
+  nm_core_tag_t tag;      /**< the tag to listen too */
+  nm_core_tag_t tag_mask; /**< the mask to apply before comparing tags (only bits set in mask will be checked) */
 };
 
-/** generic monitor, used for requests */
+/** generic monitor, used for requests and for global events (with matching) */
 struct nm_monitor_s
 {
   nm_core_event_notifier_t notifier; /**< notification function called to fire events */
@@ -237,8 +237,8 @@ struct nm_monitor_s
 /** global monitor for status transitions */
 struct nm_core_monitor_s
 {
-  struct nm_monitor_s monitor;
-  struct nm_core_event_matching_s matching;
+  struct nm_monitor_s monitor;               /**< the monitor to fire upon matching event */
+  struct nm_core_event_matching_s matching;  /**< packet matching information */
   int dispatching; /**< whether a notification is in progress, i.e. mask */
 };
 /** Register an event monitor. */

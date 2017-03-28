@@ -19,6 +19,7 @@
 #include <nm_private.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_rpc_interface.h>
+#include <nm_core_interface.h>
 
 /* ********************************************************* */
 
@@ -59,23 +60,31 @@ void nm_rpc_data_build(struct nm_data_s*p_rpc_data, void*hptr, nm_len_t hlen, co
 
 /* ********************************************************* */
 
-void nm_rpc_isend(nm_session_t p_session, nm_sr_request_t*p_request,
+void nm_rpc_isend(nm_session_t p_session, nm_rpc_req_t*p_req,
 		  nm_gate_t p_gate, nm_tag_t tag,
 		  void*hptr, nm_len_t hlen, struct nm_data_s*p_body)
 {
   struct nm_data_s rpc_data; /* safe as temp var; will be copied by nm_sr_send_pack_data() */
   nm_rpc_data_build(&rpc_data, hptr, hlen, p_body);
-  nm_sr_send_init(p_session, p_request);
-  nm_sr_send_pack_data(p_session, p_request, &rpc_data);
-  nm_sr_send_dest(p_session, p_request, p_gate, tag);
-  nm_sr_send_header(p_session, p_request, hlen);
-  nm_sr_send_submit(p_session, p_request);
+  nm_sr_send_init(p_session, p_req);
+  nm_sr_send_pack_data(p_session, p_req, &rpc_data);
+  nm_sr_send_dest(p_session, p_req, p_gate, tag);
+  nm_sr_send_header(p_session, p_req, hlen);
+  nm_sr_send_submit(p_session, p_req);
 }
 
 static void nm_rpc_finalizer(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
 {
   struct nm_rpc_token_s*p_token = _ref;
   (*p_token->p_service->p_finalizer)(p_token);
+}
+
+static void nm_rpc_core_event_handler(const struct nm_core_event_s*const p_event, void*_ref)
+{
+  struct nm_rpc_service_s*p_service = _ref;
+  assert(p_event->status == NM_STATUS_UNEXPECTED);
+
+  
 }
 
 static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)

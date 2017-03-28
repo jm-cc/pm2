@@ -77,7 +77,6 @@ static void bench_rpc_init(void*buf, nm_len_t len)
 const struct nm_bench_s nm_bench =
   {
     .name = "rpc interface",
-    .init   = NULL,
     .server = &bench_rpc_server,
     .client = &bench_rpc_client,
     .init   = &bench_rpc_init

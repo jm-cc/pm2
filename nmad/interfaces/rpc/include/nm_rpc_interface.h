@@ -29,9 +29,10 @@
  * @{
  */
 
+/** a RPC send request */
 typedef nm_sr_request_t nm_rpc_req_t;
 
-/** a RPC token given to handlers */
+/** a RPC invocation token given to handlers */
 typedef struct nm_rpc_token_s*nm_rpc_token_t;
 
 /** a RPC registered service */

@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
+#include <sched.h>
 
 #include <nm_private.h>
 
@@ -218,6 +219,7 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
       else
 	{
 	  fprintf(stderr, "# nmad: WARNING- delaying event dispatch; already in progress\n");
+	  sched_yield();
 	  pending = 1;
 	  goto out;
 	}

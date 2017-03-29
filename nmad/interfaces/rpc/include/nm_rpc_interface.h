@@ -30,7 +30,7 @@
  */
 
 /** a RPC send request */
-typedef nm_sr_request_t nm_rpc_req_t;
+typedef struct nm_rpc_req_s*nm_rpc_req_t;
 
 /** a RPC invocation token given to handlers */
 typedef struct nm_rpc_token_s*nm_rpc_token_t;
@@ -44,6 +44,8 @@ typedef void (*nm_rpc_handler_t)(nm_rpc_token_t p_token);
 /** a RPC finalizer, called when all data has been received */
 typedef void (*nm_rpc_finalizer_t)(nm_rpc_token_t p_token);
 
+typedef void (*nm_rpc_req_notifier_t)(nm_rpc_req_t p_req, void*ref);
+
 /** register a new RPC service, listenning on the given tag/tag_mask */
 nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask, nm_len_t hlen,
 				 nm_rpc_handler_t p_handler, nm_rpc_finalizer_t p_finalizer,
@@ -53,9 +55,13 @@ nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t 
 void nm_rpc_unregister(nm_rpc_service_t p_service);
 
 /** send a RPC request; non-blocking, wait on request for completion */
-void nm_rpc_isend(nm_session_t p_session, nm_rpc_req_t*p_req,
-		  nm_gate_t p_gate, nm_tag_t tag,
-		  void*hptr, nm_len_t hlen, struct nm_data_s*p_body);
+nm_rpc_req_t nm_rpc_isend(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag,
+			  void*hptr, nm_len_t hlen, struct nm_data_s*p_body);
+
+/** wait for a send request completion */
+static inline void nm_rpc_req_wait(nm_rpc_req_t p_req);
+
+void nm_rpc_req_set_notifier(nm_rpc_req_t p_req, nm_rpc_req_notifier_t p_notifier, void*ref);
 
 /** send a RPC request; blocking */
 static inline void nm_rpc_send(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag,

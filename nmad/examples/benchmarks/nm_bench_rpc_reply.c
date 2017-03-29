@@ -16,11 +16,6 @@
 #include "nm_bench_generic.h"
 #include <nm_rpc_interface.h>
 
-
-PUK_ALLOCATOR_TYPE(nm_rpc_req, nm_rpc_req_t);
-
-static nm_rpc_req_allocator_t req_alloc = NULL;
-
 #define DATA_TAG 0x05
 static const nm_tag_t data_tag = DATA_TAG;
 static volatile int done = 0;
@@ -47,10 +42,8 @@ static void bench_rpc_send(void*buf, nm_len_t len)
   nm_len_t sheader = len;
   struct nm_data_s data;
   nm_data_contiguous_build(&data, buf, len);
-  nm_rpc_req_t*p_req = nm_rpc_req_malloc(req_alloc);
-  nm_rpc_isend(nm_bench_common.p_session, p_req, nm_bench_common.p_gate, data_tag, &sheader, sizeof(sheader), &data);
-  nm_sr_swait(nm_bench_common.p_session, p_req);
-  nm_rpc_req_free(req_alloc, p_req);
+  nm_rpc_req_t p_req =  nm_rpc_isend(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, &sheader, sizeof(sheader), &data);
+  nm_rpc_req_wait(p_req);
 }
 
 static void bench_rpc_recv(void*buf, nm_len_t len)
@@ -76,8 +69,6 @@ static void bench_rpc_client(void*buf, nm_len_t len)
 
 static void bench_rpc_init(void*buf, nm_len_t len)
 {
-  if(req_alloc == NULL)
-    req_alloc = nm_rpc_req_allocator_new(8);
   rbuf = buf;
   if(p_service == NULL)
     p_service = nm_rpc_register(nm_bench_common.p_session, data_tag, NM_TAG_MASK_FULL, sizeof(nm_len_t),

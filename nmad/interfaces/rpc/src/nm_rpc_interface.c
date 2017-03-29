@@ -23,11 +23,33 @@
 
 /* ********************************************************* */
 
+PUK_ALLOCATOR_TYPE(nm_rpc_req, struct nm_rpc_req_s);
+
+static nm_rpc_req_allocator_t nm_rpc_req_allocator = NULL;
+
+nm_rpc_req_t nm_rpc_req_new(void)
+{
+  if(nm_rpc_req_allocator == NULL)
+    {
+      nm_rpc_req_allocator = nm_rpc_req_allocator_new(8);
+    }
+  nm_rpc_req_t p_rpc_req = nm_rpc_req_malloc(nm_rpc_req_allocator);
+  return p_rpc_req;
+}
+
+void nm_rpc_req_delete(nm_rpc_req_t p_rpc_req)
+{
+  nm_rpc_req_free(nm_rpc_req_allocator, p_rpc_req);
+}
+
+/* ********************************************************* */
+
+/** data content for an RPC request (header + body) */
 struct nm_rpc_content_s
 {
-  void*header_ptr;
-  nm_len_t header_len;
-  const struct nm_data_s*p_body;
+  void*header_ptr;               /**< pointer to a header buffer */
+  nm_len_t header_len;           /**< length of header, as defined when RPC service is registered */
+  const struct nm_data_s*p_body; /**< user-supplied body */
 };
 
 static void nm_rpc_traversal(const void*_content, nm_data_apply_t apply, void*_context);
@@ -60,17 +82,34 @@ void nm_rpc_data_build(struct nm_data_s*p_rpc_data, void*hptr, nm_len_t hlen, co
 
 /* ********************************************************* */
 
-void nm_rpc_isend(nm_session_t p_session, nm_rpc_req_t*p_req,
-		  nm_gate_t p_gate, nm_tag_t tag,
-		  void*hptr, nm_len_t hlen, struct nm_data_s*p_body)
+nm_rpc_req_t nm_rpc_isend(nm_session_t p_session,  nm_gate_t p_gate, nm_tag_t tag,
+			  void*hptr, nm_len_t hlen, struct nm_data_s*p_body)
 {
+  nm_rpc_req_t p_req = nm_rpc_req_new();
+  p_req->body = *p_body;
   struct nm_data_s rpc_data; /* safe as temp var; will be copied by nm_sr_send_pack_data() */
-  nm_rpc_data_build(&rpc_data, hptr, hlen, p_body);
-  nm_sr_send_init(p_session, p_req);
-  nm_sr_send_pack_data(p_session, p_req, &rpc_data);
-  nm_sr_send_dest(p_session, p_req, p_gate, tag);
-  nm_sr_send_header(p_session, p_req, hlen);
-  nm_sr_send_submit(p_session, p_req);
+  nm_rpc_data_build(&rpc_data, hptr, hlen, &p_req->body);
+  nm_sr_send_init(p_session, &p_req->request);
+  nm_sr_send_pack_data(p_session, &p_req->request, &rpc_data);
+  nm_sr_send_dest(p_session, &p_req->request, p_gate, tag);
+  nm_sr_send_header(p_session, &p_req->request, hlen);
+  nm_sr_send_submit(p_session, &p_req->request);
+  return p_req;
+}
+
+static void nm_rpc_req_notifier(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
+{
+  nm_rpc_req_t p_req = _ref;
+  (*p_req->p_notifier)(p_req, p_req->p_notifier_ref);
+  nm_rpc_req_delete(p_req);
+}
+
+void nm_rpc_req_set_notifier(nm_rpc_req_t p_req, nm_rpc_req_notifier_t p_notifier, void*ref)
+{
+  p_req->p_notifier = p_notifier;
+  p_req->p_notifier_ref = ref;
+  nm_sr_request_set_ref(&p_req->request, p_req);
+  nm_sr_request_monitor(p_req->request.p_session, &p_req->request, NM_SR_EVENT_FINALIZED, &nm_rpc_req_notifier);
 }
 
 static void nm_rpc_finalizer(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)

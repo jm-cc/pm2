@@ -18,9 +18,16 @@
 
 #include <assert.h>
 
-/** @internal */
-void nm_rpc_data_build(struct nm_data_s*p_rpc_data, void*hptr, nm_len_t hlen, const struct nm_data_s*p_body);
+/** an outgoing rpc request */
+struct nm_rpc_req_s
+{
+  nm_sr_request_t request;            /**< the sendrecv request, actually allocated here */
+  struct nm_data_s body;              /**< the user-supplied body data descriptor, copied to allow asynchronicity */
+  nm_rpc_req_notifier_t p_notifier;   /**< notification function to call uppon req completion */
+  void*p_notifier_ref;                /**< user-supplied parameter for the notifier */
+};
 
+/** an incoming rpc request */
 struct nm_rpc_token_s
 {
   nm_sr_request_t request;
@@ -42,12 +49,26 @@ struct nm_rpc_service_s
   struct nm_rpc_token_s token;
 };
 
+/** @internal data constructor for the compound rpc data type (header + body) */
+void nm_rpc_data_build(struct nm_data_s*p_rpc_data, void*hptr, nm_len_t hlen, const struct nm_data_s*p_body);
+
+/** @internal private, exposed for inlining */
+nm_rpc_req_t nm_rpc_req_new(void);
+
+/** @internal private, exposed for inlining */
+void nm_rpc_req_delete(nm_rpc_req_t p_rpc_req);
+
 static inline void nm_rpc_send(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag,
 			       void*hptr, nm_len_t hlen, struct nm_data_s*p_body)
 {
-  nm_sr_request_t request;
-  nm_rpc_isend(p_session, &request, p_gate, tag, hptr, hlen, p_body);
-  nm_sr_swait(p_session, &request);
+  nm_rpc_req_t p_req = nm_rpc_isend(p_session, p_gate, tag, hptr, hlen, p_body);
+  nm_rpc_req_wait(p_req);
+}
+
+static inline void nm_rpc_req_wait(nm_rpc_req_t p_req)
+{
+  nm_sr_swait(p_req->request.p_session, &p_req->request);
+  nm_rpc_req_delete(p_req);
 }
 
 static inline void*nm_rpc_get_header(struct nm_rpc_token_s*p_token)

@@ -85,15 +85,15 @@ int main(int argc, char**argv)
       int k;
       for(k = 0; k < ITERATIONS; k++)
 	{
-	  nm_sr_request_t*reqs = malloc(sizeof(nm_sr_request_t) * burst);
+	  nm_rpc_req_t*reqs = malloc(sizeof(nm_rpc_req_t) * burst);
 	  int i;
 	  for(i = 0; i < burst; i++)
 	    {
-	      nm_rpc_isend(p_session, &reqs[i], p_gate, tag, &header, sizeof(struct rpc_flood_header_s), &data);
+	      reqs[i] = nm_rpc_isend(p_session, p_gate, tag, &header, sizeof(struct rpc_flood_header_s), &data);
 	    }
 	  for(i = 0; i < burst; i++)
 	    {
-	      nm_sr_swait(p_session, &reqs[i]);
+	      nm_rpc_req_wait(reqs[i]);
 	    }
 	  free(reqs);
 	}

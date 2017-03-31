@@ -229,9 +229,9 @@ struct nm_core_event_matching_s
 /** generic monitor, used for requests and for global events (with matching) */
 struct nm_monitor_s
 {
-  nm_core_event_notifier_t notifier; /**< notification function called to fire events */
-  nm_status_t mask;                  /**< mask applied to status to check whether to fire events */
-  void*ref;                          /**< opaque user-supplied pointer passed to notifier */
+  nm_core_event_notifier_t p_notifier; /**< notification function called to fire events */
+  nm_status_t event_mask;              /**< mask applied to status to check whether to fire events */
+  void*ref;                            /**< opaque user-supplied pointer passed to notifier */
 };
 
 /** global monitor for status transitions */
@@ -252,7 +252,7 @@ void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor);
 /** matches any event */
 #define NM_EVENT_MATCHING_ANY ((struct nm_core_event_matching_s){ .p_gate = NM_ANY_GATE, .tag = NM_CORE_TAG_NONE, .tag_mask = NM_CORE_TAG_NONE })
 
-#define NM_MONITOR_NULL ((struct nm_monitor_s){ .notifier = NULL, .mask = 0, .ref = NULL })
+#define NM_MONITOR_NULL ((struct nm_monitor_s){ .p_notifier = NULL, .event_mask = 0, .ref = NULL })
 
 #define NM_CORE_MONITOR_NULL ((struct nm_core_monitor_s){ .monitor = NM_MONITOR_NULL, .matching = NM_EVENT_MATCHING_ANY })
 

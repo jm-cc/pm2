@@ -252,9 +252,9 @@ int nm_sr_session_monitor_set(nm_session_t p_session, const struct nm_sr_monitor
   struct nm_core_monitor_s*p_core_monitor = malloc(sizeof(struct nm_core_monitor_s));
   p_core_monitor->monitor = (struct nm_monitor_s)
     {
-      .notifier = &nm_sr_event_handler,
-      .mask     = p_sr_monitor->event_mask,
-      .ref      = (void*)p_sr_monitor
+      .p_notifier = &nm_sr_event_handler,
+      .event_mask = p_sr_monitor->event_mask,
+      .ref        = (void*)p_sr_monitor
     };
   p_core_monitor->matching = (struct nm_core_event_matching_s)
     {
@@ -311,8 +311,8 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t*p_request,
   p_request->monitor.notifier = notifier;
   const struct nm_monitor_s monitor = 
     {
-      .notifier = &nm_sr_event_req_handler,
-      .mask     = mask
+      .p_notifier = &nm_sr_event_req_handler,
+      .event_mask = mask
     };
   nm_core_req_monitor(&p_request->req, monitor);
   nmad_unlock();

@@ -49,6 +49,20 @@ void nm_drv_post_all(nm_drv_t p_drv)
   nm_drv_post_recv(p_drv);
 }
 
+
+/** checks whether an event matches a given core monitor */
+static inline int nm_core_event_matches(const struct nm_core_monitor_s*p_core_monitor,
+					const struct nm_core_event_s*p_event)
+{
+  const nm_status_t status = p_event->status & ~NM_STATUS_FINALIZED;
+  const int matches =
+    ( (p_core_monitor->monitor.event_mask & status) &&
+      (p_core_monitor->matching.p_gate == NM_GATE_NONE || p_core_monitor->matching.p_gate == p_event->p_gate) &&
+      (nm_core_tag_match(p_event->tag, p_core_monitor->matching.tag, p_core_monitor->matching.tag_mask))
+      );
+  return matches;
+}
+
 /** try to schedule pending out-of-order events */
 static void nm_core_pending_event_recover(nm_core_t p_core)
 {
@@ -73,7 +87,7 @@ static void nm_core_pending_event_recover(nm_core_t p_core)
 	      matched = 1;
 	      p_so_tag->recv_seq_number = next_seq;
 	      nm_core_pending_event_list_erase(&p_core->pending_events, p_pending_event);
-	      (p_pending_event->p_core_monitor->monitor.notifier)(&p_pending_event->event, p_pending_event->p_core_monitor->monitor.ref);
+	      (p_pending_event->p_core_monitor->monitor.p_notifier)(&p_pending_event->event, p_pending_event->p_core_monitor->monitor.ref);
 	      __sync_fetch_and_sub(&p_pending_event->p_core_monitor->dispatching, 1);
 	    }
 	}
@@ -174,17 +188,17 @@ int nm_schedule(struct nm_core *p_core)
 void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor)
 {
   nmad_lock_assert();
-  assert(p_req->monitor.notifier == NULL);
+  assert(p_req->monitor.p_notifier == NULL);
   p_req->monitor = monitor;
-  if(nm_status_test(p_req, monitor.mask))
+  if(nm_status_test(p_req, monitor.event_mask))
     {
       /* immediate event */
       const struct nm_core_event_s event =
 	{
-	  .status = nm_status_test(p_req, monitor.mask),
+	  .status = nm_status_test(p_req, monitor.event_mask),
 	  .p_req  = p_req
 	};
-      (*p_req->monitor.notifier)(&event, p_req->monitor.ref);
+      (*p_req->monitor.p_notifier)(&event, p_req->monitor.ref);
     }
 }
 
@@ -193,6 +207,7 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 {
   int locked = 0;
   int pending = 0; /* mark event as pending */
+  nmad_lock_assert();
   assert(nm_core_event_matches(p_core_monitor, p_event));
   if(p_event->status & NM_STATUS_UNEXPECTED)
     {
@@ -224,7 +239,7 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 	  goto out;
 	}
     }
-  (p_core_monitor->monitor.notifier)(p_event, p_core_monitor->monitor.ref);
+  (p_core_monitor->monitor.p_notifier)(p_event, p_core_monitor->monitor.ref);
  out:
   if(locked)
     {
@@ -245,7 +260,7 @@ void nm_core_monitor_add(nm_core_t p_core, struct nm_core_monitor_s*p_core_monit
 {
   nmad_lock_assert();
   p_core_monitor->dispatching = 0;
-  if(p_core_monitor->monitor.mask == NM_STATUS_UNEXPECTED)
+  if(p_core_monitor->monitor.event_mask == NM_STATUS_UNEXPECTED)
     {
       struct nm_unexpected_s*p_chunk = NULL, *p_tmp;
       puk_list_foreach_safe(p_chunk, p_tmp, &p_core->unexpected) /* use 'safe' iterator since notifier is likely to post a recv */
@@ -286,16 +301,16 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
 {
   if(p_req)
     {
-      const nm_status_t notified_bits1 = (p_event->status &  p_req->monitor.mask) & ~NM_STATUS_FINALIZED;
-      const nm_status_t notified_bits2 = (p_event->status &  p_req->monitor.mask) &  NM_STATUS_FINALIZED;
-      const nm_status_t signaled_bits  =  p_event->status & ~p_req->monitor.mask;
+      const nm_status_t notified_bits1 = (p_event->status &  p_req->monitor.event_mask) & ~NM_STATUS_FINALIZED;
+      const nm_status_t notified_bits2 = (p_event->status &  p_req->monitor.event_mask) &  NM_STATUS_FINALIZED;
+      const nm_status_t signaled_bits  =  p_event->status & ~p_req->monitor.event_mask;
       assert((notified_bits1 | notified_bits2 | signaled_bits) == p_event->status);
       if(notified_bits1)
 	{
 	  /* add bits (no signal) and notify, for bits with a monitor listening, 
 	   * except FINALIZED (should be last) */
 	  nm_status_add(p_req, notified_bits1);
-	  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	  (*p_req->monitor.p_notifier)(p_event, p_req->monitor.ref);
 	}
       if(signaled_bits)
 	{
@@ -307,7 +322,7 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
 	  /* add & notify FINALIZED _last_, if a monitor listening
 	   * (if no monitor, FINALIZED is signaled) */
 	  nm_status_add(p_req, notified_bits2);
-	  (*p_req->monitor.notifier)(p_event, p_req->monitor.ref);
+	  (*p_req->monitor.p_notifier)(p_event, p_req->monitor.ref);
 	}
     }
   else

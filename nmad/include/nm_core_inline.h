@@ -198,18 +198,6 @@ static inline void nm_core_post_ack(nm_gate_t p_gate, nm_core_tag_t tag, nm_seq_
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }
 
-static inline int nm_core_event_matches(const struct nm_core_monitor_s*p_core_monitor,
-					const struct nm_core_event_s*p_event)
-{
-  const nm_status_t status = p_event->status & ~NM_STATUS_FINALIZED;
-  const int matches =
-    ( (p_core_monitor->monitor.mask & status) &&
-      (p_core_monitor->matching.p_gate == NM_GATE_NONE || p_core_monitor->matching.p_gate == p_event->p_gate) &&
-      (nm_core_tag_match(p_event->tag, p_core_monitor->matching.tag, p_core_monitor->matching.tag_mask))
-      );
-  return matches;
-}
-
 /** dynamically adapt pioman polling frequency level depending on the number of pending requests */
 static inline void nm_core_polling_level(struct nm_core*p_core)
 {

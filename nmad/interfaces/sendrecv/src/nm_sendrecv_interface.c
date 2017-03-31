@@ -103,18 +103,8 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t*p_request)
 
 extern int nm_sr_flush(struct nm_core*p_core)
 {
-  int ret = NM_EAGAIN;
-  nm_gate_t p_gate = NULL;
-  nmad_lock();
-  NM_FOR_EACH_GATE(p_gate, p_core)
-    {
-      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-	{
-	  ret = nm_core_flush(p_gate);
-	}
-    } 
-  nmad_unlock();
-  return ret;
+  nm_core_flush(p_core);
+  return NM_ESUCCESS;
 }
 
 int nm_sr_swait(nm_session_t p_session, nm_sr_request_t*p_request)
@@ -393,28 +383,7 @@ int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t**out_req)
 int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  int err = -NM_ENOTIMPL;
-
-  nmad_lock();
-  nm_lock_interface(p_core);
-  nm_lock_status(p_core);
-
-  if(nm_status_test(&p_request->req, NM_STATUS_UNPACK_COMPLETED))
-    {
-      err = -NM_EALREADY;
-    }
-  else if(nm_status_test(&p_request->req, NM_STATUS_UNPACK_CANCELLED))
-    {
-      err = -NM_ECANCELED;
-    }
-  else
-    {
-      err = nm_core_unpack_cancel(p_core, &p_request->req);
-    }
-  nm_unlock_status(p_core);
-  nm_unlock_interface(p_core);
-  nmad_unlock();
-
+  int err = nm_core_unpack_cancel(p_core, &p_request->req);
   return err;
 }
 

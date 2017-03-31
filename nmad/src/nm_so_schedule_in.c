@@ -552,10 +552,17 @@ int nm_core_iprobe(struct nm_core*p_core,
 
 int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
-  if(nm_status_test(p_unpack, (NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNEXPECTED)))
+  int rc = NM_ESUCCESS;
+  nmad_lock();
+  if(nm_status_test(p_unpack, NM_STATUS_UNPACK_CANCELLED))
     {
-      /* receive is already in progress- too late to cancel */
-      return -NM_EINPROGRESS;
+      /* received already canacelled */
+      rc = -NM_ECANCELED;
+    }
+  else if(nm_status_test(p_unpack, NM_STATUS_UNPACK_COMPLETED))
+    {
+      /* receive already completed */
+      rc = -NM_EALREADY;
     }
   else if(p_unpack->seq == NM_SEQ_NONE)
     {
@@ -567,10 +574,15 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
 	  .p_req = p_unpack
 	};
       nm_core_status_event(p_core, &event, p_unpack);
-      return NM_ESUCCESS;
+      rc = NM_ESUCCESS;
     }
   else
-    return -NM_ENOTIMPL;
+    {
+      /* receive is already in progress- too late to cancel */
+      rc = -NM_EINPROGRESS;
+    }
+  nmad_unlock();
+  return rc;
 }
 
 /** Process a packed data request (NM_PROTO_PKT_DATA)- p_unpack may be NULL (unexpected)

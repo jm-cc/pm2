@@ -262,10 +262,8 @@ int nm_sr_session_monitor_set(nm_session_t p_session, const struct nm_sr_monitor
       .tag      = nm_core_tag_build(p_session->hash_code, p_sr_monitor->tag),
       .tag_mask = nm_core_tag_build(NM_CORE_TAG_HASH_FULL, p_sr_monitor->tag_mask)
     };
-  nmad_lock();
   nm_core_monitor_vect_push_back(&p_sr_session->core_monitors, p_core_monitor);
   nm_core_monitor_add(p_session->p_core, p_core_monitor);
-  nmad_unlock();
   return NM_ESUCCESS;
 }
 
@@ -306,7 +304,6 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t*p_request,
   assert(!(mask & NM_SR_EVENT_RECV_UNEXPECTED));
   if(mask & NM_STATUS_PACK_COMPLETED)
     mask |=  NM_STATUS_ACK_RECEIVED;
-  nmad_lock();
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
   const struct nm_monitor_s monitor = 
@@ -315,7 +312,6 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t*p_request,
       .event_mask = mask
     };
   nm_core_req_monitor(&p_request->req, monitor);
-  nmad_unlock();
   return NM_ESUCCESS;
 }
 
@@ -431,6 +427,7 @@ static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, 
   assert(p_req != NULL);
   assert(p_request != NULL);
   assert(p_request->monitor.notifier);
+  nmad_nolock_assert();
   const nm_status_t masked_status = p_event->status & p_request->monitor.mask;
   const nm_sr_event_info_t info = { .req.p_request = p_request };
   if( (masked_status & NM_STATUS_FINALIZED) ||
@@ -441,10 +438,7 @@ static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, 
 	 ))
       )
     {
-      nmad_unlock();
-      nmad_nolock_assert();
       (*p_request->monitor.notifier)(masked_status, &info, p_request->ref);
-      nmad_lock();
     }
 }
 
@@ -454,6 +448,7 @@ static void nm_sr_event_handler(const struct nm_core_event_s*const p_event, void
   const uint32_t hashcode = nm_core_tag_get_hashcode(p_event->tag);
   nm_session_t p_session = nm_session_lookup(hashcode);
   assert(p_session != NULL);
+  nmad_nolock_assert();
   const nm_tag_t sr_tag = nm_core_tag_get_tag(p_event->tag);
   const nm_sr_event_info_t info =
     { 
@@ -463,10 +458,7 @@ static void nm_sr_event_handler(const struct nm_core_event_s*const p_event, void
       .recv_unexpected.p_session = p_session,
       .recv_unexpected.p_core_event = p_event
     };
-  nmad_unlock();
-  nmad_nolock_assert();
   (*p_monitor->p_notifier)(NM_SR_EVENT_RECV_UNEXPECTED, &info, p_monitor->ref);
-  nmad_lock();
 }
 
 int nm_sr_progress(nm_session_t p_session)

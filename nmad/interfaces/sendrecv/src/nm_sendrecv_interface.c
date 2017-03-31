@@ -284,10 +284,8 @@ int nm_sr_session_monitor_remove(nm_session_t p_session, const struct nm_sr_moni
     {
       NM_FATAL("# sendrecv: cannot remove session monitor %p; not found in table.\n", p_sr_monitor);
     }
-  nmad_lock();
-  nm_core_monitor_vect_erase(&p_sr_session->core_monitors, i);
   nm_core_monitor_remove(p_session->p_core, p_core_monitor);
-  nmad_unlock();
+  nm_core_monitor_vect_erase(&p_sr_session->core_monitors, i);
   free((void*)p_core_monitor);
   return NM_ESUCCESS;
 }

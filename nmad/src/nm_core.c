@@ -294,12 +294,13 @@ void nm_core_monitor_add(nm_core_t p_core, struct nm_core_monitor_s*p_core_monit
 
 void nm_core_monitor_remove(nm_core_t p_core, struct nm_core_monitor_s*m)
 {
-  nmad_lock_assert();
+  nmad_lock();
   nm_core_monitor_vect_itor_t i = nm_core_monitor_vect_find(&p_core->monitors, m);
   if(i)
     {
       nm_core_monitor_vect_erase(&p_core->monitors, i);
     }
+  nmad_unlock();
 }
 
 /** Fires an event

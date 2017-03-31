@@ -442,6 +442,7 @@ static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, 
       )
     {
       nmad_unlock();
+      nmad_nolock_assert();
       (*p_request->monitor.notifier)(masked_status, &info, p_request->ref);
       nmad_lock();
     }
@@ -463,6 +464,7 @@ static void nm_sr_event_handler(const struct nm_core_event_s*const p_event, void
       .recv_unexpected.p_core_event = p_event
     };
   nmad_unlock();
+  nmad_nolock_assert();
   (*p_monitor->p_notifier)(NM_SR_EVENT_RECV_UNEXPECTED, &info, p_monitor->ref);
   nmad_lock();
 }

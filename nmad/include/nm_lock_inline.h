@@ -104,6 +104,16 @@ static inline void nmad_lock_assert(void)
 #endif
 }
 
+/** assert that current thread doesn't hold the lock */
+static inline void nmad_nolock_assert(void)
+{
+#ifdef NM_LOCK_BIGLOCK
+#ifdef DEBUG
+  assert(PIOM_THREAD_SELF != piom_big_lock_holder);
+#endif
+#endif
+}
+
 /*
  * Lock the interface's list of packet to send
  * use this when entering try_and_commit or (un)pack()

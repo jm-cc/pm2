@@ -17,6 +17,7 @@
 #include "nm_mpi_private.h"
 #include <assert.h>
 #include <errno.h>
+#include <tbx.h>
 
 #include <Padico/Puk.h>
 #include <Padico/Module.h>

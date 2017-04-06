@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <errno.h>
+#include <tbx.h>
 
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(MadMPI);

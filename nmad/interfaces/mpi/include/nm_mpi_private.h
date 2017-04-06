@@ -28,13 +28,14 @@
 #include <limits.h>
 #include <unistd.h>
 #include <complex.h>
+#include <execinfo.h>
+#include <sys/stat.h>
 
 #include <Padico/Puk.h>
 #include <nm_public.h>
 #include <nm_core_interface.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_pack_interface.h>
-#include <tbx.h>
 #include <nm_launcher.h>
 #include <nm_coll_interface.h>
 
@@ -68,13 +69,13 @@ typedef struct nm_mpi_errhandler_s
 } nm_mpi_errhandler_t;
 
 #define NM_MPI_WARNING(...) {						\
-    fprintf(stderr, "\n# MadMPI: WARNING- %s\n\t", __TBX_FUNCTION__);	\
+    fprintf(stderr, "\n# MadMPI: WARNING- %s\n\t", __func__);		\
     fprintf(stderr, __VA_ARGS__);					\
     fprintf(stderr, "\n\n");						\
   }
 
 #define NM_MPI_FATAL_ERROR(...) {					\
-    fprintf(stderr, "\n# MadMPI: FATAL- %s\n\t", __TBX_FUNCTION__);	\
+    fprintf(stderr, "\n# MadMPI: FATAL- %s\n\t", __func__);		\
     fprintf(stderr, __VA_ARGS__);					\
     fprintf(stderr, "\n\n");						\
     void*buffer[100];							\
@@ -1240,14 +1241,14 @@ int mpi_init(int *argc,
 
 int mpi_init_thread(int *argc,
                     char ***argv,
-                    int required TBX_UNUSED,
+                    int required __attribute__((unused)),
                     int *provided);
 
 int mpi_initialized(int *flag);
 
 int mpi_finalize(void);
 
-int mpi_abort(MPI_Comm comm TBX_UNUSED,
+int mpi_abort(MPI_Comm comm __attribute__((unused)),
 	      int errorcode);
 
 int mpi_comm_size(MPI_Comm comm,
@@ -1409,7 +1410,7 @@ int mpi_cancel(MPI_Request *request);
 int mpi_request_free(MPI_Request *request);
 
 int mpi_get_count(MPI_Status *status,
-                  MPI_Datatype datatype TBX_UNUSED,
+                  MPI_Datatype datatype __attribute__((unused)),
                   int *count);
 
 int mpi_request_is_equal(MPI_Request request1,

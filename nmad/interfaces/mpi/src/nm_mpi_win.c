@@ -14,6 +14,7 @@
  */
 
 #include "nm_mpi_private.h"
+#include <tbx.h>
 #include <assert.h>
 
 #include <sys/types.h>

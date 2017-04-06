@@ -22,6 +22,10 @@
 
 PADICO_MODULE_HOOK(NewMad_Core);
 
+/* allocator for request chunks */
+PUK_ALLOCATOR_TYPE(nm_req_chunk, struct nm_req_chunk_s);
+static nm_req_chunk_allocator_t nm_req_chunk_allocator = NULL;
+
 
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data)
 {

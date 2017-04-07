@@ -79,14 +79,17 @@ struct nm_gate_s
   /** large messages waiting for RTRs- list of pw, lookup by [gate,tag,seq,chunk_offset] */
   struct nm_pkt_wrap_list_s pending_large_send;       
 
-  /* Strategy components elements */
+  /** Strategy components elements */
   struct puk_receptacle_NewMad_Strategy_s strategy_receptacle;
   puk_instance_t strategy_instance;
+
+  /** pw ready to be sent, formed by strategy */
+  struct nm_pkt_wrap_list_s out_list;
 
   /** Gate data for each driver. */
   struct nm_gdrv_vect_s gdrv_array;
 
-  /* user reference */
+  /** user reference */
   void*ref;
 
   /** NM core object. */

@@ -57,9 +57,8 @@ static const struct puk_component_driver_s nm_strat_aggreg_autoextended_componen
 
 /** Per-gate status for strat aggreg_autoextended instances.
  */
-struct nm_strat_aggreg_autoextended_gate {
-  /** List of raw outgoing packets. */
-  struct nm_pkt_wrap_list_s out_list;
+struct nm_strat_aggreg_autoextended_gate
+{
   int max_small;
   int copy_on_send_threshold;
 };
@@ -88,7 +87,6 @@ static void*strat_aggreg_autoextended_instantiate(puk_instance_t instance, puk_c
   struct nm_strat_aggreg_autoextended_gate*p_status = TBX_MALLOC(sizeof(struct nm_strat_aggreg_autoextended_gate));
 
   num_instances++;
-  nm_pkt_wrap_list_init(&p_status->out_list);
 
   const char*max_small = puk_instance_getattr(instance, "max_small");
   p_status->max_small = atoi(max_small);
@@ -123,11 +121,10 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
                                                const union nm_header_ctrl_generic_s*p_ctrl)
 {
   struct nm_pkt_wrap_s*p_pw = NULL;
-  struct nm_strat_aggreg_autoextended_gate*p_status = _status;
   int err;
 
   /* We first try to find an existing packet to form an aggregate */
-  puk_list_foreach(p_pw, &p_status->out_list)
+  puk_list_foreach(p_pw, &p_gate->out_list)
     {
       if(nm_pw_remaining_buf(p_pw) < NM_HEADER_CTRL_SIZE) 
 	{
@@ -149,7 +146,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
     goto out;
 
   /* Add the control packet to the out_list */
-  nm_pkt_wrap_list_push_back(&p_status->out_list, p_pw);
+  nm_pkt_wrap_list_push_back(&p_gate->out_list, p_pw);
 
  out:
   return err;
@@ -158,8 +155,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
 static int strat_aggreg_autoextended_flush(void*_status, nm_gate_t p_gate)
 {
   struct nm_pkt_wrap_s*p_pw = NULL;
-  struct nm_strat_aggreg_autoextended_gate*p_status = _status;
-  puk_list_foreach(p_pw, &p_status->out_list)
+  puk_list_foreach(p_pw, &p_gate->out_list)
     {
       NM_TRACEF("Marking pw %p as completed\n", p_pw);
       nm_pw_finalize(p_pw);
@@ -169,8 +165,7 @@ static int strat_aggreg_autoextended_flush(void*_status, nm_gate_t p_gate)
 
 static int strat_aggreg_autoextended_todo(void*_status, nm_gate_t p_gate)
 {
-  struct nm_strat_aggreg_autoextended_gate*p_status = _status;
-  return !(nm_pkt_wrap_list_empty(&p_status->out_list));
+  return !(nm_pkt_wrap_list_empty(&p_gate->out_list));
 }
 
 /** push message chunk */
@@ -185,7 +180,7 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
   if(len <= p_status->max_small)
     {
       /* small packet */
-      puk_list_foreach(p_pw, &p_status->out_list)
+      puk_list_foreach(p_pw, &p_pack->p_gate->out_list)
 	{
 	  const nm_len_t rlen = nm_pw_remaining_buf(p_pw);
 	  const nm_len_t size = NM_HEADER_DATA_SIZE + nm_aligned(len);
@@ -203,7 +198,7 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
       /* cannot aggregate- create a new pw */
       p_pw = nm_pw_alloc_global_header();
       nm_pw_add_data_chunk(p_pw, p_pack, ptr, len, chunk_offset, flags);
-      nm_pkt_wrap_list_push_back(&p_status->out_list, p_pw);
+      nm_pkt_wrap_list_push_back(&p_pack->p_gate->out_list, p_pw);
     }
   else
     {
@@ -226,23 +221,22 @@ static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p
  */
 static int strat_aggreg_autoextended_try_and_commit(void*_status, nm_gate_t p_gate)
 {
-  struct nm_strat_aggreg_autoextended_gate*p_status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   if(p_gdrv->active_send[NM_TRK_SMALL] == 1)
     /* We're done */
     goto out;
 
-  if(nm_pkt_wrap_list_empty(&p_status->out_list))
+  if(nm_pkt_wrap_list_empty(&p_gate->out_list))
     /* We're done */
     goto out;
 
   /* Simply take the head of the list */
-  struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_status->out_list);
+  struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_gate->out_list);
   if((p_pw->flags & NM_PW_FINALIZED) != 0)
     {
       NM_TRACEF("pw %p is completed\n", p_pw);
-      nm_pkt_wrap_list_pop_front(&p_status->out_list);
+      nm_pkt_wrap_list_pop_front(&p_gate->out_list);
     } 
   else 
     {

@@ -57,8 +57,6 @@ static const struct puk_component_driver_s nm_strat_aggreg_component_driver =
  */
 struct nm_strat_aggreg_s
 {
-  /** List of raw outgoing packets. */
-  struct nm_pkt_wrap_list_s out_list;
   int nm_copy_on_send_threshold;
 };
 
@@ -108,7 +106,6 @@ static void*strat_aggreg_instantiate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_strat_aggreg_s*p_status = TBX_MALLOC(sizeof(struct nm_strat_aggreg_s));
   num_instances++;
-  nm_pkt_wrap_list_init(&p_status->out_list);
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
   p_status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
   return p_status;
@@ -138,14 +135,14 @@ static int strat_aggreg_pack_ctrl(void*_status, nm_gate_t p_gate,
 				  const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_strat_aggreg_s*p_status = _status;
-  struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, NM_HEADER_CTRL_SIZE, NM_SO_DEFAULT_WINDOW);
+  struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_gate->out_list, NM_HEADER_CTRL_SIZE, NM_SO_DEFAULT_WINDOW);
   if(p_pw)
     {
       nm_pw_add_control(p_pw, p_ctrl);
     }
   else
     {
-      nm_tactic_pack_ctrl(p_ctrl, &p_status->out_list);
+      nm_tactic_pack_ctrl(p_ctrl, &p_gate->out_list);
     }
   return NM_ESUCCESS;
 }
@@ -154,7 +151,7 @@ static int strat_aggreg_pack_ctrl(void*_status, nm_gate_t p_gate,
 static int strat_aggreg_todo(void*_status, nm_gate_t p_gate)
 {
   struct nm_strat_aggreg_s*p_status = _status;
-  return !(nm_pkt_wrap_list_empty(&p_status->out_list));
+  return !(nm_pkt_wrap_list_empty(&p_gate->out_list));
 }
 
 static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset)
@@ -169,11 +166,11 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
   if(chunk_len + max_header_len < strat_aggreg_max_small(p_pack->p_gate->p_core))
     {
       /* ** small send */
-      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_status->out_list, max_header_len + chunk_len, NM_SO_DEFAULT_WINDOW);
+      struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_pack->p_gate->out_list, max_header_len + chunk_len, NM_SO_DEFAULT_WINDOW);
       if(!p_pw)
 	{
 	  p_pw = nm_pw_alloc_global_header();
-	  nm_pkt_wrap_list_push_back(&p_status->out_list, p_pw);
+	  nm_pkt_wrap_list_push_back(&p_pack->p_gate->out_list, p_pw);
 	}
       
 #warning TODO- select pack strategy depending on data sparsity
@@ -211,9 +208,9 @@ static int strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
   struct nm_strat_aggreg_s*p_status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  if((p_gdrv->active_send[NM_TRK_SMALL] == 0) && (!nm_pkt_wrap_list_empty(&p_status->out_list)))
+  if((p_gdrv->active_send[NM_TRK_SMALL] == 0) && (!nm_pkt_wrap_list_empty(&p_gate->out_list)))
     {
-      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_status->out_list);
+      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_gate->out_list);
       /* Post packet on track 0 */
       nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
     }

@@ -60,7 +60,6 @@ static const struct puk_component_driver_s nm_strat_default_component_driver =
  */
 struct nm_strat_default_s
 {
-  struct nm_pkt_wrap_list_s out_list;  /**< List of raw outgoing packets. */
   int nm_max_small;
   int nm_copy_on_send_threshold;
 };
@@ -82,7 +81,6 @@ static int nm_strat_default_load(void)
 static void*strat_default_instantiate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_strat_default_s*p_status = TBX_MALLOC(sizeof(struct nm_strat_default_s));
-  nm_pkt_wrap_list_init(&p_status->out_list);
   const char*nm_max_small = puk_instance_getattr(ai, "nm_max_small");
   p_status->nm_max_small = atoi(nm_max_small);
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
@@ -106,15 +104,13 @@ static void strat_default_destroy(void*_status)
  */
 static int strat_default_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
 {
-  struct nm_strat_default_s*p_status = _status;
-  nm_tactic_pack_ctrl(p_ctrl, &p_status->out_list);
+  nm_tactic_pack_ctrl(p_ctrl, &p_gate->out_list);
   return NM_ESUCCESS;
 }
 
 static int strat_default_todo(void* _status, nm_gate_t p_gate)
 {
-  struct nm_strat_default_s*p_status = _status;
-  return !(nm_pkt_wrap_list_empty(&p_status->out_list));
+  return !(nm_pkt_wrap_list_empty(&p_gate->out_list));
 }
 
 /** push a message chunk */
@@ -125,7 +121,7 @@ static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len
   const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
   if(chunk_len + max_header_len <= p_status->nm_max_small)
     {
-      nm_tactic_pack_small_new_pw(p_pack, chunk_len, chunk_offset, &p_status->out_list);
+      nm_tactic_pack_small_new_pw(p_pack, chunk_len, chunk_offset, &p_pack->p_gate->out_list);
     }
   else
     {
@@ -148,12 +144,11 @@ static int strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
   static long long int send_size = 0;
   static tbx_tick_t t_orig;
 #endif /* PROFILE_NMAD */
-  struct nm_strat_default_s*p_status = _status;
 
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   if((p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
-     !(nm_pkt_wrap_list_empty(&p_status->out_list)))
+     !(nm_pkt_wrap_list_empty(&p_gate->out_list)))
     {
 #ifdef PROFILE_NMAD
       if(count != 0)
@@ -171,11 +166,11 @@ static int strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
       send_count++;
       send_size += p_pw->length;
 #endif /* PROFILE_NMAD */
-      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_status->out_list);
+      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_gate->out_list);
       /* Post packet on track 0 */
       nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
     }
-  else if((p_gdrv->active_send[NM_TRK_SMALL] != 0) && !(nm_pkt_wrap_list_empty(&p_status->out_list)))
+  else if((p_gdrv->active_send[NM_TRK_SMALL] != 0) && !(nm_pkt_wrap_list_empty(&p_gate->out_list)))
     {
 #ifdef PROFILE_NMAD
       if(count == 0)

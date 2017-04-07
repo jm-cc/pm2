@@ -157,8 +157,7 @@ static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
       }
   }
 #else
-  if((r->driver->todo == NULL) ||
-     (r->driver->todo && r->driver->todo(r->_status, p_gate)))
+  if(!nm_pkt_wrap_list_empty(&p_gate->out_list))
     {
       r->driver->try_and_commit(r->_status, p_gate);
     }

@@ -675,11 +675,7 @@ int nm_core_exit(nm_core_t p_core)
       nm_gate_t p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
-	  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-	  if(r->driver->todo && r->driver->todo(r->_status, p_gate)) 
-	    {
-	      todo = 1;
-	    }
+	  todo += !nm_pkt_wrap_list_empty(&p_gate->out_list);
 	}
       if(todo)
 	nm_schedule(p_core);

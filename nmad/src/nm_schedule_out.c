@@ -259,7 +259,7 @@ void nm_drv_post_send(nm_drv_t p_drv)
   while(p_pw);
 }
 
-int nm_core_flush(struct nm_core*p_core)
+void nm_core_flush(struct nm_core*p_core)
 {
   nm_gate_t p_gate = NULL;
   nmad_lock();

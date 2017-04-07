@@ -332,7 +332,7 @@ int nm_core_iprobe(struct nm_core*p_core,
 		   nm_gate_t *pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size);
 
 /** Flush pending packs (if supported by the strategy). */
-int nm_core_flush(struct nm_core*p_core);
+void nm_core_flush(struct nm_core*p_core);
 
 /* ** Status transition ************************************ */
 

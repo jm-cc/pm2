@@ -30,7 +30,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg_autoextended, &nm_strat_aggreg_auto
 */
 
 static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_aggreg_autoextended_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
+static void strat_aggreg_autoextended_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_aggreg_autoextended_try_and_commit(void*, nm_gate_t );
 static void strat_aggreg_autoextended_rdv_accept(void*, nm_gate_t );
 static int  strat_aggreg_autoextended_flush(void*, nm_gate_t );
@@ -115,11 +115,10 @@ static void strat_aggreg_autoextended_destroy(void*_status)
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
-                                               const union nm_header_ctrl_generic_s*p_ctrl)
+static void strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
+						const union nm_header_ctrl_generic_s*p_ctrl)
 {
   struct nm_pkt_wrap_s*p_pw = NULL;
-  int err;
 
   /* We first try to find an existing packet to form an aggregate */
   puk_list_foreach(p_pw, &p_gate->out_list)
@@ -131,23 +130,17 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status, nm_gate_t p_gate,
 	}
       else
 	{
-	  err = nm_pw_add_control(p_pw, p_ctrl);
+	  nm_pw_add_control(p_pw, p_ctrl);
 	  nb_ctrl_aggregation ++;
-	  goto out;
+	  return;
 	}
     }
 
   /* Simply form a new packet wrapper */
   p_pw = nm_pw_alloc_global_header();
-  err = nm_pw_add_control(p_pw, p_ctrl);
-  if(err != NM_ESUCCESS)
-    goto out;
-
+  nm_pw_add_control(p_pw, p_ctrl);
   /* Add the control packet to the out_list */
   nm_pkt_wrap_list_push_back(&p_gate->out_list, p_pw);
-
- out:
-  return err;
 }
 
 static int strat_aggreg_autoextended_flush(void*_status, nm_gate_t p_gate)

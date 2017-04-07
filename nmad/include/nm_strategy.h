@@ -39,7 +39,7 @@ struct nm_strategy_iface_s
   void (*pack_chunk)(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 
   /** submit a chunk of control data */
-  int (*pack_ctrl)(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s*p_ctrl);
+  void (*pack_ctrl)(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s*p_ctrl);
   
   /** Compute and apply the best possible packet rearrangement, then
       return next packet to send */

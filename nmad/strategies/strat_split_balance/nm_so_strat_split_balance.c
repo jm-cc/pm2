@@ -29,7 +29,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_split_balance, &nm_strat_split_balance_loa
  */
 
 static void strat_split_balance_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_split_balance_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
+static void strat_split_balance_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_split_balance_try_and_commit(void*, nm_gate_t );
 static void strat_split_balance_rdv_accept(void*, nm_gate_t );
 
@@ -95,11 +95,10 @@ static void strat_split_balance_destroy(void*status)
 }
 
 /* Add a new control "header" to the flow of outgoing packets */
-static int strat_split_balance_pack_ctrl(void *_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
+static void strat_split_balance_pack_ctrl(void *_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_pkt_wrap_s*p_pw = NULL;
   struct nm_strat_split_balance*status = _status;
-  int err = NM_ESUCCESS;
   if(!nm_pkt_wrap_list_empty(&p_gate->out_list))
     {
       /* Inspect only the head of the list */
@@ -107,8 +106,8 @@ static int strat_split_balance_pack_ctrl(void *_status, nm_gate_t p_gate, const 
       /* If the paquet is reasonably small, we can form an aggregate */
       if(NM_HEADER_CTRL_SIZE <= nm_pw_remaining_buf(p_pw))
 	{
-	  err = nm_pw_add_control(p_pw, p_ctrl);
-	  goto out;
+	  nm_pw_add_control(p_pw, p_ctrl);
+	  return;
 	}
     }
   /* Otherwise, simply form a new packet wrapper */
@@ -119,8 +118,6 @@ static int strat_split_balance_pack_ctrl(void *_status, nm_gate_t p_gate, const 
   nm_pkt_wrap_list_push_front(&p_gate->out_list, p_pw);
   status->nb_packets++;
 
- out:
-  return err;
 }
 
 

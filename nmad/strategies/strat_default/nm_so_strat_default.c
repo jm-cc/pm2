@@ -30,7 +30,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_default, &nm_strat_default_load, NULL, NUL
  */
 
 static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset);
-static int  strat_default_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
+static void strat_default_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_default_try_and_commit(void*, nm_gate_t );
 static void strat_default_rdv_accept(void*, nm_gate_t );
 
@@ -100,10 +100,9 @@ static void strat_default_destroy(void*_status)
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int strat_default_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
+static void strat_default_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
 {
   nm_tactic_pack_ctrl(p_ctrl, &p_gate->out_list);
-  return NM_ESUCCESS;
 }
 
 /** push a message chunk */

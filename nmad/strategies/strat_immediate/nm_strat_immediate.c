@@ -26,7 +26,7 @@
  */
 
 static void strat_immediate_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
-static int  strat_immediate_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
+static void strat_immediate_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_immediate_try_and_commit(void*, nm_gate_t );
 static void strat_immediate_rdv_accept(void*, nm_gate_t );
 
@@ -96,14 +96,13 @@ static void strat_immediate_destroy(void*status)
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int strat_immediate_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
+static void strat_immediate_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
 {
   struct nm_strat_immediate*status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
   nm_pw_add_control(p_pw, p_ctrl);
   nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
-  return NM_ESUCCESS;
 }
 
 /** push a message chunk */

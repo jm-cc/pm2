@@ -25,7 +25,6 @@
 /* Components structures:
  */
 
-static int  strat_immediate_todo(void*, nm_gate_t );
 static void strat_immediate_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_immediate_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_immediate_try_and_commit(void*, nm_gate_t );
@@ -33,7 +32,6 @@ static void strat_immediate_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_immediate_driver =
   {
-    .todo               = &strat_immediate_todo,
     .pack_chunk         = &strat_immediate_pack_chunk,
     .pack_ctrl          = &strat_immediate_pack_ctrl,
     .try_and_commit     = &strat_immediate_try_and_commit,
@@ -106,12 +104,6 @@ static int strat_immediate_pack_ctrl(void*_status, nm_gate_t p_gate, const union
   nm_pw_add_control(p_pw, p_ctrl);
   nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
   return NM_ESUCCESS;
-}
-
-static int strat_immediate_todo(void* _status, nm_gate_t p_gate)
-{
-  struct nm_strat_immediate*status = _status;
-  return 0;
 }
 
 /** push a message chunk */

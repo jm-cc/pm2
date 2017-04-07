@@ -29,7 +29,6 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_default, &nm_strat_default_load, NULL, NUL
 /* Components structures:
  */
 
-static int  strat_default_todo(void*, nm_gate_t );/* todo: s/nm_gate/nm_pack/ ? */
 static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset);
 static int  strat_default_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_default_try_and_commit(void*, nm_gate_t );
@@ -37,7 +36,6 @@ static void strat_default_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_default_driver =
   {
-    .todo               = &strat_default_todo,
     .pack_data          = &strat_default_pack_data,
     .pack_chunk         = NULL,
     .pack_ctrl          = &strat_default_pack_ctrl,
@@ -106,11 +104,6 @@ static int strat_default_pack_ctrl(void*_status, nm_gate_t p_gate, const union n
 {
   nm_tactic_pack_ctrl(p_ctrl, &p_gate->out_list);
   return NM_ESUCCESS;
-}
-
-static int strat_default_todo(void* _status, nm_gate_t p_gate)
-{
-  return !(nm_pkt_wrap_list_empty(&p_gate->out_list));
 }
 
 /** push a message chunk */

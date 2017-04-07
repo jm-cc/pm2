@@ -29,7 +29,6 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg_autoextended, &nm_strat_aggreg_auto
 /* Components structures:
 */
 
-static int  strat_aggreg_autoextended_todo(void*, nm_gate_t );
 static void strat_aggreg_autoextended_pack_chunk(void*_status, struct nm_req_s*p_pack, void*ptr, nm_len_t len, nm_len_t chunk_offset);
 static int  strat_aggreg_autoextended_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_aggreg_autoextended_try_and_commit(void*, nm_gate_t );
@@ -43,7 +42,6 @@ static const struct nm_strategy_iface_s nm_strat_aggreg_autoextended_driver =
     .try_and_commit = &strat_aggreg_autoextended_try_and_commit,
     .rdv_accept     = &strat_aggreg_autoextended_rdv_accept,
     .flush          = &strat_aggreg_autoextended_flush,
-    .todo           = &strat_aggreg_autoextended_todo
   };
 
 static void*strat_aggreg_autoextended_instantiate(puk_instance_t, puk_context_t);
@@ -161,11 +159,6 @@ static int strat_aggreg_autoextended_flush(void*_status, nm_gate_t p_gate)
       nm_pw_finalize(p_pw);
     }
   return NM_ESUCCESS;
-}
-
-static int strat_aggreg_autoextended_todo(void*_status, nm_gate_t p_gate)
-{
-  return !(nm_pkt_wrap_list_empty(&p_gate->out_list));
 }
 
 /** push message chunk */

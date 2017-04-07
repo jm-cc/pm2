@@ -51,7 +51,6 @@ static p_tbx_memory_t nm_ssa_pw_mem = NULL;
 /* Components structures:
  */
 
-static int strat_split_all_todo(void*, nm_gate_t );
 static int strat_split_all_pack(void*_status, struct nm_req_s*p_pack);
 static int strat_split_all_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int strat_split_all_pack_ctrl_chunk(void*, struct nm_pkt_wrap_s *, const union nm_header_ctrl_generic_s *);
@@ -73,7 +72,6 @@ static const struct nm_strategy_iface_s nm_strat_split_all_driver =
     .rdv_accept          = &strat_split_all_rdv_accept,
 //    .extended_rdv_accept = &strat_split_all_extended_rdv_accept,
     .flush               = NULL,
-    .todo                = &strat_split_all_todo,
 #ifdef CONFIG_STRAT_SPLIT_ALL
     .split_small         = &strat_split_all_split_small
 #endif
@@ -253,14 +251,6 @@ strat_split_all_pack_ctrl(void *_status,
 //  return err;
 //}
 
-
-static int strat_split_all_todo(void*_status,
-				nm_gate_t p_gate)
-{
-  struct nm_strat_split_all *status = _status;
-  struct tbx_fast_list_head *out_list = &(status)->out_list;
-  return !(tbx_fast_list_empty(out_list));
-}
 
 /* Handle the arrival of a new packet. The strategy may already apply
    some optimizations at this point */

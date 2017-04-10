@@ -45,9 +45,9 @@ PUK_LIST_CREATE_FUNCS(nm_unexpected);
 struct nm_core
 {
 #ifdef PIOMAN
-  piom_spinlock_t piom_big_lock;
+  piom_spinlock_t lock; /**< lock to protect lists in core */
 #  ifdef DEBUG
-  volatile piom_thread_t piom_big_lock_holder;
+  volatile piom_thread_t lock_holder; /**< holder of the lock, used for debug */
 #  endif /* DEBUG */
 #endif  /* PIOMAN */
 

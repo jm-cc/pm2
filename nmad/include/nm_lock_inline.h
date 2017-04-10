@@ -21,17 +21,17 @@ static inline void nmad_lock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
 #ifdef DEBUG
-  if(PIOM_THREAD_SELF == p_core->piom_big_lock_holder)
+  if(PIOM_THREAD_SELF == p_core->lock_holder)
     {
       fprintf(stderr, "nmad: FATAL- deadlock detected. Self already holds spinlock.\n");
       abort();
     }
 #endif
-  int rc = piom_spin_lock(&p_core->piom_big_lock);
+  int rc = piom_spin_lock(&p_core->lock);
   if(rc != 0)
     NM_FATAL("cannot get spinlock- rc = %d\n", rc);
 #ifdef DEBUG
-  p_core->piom_big_lock_holder = PIOM_THREAD_SELF;
+  p_core->lock_holder = PIOM_THREAD_SELF;
 #endif
 #endif
 }
@@ -42,10 +42,10 @@ static inline void nmad_lock(struct nm_core*p_core)
 static inline int nmad_trylock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
-  int rc = piom_spin_trylock(&p_core->piom_big_lock);
+  int rc = piom_spin_trylock(&p_core->lock);
 #ifdef DEBUG
   if(rc == 1)
-    p_core->piom_big_lock_holder = PIOM_THREAD_SELF;
+    p_core->lock_holder = PIOM_THREAD_SELF;
 #endif
   return rc;
 #else
@@ -58,10 +58,10 @@ static inline void nmad_unlock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
 #ifdef DEBUG
-  assert(p_core->piom_big_lock_holder == PIOM_THREAD_SELF);
-  p_core->piom_big_lock_holder = PIOM_THREAD_NULL;
+  assert(p_core->lock_holder == PIOM_THREAD_SELF);
+  p_core->lock_holder = PIOM_THREAD_NULL;
 #endif
-  int rc = piom_spin_unlock(&p_core->piom_big_lock);
+  int rc = piom_spin_unlock(&p_core->lock);
   if(rc != 0)
     NM_FATAL("error in spin_unlock- rc = %d\n", rc);
 #endif
@@ -70,9 +70,9 @@ static inline void nmad_unlock(struct nm_core*p_core)
 static inline void nmad_lock_init(struct nm_core*p_core)
 {
 #ifdef PIOMAN
-  piom_spin_init(&p_core->piom_big_lock);
+  piom_spin_init(&p_core->lock);
 #ifdef DEBUG
-  p_core->piom_big_lock_holder = PIOM_THREAD_NULL;
+  p_core->lock_holder = PIOM_THREAD_NULL;
 #endif
 #endif
 }
@@ -82,7 +82,7 @@ static inline void nmad_lock_assert(struct nm_core*p_core)
 {
 #ifdef PIOMAN
 #ifdef DEBUG
-  assert(PIOM_THREAD_SELF == p_core->piom_big_lock_holder);
+  assert(PIOM_THREAD_SELF == p_core->lock_holder);
 #endif
 #endif
 }
@@ -92,7 +92,7 @@ static inline void nmad_nolock_assert(struct nm_core*p_core)
 {
 #ifdef PIOMAN
 #ifdef DEBUG
-  assert(PIOM_THREAD_SELF != p_core->piom_big_lock_holder);
+  assert(PIOM_THREAD_SELF != p_core->lock_holder);
 #endif
 #endif
 }

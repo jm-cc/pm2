@@ -144,24 +144,10 @@ static inline void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw
 static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
 {
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-#ifdef FINE_GRAIN_LOCKING
-  if(r->driver->todo && 
-     r->driver->todo(r->_status, p_gate)) 
-  {
-    if(nm_trylock_interface(p_gate->p_core))
-      {
-	nm_lock_status(p_gate->p_core);
-	r->driver->try_and_commit(r->_status, p_gate);
-	nm_unlock_status(p_gate->p_core);
-	nm_unlock_interface(p_gate->p_core);
-      }
-  }
-#else
   if(!nm_pkt_wrap_list_empty(&p_gate->out_list))
     {
       r->driver->try_and_commit(r->_status, p_gate);
     }
-#endif
 }
 
 /** Post a ready-to-receive

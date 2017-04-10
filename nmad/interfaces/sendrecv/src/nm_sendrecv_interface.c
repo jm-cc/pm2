@@ -212,15 +212,10 @@ int nm_sr_probe(nm_session_t p_session,
   nm_core_t p_core = p_session->p_core;
   const nm_core_tag_t core_tag = nm_core_tag_build(p_session->hash_code, tag);
   const nm_core_tag_t core_mask = nm_core_tag_build(p_session->hash_code, mask);
-
-  nm_lock_interface(p_core);
-  nm_lock_status(p_core);
   nm_gate_t p_out_gate = NM_GATE_NONE;
   nm_core_tag_t out_core_tag = NM_CORE_TAG_NONE;
   nm_len_t out_size = 0;
   int err = nm_core_iprobe(p_core, p_gate, core_tag, core_mask, &p_out_gate, &out_core_tag, &out_size);
-  nm_unlock_status(p_core);
-  nm_unlock_interface(p_core);
 
   if(pp_out_gate)
     *pp_out_gate = p_out_gate;
@@ -331,11 +326,7 @@ int nm_sr_request_set_completion_queue(nm_session_t p_session, nm_sr_request_t*p
 
 int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t*p_request)
 {
-  nm_lock_interface(p_session->p_core);
-  nm_lock_status(p_session->p_core);
   nm_sr_request_monitor(p_session, p_request, 0, NULL);
-  nm_unlock_status(p_session->p_core);
-  nm_unlock_interface(p_session->p_core);
   return NM_ESUCCESS;
 }
 

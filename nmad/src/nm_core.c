@@ -26,15 +26,10 @@ PADICO_MODULE_BUILTIN(NewMad_Core, NULL, NULL, NULL);
 
 
 #ifdef PIOMAN
-#  ifdef FINE_GRAIN_LOCKING
-piom_spinlock_t nm_tac_lock;
-piom_spinlock_t nm_status_lock;
-#  else
 piom_spinlock_t piom_big_lock;
-#    ifdef DEBUG
+#  ifdef DEBUG
 volatile piom_thread_t piom_big_lock_holder = PIOM_THREAD_NULL;
-#    endif /* DEBUG */
-#  endif /* FINE_GRAIN_LOCKING */
+#  endif /* DEBUG */
 #endif  /* PIOMAN */
 
 
@@ -569,8 +564,6 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 #ifdef PIOMAN
   pioman_init(argc, argv);
   nmad_lock_init(p_core);
-  nm_lock_interface_init(p_core);
-  nm_lock_status_init(p_core);  
 #if(defined(PIOMAN_POLL))
   nm_ltask_set_policy();
 #endif	/* PIOM_POLL */

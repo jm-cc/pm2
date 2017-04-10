@@ -428,7 +428,6 @@ int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_re
   /* store the unpack request */
   nm_status_add(p_unpack, NM_STATUS_UNPACK_POSTED);
   nmad_lock();
-  nm_lock_interface(p_core);
   nm_req_list_push_back(&p_core->unpacks, p_unpack);
   nm_core_polling_level(p_core);
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
@@ -472,7 +471,6 @@ int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_re
       p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
     }
   nmad_unlock();
-  nm_unlock_interface(p_core);
   return NM_ESUCCESS;
 }
 
@@ -902,8 +900,6 @@ int nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw
   nm_gate_t const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);
 
-  nm_lock_interface(p_core);
-
   /* clear the input request field */
   if(p_pw->p_gdrv && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
     {
@@ -921,8 +917,6 @@ int nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw
 #ifdef NMAD_POLL
   nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #endif /* NMAD_POLL */
-
-  nm_unlock_interface(p_core);
 
   if(p_pw->trk_id == NM_TRK_SMALL)
     {

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -218,8 +218,6 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 int nm_core_driver_exit(struct nm_core *p_core)
 {
   int err = NM_ESUCCESS;
-
-  nm_lock_interface(p_core);
   nm_drv_t p_drv = NULL;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
@@ -227,7 +225,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
       /* stop polling
        */
       nmad_unlock();
-      nm_unlock_interface(p_core);
       piom_ltask_cancel(&p_drv->p_ltask);
 #endif /* PIOMAN_POLL */
       /* cancel any pending active recv request 
@@ -273,7 +270,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	    }
 	}
 #ifdef PIOMAN_POLL
-      nm_lock_interface(p_core);
       nmad_lock();
 #endif
     }
@@ -341,8 +337,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	nm_drv_delete(p_drv);
     }
   while(p_drv);
-
-  nm_unlock_interface(p_core);
 
 #if(defined(PIOMAN))
   pioman_exit();

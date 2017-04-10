@@ -16,24 +16,13 @@
 #ifndef NM_LOCK_INLINE
 #define NM_LOCK_INLINE
 
-#ifdef FINE_GRAIN_LOCKING
-#  ifdef PIOMAN
-#  define NM_LOCK_CORE
-#  define NM_LOCK_POST
-/** lock for try_and_commit */
-extern piom_spinlock_t nm_tac_lock;
-/** lock for status */
-extern piom_spinlock_t nm_status_lock;
-#  endif /* PIOMAN */
-#else /* FINE_GRAIN_LOCKING */
-#  ifdef PIOMAN
-#    define NM_LOCK_BIGLOCK
+#ifdef PIOMAN
+#  define NM_LOCK_BIGLOCK
 extern piom_spinlock_t piom_big_lock;
-#    ifdef DEBUG
+#  ifdef DEBUG
 extern volatile piom_thread_t piom_big_lock_holder;
-#    endif /* DEBUG */
-#  endif
-#endif /* FINE_GRAIN_LOCKING */
+#  endif /* DEBUG */
+#endif
 
 
 /** Lock entirely NewMadeleine */
@@ -111,72 +100,6 @@ static inline void nmad_nolock_assert(void)
 #ifdef DEBUG
   assert(PIOM_THREAD_SELF != piom_big_lock_holder);
 #endif
-#endif
-}
-
-/*
- * Lock the interface's list of packet to send
- * use this when entering try_and_commit or (un)pack()
- */
-
-static inline void nm_lock_interface(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_CORE
-  piom_spin_lock(&nm_tac_lock);
-#endif
-}
-
-static inline int nm_trylock_interface(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_CORE
-  return piom_spin_trylock(&nm_tac_lock);
-#else
-  return 1;
-#endif
-}
-
-static inline void nm_unlock_interface(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_CORE
-  piom_spin_unlock(&nm_tac_lock);
-#endif
-}
-
-static inline void nm_lock_interface_init(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_CORE
-  piom_spin_init(&nm_tac_lock);
-#endif
-}
-
-
-static inline void nm_lock_status(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_CORE
-  piom_spin_lock(&nm_status_lock);
-#endif
-}
-
-static inline int nm_trylock_status(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_CORE
-  return piom_spin_trylock(&nm_status_lock);
-#else
-  return 1;
-#endif
-}
-
-static inline void nm_unlock_status(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_CORE
-  piom_spin_unlock(&nm_status_lock);
-#endif
-}
-
-static inline void nm_lock_status_init(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_CORE
-  piom_spin_init(&nm_status_lock);
 #endif
 }
 

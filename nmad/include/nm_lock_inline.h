@@ -88,7 +88,7 @@ static inline void nm_core_lock_assert(struct nm_core*p_core)
 }
 
 /** assert that current thread doesn't hold the lock */
-static inline void nmad_nolock_assert(struct nm_core*p_core)
+static inline void nm_core_nolock_assert(struct nm_core*p_core)
 {
 #ifdef PIOMAN
 #ifdef DEBUG

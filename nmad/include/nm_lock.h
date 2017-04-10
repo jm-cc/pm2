@@ -17,17 +17,18 @@
 #ifndef NM_LOCK_H
 #define NM_LOCK_H
 
-/* Lock entirely NewMadeleine */
+/** acquire the nm core lock */
 static inline void nm_core_lock(struct nm_core*p_core);
 
-/* Try to lock NewMadeleine 
+/** Try to lock the nmad core
  * return 0 if NMad is already locked or 1 otherwise
  */
 static inline int  nm_core_trylock(struct nm_core*p_core);
 
-/* Unlock NewMadeleine core */
+/** unlock NewMadeleine core */
 static inline void nm_core_unlock(struct nm_core*p_core);
 
+/** init the core lock */
 static inline void nm_core_lock_init(struct nm_core*p_core);
 
 

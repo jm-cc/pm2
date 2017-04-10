@@ -62,6 +62,9 @@ typedef int8_t nm_trk_id_t;
 /** First sequence number */
 #define NM_SEQ_FIRST ((nm_seq_t)1)
 
+/** largest sequence number */
+#define NM_SEQ_MAX ((nm_seq_t)-1)
+
 /** Compute next sequence number */
 static inline nm_seq_t nm_seq_next(nm_seq_t seq)
 {

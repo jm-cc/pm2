@@ -243,7 +243,7 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
       p_pending_event->event = *p_event;
       p_pending_event->p_core_monitor = p_core_monitor;
       nm_core_pending_event_list_push_back(&p_core->pending_events, p_pending_event);
-      assert(nm_core_pending_event_list_size(&p_core->pending_events) < 65534); /* seq number overflow */
+      assert(nm_core_pending_event_list_size(&p_core->pending_events) < NM_SEQ_MAX - 1); /* seq number overflow */
       nm_core_pending_event_recover(p_core);
     }
 }

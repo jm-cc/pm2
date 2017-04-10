@@ -237,7 +237,8 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 	}
       else
 	{
-	  fprintf(stderr, "# nmad: WARNING- delaying event dispatch; already in progress\n");
+	  const int num_pending = nm_core_pending_event_list_size(&p_core->pending_events);
+	  fprintf(stderr, "# nmad: WARNING- delaying event dispatch; already in progress (pending = %d)\n", num_pending);
 	  pending = 1;
 	  goto out;
 	}

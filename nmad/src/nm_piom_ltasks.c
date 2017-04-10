@@ -124,10 +124,10 @@ static int nm_task_poll_recv(void*_pw)
   struct nm_core*p_core = p_pw->p_drv->p_core;
   int ret = -NM_EUNKNOWN;
   /* todo: lock something when using fine-grain locks */
-  if(nmad_trylock(p_core))
+  if(nm_core_trylock(p_core))
     {
       ret = nm_pw_poll_recv(p_pw);
-      nmad_unlock(p_core);
+      nm_core_unlock(p_core);
     }
   return ret;
 }
@@ -140,10 +140,10 @@ static int nm_task_block_recv(void*_pw)
   int err = r->driver->wait_recv_iov(r->_status, p_pw);
   if(err == NM_ESUCCESS)
     {
-      nmad_lock(p_core);
+      nm_core_lock(p_core);
       piom_ltask_completed(&p_pw->ltask);
       nm_pw_process_complete_recv(p_core, p_pw);
-      nmad_unlock(p_core);
+      nm_core_unlock(p_core);
     }
   else if((p_pw->ltask.state & PIOM_LTASK_STATE_CANCELLED) || (err == -NM_ECLOSED))
     {
@@ -165,10 +165,10 @@ static int nm_task_poll_send(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
   struct nm_core*p_core = p_pw->p_drv->p_core;
-  if(nmad_trylock(p_core))
+  if(nm_core_trylock(p_core))
     {
       nm_pw_poll_send(p_pw);
-      nmad_unlock(p_core);
+      nm_core_unlock(p_core);
     }
   return NM_ESUCCESS;
 }
@@ -184,7 +184,7 @@ static int nm_task_block_send(void*_pw)
       err = r->driver->wait_send_iov(r->_status, p_pw);
     }
   while(err == -NM_EAGAIN);
-  nmad_lock(p_core);
+  nm_core_lock(p_core);
   if(err == NM_ESUCCESS)
     {
       piom_ltask_completed(&p_pw->ltask);
@@ -195,7 +195,7 @@ static int nm_task_block_send(void*_pw)
       nm_ltask_submit_poll_send(p_pw);
       NM_WARN("wait_send returned %d", err);
     }
-  nmad_unlock(p_core);
+  nm_core_unlock(p_core);
   return NM_ESUCCESS;
 }
 
@@ -204,11 +204,11 @@ static int nm_task_post_on_drv(void*_drv)
   nm_drv_t p_drv = _drv;
   struct nm_core*p_core = p_drv->p_core;
   int ret = NM_ESUCCESS;
-  if(nmad_trylock(p_core))
+  if(nm_core_trylock(p_core))
     {
       nm_strat_apply(p_drv->p_core);
       nm_drv_post_all(p_drv);
-      nmad_unlock(p_core);
+      nm_core_unlock(p_core);
     }
   return ret;
 }
@@ -217,9 +217,9 @@ static int nm_task_offload(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
   struct nm_core*p_core = p_pw->p_gate->p_core;
-  nmad_lock(p_core);
+  nm_core_lock(p_core);
   nm_pw_post_send(p_pw);
-  nmad_unlock(p_core);
+  nm_core_unlock(p_core);
   return 0;
 }
 

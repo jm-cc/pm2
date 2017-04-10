@@ -224,7 +224,7 @@ int nm_core_driver_exit(struct nm_core*p_core)
 #ifdef PIOMAN_POLL
       /* stop polling
        */
-      nmad_unlock(p_core);
+      nm_core_unlock(p_core);
       piom_ltask_cancel(&p_drv->p_ltask);
 #endif /* PIOMAN_POLL */
       /* cancel any pending active recv request 
@@ -270,7 +270,7 @@ int nm_core_driver_exit(struct nm_core*p_core)
 	    }
 	}
 #ifdef PIOMAN_POLL
-      nmad_lock(p_core);
+      nm_core_lock(p_core);
 #endif
     }
 

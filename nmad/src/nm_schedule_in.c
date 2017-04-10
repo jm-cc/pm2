@@ -224,7 +224,7 @@ int nm_piom_block_recv(struct nm_pkt_wrap_s  *p_pw)
 	    p_pw->trk_id,
 	    p_pw->proto_id);
   
-  nmad_unlock();
+  nm_core_unlock();
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err;
   do 
@@ -233,7 +233,7 @@ int nm_piom_block_recv(struct nm_pkt_wrap_s  *p_pw)
     }
   while(err == -NM_EAGAIN);
   
-  nmad_lock();
+  nm_core_lock();
 
   if (err != NM_ESUCCESS) {
     NM_WARN("drv->wait_recv returned %d", err);

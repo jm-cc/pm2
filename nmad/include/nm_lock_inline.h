@@ -17,7 +17,7 @@
 #define NM_LOCK_INLINE
 
 /** Lock entirely NewMadeleine */
-static inline void nmad_lock(struct nm_core*p_core)
+static inline void nm_core_lock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
 #ifdef DEBUG
@@ -39,7 +39,7 @@ static inline void nmad_lock(struct nm_core*p_core)
 /** Try to lock NewMadeleine 
  * return 0 if NMad is already locked or 1 otherwise
  */
-static inline int nmad_trylock(struct nm_core*p_core)
+static inline int nm_core_trylock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   int rc = piom_spin_trylock(&p_core->lock);
@@ -54,7 +54,7 @@ static inline int nmad_trylock(struct nm_core*p_core)
 }
 
 /** Unlock NewMadeleine */
-static inline void nmad_unlock(struct nm_core*p_core)
+static inline void nm_core_unlock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
 #ifdef DEBUG
@@ -67,7 +67,7 @@ static inline void nmad_unlock(struct nm_core*p_core)
 #endif
 }
 
-static inline void nmad_lock_init(struct nm_core*p_core)
+static inline void nm_core_lock_init(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_init(&p_core->lock);
@@ -78,7 +78,7 @@ static inline void nmad_lock_init(struct nm_core*p_core)
 }
 
 /** assert that current thread holds the lock */
-static inline void nmad_lock_assert(struct nm_core*p_core)
+static inline void nm_core_lock_assert(struct nm_core*p_core)
 {
 #ifdef PIOMAN
 #ifdef DEBUG

@@ -215,7 +215,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 /** Shutdown all drivers.
  *
  */
-int nm_core_driver_exit(struct nm_core *p_core)
+int nm_core_driver_exit(struct nm_core*p_core)
 {
   int err = NM_ESUCCESS;
   nm_drv_t p_drv = NULL;
@@ -224,7 +224,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 #ifdef PIOMAN_POLL
       /* stop polling
        */
-      nmad_unlock();
+      nmad_unlock(p_core);
       piom_ltask_cancel(&p_drv->p_ltask);
 #endif /* PIOMAN_POLL */
       /* cancel any pending active recv request 
@@ -270,7 +270,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	    }
 	}
 #ifdef PIOMAN_POLL
-      nmad_lock();
+      nmad_lock(p_core);
 #endif
     }
 

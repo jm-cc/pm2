@@ -52,7 +52,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
 		      nm_req_flag_t flags)
 {
   int err = NM_ESUCCESS;
-  nmad_lock();
+  nmad_lock(p_core);
   assert(p_gate != NULL);
   nm_status_assert(p_pack, NM_STATUS_PACK_INIT);
   struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
@@ -63,7 +63,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   p_pack->seq    = seq;
   p_pack->tag    = tag;
   p_pack->p_gate = p_gate;
-  nmad_unlock();
+  nmad_unlock(p_core);
   return err;
 }
 
@@ -71,7 +71,7 @@ void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
 {
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
   assert(hlen > 0);
-  nmad_lock();
+  nmad_lock(p_core);
   if(r->driver->pack_data == NULL)
     {
       fprintf(stderr, "# nmad: nm_core_pack_header not support with selected strategy (need pack_data).\n");
@@ -81,13 +81,13 @@ void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
   assert(hlen <= size);
   if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
     (*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
-  nmad_unlock();
+  nmad_unlock(p_core);
 }
 
 void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
 {
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
-  nmad_lock();
+  nmad_lock(p_core);
   nm_req_list_push_back(&p_core->pending_packs, p_pack);
   nm_core_polling_level(p_core);
   if(r->driver->pack_data != NULL)
@@ -100,7 +100,7 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
       assert(p_pack->pack.scheduled == 0);
       nm_data_aggregator_traversal(&p_pack->data, &nm_core_pack_chunk, p_pack);
     }
-  nmad_unlock();
+  nmad_unlock(p_core);
 }
 
 
@@ -109,7 +109,7 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
 int nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
 {
   nm_gate_t const p_gate = p_pw->p_gate;
-  nmad_lock_assert();
+  nmad_lock_assert(p_core);
   NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
   p_pw->p_gdrv->active_send[p_pw->trk_id]--;
@@ -153,7 +153,7 @@ int nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_
 void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_core*p_core = p_pw->p_gate->p_core;
-  nmad_lock_assert();
+  nmad_lock_assert(p_core);
   assert(p_pw->flags & NM_PW_FINALIZED || p_pw->flags & NM_PW_NOHEADER);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err = (*r->driver->poll_send_iov)(r->_status, p_pw);
@@ -179,7 +179,7 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_core*p_core = p_pw->p_drv->p_core;
-  nmad_lock_assert();
+  nmad_lock_assert(p_core);
 
 #ifdef PIO_OFFLOAD
   nm_pw_offloaded_finalize(p_pw);
@@ -245,7 +245,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 void nm_drv_post_send(nm_drv_t p_drv)
 {
   /* post new requests	*/
-  nmad_lock_assert();
+  nmad_lock_assert(p_drv->p_core);
   struct nm_pkt_wrap_s*p_pw = NULL;
   do
     {
@@ -262,7 +262,7 @@ void nm_drv_post_send(nm_drv_t p_drv)
 void nm_core_flush(struct nm_core*p_core)
 {
   nm_gate_t p_gate = NULL;
-  nmad_lock();
+  nmad_lock(p_core);
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
@@ -278,7 +278,7 @@ void nm_core_flush(struct nm_core*p_core)
 	    }
 	}
     } 
-  nmad_unlock();
+  nmad_unlock(p_core);
 }
 
 #ifdef NMAD_POLL

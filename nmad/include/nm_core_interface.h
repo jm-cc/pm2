@@ -246,7 +246,7 @@ void nm_core_monitor_add(nm_core_t p_core, struct nm_core_monitor_s*m);
 /** Unregister an event monitor. */
 void nm_core_monitor_remove(nm_core_t p_core, struct nm_core_monitor_s*m);
 /** set a per-request monitor. Fire event immediately if pending */
-void nm_core_req_monitor(struct nm_req_s*p_req, struct nm_monitor_s monitor);
+void nm_core_req_monitor(struct nm_core*p_core, struct nm_req_s*p_req, struct nm_monitor_s monitor);
 
 
 /** matches any event */

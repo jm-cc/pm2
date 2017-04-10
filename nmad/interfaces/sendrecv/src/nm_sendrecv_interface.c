@@ -294,7 +294,7 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t*p_request,
       .p_notifier = &nm_sr_event_req_handler,
       .event_mask = mask
     };
-  nm_core_req_monitor(&p_request->req, monitor);
+  nm_core_req_monitor(p_session->p_core, &p_request->req, monitor);
   return NM_ESUCCESS;
 }
 
@@ -385,7 +385,7 @@ static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, 
   assert(p_req != NULL);
   assert(p_request != NULL);
   assert(p_request->monitor.notifier);
-  nmad_nolock_assert();
+  nmad_nolock_assert(p_request->p_session->p_core);
   const nm_status_t masked_status = p_event->status & p_request->monitor.mask;
   const nm_sr_event_info_t info = { .req.p_request = p_request };
   if( (masked_status & NM_STATUS_FINALIZED) ||
@@ -406,7 +406,7 @@ static void nm_sr_event_handler(const struct nm_core_event_s*const p_event, void
   const uint32_t hashcode = nm_core_tag_get_hashcode(p_event->tag);
   nm_session_t p_session = nm_session_lookup(hashcode);
   assert(p_session != NULL);
-  nmad_nolock_assert();
+  nmad_nolock_assert(p_session->p_core);
   const nm_tag_t sr_tag = nm_core_tag_get_tag(p_event->tag);
   const nm_sr_event_info_t info =
     { 

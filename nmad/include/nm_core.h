@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,13 @@ PUK_LIST_CREATE_FUNCS(nm_unexpected);
  */
 struct nm_core
 {
+#ifdef PIOMAN
+  piom_spinlock_t piom_big_lock;
+#  ifdef DEBUG
+  volatile piom_thread_t piom_big_lock_holder;
+#  endif /* DEBUG */
+#endif  /* PIOMAN */
+
   /** List of gates. */
   struct nm_gate_list_s gate_list;
 

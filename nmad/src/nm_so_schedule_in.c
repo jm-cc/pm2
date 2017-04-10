@@ -88,7 +88,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
   struct nm_unexpected_s*p_chunk;
   assert(nm_status_test(p_unpack, NM_STATUS_UNPACK_POSTED));
   assert(!nm_status_test(p_unpack, NM_STATUS_FINALIZED));
-  nmad_lock_assert();
+  nmad_lock_assert(p_core);
   puk_list_foreach(p_chunk, &p_core->unexpected)
     {
       struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_chunk->p_gate->tags, p_chunk->tag);
@@ -119,7 +119,7 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
   struct nm_req_s*p_unpack = NULL;
   struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
   const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-  nmad_lock_assert();
+  nmad_lock_assert(p_core);
   puk_list_foreach(p_unpack, &p_core->unpacks)
     {
       assert(nm_status_test(p_unpack, NM_STATUS_UNPACK_POSTED));
@@ -170,7 +170,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
   p_unpack->unpack.cumulated_len += chunk_len;
   if(p_unpack->unpack.cumulated_len == p_unpack->unpack.expected_len)
     {
-      nmad_lock_assert();
+      nmad_lock_assert(p_core);
       nm_req_list_erase(&p_core->unpacks, p_unpack);
       nm_core_polling_level(p_core);
       if((p_pw != NULL) && (p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
@@ -241,7 +241,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
 	NM_FATAL("%lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
     }
 #endif /* DEBUG */
-  nmad_lock_assert();
+  nmad_lock_assert(p_core);
   nm_unexpected_list_push_back(&p_core->unexpected, p_chunk);
   const nm_proto_t proto_id = p_header->proto_id;
   if(proto_id & NM_PROTO_FLAG_LASTCHUNK)
@@ -334,7 +334,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
     }
   nm_len_t peek_len = nm_data_size(p_data);
   nm_len_t done = 0;
-  nmad_lock();
+  nmad_lock(p_core);
   struct nm_unexpected_s*p_chunk;
   puk_list_foreach(p_chunk, &p_core->unexpected)
     {
@@ -416,7 +416,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
       if(done == peek_len)
 	break;
     }
-  nmad_unlock();
+  nmad_unlock(p_core);
   if(done == peek_len)
     return NM_ESUCCESS;
   else
@@ -427,7 +427,7 @@ int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_re
 {
   /* store the unpack request */
   nm_status_add(p_unpack, NM_STATUS_UNPACK_POSTED);
-  nmad_lock();
+  nmad_lock(p_core);
   nm_req_list_push_back(&p_core->unpacks, p_unpack);
   nm_core_polling_level(p_core);
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
@@ -470,7 +470,7 @@ int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_re
       nm_unexpected_free(nm_unexpected_allocator, p_unexpected);
       p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
     }
-  nmad_unlock();
+  nmad_unlock(p_core);
   return NM_ESUCCESS;
 }
 
@@ -551,7 +551,7 @@ int nm_core_iprobe(struct nm_core*p_core,
 int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
   int rc = NM_ESUCCESS;
-  nmad_lock();
+  nmad_lock(p_core);
   if(nm_status_test(p_unpack, NM_STATUS_UNPACK_CANCELLED))
     {
       /* received already canacelled */
@@ -579,7 +579,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
       /* receive is already in progress- too late to cancel */
       rc = -NM_EINPROGRESS;
     }
-  nmad_unlock();
+  nmad_unlock(p_core);
   return rc;
 }
 
@@ -698,7 +698,7 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
 
 /** Process a complete rendez-vous ready-to-receive request.
  */
-static void nm_rtr_handler(struct nm_pkt_wrap_s *p_rtr_pw, const struct nm_header_ctrl_rtr_s*header)
+static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header_ctrl_rtr_s*header)
 {
   const nm_core_tag_t tag     = header->tag_id;
   const nm_seq_t seq          = header->seq;
@@ -706,6 +706,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s *p_rtr_pw, const struct nm_heade
   const nm_len_t chunk_len    = header->chunk_len;
   nm_gate_t p_gate      = p_rtr_pw->p_gate;
   struct nm_pkt_wrap_s*p_large_pw = NULL, *p_pw_save;
+  nmad_lock_assert(p_rtr_pw->p_drv->p_core);
   puk_list_foreach_safe(p_large_pw, p_pw_save, &p_gate->pending_large_send)
     {
       assert(p_large_pw->n_completions == 1);
@@ -715,7 +716,6 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s *p_rtr_pw, const struct nm_heade
 		p_pack->seq, p_large_pw->chunk_offset);
       if((p_pack->seq == seq) && nm_core_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
 	{
-	  nmad_lock_assert();
 	  nm_pkt_wrap_list_erase(&p_gate->pending_large_send, p_large_pw);
 	  if(chunk_len < p_large_pw->length)
 	    {
@@ -735,7 +735,6 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s *p_rtr_pw, const struct nm_heade
 	      p_large_pw->completions[0].len = chunk_len; /* truncate the contrib */
 	      /* populate p_pw2 iovec */
 	      nm_pw_split_data(p_large_pw, p_pw2, chunk_len);
-	      nmad_lock_assert();
 	      nm_pkt_wrap_list_push_front(&p_gate->pending_large_send, p_pw2);
 	    }
 	  /* send the data */
@@ -786,7 +785,7 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
     {
       if(nm_core_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
 	{
-	  nmad_lock_assert();
+	  nmad_lock_assert(p_core);
 	  nm_req_list_erase(&p_core->pending_packs, p_pack);
 	  nm_core_polling_level(p_core);
 	  const struct nm_core_event_s event =

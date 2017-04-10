@@ -18,17 +18,17 @@
 #define NM_LOCK_H
 
 /* Lock entirely NewMadeleine */
-static inline void nmad_lock(void);
+static inline void nmad_lock(struct nm_core*p_core);
 
 /* Try to lock NewMadeleine 
  * return 0 if NMad is already locked or 1 otherwise
  */
-static inline int  nmad_trylock(void);
+static inline int  nmad_trylock(struct nm_core*p_core);
 
-/* Unlock NewMadeleine */
-static inline void nmad_unlock(void);
+/* Unlock NewMadeleine core */
+static inline void nmad_unlock(struct nm_core*p_core);
 
-static inline void nmad_lock_init(struct nm_core *p_core);
+static inline void nmad_lock_init(struct nm_core*p_core);
 
 
 #endif	/* NM_LOCK_H */

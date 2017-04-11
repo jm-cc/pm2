@@ -17,7 +17,7 @@
 #define PIOM_PTHREAD_H
 
 #ifndef PIOMAN_PTHREAD
-#error "inconsistency detected: PIOMAN_PTHREAD not defined in piom_pthread.h"
+#  error "inconsistency detected: PIOMAN_PTHREAD not defined in piom_pthread.h"
 #endif /* PIOMAN_PTHREAD */
 
 #include <errno.h>
@@ -50,6 +50,16 @@ static inline void piom_spin_init(piom_spinlock_t*lock)
 #ifdef DEBUG
   lock->owner = PIOM_THREAD_NULL;
 #endif
+}
+
+static inline void piom_spin_destroy(piom_spinlock_t*lock)
+{
+  int err __attribute__((unused));
+#ifdef DEBUG
+  assert(lock->owner == PIOM_THREAD_NULL);
+#endif
+  err = pthread_spin_destroy(&lock->spinlock);
+  assert(!err);
 }
 
 static inline int piom_spin_lock(piom_spinlock_t*lock)
@@ -96,11 +106,19 @@ typedef pthread_mutex_t piom_spinlock_t;
 
 static inline void piom_spin_init(piom_spinlock_t*lock)
 {
+  int err __attribute__((unused));
   pthread_mutexattr_t attr;
   pthread_mutexattr_init(&attr);
   pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_PRIVATE);
   pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ADAPTIVE_NP);
-  pthread_mutex_init(lock, &attr);
+  err = pthread_mutex_init(lock, &attr);
+  assert(!err);
+}
+static inline void piom_spin_destroy(piom_spinlock_t*lock)
+{
+  int err __attribute__((unused));
+  err = pthread_mutex_destory(lock);
+  assert(!err);
 }
 static inline int piom_spin_lock(piom_spinlock_t*lock)
 {
@@ -126,6 +144,10 @@ typedef volatile int piom_spinlock_t;
 static inline void piom_spin_init(piom_spinlock_t*lock)
 {
   *lock = 0;
+}
+static inline void piom_spin_destroy(piom_spinlock_t*lock)
+{
+  assert(*lock == 0);
 }
 static inline int piom_spin_lock(piom_spinlock_t*lock)
 {

@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008-2015 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008-2017 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,14 +17,14 @@
 #define PIOM_NOTHREAD_H
 
 #ifdef PIOMAN_MULTITHREAD
-#error "inconsistency detected: PIOMAN_MULTITHREAD defined in piom_nothread.h"
+#  error "inconsistency detected: PIOMAN_MULTITHREAD defined in piom_nothread.h"
 #endif /* PIOMAN_MULTITHREAD */
 
 /* ** base dummy types ************************************* */
 
 #define piom_thread_t     int
 #define PIOM_THREAD_NULL  0
-#define PIOM_THREAD_SELF         1
+#define PIOM_THREAD_SELF  1
 
 /* ** spinlocks for no-thread ****************************** */
 
@@ -33,6 +33,10 @@ typedef int piom_spinlock_t;
 static inline void piom_spin_init(piom_spinlock_t*lock)
 {
   *lock = 0;
+}
+static inline void piom_spin_destroy(piom_spinlock_t*lock)
+{
+  assert(*lock == 0);
 }
 static inline int piom_spin_lock(piom_spinlock_t*lock)
 {

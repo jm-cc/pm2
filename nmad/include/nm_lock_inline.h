@@ -77,6 +77,16 @@ static inline void nm_core_lock_init(struct nm_core*p_core)
 #endif
 }
 
+static inline void nm_core_lock_destroy(struct nm_core*p_core)
+{
+#ifdef PIOMAN
+#ifdef DEBUG
+  assert(p_core->lock_holder == PIOM_THREAD_NULL);
+#endif
+  piom_spin_destroy(&p_core->lock);
+#endif
+}
+
 /** assert that current thread holds the lock */
 static inline void nm_core_lock_assert(struct nm_core*p_core)
 {

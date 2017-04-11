@@ -699,6 +699,7 @@ int nm_core_exit(nm_core_t p_core)
   nm_core_monitor_vect_destroy(&p_core->monitors);
 
   nm_core_unlock(p_core);
+  nm_core_lock_destroy(p_core);
 
   nm_ns_exit(p_core);
   TBX_FREE(p_core);

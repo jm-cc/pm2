@@ -894,7 +894,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 
 /** Process a complete incoming request.
  */
-int nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
+void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
   nm_gate_t const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);
@@ -940,11 +940,8 @@ int nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw
       /* ** Large packet, data received directly in its final destination */
       nm_so_unpack_check_completion(p_core, p_pw, &p_unpack, len);
     }
-  
   nm_pw_ref_dec(p_pw);
-
   /* Hum... Well... We're done guys! */
-  return NM_ESUCCESS;
 }
 
 

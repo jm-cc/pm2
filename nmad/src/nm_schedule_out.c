@@ -106,7 +106,7 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
 
 /** Process a complete successful outgoing request.
  */
-int nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
+void nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
 {
   nm_gate_t const p_gate = p_pw->p_gate;
   nm_core_lock_assert(p_core);
@@ -145,7 +145,6 @@ int nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_
     }
   nm_pw_ref_dec(p_pw);
   nm_strat_try_and_commit(p_gate);
-  return NM_ESUCCESS;
 }
 
 /** Poll an active outgoing request.

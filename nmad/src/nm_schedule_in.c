@@ -71,7 +71,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 #ifdef PIOMAN_POLL
       piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
-      err = nm_pw_process_complete_recv(p_core, p_pw);
+      nm_pw_process_complete_recv(p_core, p_pw);
     }
   else if(err == -NM_ECLOSED)
     {
@@ -242,7 +242,7 @@ int nm_piom_block_recv(struct nm_pkt_wrap_s  *p_pw)
   piom_ltask_completed(&p_pw->ltask);
 
   /* process complete request */
-  err = nm_pw_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+  nm_pw_process_complete_recv(p_pw->p_gate->p_core, p_pw);
   
   return err;
 }

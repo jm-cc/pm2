@@ -45,41 +45,30 @@ PUK_LIST_CREATE_FUNCS(nm_unexpected);
 struct nm_core
 {
 #ifdef PIOMAN
-  piom_spinlock_t lock; /**< lock to protect lists in core */
+  piom_spinlock_t lock;                         /**< lock to protect req lists in core */
 #  ifdef DEBUG
-  volatile piom_thread_t lock_holder; /**< holder of the lock, used for debug */
+  volatile piom_thread_t lock_holder;           /**< holder of the lock, used for debug */
 #  endif /* DEBUG */
 #endif  /* PIOMAN */
 
-  /** List of gates. */
-  struct nm_gate_list_s gate_list;
-
-  /** List of drivers. */
-  struct nm_drv_list_s driver_list;
-
-  /** Number of drivers currently loaded. */
-  int nb_drivers;
+  struct nm_gate_list_s gate_list;              /**< list of gates. */
+  struct nm_drv_list_s driver_list;             /**< list of drivers. */
+  int nb_drivers;                               /**< number of drivers in drivers list */
 
 #ifdef NMAD_POLL
   /* if PIOMan is enabled, it already manages a list of pw to poll */
   struct nm_pkt_wrap_list_s pending_send_list;  /**< active pw for send to poll */
   struct nm_pkt_wrap_list_s pending_recv_list;  /**< active pw for recv to poll */
 #endif /* NMAD_POLL */
-
-  /** whether schedopt is enabled atop drivers */
-  int enable_schedopt;
  
-  struct nm_req_list_s unpacks;                /**< List of posted unpacks */
-  struct nm_unexpected_list_s unexpected;      /**< List of unexpected chunks */
-  struct nm_req_list_s pending_packs;          /**< List of pending packs waiting for an ack */
+  struct nm_req_list_s unpacks;                 /**< list of posted unpacks */
+  struct nm_unexpected_list_s unexpected;       /**< list of unexpected chunks */
+  struct nm_req_list_s pending_packs;           /**< list of pending packs waiting for an ack */
   struct nm_core_pending_event_list_s pending_events; /**< pending events not ready to dispatch */
+  struct nm_core_monitor_vect_s monitors;       /**< monitors for upper layers to track events in nmad core */
 
-  /** Monitors for upper layers to track events in nmad core */
-  struct nm_core_monitor_vect_s monitors;
-  
-  /** Selected strategy */
-  puk_component_t strategy_component;
-  
+  puk_component_t strategy_component;           /**< selected strategy */
+  int enable_schedopt;                          /**< whether schedopt is enabled atop drivers */
 };
 
 #endif /* NM_CORE_H */

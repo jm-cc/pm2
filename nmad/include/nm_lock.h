@@ -25,12 +25,13 @@ static inline void nm_core_lock(struct nm_core*p_core);
  */
 static inline int  nm_core_trylock(struct nm_core*p_core);
 
-/** unlock NewMadeleine core */
+/** unlock the nm core lock */
 static inline void nm_core_unlock(struct nm_core*p_core);
 
 /** init the core lock */
 static inline void nm_core_lock_init(struct nm_core*p_core);
 
+/** destroy the core lock */
 static inline void nm_core_lock_destroy(struct nm_core*p_core);
 
 #endif	/* NM_LOCK_H */

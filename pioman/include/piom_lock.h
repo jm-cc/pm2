@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001-2016 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001-2017 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@
 typedef uint16_t piom_cond_value_t;
 
 #if defined(PIOMAN_MULTITHREAD)
+/** a mask type, used as a spinlock with only trylock/unlock */
 typedef volatile int piom_mask_t;
 
 struct piom_waitsem_s
@@ -128,6 +129,7 @@ static inline piom_cond_value_t piom_cond_test_locked(piom_cond_t*cond, piom_con
   return val;
 }
 
+/** initialize a piom cond, with the given value */
 static inline void piom_cond_init(piom_cond_t*cond, piom_cond_value_t initial)
 {
   cond->value = initial;
@@ -135,13 +137,16 @@ static inline void piom_cond_init(piom_cond_t*cond, piom_cond_value_t initial)
   piom_spin_init(&cond->lock);
 }
 
+/** remove bits from cond value (does not trigger any signal) */
 static inline void piom_cond_mask(piom_cond_t*cond, piom_cond_value_t mask)
 {
   __sync_fetch_and_and(&cond->value, mask); /* cond->value &= mask; */
 }
 
-extern void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask);
+/** wait for the given bits in the cond to be set */
+extern void piom_cond_wait(piom_cond_t*cond, piom_cond_value_t mask);
 
+/** wait for the given bits in mutiple conds to be set */
 extern void piom_cond_wait_all(void**pp_conds, int n, uintptr_t offset, piom_cond_value_t mask);
 
 #else /* PIOMAN_MULTITHREAD */

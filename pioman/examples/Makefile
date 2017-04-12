@@ -3,7 +3,7 @@
 PIOMAN_CFLAGS := $(shell pkg-config --cflags pioman)
 PIOMAN_LIBS   := $(shell pkg-config --libs pioman)
 
-EXAMPLES := piom_task ltask_mini
+EXAMPLES := piom_task ltask_mini test_cond
 
 CC      = gcc
 LD      = $(CC)

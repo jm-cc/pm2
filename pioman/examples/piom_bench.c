@@ -27,12 +27,18 @@
 
 #define SEM_LOOPS     50000
 #define SPIN_LOOPS    50000
-#define TASKLET_LOOPS 10000
+#define TASKLET_LOOPS 50000
 
-static volatile int tasklet_lock = 0;
+static piom_cond_t ltask_cond;
 
-int test_ltask(void*_arg)
+int test_ltask_empty(void*_arg)
 {
+  return 0;
+}
+
+int test_ltask_cond(void*_arg)
+{
+  piom_cond_signal(&ltask_cond, 1);
   return 0;
 }
 
@@ -48,7 +54,7 @@ int main(int argc, char**argv)
   /* cout d'un sem_V() sem_P() */
   piom_sem_t sem;
   piom_sem_init(&sem, 0);
-  printf("piom_sem_V/P (%d loops):", SEM_LOOPS);
+  printf("piom_sem_V + P (%d loops):", SEM_LOOPS);
   
   TBX_GET_TICK(t1);
   for(i = 0 ; i < SEM_LOOPS ; i++)
@@ -59,10 +65,9 @@ int main(int argc, char**argv)
   TBX_GET_TICK(t2);
   printf("\t\t\t%f usec.\n", TBX_TIMING_DELAY(t1, t2)/SEM_LOOPS);
   
-  /* cout d'un piom_spin_lock/spin_unlock */
   piom_spinlock_t lock;
   piom_spin_init(&lock);
-  printf("piom_spin_lock/unlock (%d loops):", SPIN_LOOPS);
+  printf("piom_spin_lock + unlock (%d loops):", SPIN_LOOPS);
 
   TBX_GET_TICK(t1);
   for(i = 0 ; i < SPIN_LOOPS ; i++)
@@ -73,18 +78,49 @@ int main(int argc, char**argv)
   TBX_GET_TICK(t2);	
   printf("\t\t%f usec.\n", TBX_TIMING_DELAY(t1, t2)/SPIN_LOOPS);
   
-  /* Lancement d'une ltask */
-  struct piom_ltask*ltasks = malloc(sizeof(struct piom_ltask) * TASKLET_LOOPS);
-  printf("Tasklet scheduling (%d loops):", TASKLET_LOOPS);
-  TBX_GET_TICK(t1);
+  struct piom_ltask ltask;
+  double total = 0.0;
+  printf("ltask submit (%d loops):", TASKLET_LOOPS);
   for(i = 0 ; i < TASKLET_LOOPS ; i++)
     {
-      piom_ltask_create(&ltasks[i], &test_ltask, NULL, PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_NOWAIT);
-      piom_ltask_submit(&ltasks[i]);
+      TBX_GET_TICK(t1);
+      piom_ltask_create(&ltask, &test_ltask_empty, NULL, PIOM_LTASK_OPTION_ONESHOT);
+      piom_ltask_submit(&ltask);
+      TBX_GET_TICK(t2);
+      piom_ltask_wait(&ltask);
+      piom_ltask_destroy(&ltask);
+      total += TBX_TIMING_DELAY(t1, t2);
     }
-  TBX_GET_TICK(t2);
-  printf("\t\t%f usec.\n", TBX_TIMING_DELAY(t1, t2)/TASKLET_LOOPS);
-	
+  printf("\t\t\t%f usec.\n", total / TASKLET_LOOPS);
+
+  printf("ltask submit + ltask wait (%d loops):", TASKLET_LOOPS);
+  for(i = 0 ; i < TASKLET_LOOPS ; i++)
+    {
+      TBX_GET_TICK(t1);
+      piom_ltask_create(&ltask, &test_ltask_empty, NULL, PIOM_LTASK_OPTION_ONESHOT);
+      piom_ltask_submit(&ltask);
+      piom_ltask_wait(&ltask);
+      TBX_GET_TICK(t2);
+      piom_ltask_destroy(&ltask);
+      total += TBX_TIMING_DELAY(t1, t2);
+    }
+  printf("\t%f usec.\n", total / TASKLET_LOOPS);
+
+  printf("ltask submit + cond wait (%d loops):", TASKLET_LOOPS);
+  for(i = 0 ; i < TASKLET_LOOPS ; i++)
+    {
+      piom_cond_init(&ltask_cond, 0);
+      TBX_GET_TICK(t1);
+      piom_ltask_create(&ltask, &test_ltask_cond, NULL, PIOM_LTASK_OPTION_ONESHOT);
+      piom_ltask_submit(&ltask);
+      piom_cond_wait(&ltask_cond, 1);
+      TBX_GET_TICK(t2);
+      piom_ltask_wait(&ltask);
+      piom_ltask_destroy(&ltask);
+      total += TBX_TIMING_DELAY(t1, t2);
+    }
+  printf("\t\t%f usec.\n", total / TASKLET_LOOPS);
+  
   pioman_exit();
   tbx_exit();
   

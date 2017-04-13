@@ -5,7 +5,7 @@ EXAMPLES := piom_bench ltask_mini test_cond
 
 CC      = gcc
 LD      = $(CC)
-CFLAGS  = -Wall -g -DDEBUG -fPIC $(shell pkg-config --cflags tbx pioman)
+CFLAGS  = -Wall -O4 -DNDEBUG -fPIC $(shell pkg-config --cflags tbx pioman)
 LDFLAGS =
 LIBS    = $(shell pkg-config --libs tbx pioman)
 

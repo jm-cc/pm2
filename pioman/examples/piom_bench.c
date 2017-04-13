@@ -28,6 +28,7 @@
 #define SEM_LOOPS     50000
 #define SPIN_LOOPS    50000
 #define TASKLET_LOOPS 50000
+#define COND_LOOPS    50000
 
 static piom_cond_t ltask_cond;
 
@@ -55,7 +56,6 @@ int main(int argc, char**argv)
   piom_sem_t sem;
   piom_sem_init(&sem, 0);
   printf("piom_sem_V + P (%d loops):", SEM_LOOPS);
-  
   TBX_GET_TICK(t1);
   for(i = 0 ; i < SEM_LOOPS ; i++)
     {
@@ -68,7 +68,6 @@ int main(int argc, char**argv)
   piom_spinlock_t lock;
   piom_spin_init(&lock);
   printf("piom_spin_lock + unlock (%d loops):", SPIN_LOOPS);
-
   TBX_GET_TICK(t1);
   for(i = 0 ; i < SPIN_LOOPS ; i++)
     {
@@ -120,6 +119,21 @@ int main(int argc, char**argv)
       total += TBX_TIMING_DELAY(t1, t2);
     }
   printf("\t\t%f usec.\n", total / TASKLET_LOOPS);
+
+  piom_cond_t cond;
+  printf("piom cond signal + cond wait (%d loops):", COND_LOOPS);
+  for(i = 0 ; i < COND_LOOPS ; i++)
+    {
+      piom_cond_init(&cond, 0);
+      TBX_GET_TICK(t1);
+      piom_cond_signal(&cond, 1);
+      piom_cond_wait(&cond, 1);
+      TBX_GET_TICK(t2);
+      piom_cond_destroy(&cond);
+      total += TBX_TIMING_DELAY(t1, t2);
+    }
+  printf("\t%f usec.\n", total / COND_LOOPS);
+  
   
   pioman_exit();
   tbx_exit();

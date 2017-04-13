@@ -239,7 +239,9 @@ struct nm_core_monitor_s
 {
   struct nm_monitor_s monitor;               /**< the monitor to fire upon matching event */
   struct nm_core_event_matching_s matching;  /**< packet matching information */
-  int dispatching; /**< whether a notification is in progress, i.e. mask */
+#ifdef PIOMAN
+  piom_mask_t dispatching; /**< whether a notification is in progress, i.e. mask */
+#endif
 };
 /** Register an event monitor. */
 void nm_core_monitor_add(nm_core_t p_core, struct nm_core_monitor_s*m);

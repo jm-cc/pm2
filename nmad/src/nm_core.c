@@ -67,7 +67,11 @@ static void nm_core_pending_event_recover(nm_core_t p_core)
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
       if(p_pending_event->event.seq == next_seq)
 	{
-	  int locked = __sync_bool_compare_and_swap(&p_pending_event->p_core_monitor->dispatching, 0, 1);
+#ifdef PIOMAN
+	  int locked = !piom_mask_acquire(&p_pending_event->p_core_monitor->dispatching);
+#else
+	  int locked = 1;
+#endif
 	  if(locked)
 	    {
 	      matched = 1;
@@ -75,7 +79,9 @@ static void nm_core_pending_event_recover(nm_core_t p_core)
 	      nm_core_pending_event_list_erase(&p_core->pending_events, p_pending_event);
 	      nm_core_unlock(p_core);
 	      (p_pending_event->p_core_monitor->monitor.p_notifier)(&p_pending_event->event, p_pending_event->p_core_monitor->monitor.ref);
-	      __sync_fetch_and_sub(&p_pending_event->p_core_monitor->dispatching, 1);
+#ifdef PIOMAN
+	      piom_mask_release(&p_pending_event->p_core_monitor->dispatching);
+#endif
 	      nm_core_lock(p_core);
 	    }
 	}
@@ -201,7 +207,11 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
   assert(nm_core_event_matches(p_core_monitor, p_event));
   if(p_event->status & NM_STATUS_UNEXPECTED)
     {
-      locked = __sync_bool_compare_and_swap(&p_core_monitor->dispatching, 0, 1);
+#ifdef PIOMAN
+      locked = !piom_mask_acquire(&p_core_monitor->dispatching);
+#else
+      locked = 1;
+#endif
       if(locked)
 	{
 	  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_event->p_gate->tags, p_event->tag);
@@ -235,7 +245,9 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
  out:
   if(locked)
     {
-      __sync_fetch_and_sub(&p_core_monitor->dispatching, 1);
+#ifdef PIOMAN
+      piom_mask_release(&p_core_monitor->dispatching);
+#endif
     }
   if(pending)
     {
@@ -252,7 +264,9 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 void nm_core_monitor_add(nm_core_t p_core, struct nm_core_monitor_s*p_core_monitor)
 {
   nm_core_lock(p_core);
-  p_core_monitor->dispatching = 0;
+#ifdef PIOMAN
+  piom_mask_init(&p_core_monitor->dispatching);
+#endif
   if(p_core_monitor->monitor.event_mask == NM_STATUS_UNEXPECTED)
     {
       struct nm_unexpected_s*p_chunk = NULL, *p_tmp;

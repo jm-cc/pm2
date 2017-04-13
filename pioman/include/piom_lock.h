@@ -73,17 +73,13 @@ static inline int piom_mask_release(piom_mask_t*mask)
   __sync_fetch_and_sub(mask, 1);
   return 0;
 }
-/** @return 0 for success, 1 else */
+/** @return 0 for success, non-zero else */
 static inline int piom_mask_acquire(piom_mask_t*mask)
 {
   if(*mask != 0)
     return 1;
-  if(__sync_fetch_and_add(mask, 1) != 0)
-    {
-      __sync_fetch_and_sub(mask, 1);
-      return 1;
-    }
-  return 0;
+  int rc = __sync_val_compare_and_swap(mask, 0, 1);
+  return rc;
 }
 
 /** add a bit to the value, without signaling */

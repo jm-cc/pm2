@@ -1,15 +1,13 @@
 # sample makefile for PIOMan examples
 
-PIOMAN_CFLAGS := $(shell pkg-config --cflags pioman)
-PIOMAN_LIBS   := $(shell pkg-config --libs pioman)
 
-EXAMPLES := piom_task ltask_mini test_cond
+EXAMPLES := piom_bench piom_task ltask_mini test_cond
 
 CC      = gcc
 LD      = $(CC)
-CFLAGS  = -Wall -O4 -fPIC $(PIOMAN_CFLAGS)
+CFLAGS  = -Wall -g -DDEBUG -fPIC $(shell pkg-config --cflags tbx pioman)
 LDFLAGS =
-LIBS    = $(PIOMAN_LIBS)
+LIBS    = $(shell pkg-config --libs tbx pioman)
 
 TARGET_BIN = $(EXAMPLES)
 

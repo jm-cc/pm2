@@ -137,6 +137,12 @@ static inline void piom_cond_init(piom_cond_t*cond, piom_cond_value_t initial)
   piom_spin_init(&cond->lock);
 }
 
+/** destroy a piom cond */
+static inline void piom_cond_destroy(piom_cond_t*cond)
+{
+  piom_spin_destroy(&cond->lock);
+}
+
 /** remove bits from cond value (does not trigger any signal) */
 static inline void piom_cond_mask(piom_cond_t*cond, piom_cond_value_t mask)
 {
@@ -208,6 +214,9 @@ static inline piom_cond_value_t piom_cond_test_locked(piom_cond_t*cond, piom_con
 static inline void piom_cond_init(piom_cond_t*cond, piom_cond_value_t initial)
 {
   *cond = initial;
+}
+static inline void piom_cond_destroy(piom_cond_t*cond)
+{
 }
 static inline void piom_cond_mask(piom_cond_t*cond, piom_cond_value_t mask)
 {

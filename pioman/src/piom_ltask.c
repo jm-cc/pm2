@@ -323,6 +323,11 @@ void piom_ltask_submit(struct piom_ltask*task)
     do
 	{
 	    rc = piom_ltask_lfqueue_enqueue(&queue->submit_queue, task);
+	    if(rc != 0)
+		{
+		    PIOM_WARN("ltask queue full\n");
+		    piom_ltask_schedule(PIOM_POLL_POINT_BUSY);
+		}
 	}
     while(rc != 0);
     piom_trace_remote_var(queue->binding, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);

@@ -47,17 +47,15 @@ static inline void piom_spin_destroy(piom_spinlock_t*lock)
 {
   assert(*lock == 0);
 }
-static inline int piom_spin_lock(piom_spinlock_t*lock)
+static inline void piom_spin_lock(piom_spinlock_t*lock)
 {
   assert(*lock == 0);
   *lock = 1;
-  return 0;
 }
-static inline int piom_spin_unlock(piom_spinlock_t*lock)
+static inline void piom_spin_unlock(piom_spinlock_t*lock)
 {
   assert(*lock == 1);
   *lock = 0;
-  return 0;
 }
 static inline int piom_spin_trylock(piom_spinlock_t*lock)
 {

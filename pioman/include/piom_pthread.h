@@ -66,18 +66,22 @@ static inline void piom_spin_destroy(piom_spinlock_t*lock)
   assert(!err);
 }
 
-static inline int piom_spin_lock(piom_spinlock_t*lock)
+static inline void piom_spin_lock(piom_spinlock_t*lock)
 {
   int err __attribute__((unused));
   err = pthread_spin_lock(&lock->spinlock);
-  assert(!err);
 #ifdef PIOMAN_DEBUG
+  if(err != 0)
+    PIOM_FATAL("cannot get spinlock- rc = %d\n", err);
+  if(PIOM_THREAD_SELF == lock->owner)
+    {
+      PIOM_FATAL("deadlock detected. Self already holds spinlock.\n");
+    }
   assert(lock->owner == PIOM_THREAD_NULL);
   lock->owner = PIOM_THREAD_SELF;
 #endif
-  return err;
 }
-static inline int piom_spin_unlock(piom_spinlock_t*lock)
+static inline void piom_spin_unlock(piom_spinlock_t*lock)
 {
 #ifdef PIOMAN_DEBUG
   assert(lock->owner == PIOM_THREAD_SELF);
@@ -85,8 +89,10 @@ static inline int piom_spin_unlock(piom_spinlock_t*lock)
 #endif
   int err __attribute__((unused));
   err = pthread_spin_unlock(&lock->spinlock);
-  assert(!err);
-  return err;
+#ifdef PIOMAN_DEBUG
+  if(err != 0)
+    PIOM_FATAL("error in spin_unlock- rc = %d\n", err);
+#endif
 }
 static inline int piom_spin_trylock(piom_spinlock_t*lock)
 {

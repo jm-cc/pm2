@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008-2016 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008-2017 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,6 +15,10 @@
 
 #ifndef PIOM_PTHREAD_H
 #define PIOM_PTHREAD_H
+
+#ifndef PIOM_CONFIG_H
+#  error "Cannot include this file directly. Please inclued <pioman.h>."
+#endif /* PIOM_CONFIG_H */
 
 #ifndef PIOMAN_PTHREAD
 #  error "inconsistency detected: PIOMAN_PTHREAD not defined in piom_pthread.h"

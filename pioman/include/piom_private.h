@@ -1,7 +1,7 @@
 /* -*- Mode: C; c-basic-offset:4 ; -*- */
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2012 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2012-2017 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,9 +25,9 @@
 #endif /* PIOMAN_TRACE */
 
 #include <tbx.h>
+#include "pioman.h"
 #include "piom_lfqueue.h"
 #include "piom_log.h"
-#include "pioman.h"
 
 /** Maximum number of ltasks in a queue. 
  * Should be large enough to avoid overflow, but small enough to fit the cache.

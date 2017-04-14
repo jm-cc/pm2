@@ -16,6 +16,10 @@
 #ifndef PIOM_ABT_H
 #define PIOM_ABT_H
 
+#ifndef PIOM_CONFIG_H
+#  error "Cannot include this file directly. Please inclued <pioman.h>."
+#endif /* PIOM_CONFIG_H */
+
 #ifndef PIOMAN_ABT
 #error "inconsistency detected: PIOMAN_ABT not defined in piom_abt.h"
 #endif /* PIOMAN_ABT */

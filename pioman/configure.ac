@@ -5,6 +5,7 @@ dnl -- configure.ac for pioman
 AC_PREREQ(2.50)
 AC_REVISION($Revision: 3960 $)
 AC_INIT(include/pioman.h)
+AC_CONFIG_HEADER(piom_config.h)
 
 m4_include([pkg.m4])
 m4_include([tools.m4])
@@ -32,10 +33,12 @@ AC_PADICO_CDEP
 AC_PADICO_LINKER
 AC_PADICO_DYNLD
 
-dnl -- base flags
-dnl --
+dnl -- base flags given to pkg-config
+dnl --------------------------------------------------------
+
 PIOMAN_CFLAGS="-DPIOMAN"
 PIOMAN_LIBS="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lpioman"
+
 
 dnl -- options
 dnl --------------------------------------------------------
@@ -44,9 +47,7 @@ AC_PADICO_DEBUG
 AC_PADICO_OPTIMIZE
 if test "x${ENABLE_DEBUG_FLAG}" = "xyes"; then
   AC_DEFINE([PIOMAN_DEBUG], [1], [whether PIOMan is built in DEBUG])
-  PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_DEBUG"
 fi
-
 
 
 dnl -- external packages
@@ -63,7 +64,16 @@ AC_ARG_WITH([marcel],
 if test "x${with_marcel}" = "xyes"; then
   PKG_CHECK_MODULES([marcel], [ marcel ])
   pioman_pkg_requires="${pioman_pkg_requires} marcel"
-  PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_MARCEL"
+  AC_DEFINE([PIOMAN_MARCEL], [1], [whether PIOMan is built with Marcel threads])
+fi
+
+dnl -- pthread
+AC_ARG_WITH([pthread],
+	[AS_HELP_STRING([--with-pthread], [use pthread @<:@default=no@:>@] )])
+if test "x${with_pthread}" = "xyes"; then
+  pthread_LIBS="-lpthread -lrt"
+  PIOMAN_LIBS="${PIOMAN_LIBS} ${pthread_LIBS}"
+  AC_DEFINE([PIOMAN_PTHREAD], [1], [whether PIOMan is built with pthreads])
 fi
 
 dnl -- argobots
@@ -72,35 +82,25 @@ AC_ARG_WITH([argobots],
 if test "x${with_argobots}" = "xyes"; then
   PKG_CHECK_MODULES([argobots], [ argobots ])
   pioman_pkg_requires="${pioman_pkg_requires} argobots"
-  PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_ABT"
-fi
-
-dnl -- pthread
-AC_ARG_WITH([pthread],
-	[AS_HELP_STRING([--with-pthread], [use pthread @<:@default=no@:>@] )])
-if test "x${with_pthread}" = "xyes"; then
-   pioman_LIBS="${pioman_LIBS} -lpthread -lrt"
-   PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_PTHREAD"
-   PIOMAN_LIBS="${PIOMAN_LIBS} -lpthread -lrt"
+  AC_DEFINE([PIOMAN_ABT], [1], [whether PIOMan is built with argobots threads])
 fi
 
 dnl -- gtg
 AC_ARG_WITH([gtg],
 	[AS_HELP_STRING([--with-gtg], [build with GTG traces @<:@default=no@:>@] )])
 if test "x${with_gtg}" = "xyes"; then
-   PKG_CHECK_MODULES([gtg],    [ gtg ])
-   pioman_LIBS="${pioman_LIBS} ${gtg_LIBS}"
-   PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_TRACE ${gtg_CFLAGS}"
-   PIOMAN_LIBS="${PIOMAN_LIBS} ${gtg_LIBS}"
+  PKG_CHECK_MODULES([gtg],    [ gtg ])
+  pioman_pkg_requires="${pioman_pkg_requires} gtg"
+  AC_DEFINE([PIOMAN_TRACE], [1], [whether PIOMan is built with GTG traces])
 fi
 
-PIOMAN_EXT_CFLAGS="${tbx_CFLAGS} ${marcel_CFLAGS}"
-AC_SUBST(PIOMAN_EXT_CFLAGS)
+dnl -- internal flags used to build PIOMan
+PIOMAN_BUILD_CFLAGS="${tbx_CFLAGS} ${marcel_CFLAGS} ${gtg_CFLAGS}"
+AC_SUBST(PIOMAN_BUILD_CFLAGS)
+PIOMAN_BUILD_LIBS="${tbx_LIBS} ${marcel_LIBS} ${gtg_LIBS} ${pthread_LIBS}"
+AC_SUBST(PIOMAN_BUILD_LIBS)
 
-PIOMAN_EXT_LIBS="${tbx_LIBS} ${marcel_LIBS} ${pioman_LIBS}"
-AC_SUBST(PIOMAN_EXT_LIBS)
-
-
+dnl -- gen pioman.pc for pkg-config
 AC_SUBST(pioman_pkg_requires)
 AC_SUBST(PIOMAN_CFLAGS)
 AC_SUBST(PIOMAN_LIBS)

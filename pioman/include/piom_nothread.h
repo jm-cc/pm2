@@ -16,9 +16,18 @@
 #ifndef PIOM_NOTHREAD_H
 #define PIOM_NOTHREAD_H
 
+#ifndef PIOM_CONFIG_H
+#  error "Cannot include this file directly. Please inclued <pioman.h>."
+#endif /* PIOM_CONFIG_H */
+
 #ifdef PIOMAN_MULTITHREAD
 #  error "inconsistency detected: PIOMAN_MULTITHREAD defined in piom_nothread.h"
 #endif /* PIOMAN_MULTITHREAD */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <unistd.h>
 
 /* ** base dummy types ************************************* */
 

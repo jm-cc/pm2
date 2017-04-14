@@ -1,0 +1,16 @@
+/** @file Config file for PIOMan. May be safely installed
+ * and included in applications, since all symbols are prefixed.
+ */
+
+#define PIOM_CONFIG_H
+
+#undef PIOMAN_DEBUG
+
+#undef PIOMAN_MARCEL
+
+#undef PIOMAN_PTHREAD
+
+#undef PIOMAN_ABT
+
+#undef PIOMAN_TRACE
+

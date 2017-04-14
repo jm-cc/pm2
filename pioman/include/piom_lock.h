@@ -18,6 +18,10 @@
 
 #include <assert.h>
 
+#ifndef PIOM_CONFIG_H
+#  error "Cannot include this file directly. Please inclued <pioman.h>."
+#endif /* PIOM_CONFIG_H */
+
 /** @defgroup  piom_lock PIOMan locking interface.
  * This interface manages locking and unified threading API.
  * It is used internally for ltasks locking, and is usable by endusers.

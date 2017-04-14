@@ -16,6 +16,10 @@
 #ifndef PIOM_MARCEL_H
 #define PIOM_MARCEL_H
 
+#ifndef PIOM_CONFIG_H
+#  error "Cannot include this file directly. Please inclued <pioman.h>."
+#endif /* PIOM_CONFIG_H */
+
 #ifndef PIOMAN_MARCEL
 #error "inconsistency detected: PIOMAN_MARCEL not defined in piom_marcel.h"
 #endif /* PIOMAN_MARCEL */
@@ -30,6 +34,7 @@
 
 #define piom_spinlock_t                marcel_spinlock_t
 #define piom_spin_init(lock)           marcel_spin_init(lock, 1)
+#define piom_spin_destroy(lock)        marcel_spin_destroy(lock)
 #define piom_spin_lock(lock) 	       marcel_spin_lock_tasklet_disable(lock)
 #define piom_spin_unlock(lock) 	       marcel_spin_unlock_tasklet_enable(lock)
 #define piom_spin_trylock(lock)	       marcel_spin_trylock_tasklet_disable(lock)

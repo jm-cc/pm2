@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -110,7 +110,6 @@ typedef uint16_t nm_drv_id_t;
 #include "nm_core.h"
 
 #include "nm_lock.h"
-#include "nm_lock_inline.h"
 #include "nm_core_inline.h"
 #include "nm_tactics.h"
 

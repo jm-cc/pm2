@@ -14,16 +14,20 @@
  * General Public License for more details.
  */
 
+/** @file nm_lock.h
+ * Locking interface used in nm core. This is not part of the public API.
+ */
+
 #ifndef NM_LOCK_H
 #define NM_LOCK_H
 
 /** acquire the nm core lock */
 static inline void nm_core_lock(struct nm_core*p_core);
 
-/** Try to lock the nmad core
- * return 0 if NMad is already locked or 1 otherwise
+/** try to lock the nm core core
+ * return 1 is lock is successfully acquired, 0 otherwise
  */
-static inline int  nm_core_trylock(struct nm_core*p_core);
+static inline int nm_core_trylock(struct nm_core*p_core);
 
 /** unlock the nm core lock */
 static inline void nm_core_unlock(struct nm_core*p_core);
@@ -33,5 +37,68 @@ static inline void nm_core_lock_init(struct nm_core*p_core);
 
 /** destroy the core lock */
 static inline void nm_core_lock_destroy(struct nm_core*p_core);
+
+/** assert that current thread doesn't hold the lock */
+static inline void nm_core_nolock_assert(struct nm_core*p_core);
+
+/** assert that current thread holds the lock */
+static inline void nm_core_lock_assert(struct nm_core*p_core);
+
+
+/* ********************************************************* */
+/* inline definition */
+
+static inline void nm_core_lock(struct nm_core*p_core)
+{
+#ifdef PIOMAN
+  piom_spin_lock(&p_core->lock);
+#endif
+}
+
+static inline int nm_core_trylock(struct nm_core*p_core)
+{
+#ifdef PIOMAN
+  int rc = piom_spin_trylock(&p_core->lock);
+  return rc;
+#else
+  return 1;
+#endif
+}
+
+static inline void nm_core_unlock(struct nm_core*p_core)
+{
+#ifdef PIOMAN
+  piom_spin_unlock(&p_core->lock);
+#endif
+}
+
+static inline void nm_core_lock_init(struct nm_core*p_core)
+{
+#ifdef PIOMAN
+  piom_spin_init(&p_core->lock);
+#endif
+}
+
+static inline void nm_core_lock_destroy(struct nm_core*p_core)
+{
+#ifdef PIOMAN
+  piom_spin_destroy(&p_core->lock);
+#endif
+}
+
+static inline void nm_core_lock_assert(struct nm_core*p_core)
+{
+#ifdef PIOMAN
+  piom_spin_assert_locked(&p_core->lock);
+#endif
+}
+
+static inline void nm_core_nolock_assert(struct nm_core*p_core)
+{
+#ifdef PIOMAN
+  piom_spin_assert_notlocked(&p_core->lock);
+#endif
+}
+
 
 #endif	/* NM_LOCK_H */

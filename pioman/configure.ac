@@ -32,16 +32,21 @@ AC_PADICO_CDEP
 AC_PADICO_LINKER
 AC_PADICO_DYNLD
 
+dnl -- base flags
+dnl --
+PIOMAN_CFLAGS="-DPIOMAN"
+PIOMAN_LIBS="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lpioman"
+
 dnl -- options
 dnl --------------------------------------------------------
 
 AC_PADICO_DEBUG
 AC_PADICO_OPTIMIZE
+if test "x${ENABLE_DEBUG_FLAG}" = "xyes"; then
+  AC_DEFINE([PIOMAN_DEBUG], [1], [whether PIOMan is built in DEBUG])
+  PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_DEBUG"
+fi
 
-dnl -- base flags
-dnl --
-PIOMAN_CFLAGS="-DPIOMAN"
-PIOMAN_LIBS="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lpioman"
 
 
 dnl -- external packages

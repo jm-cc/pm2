@@ -36,7 +36,7 @@
 struct piom_spinlock_s
 {
   pthread_spinlock_t spinlock;
-#ifdef DEBUG
+#ifdef PIOMAN_DEBUG
   pthread_t owner;
 #endif
 };
@@ -47,7 +47,7 @@ static inline void piom_spin_init(piom_spinlock_t*lock)
   int err __attribute__((unused));
   err = pthread_spin_init(&lock->spinlock, 0);
   assert(!err);
-#ifdef DEBUG
+#ifdef PIOMAN_DEBUG
   lock->owner = PIOM_THREAD_NULL;
 #endif
 }
@@ -55,7 +55,7 @@ static inline void piom_spin_init(piom_spinlock_t*lock)
 static inline void piom_spin_destroy(piom_spinlock_t*lock)
 {
   int err __attribute__((unused));
-#ifdef DEBUG
+#ifdef PIOMAN_DEBUG
   assert(lock->owner == PIOM_THREAD_NULL);
 #endif
   err = pthread_spin_destroy(&lock->spinlock);
@@ -67,7 +67,7 @@ static inline int piom_spin_lock(piom_spinlock_t*lock)
   int err __attribute__((unused));
   err = pthread_spin_lock(&lock->spinlock);
   assert(!err);
-#ifdef DEBUG
+#ifdef PIOMAN_DEBUG
   assert(lock->owner == PIOM_THREAD_NULL);
   lock->owner = PIOM_THREAD_SELF;
 #endif
@@ -75,7 +75,7 @@ static inline int piom_spin_lock(piom_spinlock_t*lock)
 }
 static inline int piom_spin_unlock(piom_spinlock_t*lock)
 {
-#ifdef DEBUG
+#ifdef PIOMAN_DEBUG
   assert(lock->owner == PIOM_THREAD_SELF);
   lock->owner = PIOM_THREAD_NULL;
 #endif
@@ -89,7 +89,7 @@ static inline int piom_spin_trylock(piom_spinlock_t*lock)
   int err __attribute__((unused));
   err = pthread_spin_trylock(&lock->spinlock);
   int rc = (err == 0);
-#ifdef DEBUG
+#ifdef PIOMAN_DEBUG
   assert((err == 0) || (err == EBUSY));
   if(rc)
     {

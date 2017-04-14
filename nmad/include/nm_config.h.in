@@ -35,13 +35,4 @@
 /* build nmad with pioman */
 #undef NMAD_PIOMAN
 
-/* pioman built against pthread threads */
-#undef NMAD_PTHREAD
-
-/* pioman built against Marcel threads */
-#undef NMAD_MARCEL
-
-/* pioman built against abt */
-#undef NMAD_ABT
-
 #undef NMAD_PUKABI

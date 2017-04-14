@@ -49,10 +49,6 @@
 #  error "nmad was configured without pioman support; cannot build with pioman flags."
 #endif
 
-#if defined(NMAD_MARCEL) && !defined(MARCEL)
-#  error "nmad was configured with Marcel threads; cannot build without Marcel flags."
-#endif
-
 #if defined(NMAD_PUKABI) && !defined(PUKABI)
 #  error "nmad was configured with PuABI support; cannot build without PukABI flags."
 #endif
@@ -61,9 +57,9 @@
 #  error "nmad was configured without PuABI support; cannot build with PukABI flags."
 #endif
 
-#ifdef NMAD_ABT
-#define main __abt_app_main
-#endif /* PIOMAN_ABT */
+#if defined(NMAD_PIOMAN)
+#  include <pioman.h>
+#endif
 
 /** config options that impact nmad ABI 
  * (content of structures exposed in API or used in inline code)
@@ -86,7 +82,7 @@ const static struct nm_abi_config_s nm_abi_config =
 #endif /* PIOMAN */
     ,
     .enable_pthread =
-#if defined(NMAD_PTHREAD)
+#if defined(PIOMAN_PTHREAD)
     1
 #else /* PTHREAD */
     0

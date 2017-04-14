@@ -26,6 +26,8 @@
 
 /* ** base ABT types *************************************** */
 
+#define main __abt_app_main
+
 typedef ABT_thread piom_thread_t;
 #define PIOM_THREAD_NULL  ABT_THREAD_NULL
 #define PIOM_THREAD_SELF         piom_self()

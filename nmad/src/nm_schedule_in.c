@@ -31,6 +31,8 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
   struct nm_core*p_core = p_pw->p_drv->p_core;
   static struct timespec next_poll = { .tv_sec = 0, .tv_nsec = 0 };
 
+  nm_core_nolock_assert(p_core);
+  
   NM_TRACEF("polling inbound request: gate %p, drv %p, trk %d",
 	    p_pw->p_gate,
 	    p_pw->p_drv,
@@ -71,11 +73,14 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 #ifdef PIOMAN_POLL
       piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
+      nm_core_lock(p_core);
       nm_pw_process_complete_recv(p_core, p_pw);
+      nm_core_unlock(p_core);
     }
   else if(err == -NM_ECLOSED)
     {
       nm_gate_t p_gate = p_pw->p_gate;
+      nm_core_lock(p_core);
       p_gate->status = NM_GATE_STATUS_DISCONNECTING;
       if(p_pw->p_gdrv)
 	{
@@ -91,8 +96,8 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 #ifdef PIOMAN_POLL
       piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
-     
       nm_pw_ref_dec(p_pw);
+      nm_core_unlock(p_core);
     }
   else if (err != -NM_EAGAIN)
     {

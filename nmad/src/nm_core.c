@@ -127,7 +127,6 @@ void nm_strat_apply(struct nm_core*p_core)
 int nm_schedule(struct nm_core *p_core)
 {
 #ifdef NMAD_POLL
-  nm_core_lock(p_core);
 
 #ifdef DEBUG
   static int scheduling_in_progress = 0;
@@ -166,8 +165,6 @@ int nm_schedule(struct nm_core *p_core)
     }
 
   nm_out_prefetch(p_core);
-  
-  nm_core_unlock(p_core);
   
 #ifdef DEBUG
   scheduling_in_progress = 0;

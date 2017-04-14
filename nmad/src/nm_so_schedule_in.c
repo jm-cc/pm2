@@ -898,7 +898,8 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 {
   nm_gate_t const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);
-
+  nm_core_lock_assert(p_core);
+  
   /* clear the input request field */
   if(p_pw->p_gdrv && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
     {

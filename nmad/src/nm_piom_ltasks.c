@@ -123,12 +123,7 @@ static int nm_task_poll_recv(void*_pw)
   struct nm_pkt_wrap_s*p_pw = _pw;
   struct nm_core*p_core = p_pw->p_drv->p_core;
   int ret = -NM_EUNKNOWN;
-  /* todo: lock something when using fine-grain locks */
-  if(nm_core_trylock(p_core))
-    {
-      ret = nm_pw_poll_recv(p_pw);
-      nm_core_unlock(p_core);
-    }
+  ret = nm_pw_poll_recv(p_pw);
   return ret;
 }
 
@@ -165,11 +160,7 @@ static int nm_task_poll_send(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
   struct nm_core*p_core = p_pw->p_drv->p_core;
-  if(nm_core_trylock(p_core))
-    {
-      nm_pw_poll_send(p_pw);
-      nm_core_unlock(p_core);
-    }
+  nm_pw_poll_send(p_pw);
   return NM_ESUCCESS;
 }
 

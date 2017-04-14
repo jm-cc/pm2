@@ -152,7 +152,7 @@ void nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p
 void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_core*p_core = p_pw->p_gate->p_core;
-  nm_core_lock_assert(p_core);
+  nm_core_nolock_assert(p_core);
   assert(p_pw->flags & NM_PW_FINALIZED || p_pw->flags & NM_PW_NOHEADER);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err = (*r->driver->poll_send_iov)(r->_status, p_pw);
@@ -164,7 +164,9 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 #ifdef NMAD_POLL
       nm_pkt_wrap_list_erase(&p_core->pending_send_list, p_pw);
 #endif /* NMAD_POLL */
+      nm_core_lock(p_core);
       nm_pw_process_complete_send(p_core, p_pw);
+      nm_core_unlock(p_core);
     }
   else if(err != -NM_EAGAIN)
     {

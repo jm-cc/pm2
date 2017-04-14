@@ -172,6 +172,10 @@ int nm_session_open(nm_session_t*pp_session, const char*label)
   struct nm_session_s*p_session = puk_hashtable_lookup(nm_session.sessions, &hash_code);
   if(p_session != NULL)
     {
+      if(strcmp(label, p_session->label) != 0)
+	{
+	  NM_FATAL("# session: hash collision detected (%s / %s).\n", label, p_session->label);
+	}
       *pp_session = NULL;
       return -NM_EALREADY;
     }

@@ -40,9 +40,6 @@ int nm_launcher_get_rank(int*);
 /** Returns the number of nodes */
 int nm_launcher_get_size(int*);
 
-/** Returns the default root session. Use nm_session_open() to create a private session. */
-int nm_launcher_get_session(nm_session_t*p_session);
-
 /** Open a new session */
 int nm_launcher_session_open(nm_session_t*p_session, const char*label);
 
@@ -68,8 +65,6 @@ struct newmad_launcher_driver_s
   int          (*get_size)(void*_status);
   /** get process rank */
   int          (*get_rank)(void*_status);
-  /** get the session instance for send/recv */
-  nm_session_t (*get_session)(void*_status);
   /** get the list of gates */
   void         (*get_gates)(void*_status, nm_gate_t*gates);
   /** abort the full session */

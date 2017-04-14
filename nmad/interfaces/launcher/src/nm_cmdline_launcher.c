@@ -55,7 +55,6 @@ const static struct puk_component_driver_s nm_cmdline_launcher_component_driver 
 static void         nm_cmdline_launcher_init(void*_status, int*argc, char**argv, const char*group_name);
 static int          nm_cmdline_launcher_get_size(void*_status);
 static int          nm_cmdline_launcher_get_rank(void*_status);
-static nm_session_t nm_cmdline_launcher_get_session(void*_status);
 static void         nm_cmdline_launcher_get_gates(void*_status, nm_gate_t*gates);
 
 const static struct newmad_launcher_driver_s nm_cmdline_launcher_driver =
@@ -63,7 +62,6 @@ const static struct newmad_launcher_driver_s nm_cmdline_launcher_driver =
     .init         = &nm_cmdline_launcher_init,
     .get_size     = &nm_cmdline_launcher_get_size,
     .get_rank     = &nm_cmdline_launcher_get_rank,
-    .get_session  = &nm_cmdline_launcher_get_session,
     .get_gates    = &nm_cmdline_launcher_get_gates
   };
 
@@ -113,12 +111,6 @@ static int nm_cmdline_launcher_get_rank(void*_status)
 static int nm_cmdline_launcher_get_size(void*_status)
 {
   return 2;
-}
-
-static nm_session_t nm_cmdline_launcher_get_session(void*_status)
-{
-  struct nm_cmdline_launcher_status_s*status = _status;
-  return status->p_session;
 }
 
 static void nm_cmdline_launcher_get_gates(void*_status, nm_gate_t *_gates)

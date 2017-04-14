@@ -58,13 +58,6 @@ int nm_launcher_get_size(int *size)
   return NM_ESUCCESS;
 }
 
-int nm_launcher_get_session(nm_session_t *p_session)
-{
-  assert(launcher.instance != NULL);
-  *p_session  = (*launcher.r.driver->get_session)(launcher.r._status);
-  return NM_ESUCCESS;
-}
-
 int nm_launcher_session_open(nm_session_t*p_session, const char*label)
 {
   assert(launcher.instance != NULL);

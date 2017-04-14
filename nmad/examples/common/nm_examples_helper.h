@@ -81,6 +81,8 @@ static inline void nm_examples_init(int*argc, char*argv[])
 static inline void nm_examples_exit(void)
 {
   nm_examples_barrier(0xFFFF);
+  if(p_comm)
+    nm_comm_destroy(p_comm);
   nm_launcher_exit();
 }
 

@@ -47,7 +47,7 @@ int nm_launcher_get_session(nm_session_t*p_session);
 int nm_launcher_session_open(nm_session_t*p_session, const char*label);
 
 /** close a session */
-int nm_launcher_session_close(nm_session_t*p_session);
+int nm_launcher_session_close(nm_session_t p_session);
 
 /** Returns the gate for the process dest */
 int nm_launcher_get_gate(int dest, nm_gate_t*gate);

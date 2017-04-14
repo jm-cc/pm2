@@ -25,6 +25,7 @@ static nm_gate_t gate_id = NULL;
 
 void nmad_exit()
 {
+  nm_launcher_session_close(p_core);
   nm_launcher_exit();
 }
 
@@ -32,7 +33,7 @@ void init(int *argc, char **argv)
 {
   int rank, peer;
   nm_launcher_init(argc, argv);
-  nm_launcher_get_session(&p_core);
+  nm_launcher_session_open(&p_core, "pack-example");
   nm_launcher_get_rank(&rank);
   is_server = !rank;
   peer = 1 - rank;

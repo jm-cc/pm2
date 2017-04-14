@@ -58,7 +58,7 @@ int main(int argc, char**argv)
 {
   nm_launcher_init(&argc, argv);
   nm_session_t p_session = NULL;
-  nm_launcher_get_session(&p_session);
+  nm_launcher_session_open(&p_session, "nm_rpc_flood");
   int rank = -1;
   nm_launcher_get_rank(&rank);
   int peer = 1 - rank;
@@ -103,6 +103,7 @@ int main(int argc, char**argv)
 
   nm_rpc_unregister(p_service);
   free(buf);
+  nm_launcher_session_close(p_session);
   nm_launcher_exit();
   return 0;
 

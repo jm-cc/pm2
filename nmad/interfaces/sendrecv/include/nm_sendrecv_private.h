@@ -31,24 +31,6 @@
 #include <marcel.h>
 #endif
 
-/* ** Sessions inline ************************************** */
-
-static inline nm_session_t nm_sr_session_open(const char*label)
-{
-  nm_session_t p_session = NULL;
-  int rc = nm_session_open(&p_session, label);
-  if(rc != NM_ESUCCESS)
-    {
-      fprintf(stderr, "# nmad: WARNING- cannot open session *%s*; already in use.\n", label);
-      return NULL;
-    }
-  return p_session;
-}
-
-static inline void nm_sr_session_close(nm_session_t p_session)
-{
-  nm_session_destroy(p_session);
-}
 
 /* ** Polling and locking ********************************** */
 

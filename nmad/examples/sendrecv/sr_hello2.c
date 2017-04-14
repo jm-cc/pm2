@@ -30,7 +30,7 @@ int main(int argc, char	**argv)
 
   nm_launcher_init(&argc, argv);
   nm_launcher_get_rank(&rank);
-  nm_launcher_get_session(&p_session);
+  nm_launcher_session_open(&p_session, "sr_hello2");
 
   buf = malloc(len*sizeof(char));
   memset(buf, 0, len);
@@ -59,6 +59,7 @@ int main(int argc, char	**argv)
   }
 
   free(buf);
+  nm_launcher_session_close(p_session);
   nm_launcher_exit();
   exit(0);
 }

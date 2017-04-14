@@ -47,7 +47,7 @@ int main(int argc, char ** argv)
   nm_sr_request_t sreq, rreq;
   
   nm_launcher_init(&argc, argv);
-  nm_launcher_get_session(&p_session);
+  nm_launcher_session_open(&p_session, "sr_iov_large_contig_non_contig");
   nm_launcher_get_rank(&rank);
   peer = 1 - rank;
   nm_launcher_get_gate(peer, &p_gate);
@@ -122,6 +122,9 @@ int main(int argc, char ** argv)
     }
   
   printf("### End of the test ###\n");
+
+  nm_launcher_session_close(p_session);
+  nm_launcher_exit();
   return 0;
 }
 

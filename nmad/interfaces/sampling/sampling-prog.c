@@ -648,7 +648,7 @@ int main(int argc, char **argv)
   nm_session_t p_session = NULL;
   nm_gate_t p_gate = NULL;
   nm_launcher_init(&argc, argv);
-  nm_launcher_get_session(&p_session);
+  nm_launcher_session_open(&p_session, "sampling-prog");
   nm_launcher_get_rank(&rank);
   is_server = !rank;
   peer = 1 - rank;
@@ -704,6 +704,7 @@ int main(int argc, char **argv)
       nm_ns_pong(p_drv, p_gate);
     }
 
+  nm_launcher_session_close(p_session);
   nm_launcher_exit();
 
   TBX_FREE(data_send);

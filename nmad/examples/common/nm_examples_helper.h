@@ -41,7 +41,7 @@ static void nm_examples_init_topo(int*argc, char*argv[], enum nm_example_topo_e 
 {
   int rank, size, peer;
   nm_launcher_init(argc, argv);
-  nm_launcher_get_session(&p_session);
+  nm_launcher_session_open(&p_session, "nm_example");
   nm_launcher_get_rank(&rank);
   nm_launcher_get_size(&size);
   switch(topo)
@@ -83,6 +83,7 @@ static inline void nm_examples_exit(void)
   nm_examples_barrier(0xFFFF);
   if(p_comm)
     nm_comm_destroy(p_comm);
+  nm_launcher_session_close(p_session);
   nm_launcher_exit();
 }
 

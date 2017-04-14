@@ -54,7 +54,7 @@ nm_comm_t nm_comm_world(void)
       nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
       p_comm->group = group;
       p_comm->rank = nm_group_rank(group);
-      p_comm->p_session = nm_sr_session_open("nm_comm_world");
+      nm_session_open(&p_comm->p_session, "nm_comm_world");
       nm_comm_commit(p_comm);
       void*old = __sync_val_compare_and_swap(&world, NULL, p_comm);
       if(old != NULL)
@@ -79,7 +79,7 @@ nm_comm_t nm_comm_self(void)
       nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
       p_comm->group = group;
       p_comm->rank = nm_group_rank(group);
-      p_comm->p_session = nm_sr_session_open("nm_comm_self");
+      nm_session_open(&p_comm->p_session, "nm_comm_self");
       nm_comm_commit(p_comm);
       void*old = __sync_val_compare_and_swap(&self, NULL, p_comm);
       if(old != NULL)
@@ -119,7 +119,7 @@ nm_comm_t nm_comm_create_group(nm_comm_t p_comm, nm_group_t p_newcomm_group, nm_
       if(p_self_gate == p_root_gate)
 	{
 	  snprintf(&header.session_name[0], 64, "nm_comm-%p%08x", p_newcomm_group, (unsigned)random());
-	  p_new_session = nm_sr_session_open(header.session_name);
+	  nm_session_open(&p_new_session, header.session_name);
 	  if(p_new_session != NULL)
 	    {
 	      int i;
@@ -149,9 +149,9 @@ nm_comm_t nm_comm_create_group(nm_comm_t p_comm, nm_group_t p_newcomm_group, nm_
 	      if(p_new_session != NULL)
 		{
 		  /* release previous round failed session creation */
-		  nm_sr_session_close(p_new_session);
+		  nm_session_destroy(p_new_session);
 		}
-	      p_new_session = nm_sr_session_open(header.session_name);
+	      nm_session_open(&p_new_session, header.session_name);
 	      int ack = (p_new_session != NULL);
 	      nm_coll_group_gather(p_session, p_bcast_group, p_root_gate, p_self_gate, &ack, sizeof(ack), NULL, 0, tag2);
 	    }
@@ -183,7 +183,7 @@ void nm_comm_destroy(nm_comm_t p_comm)
 {
   if(p_comm != NULL)
     {
-      nm_sr_session_close(p_comm->p_session);
+      nm_session_destroy(p_comm->p_session);
       nm_group_free(p_comm->group);
       if(p_comm->reverse)
 	puk_hashtable_delete(p_comm->reverse);

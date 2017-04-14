@@ -83,13 +83,6 @@ struct nm_sr_monitor_s
   void*ref;                 /**< reference for user */
 };
 
-/** open a new session ready for sendrecv */
-static inline nm_session_t nm_sr_session_open(const char*label);
-
-/** close a sendrecv session */
-static inline void nm_sr_session_close(nm_session_t p_session);
-
-
 /* ** Operations on requests (send or recv) **************** */
 
 /** Set a notification function called upon request completion */

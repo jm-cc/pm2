@@ -72,7 +72,7 @@ int nm_launcher_session_open(nm_session_t*p_session, const char*label)
   return rc;
 }
 
-int nm_launcher_session_close(nm_session_t*p_session)
+int nm_launcher_session_close(nm_session_t p_session)
 {
   assert(launcher.instance != NULL);
   int rc = nm_session_destroy(p_session);

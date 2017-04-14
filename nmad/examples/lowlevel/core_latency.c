@@ -35,7 +35,7 @@ int main(int argc, char **argv)
   int rank, peer;
   nm_launcher_init(&argc, argv);
   nm_session_t p_session = NULL;
-  nm_launcher_get_session(&p_session);
+  nm_launcher_session_open(&p_session, "core_latency");
   nm_launcher_get_rank(&rank);
   const int is_server = !rank;
   peer = 1 - rank;
@@ -107,5 +107,7 @@ int main(int argc, char **argv)
 	}
     }
 
+  nm_launcher_session_close(p_session);
+  nm_launcher_exit();
   return 0;
 }

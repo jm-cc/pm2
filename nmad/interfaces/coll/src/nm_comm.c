@@ -35,59 +35,47 @@ static void nm_comm_commit(nm_comm_t p_comm)
     }
 }
 
-nm_comm_t nm_comm_world(void)
+nm_comm_t nm_comm_world(const char*label)
 {
-  static nm_comm_t world = NULL;
-  if(world == NULL)
+  nm_group_t group = nm_gate_vect_new();
+  int size = -1;
+  nm_launcher_get_size(&size);
+  int i;
+  for(i = 0; i < size; i++)
     {
-      nm_group_t group = nm_gate_vect_new();
-      int size = -1;
-      nm_launcher_get_size(&size);
-      int i;
-      for(i = 0; i < size; i++)
-	{
-	  nm_gate_t p_gate = NULL;
-	  nm_launcher_get_gate(i, &p_gate);
-	  assert(p_gate != NULL);
-	  nm_gate_vect_push_back(group, p_gate);
-	}
-      nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
-      p_comm->group = group;
-      p_comm->rank = nm_group_rank(group);
-      nm_session_open(&p_comm->p_session, "nm_comm_world");
-      nm_comm_commit(p_comm);
-      void*old = __sync_val_compare_and_swap(&world, NULL, p_comm);
-      if(old != NULL)
-	{
-	  nm_comm_destroy(p_comm);
-	}
+      nm_gate_t p_gate = NULL;
+      nm_launcher_get_gate(i, &p_gate);
+      assert(p_gate != NULL);
+      nm_gate_vect_push_back(group, p_gate);
     }
-  return world;
+  nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
+  p_comm->group = group;
+  p_comm->rank = nm_group_rank(group);
+  padico_string_t s_name = padico_string_new();
+  padico_string_catf(s_name, "nm_comm_world/%s", label);
+  nm_session_open(&p_comm->p_session, padico_string_get(s_name));
+  padico_string_delete(s_name);
+  nm_comm_commit(p_comm);
+  return p_comm;
 }
 
-nm_comm_t nm_comm_self(void)
+nm_comm_t nm_comm_self(const char*label)
 {
-  static nm_comm_t self = NULL;
-  if(self == NULL)
-    {
-      int launcher_rank = -1;
-      nm_launcher_get_rank(&launcher_rank);
-      nm_gate_t p_gate = NULL;
-      nm_launcher_get_gate(launcher_rank, &p_gate);
-      nm_group_t group = nm_gate_vect_new();
-      nm_gate_vect_push_back(group, p_gate);
-      nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
-      p_comm->group = group;
-      p_comm->rank = nm_group_rank(group);
-      nm_session_open(&p_comm->p_session, "nm_comm_self");
-      nm_comm_commit(p_comm);
-      void*old = __sync_val_compare_and_swap(&self, NULL, p_comm);
-      if(old != NULL)
-	{
-	  nm_comm_destroy(p_comm);
-	}
-    }
-  return self;
+  int launcher_rank = -1;
+  nm_launcher_get_rank(&launcher_rank);
+  nm_gate_t p_gate = NULL;
+  nm_launcher_get_gate(launcher_rank, &p_gate);
+  nm_group_t group = nm_gate_vect_new();
+  nm_gate_vect_push_back(group, p_gate);
+  nm_comm_t p_comm = malloc(sizeof(struct nm_comm_s));
+  p_comm->group = group;
+  p_comm->rank = nm_group_rank(group);
+  padico_string_t s_name = padico_string_new();
+  padico_string_catf(s_name, "nm_comm_self/%s", label);
+  nm_session_open(&p_comm->p_session, padico_string_get(s_name));
+  nm_comm_commit(p_comm);
+  padico_string_delete(s_name);
+  return p_comm;
 }
 
 

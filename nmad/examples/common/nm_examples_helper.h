@@ -68,7 +68,7 @@ static inline void nm_examples_barrier(nm_tag_t tag)
 {
   if(p_comm == NULL)
     {
-      p_comm = nm_comm_dup(nm_comm_world());
+      p_comm = nm_comm_world("nm_example");
     }
   nm_coll_barrier(p_comm, tag);
 }

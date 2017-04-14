@@ -442,7 +442,7 @@ int main(int argc, char**argv)
   nm_gate_t p_gate = NULL;
   nm_launcher_get_gate(peer, &p_gate);
 
-  nm_comm_t p_comm = nm_comm_dup(nm_comm_world());
+  nm_comm_t p_comm = nm_comm_world("nm_rpc_reply");
 
   /* register the RPC service */
   nm_rpc_service_t p_hello_service = nm_rpc_register(p_session, tag_hello, NM_TAG_MASK_FULL,
@@ -467,6 +467,7 @@ int main(int argc, char**argv)
   fprintf(stderr, "# unregistering services...\n");
   nm_rpc_unregister(p_hello_service);
   nm_rpc_unregister(p_reply_service);
+  nm_comm_destroy(p_comm);
   nm_launcher_session_close(p_session);
   nm_launcher_exit();
   return 0;

@@ -63,7 +63,7 @@ int main(int argc, char**argv)
   nm_gate_t p_gate = NULL;
   nm_launcher_get_gate(peer, &p_gate);
 
-  nm_comm_t p_comm = nm_comm_dup(nm_comm_world());
+  nm_comm_t p_comm = nm_comm_world("nm_rpc_hello");
 
   /* register the RPC service */
   nm_rpc_service_t p_service = nm_rpc_register(p_session, tag, NM_TAG_MASK_FULL, sizeof(struct rpc_hello_header_s),
@@ -81,6 +81,7 @@ int main(int argc, char**argv)
   /* generic nmad termination */
   nm_coll_barrier(p_comm, 0xF2);
   nm_rpc_unregister(p_service);
+  nm_comm_destroy(p_comm);
   nm_launcher_session_close(p_session);
   nm_launcher_exit();
   return 0;

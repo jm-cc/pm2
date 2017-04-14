@@ -65,7 +65,7 @@ int main(int argc, char**argv)
   nm_gate_t p_gate = NULL;
   nm_launcher_get_gate(peer, &p_gate);
 
-  nm_comm_t p_comm = nm_comm_dup(nm_comm_world());
+  nm_comm_t p_comm = nm_comm_world("nm_rpc_flood");
 
   nm_len_t len = strlen(msg) + 1;
   struct rpc_flood_header_s header = { .len = len };
@@ -103,6 +103,7 @@ int main(int argc, char**argv)
 
   nm_rpc_unregister(p_service);
   free(buf);
+  nm_comm_destroy(p_comm);
   nm_launcher_session_close(p_session);
   nm_launcher_exit();
   return 0;

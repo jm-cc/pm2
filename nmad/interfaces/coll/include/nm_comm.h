@@ -24,11 +24,11 @@
 /** NewMadeleine communicator opaque type */
 typedef struct nm_comm_s*nm_comm_t;
 
-/** get the global communicator- lazy created as singleton */
-extern nm_comm_t nm_comm_world(void);
+/** get a new global communicator */
+extern nm_comm_t nm_comm_world(const char*label);
 
-/** get communicator containing only self- lazy created as singleton */
-extern nm_comm_t nm_comm_self(void);
+/** get a new communicator containing only self */
+extern nm_comm_t nm_comm_self(const char*label);
 
 /** create a sub-communicator containing nodes in group- collective on parent communicator */
 extern nm_comm_t nm_comm_create(nm_comm_t comm, nm_group_t group);

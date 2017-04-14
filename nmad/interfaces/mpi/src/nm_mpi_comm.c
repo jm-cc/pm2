@@ -92,13 +92,13 @@ void nm_mpi_comm_init(void)
 
   /* built-in communicators */
   nm_mpi_communicator_t*p_comm_world = nm_mpi_handle_communicator_store(&nm_mpi_communicators, MPI_COMM_WORLD);
-  p_comm_world->p_nm_comm = nm_comm_world();
+  p_comm_world->p_nm_comm = nm_comm_world("madmpi");
   p_comm_world->kind = NM_MPI_COMMUNICATOR_INTRA;
   p_comm_world->attrs = NULL;
   p_comm_world->p_errhandler = nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL);
   p_comm_world->name = strdup("MPI_COMM_WORLD");
   nm_mpi_communicator_t*p_comm_self = nm_mpi_handle_communicator_store(&nm_mpi_communicators, MPI_COMM_SELF);
-  p_comm_self->p_nm_comm = nm_comm_self();
+  p_comm_self->p_nm_comm = nm_comm_self("madmpi");
   p_comm_self->kind = NM_MPI_COMMUNICATOR_INTRA;
   p_comm_self->attrs = NULL;
   p_comm_self->p_errhandler = nm_mpi_errhandler_get(MPI_ERRORS_ARE_FATAL);
@@ -1364,7 +1364,8 @@ int mpi_intercomm_merge(MPI_Comm intercomm, int high, MPI_Comm*newcomm)
     {
       return MPI_ERR_COMM;
     }
-  nm_comm_t p_nm_comm = nm_comm_create(nm_comm_world(), nm_comm_group(p_comm->p_nm_comm));
+  nm_mpi_communicator_t*p_comm_world = nm_mpi_communicator_get(MPI_COMM_WORLD);
+  nm_comm_t p_nm_comm = nm_comm_create(p_comm_world->p_nm_comm, nm_comm_group(p_comm->p_nm_comm));
   nm_mpi_communicator_t*p_new_comm = nm_mpi_communicator_alloc(p_nm_comm, p_comm->p_errhandler, NM_MPI_COMMUNICATOR_INTRA);
   *newcomm = p_new_comm->id;
   return MPI_SUCCESS;

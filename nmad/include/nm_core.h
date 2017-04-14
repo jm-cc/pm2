@@ -46,9 +46,6 @@ struct nm_core
 {
 #ifdef PIOMAN
   piom_spinlock_t lock;                         /**< lock to protect req lists in core */
-#  ifdef DEBUG
-  volatile piom_thread_t lock_holder;           /**< holder of the lock, used for debug */
-#  endif /* DEBUG */
 #endif  /* PIOMAN */
 
   struct nm_gate_list_s gate_list;              /**< list of gates. */

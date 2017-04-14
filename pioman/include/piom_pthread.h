@@ -41,7 +41,7 @@ struct piom_spinlock_s
 {
   pthread_spinlock_t spinlock;
 #ifdef PIOMAN_DEBUG
-  pthread_t owner;
+  volatile pthread_t owner;         /**< holder of the lock, used for debug */
 #endif
 };
 typedef struct piom_spinlock_s piom_spinlock_t;
@@ -108,6 +108,22 @@ static inline int piom_spin_trylock(piom_spinlock_t*lock)
     }
 #endif
   return rc;
+}
+
+static inline void piom_spin_assert_locked(piom_spinlock_t*lock)
+{
+#ifdef PIOMAN_DEBUG
+  if(PIOM_THREAD_SELF != lock->owner)
+    PIOM_FATAL("assertion failed. Thread doesn't hold lock %p", lock);
+#endif
+}
+
+static inline void piom_spin_assert_notlocked(piom_spinlock_t*lock)
+{
+#ifdef PIOMAN_DEBUG
+  if(PIOM_THREAD_SELF == lock->owner)
+    PIOM_FATAL("assertion failed. Thread is not supposed to hold lock %p", lock);
+#endif
 }
 
 #elif defined(PIOMAN_MUTEX_SPINLOCK)

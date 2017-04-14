@@ -70,6 +70,17 @@ static inline int piom_spin_trylock(piom_spinlock_t*lock)
     }
 }
 
+static inline void piom_spin_assert_locked(piom_spinlock_t*lock)
+{
+  assert(*lock != 0);
+}
+
+static inline void piom_spin_assert_notlocked(piom_spinlock_t*lock)
+{
+  assert(*lock == 0);
+}
+
+
 /* ** semaphores ******************************************* */
 
 /** dummy non-threaded semaphore */

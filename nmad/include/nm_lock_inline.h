@@ -21,9 +21,6 @@ static inline void nm_core_lock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_lock(&p_core->lock);
-#ifdef DEBUG
-  p_core->lock_holder = PIOM_THREAD_SELF;
-#endif
 #endif
 }
 
@@ -34,10 +31,6 @@ static inline int nm_core_trylock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   int rc = piom_spin_trylock(&p_core->lock);
-#ifdef DEBUG
-  if(rc == 1)
-    p_core->lock_holder = PIOM_THREAD_SELF;
-#endif
   return rc;
 #else
   return 1;
@@ -48,10 +41,6 @@ static inline int nm_core_trylock(struct nm_core*p_core)
 static inline void nm_core_unlock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
-#ifdef DEBUG
-  assert(p_core->lock_holder == PIOM_THREAD_SELF);
-  p_core->lock_holder = PIOM_THREAD_NULL;
-#endif
   piom_spin_unlock(&p_core->lock);
 #endif
 }
@@ -60,18 +49,12 @@ static inline void nm_core_lock_init(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_init(&p_core->lock);
-#ifdef DEBUG
-  p_core->lock_holder = PIOM_THREAD_NULL;
-#endif
 #endif
 }
 
 static inline void nm_core_lock_destroy(struct nm_core*p_core)
 {
 #ifdef PIOMAN
-#ifdef DEBUG
-  assert(p_core->lock_holder == PIOM_THREAD_NULL);
-#endif
   piom_spin_destroy(&p_core->lock);
 #endif
 }
@@ -80,9 +63,7 @@ static inline void nm_core_lock_destroy(struct nm_core*p_core)
 static inline void nm_core_lock_assert(struct nm_core*p_core)
 {
 #ifdef PIOMAN
-#ifdef DEBUG
-  assert(PIOM_THREAD_SELF == p_core->lock_holder);
-#endif
+  piom_spin_assert_locked(&p_core->lock);
 #endif
 }
 
@@ -90,9 +71,7 @@ static inline void nm_core_lock_assert(struct nm_core*p_core)
 static inline void nm_core_nolock_assert(struct nm_core*p_core)
 {
 #ifdef PIOMAN
-#ifdef DEBUG
-  assert(PIOM_THREAD_SELF != p_core->lock_holder);
-#endif
+  piom_spin_assert_notlocked(&p_core->lock);
 #endif
 }
 

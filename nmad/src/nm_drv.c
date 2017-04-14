@@ -112,7 +112,7 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   const char*drv_url = (*p_drv->driver->get_driver_url)(p_drv);
   *p_url = drv_url;
 
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
   p_drv->ltask_binding = NULL;
   nm_ltask_submit_post_drv(p_drv);
 #endif
@@ -221,12 +221,12 @@ int nm_core_driver_exit(struct nm_core*p_core)
   nm_drv_t p_drv = NULL;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
       /* stop polling
        */
       nm_core_unlock(p_core);
       piom_ltask_cancel(&p_drv->p_ltask);
-#endif /* PIOMAN_POLL */
+#endif /* PIOMAN */
       /* cancel any pending active recv request 
        */
 
@@ -236,11 +236,11 @@ int nm_core_driver_exit(struct nm_core*p_core)
 	  p_drv->p_in_rq = NULL;
 	  if(p_drv->driver->cancel_recv_iov)
 	    p_drv->driver->cancel_recv_iov(NULL, p_pw);
-#if defined(NMAD_POLL)
-	  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
-#else
+#ifdef PIOMAN
 	  piom_ltask_cancel(&p_pw->ltask);
-#endif
+#else
+	  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
+#endif /* PIOMAN */
 	  nm_pw_ref_dec(p_pw);
 	}
 
@@ -258,10 +258,10 @@ int nm_core_driver_exit(struct nm_core*p_core)
 		    r->driver->cancel_recv_iov(r->_status, p_pw);
 		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 
-#if defined(NMAD_POLL)
-		  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
-#else
+#ifdef PIOMAN
 		  piom_ltask_cancel(&p_pw->ltask);
+#else
+		  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #endif
 		  nm_pw_ref_dec(p_pw);
 		}
@@ -269,7 +269,7 @@ int nm_core_driver_exit(struct nm_core*p_core)
 	      p_gdrv->active_recv[NM_TRK_SMALL] = 0;
 	    }
 	}
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
       nm_core_lock(p_core);
 #endif
     }

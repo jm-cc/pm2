@@ -16,7 +16,7 @@
 #ifndef NM_PIOM_LTASKS_H
 #define NM_PIOM_LTASKS_H
 
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
 
 #include "nm_private.h"
 
@@ -41,6 +41,6 @@ void nm_ltask_submit_post_drv(nm_drv_t p_drv);
 void nm_ltask_submit_offload(struct piom_ltask *task, struct nm_pkt_wrap_s *p_pw);
 
 
-#endif /* PIOMAN_POLL */
+#endif /* PIOMAN */
 
 #endif /* NM_PIOM_LTASKS_H */

@@ -52,11 +52,11 @@ struct nm_core
   struct nm_drv_list_s driver_list;             /**< list of drivers. */
   int nb_drivers;                               /**< number of drivers in drivers list */
 
-#ifdef NMAD_POLL
+#ifndef PIOMAN
   /* if PIOMan is enabled, it already manages a list of pw to poll */
   struct nm_pkt_wrap_list_s pending_send_list;  /**< active pw for send to poll */
   struct nm_pkt_wrap_list_s pending_recv_list;  /**< active pw for recv to poll */
-#endif /* NMAD_POLL */
+#endif /* !PIOMAN */
  
   struct nm_req_list_s unpacks;                 /**< list of posted unpacks */
   struct nm_unexpected_list_s unexpected;       /**< list of unexpected chunks */

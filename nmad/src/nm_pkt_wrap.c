@@ -198,7 +198,7 @@ static inline void nm_pw_init(struct nm_pkt_wrap_s *p_pw)
   p_pw->ref_count = 0;
   nm_pw_ref_inc(p_pw);
   
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
   piom_ltask_init(&p_pw->ltask);
 #endif
 }
@@ -280,7 +280,7 @@ int nm_pw_free(struct nm_pkt_wrap_s*p_pw)
 #ifdef DEBUG
   /* make sure no one can use this pw anymore ! */
   memset(p_pw, 0, sizeof(struct nm_pkt_wrap_s));
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
   p_pw->ltask.state = PIOM_LTASK_STATE_DESTROYED;
 #endif
 #endif

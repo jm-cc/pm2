@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 #include <nm_private.h>
-#if PIOMAN_POLL
+#if PIOMAN
 
 struct nm_ltask_policy_s
 {
@@ -277,6 +277,6 @@ void nm_ltask_submit_offload(struct piom_ltask*p_ltask, struct nm_pkt_wrap_s *p_
   piom_ltask_submit(p_ltask);
 }
 
-#else /* PIOMAN_POLL */
+#else /* PIOMAN */
 
-#endif /* PIOMAN_POLL */
+#endif /* PIOMAN */

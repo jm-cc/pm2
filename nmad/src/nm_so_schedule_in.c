@@ -64,11 +64,11 @@ void nm_unexpected_clean(struct nm_core*p_core)
 #endif /* DEBUG */
       if(p_chunk->p_pw)
 	{
-#if(defined(PIOMAN_POLL))
+#if(defined(PIOMAN))
 	  piom_ltask_completed(&p_chunk->p_pw->ltask);
-#else /* PIOMAN_POLL */
+#else /* PIOMAN */
 	  nm_pw_ref_dec(p_chunk->p_pw);
-#endif /* PIOMAN_POLL */
+#endif /* PIOMAN */
 	}
       nm_unexpected_free(nm_unexpected_allocator, p_chunk);
       p_chunk = nm_unexpected_list_pop_front(&p_core->unexpected);
@@ -914,9 +914,9 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
       p_pw->p_drv->p_in_rq = NULL;
     }
 
-#ifdef NMAD_POLL
+#ifndef PIOMAN
   nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
-#endif /* NMAD_POLL */
+#endif /* !PIOMAN */
 
   if(p_pw->trk_id == NM_TRK_SMALL)
     {

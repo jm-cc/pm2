@@ -158,12 +158,11 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
   int err = (*r->driver->poll_send_iov)(r->_status, p_pw);
   if(err == NM_ESUCCESS)
     {
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
       piom_ltask_completed(&p_pw->ltask);
-#endif /* PIOMAN_POLL */
-#ifdef NMAD_POLL
+#else
       nm_pkt_wrap_list_erase(&p_core->pending_send_list, p_pw);
-#endif /* NMAD_POLL */
+#endif /* PIOMAN */
       nm_core_lock(p_core);
       nm_pw_process_complete_send(p_core, p_pw);
       nm_core_unlock(p_core);
@@ -221,12 +220,12 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   
   if (err == -NM_EAGAIN)
     {
-#ifdef NMAD_POLL
+#ifdef PIOMAN
+      nm_ltask_submit_poll_send(p_pw);
+#else
       /* put the request in the list of pending requests */
       nm_pkt_wrap_list_push_back(&p_core->pending_send_list, p_pw);
-#else /* NMAD_POLL */
-      nm_ltask_submit_poll_send(p_pw);
-#endif /* NMAD_POLL */
+#endif /* PIOMAN */
     } 
   else if(err == NM_ESUCCESS)
     {
@@ -282,7 +281,7 @@ void nm_core_flush(struct nm_core*p_core)
   nm_core_unlock(p_core);
 }
 
-#ifdef NMAD_POLL
+#ifndef PIOMAN
 void nm_out_prefetch(struct nm_core*p_core)
 {
   /* check whether all drivers are idle */
@@ -308,6 +307,6 @@ void nm_out_prefetch(struct nm_core*p_core)
 	}
     }  
 }
-#endif /* NMAD_POLL */
+#endif /* PIOMAN */
 
 

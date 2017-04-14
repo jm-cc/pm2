@@ -26,11 +26,6 @@
 
 #ifdef PIOMAN
 #include <pioman.h>
-/** @internal use pioman as a progression engine */
-#define PIOMAN_POLL 1
-#else
-/** @internal use nmad progression */
-#define NMAD_POLL 1
 #endif
 
 /** @defgroup core_interface nmad core interface
@@ -94,17 +89,17 @@ int nm_schedule(nm_core_t p_core);
 
 /* ** Status *********************************************** */
 
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
 /** status bits of pack/unpack requests */
 typedef piom_cond_value_t nm_status_t;
 /** status with synchronization (wait/signal) */
 typedef piom_cond_t nm_cond_status_t;
-#else /* PIOMAN_POLL */
+#else /* PIOMAN */
 /** status bits of pack/unpack requests */
 typedef uint16_t nm_status_t;
 /** status with synchronization (wait/signal) */
 typedef nm_status_t nm_cond_status_t;
-#endif /* PIOMAN_POLL */
+#endif /* PIOMAN */
 
 /** pack/unpack flags */
 typedef uint16_t nm_req_flag_t;
@@ -338,7 +333,7 @@ void nm_core_flush(struct nm_core*p_core);
 
 /* ** Status transition ************************************ */
 
-#if defined(PIOMAN_POLL)
+#if defined(PIOMAN)
 /* ** status with pioman */
 static inline void nm_cond_init(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
@@ -366,7 +361,7 @@ static inline void nm_cond_wait_multiple(void**pp_conds, int n, uintptr_t offset
 {
   piom_cond_wait_all(pp_conds, n, offset, bitmask);
 }
-#else /* PIOMAN_POLL */
+#else /* PIOMAN */
 /* ** status without pioman */
 static inline void nm_cond_init(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
@@ -400,7 +395,7 @@ static inline void nm_cond_wait_multiple(void**pp_conds, int n, uintptr_t offset
       nm_cond_wait(p_cond, bitmask, p_core);
     }
 }
-#endif /* PIOMAN_POLL */
+#endif /* PIOMAN */
 
 /* ** convenient frontends to deal with status in requests */
 

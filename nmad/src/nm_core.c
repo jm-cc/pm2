@@ -126,7 +126,9 @@ void nm_strat_apply(struct nm_core*p_core)
  */
 int nm_schedule(struct nm_core *p_core)
 {
-#ifdef NMAD_POLL
+#ifdef PIOMAN
+  piom_polling_force();
+#else
 
 #ifdef DEBUG
   static int scheduling_in_progress = 0;
@@ -170,9 +172,7 @@ int nm_schedule(struct nm_core *p_core)
   scheduling_in_progress = 0;
 #endif /* DEBUG */
 
-#else  /* NMAD_POLL */
-  piom_polling_force();
-#endif /* NMAD_POLL */
+#endif /* PIOMAN */
   return NM_ESUCCESS;
 }
 
@@ -556,23 +556,18 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_unexpected_list_init(&p_core->unexpected);
   nm_core_pending_event_list_init(&p_core->pending_events);
   
-#ifdef NMAD_POLL
-  nm_pkt_wrap_list_init(&p_core->pending_recv_list);
-  nm_pkt_wrap_list_init(&p_core->pending_send_list);
-#endif /* NMAD_POLL*/
   p_core->enable_schedopt = 1;
-
   p_core->strategy_component = NULL;
 
 #ifdef PIOMAN
   pioman_init(argc, argv);
   nm_core_lock_init(p_core);
-#if(defined(PIOMAN_POLL))
   nm_ltask_set_policy();
-#endif	/* PIOM_POLL */
+#else
+  nm_pkt_wrap_list_init(&p_core->pending_recv_list);
+  nm_pkt_wrap_list_init(&p_core->pending_send_list);
 #endif /* PIOMAN */
 
-  
   *pp_core = p_core;
 
   return err;
@@ -594,7 +589,7 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
 void nm_core_schedopt_disable(nm_core_t p_core)
 {
   p_core->enable_schedopt = 0;
-#ifdef NMAD_POLL
+#ifndef PIOMAN
   /* flush pending recv requests posted by nm_drv_refill_recv() */
   while(!nm_pkt_wrap_list_empty(&p_core->pending_recv_list))
     {
@@ -615,7 +610,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 	  p_pw->p_drv->p_in_rq = NULL;
 	}
     }
-#else /* NMAD_POLL */
+#else /* !PIOMAN */
   nm_drv_t p_drv;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
@@ -652,7 +647,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 	    }
 	}
     }
-#endif /* NMAD_POLL */
+#endif /* !PIOMAN */
 }
 
 /** Shutdown the core struct and the main scheduler.
@@ -691,7 +686,7 @@ int nm_core_exit(nm_core_t p_core)
 	}
     }
 
-#ifdef NMAD_POLL
+#ifndef PIOMAN
   /* Sanity check- everything is supposed to be empty here */
   struct nm_pkt_wrap_s*p_pw, *p_pw2;
   puk_list_foreach_safe(p_pw, p_pw2, &p_core->pending_recv_list)
@@ -699,7 +694,7 @@ int nm_core_exit(nm_core_t p_core)
       NM_WARN("purging pw from pending_recv_list\n");
       nm_pw_ref_dec(p_pw);
     }
-#endif /* NMAD_POLL */
+#endif /* !PIOMAN */
   
   /* Remove any remaining unexpected chunk */
   nm_unexpected_clean(p_core);

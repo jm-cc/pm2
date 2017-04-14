@@ -70,9 +70,9 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
    
   if(err == NM_ESUCCESS)
     {
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
       piom_ltask_completed(&p_pw->ltask);
-#endif /* PIOMAN_POLL */
+#endif /* PIOMAN */
       nm_core_lock(p_core);
       nm_pw_process_complete_recv(p_core, p_pw);
       nm_core_unlock(p_core);
@@ -90,12 +90,11 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 	      p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
 	    }
 	}
-#ifdef NMAD_POLL
-      nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
-#endif /* NMAD_POLL */
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
       piom_ltask_completed(&p_pw->ltask);
-#endif /* PIOMAN_POLL */
+#else
+      nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
+#endif /* PIOMAN */
       nm_pw_ref_dec(p_pw);
       nm_core_unlock(p_core);
     }
@@ -128,13 +127,13 @@ static int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
       err = p_pw->p_drv->driver->post_recv_iov(NULL, p_pw);
     }
   
-#ifdef NMAD_POLL
+#ifndef PIOMAN
   /* always put the request in the list of pending requests,
    * even if it completes immediately. It will be removed from
    * the list by nm_pw_process_complete_recv().
    */
   nm_pkt_wrap_list_push_back(&p_pw->p_drv->p_core->pending_recv_list, p_pw);
-#endif /* NMAD_POLL */
+#endif /* !PIOMAN */
   
   if(err == NM_ESUCCESS)
     {
@@ -146,9 +145,9 @@ static int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
     {
       NM_TRACEF("new recv request pending: gate %p, drv %p, trk %d",
 		p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
-#ifdef PIOMAN_POLL
+#ifdef PIOMAN
       nm_ltask_submit_poll_recv(p_pw);      
-#endif /* PIOMAN_POLL */
+#endif /* PIOMAN */
     }
   else if(err != -NM_ECLOSED)
     {

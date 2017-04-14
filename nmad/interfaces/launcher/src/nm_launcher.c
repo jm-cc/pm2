@@ -15,7 +15,6 @@
 
 #include <nm_private.h>
 #include <nm_launcher.h>
-#include <nm_sendrecv_interface.h>
 #include <nm_core_interface.h>
 #include <tbx.h>
 #ifdef PIOMAN
@@ -64,6 +63,20 @@ int nm_launcher_get_session(nm_session_t *p_session)
   assert(launcher.instance != NULL);
   *p_session  = (*launcher.r.driver->get_session)(launcher.r._status);
   return NM_ESUCCESS;
+}
+
+int nm_launcher_session_open(nm_session_t*p_session, const char*label)
+{
+  assert(launcher.instance != NULL);
+  int rc = nm_session_open(p_session, label);
+  return rc;
+}
+
+int nm_launcher_session_close(nm_session_t*p_session)
+{
+  assert(launcher.instance != NULL);
+  int rc = nm_session_destroy(p_session);
+  return rc;
 }
 
 int nm_launcher_get_gate(int dest, nm_gate_t*pp_gate)
@@ -144,7 +157,7 @@ int nm_launcher_init_checked(int *argc, char**argv, const struct nm_abi_config_s
   (*launcher.r.driver->init)(launcher.r._status, argc, argv, "NewMadeleine");
 
   launcher.size = (*launcher.r.driver->get_size)(launcher.r._status);
-  launcher.gates = TBX_MALLOC(launcher.size * sizeof(nm_gate_t));
+  launcher.gates = malloc(launcher.size * sizeof(nm_gate_t));
   launcher.reverse = puk_hashtable_new_ptr();
   (*launcher.r.driver->get_gates)(launcher.r._status, launcher.gates);
   int j;

@@ -20,16 +20,7 @@
 static inline void nm_core_lock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
-#ifdef DEBUG
-  if(PIOM_THREAD_SELF == p_core->lock_holder)
-    {
-      fprintf(stderr, "nmad: FATAL- deadlock detected. Self already holds spinlock.\n");
-      abort();
-    }
-#endif
-  int rc = piom_spin_lock(&p_core->lock);
-  if(rc != 0)
-    NM_FATAL("cannot get spinlock- rc = %d\n", rc);
+  piom_spin_lock(&p_core->lock);
 #ifdef DEBUG
   p_core->lock_holder = PIOM_THREAD_SELF;
 #endif
@@ -61,9 +52,7 @@ static inline void nm_core_unlock(struct nm_core*p_core)
   assert(p_core->lock_holder == PIOM_THREAD_SELF);
   p_core->lock_holder = PIOM_THREAD_NULL;
 #endif
-  int rc = piom_spin_unlock(&p_core->lock);
-  if(rc != 0)
-    NM_FATAL("error in spin_unlock- rc = %d\n", rc);
+  piom_spin_unlock(&p_core->lock);
 #endif
 }
 

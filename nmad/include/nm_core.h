@@ -46,6 +46,7 @@ struct nm_core
 {
 #ifdef PIOMAN
   piom_spinlock_t lock;                         /**< lock to protect req lists in core */
+  long long n_locks;
 #endif  /* PIOMAN */
 
   struct nm_gate_list_s gate_list;              /**< list of gates. */

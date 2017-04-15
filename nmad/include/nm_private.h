@@ -88,7 +88,7 @@ static inline nm_seq_t nm_seq_prev(nm_seq_t seq)
 }
 
 #ifdef NMAD_PROFILE
-#define nm_profile_inc(COUNTER) do { COUNTER++; } while(0)
+#define nm_profile_inc(COUNTER) do { __sync_fetch_and_add(&COUNTER, 1); } while(0)
 #else
 #define nm_profile_inc(COUNTER) do {} while(0)
 #endif

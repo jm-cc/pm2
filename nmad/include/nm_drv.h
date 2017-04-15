@@ -16,7 +16,10 @@
 #ifndef NM_DRV_H
 #define NM_DRV_H
 
-struct nm_pkt_wrap_s;
+#ifndef NM_PRIVATE_H
+#  error "Cannot include this file directly. Please include <nm_private.h>"
+#endif
+
 
 /** LF queue type for post send/recv lists */
 PUK_LFQUEUE_TYPE(nm_pw_post, struct nm_pkt_wrap_s*, NULL, 1024);

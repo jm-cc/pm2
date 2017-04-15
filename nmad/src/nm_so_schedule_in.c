@@ -232,6 +232,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
   p_chunk->seq    = seq;
   p_chunk->tag    = tag;
   nm_pw_ref_inc(p_pw);
+  nm_profile_inc(p_core->profiling.n_unexpected);
 #ifdef DEBUG
   const long unsigned int nm_unexpected_mem_size = nm_unexpected_list_size(&p_core->unexpected);
   if(nm_unexpected_mem_size > 32*1024)
@@ -430,6 +431,7 @@ int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_re
   nm_core_lock(p_core);
   nm_req_list_push_back(&p_core->unpacks, p_unpack);
   nm_core_polling_level(p_core);
+  nm_profile_inc(p_core->profiling.n_unpacks);
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
   while(p_unexpected)
     {
@@ -899,7 +901,7 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
   nm_gate_t const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);
   nm_core_lock_assert(p_core);
-  
+  nm_profile_inc(p_core->profiling.n_pw_in);
   /* clear the input request field */
   if(p_pw->p_gdrv && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
     {

@@ -37,6 +37,9 @@
 #define NM_ALIGN_FRONTIER  sizeof(NM_ALIGN_TYPE)
 #define nm_aligned(x)      tbx_aligned((x), NM_ALIGN_FRONTIER)
 
+/* activate nm profiling 
+ * change the define here, there's no autoconf flag */
+#undef NMAD_PROFILE
 
 #endif /* NM_SO_PARAMETERS_H */
 

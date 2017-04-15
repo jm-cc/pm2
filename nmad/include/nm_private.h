@@ -39,6 +39,8 @@
 #include <nm_core_interface.h>
 #include <nm_log.h>
 
+#include <nm_parameters.h>
+
 #include <Padico/Module.h>
 
 #ifdef PM2_TOPOLOGY
@@ -85,20 +87,22 @@ static inline nm_seq_t nm_seq_prev(nm_seq_t seq)
   return seq;
 }
 
+#ifdef NMAD_PROFILE
+#define nm_profile_inc(COUNTER) do { COUNTER++; } while(0)
+#else
+#define nm_profile_inc(COUNTER) do {} while(0)
+#endif
 
 /* ** Drivers */
 
 typedef uint16_t nm_drv_id_t;
 
 
-#include "nm_parameters.h"
-
 #include "nm_trk_cap.h"
 #include "nm_tags.h"
 #include "nm_pkt_wrap.h"
 #include "nm_minidriver.h"
 #include "nm_drv.h"
-#include "nm_errno.h"
 #include "nm_log.h"
 #ifdef PIOMAN
 #include "nm_piom_ltasks.h"

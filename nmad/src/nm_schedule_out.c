@@ -100,16 +100,18 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
       assert(p_pack->pack.scheduled == 0);
       nm_data_aggregator_traversal(&p_pack->data, &nm_core_pack_chunk, p_pack);
     }
+  nm_profile_inc(p_core->profiling.n_packs);
   nm_core_unlock(p_core);
 }
 
 
 /** Process a complete successful outgoing request.
  */
-void nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
+void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
   nm_gate_t const p_gate = p_pw->p_gate;
   nm_core_lock_assert(p_core);
+  nm_profile_inc(p_core->profiling.n_pw_out);
   NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
   p_pw->p_gdrv->active_send[p_pw->trk_id]--;

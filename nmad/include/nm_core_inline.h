@@ -146,6 +146,7 @@ static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
   if(!nm_pkt_wrap_list_empty(&p_gate->out_list))
     {
+      nm_profile_inc(p_gate->p_core->profiling.n_try_and_commit);
       r->driver->try_and_commit(r->_status, p_gate);
     }
 }

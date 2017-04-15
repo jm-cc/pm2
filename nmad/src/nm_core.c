@@ -100,6 +100,7 @@ void nm_strat_apply(struct nm_core*p_core)
 {
   nm_gate_t p_gate = NULL;
   nm_core_lock_assert(p_core);
+  nm_profile_inc(p_core->profiling.n_strat_apply);
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
@@ -124,8 +125,9 @@ void nm_strat_apply(struct nm_core*p_core)
  *
  * This is the heart of NewMadeleine...
  */
-int nm_schedule(struct nm_core *p_core)
+int nm_schedule(struct nm_core*p_core)
 {
+  nm_profile_inc(p_core->profiling.n_schedule);
 #ifdef PIOMAN
   piom_polling_force();
 #else
@@ -568,6 +570,18 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_pkt_wrap_list_init(&p_core->pending_send_list);
 #endif /* PIOMAN */
 
+#ifdef NMAD_PROFILE
+  p_core->profiling.n_locks      = 0;
+  p_core->profiling.n_schedule   = 0;
+  p_core->profiling.n_packs      = 0;
+  p_core->profiling.n_unpacks    = 0;
+  p_core->profiling.n_unexpected = 0;
+  p_core->profiling.n_pw_out     = 0;
+  p_core->profiling.n_pw_in      = 0;
+  p_core->profiling.n_try_and_commit = 0;
+  p_core->profiling.n_strat_apply = 0;
+#endif /* NMAD_PROFILE */
+  
   *pp_core = p_core;
 
   return err;
@@ -655,6 +669,20 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 int nm_core_exit(nm_core_t p_core)
 {
   nm_core_lock(p_core);
+
+#ifdef NMAD_PROFILE
+  fprintf(stderr, "# ## profiling stats___________\n");
+  fprintf(stderr, "# ## n_lock           = %lld\n", p_core->profiling.n_locks);
+  fprintf(stderr, "# ## n_schedule       = %lld\n", p_core->profiling.n_schedule);
+  fprintf(stderr, "# ## n_packs          = %lld\n", p_core->profiling.n_packs);
+  fprintf(stderr, "# ## n_unpacks        = %lld\n", p_core->profiling.n_unpacks);
+  fprintf(stderr, "# ## n_unexpected     = %lld\n", p_core->profiling.n_unexpected);
+  fprintf(stderr, "# ## n_try_and_commit = %lld\n", p_core->profiling.n_try_and_commit);
+  fprintf(stderr, "# ## n_strat_apply    = %lld\n", p_core->profiling.n_strat_apply);
+  fprintf(stderr, "# ## n_pw_in          = %lld\n", p_core->profiling.n_pw_in);
+  fprintf(stderr, "# ## n_pw_out         = %lld\n", p_core->profiling.n_pw_out);
+  
+#endif /* NMAD_PROFILE */
 
   /* flush strategies */
   int strat_done = 0;

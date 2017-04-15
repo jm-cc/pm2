@@ -17,6 +17,10 @@
 #ifndef NM_CORE_H
 #define NM_CORE_H
 
+#ifndef NM_PRIVATE_H
+#  error "Cannot include this file directly. Please include <nm_private.h>"
+#endif
+
 PUK_VECT_TYPE(nm_core_monitor, struct nm_core_monitor_s*);
 
 /** a pending event, not dispatched immediately because it was received out of order */
@@ -46,9 +50,22 @@ struct nm_core
 {
 #ifdef PIOMAN
   piom_spinlock_t lock;                         /**< lock to protect req lists in core */
-  long long n_locks;
 #endif  /* PIOMAN */
-
+#ifdef NMAD_PROFILE
+  struct
+  {
+    long long n_locks;
+    long long n_schedule;
+    long long n_packs;
+    long long n_unpacks;
+    long long n_unexpected;
+    long long n_pw_out;
+    long long n_pw_in;
+    long long n_try_and_commit;
+    long long n_strat_apply;
+  } profiling;
+#endif /* NMAD_PROFILE */
+  
   struct nm_gate_list_s gate_list;              /**< list of gates. */
   struct nm_drv_list_s driver_list;             /**< list of drivers. */
   int nb_drivers;                               /**< number of drivers in drivers list */
@@ -61,7 +78,7 @@ struct nm_core
  
   struct nm_req_list_s unpacks;                 /**< list of posted unpacks */
   struct nm_unexpected_list_s unexpected;       /**< list of unexpected chunks */
-  struct nm_req_list_s pending_packs;           /**< list of pending packs waiting for an ack */
+  struct nm_req_list_s pending_packs;           /**< list of pack reqs in progress (or waiting for ACK) */
   struct nm_core_pending_event_list_s pending_events; /**< pending events not ready to dispatch */
   struct nm_core_monitor_vect_s monitors;       /**< monitors for upper layers to track events in nmad core */
 

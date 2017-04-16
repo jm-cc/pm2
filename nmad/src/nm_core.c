@@ -24,10 +24,26 @@
 PADICO_MODULE_BUILTIN(NewMad_Core, NULL, NULL, NULL);
 
 
+/** Main scheduler func for a specific driver.
+   - this function must be called once for each driver on a regular basis
+ */
 void nm_drv_post_all(nm_drv_t p_drv)
 { 
- /* schedule & post out requests */
-  nm_drv_post_send(p_drv);
+  /* schedule & post out requests */
+  nm_core_lock_assert(p_drv->p_core);
+#ifndef PIOMAN
+  struct nm_pkt_wrap_s*p_pw = NULL;
+  do
+    {
+      NM_TRACEF("posting outbound requests");
+      p_pw = nm_pw_post_lfqueue_dequeue_single_reader(&p_drv->post_send);
+      if(p_pw)
+	{
+	  nm_pw_post_send(p_pw);
+	}
+    }
+  while(p_pw);
+#endif /* PIOMAN */
   
   /* post new receive requests */
   if(p_drv->p_core->enable_schedopt)

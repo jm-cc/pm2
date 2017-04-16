@@ -30,7 +30,7 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap_s *p_pw);
 
 /** submit an ltask for a send pw
  */
-void nm_ltask_submit_poll_send(struct nm_pkt_wrap_s *p_pw);
+void nm_ltask_submit_pw_send(struct nm_pkt_wrap_s*p_pw);
 
 /** submit an ltask to post requests on a given driver (both send and recv).
  */

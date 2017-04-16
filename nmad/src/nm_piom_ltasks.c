@@ -156,11 +156,14 @@ static int nm_task_block_recv(void*_pw)
   return NM_ESUCCESS;
 }
 
-static int nm_task_poll_send(void*_pw)
+static int nm_ltask_pw_send(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
   struct nm_core*p_core = p_pw->p_drv->p_core;
-  nm_pw_poll_send(p_pw);
+  if(p_pw->flags & NM_PW_POSTED)
+    nm_pw_poll_send(p_pw);
+  else
+    nm_pw_post_send(p_pw);
   return NM_ESUCCESS;
 }
 
@@ -183,7 +186,7 @@ static int nm_task_block_send(void*_pw)
     }
   else
     {
-      nm_ltask_submit_poll_send(p_pw);
+      nm_ltask_submit_pw_send(p_pw);
       NM_WARN("wait_send returned %d", err);
     }
   nm_core_unlock(p_core);
@@ -237,13 +240,13 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap_s *p_pw)
   piom_ltask_submit(&p_pw->ltask);	
 }
 
-void nm_ltask_submit_poll_send(struct nm_pkt_wrap_s *p_pw)
+void nm_ltask_submit_pw_send(struct nm_pkt_wrap_s*p_pw)
 {
   piom_topo_obj_t ltask_binding = nm_get_binding_policy(p_pw->p_drv);
-  piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw, 
+  piom_ltask_create(&p_pw->ltask, &nm_ltask_pw_send, p_pw, 
 		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT);
   piom_ltask_set_binding(&p_pw->ltask, ltask_binding);
-  piom_ltask_set_name(&p_pw->ltask, "nmad: poll_send");
+  piom_ltask_set_name(&p_pw->ltask, "nmad: pw_send");
   piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
   nm_pw_ref_inc(p_pw);
   assert(p_pw->p_gdrv);

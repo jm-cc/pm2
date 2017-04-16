@@ -51,6 +51,9 @@ typedef uint32_t nm_pw_flag_t;
  */
 #define NM_PW_PREFETCHED    (nm_pw_flag_t)0x0020
 
+/** Pkt has bee posted */
+#define NM_PW_POSTED        (nm_pw_flag_t)0x0040
+
 /*@}*/
 
 /* Data flags, used when packing  */

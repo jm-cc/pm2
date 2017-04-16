@@ -181,7 +181,8 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_core*p_core = p_pw->p_drv->p_core;
-  nm_core_lock_assert(p_core);
+  /* no locck needed; only this ltask is allow to touch the pw */
+  nm_core_nolock_assert(p_core);
 
 #ifdef PIO_OFFLOAD
   nm_pw_offloaded_finalize(p_pw);
@@ -190,8 +191,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   if(p_pw->flags & NM_PW_GLOBAL_HEADER)
     nm_pw_finalize(p_pw);
 
-  /* post request */
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+  /* flatten data if needed */
   if((p_pw->p_data != NULL) &&
      ((p_pw->flags & NM_PW_DATA_USE_COPY) || !p_pw->p_drv->trk_caps[p_pw->trk_id].supports_data))
     {
@@ -216,23 +216,27 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
       vec->iov_len = p_pw->length;
       p_pw->p_data = NULL;
     }
+  /* post request on driver */
+  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err = (*r->driver->post_send_iov)(r->_status, p_pw);
-  
-  /* process post command status				*/
   
   if (err == -NM_EAGAIN)
     {
-#ifdef PIOMAN
-      nm_ltask_submit_poll_send(p_pw);
-#else
-      /* put the request in the list of pending requests */
+      p_pw->flags |= NM_PW_POSTED;
+#ifndef PIOMAN
+      /* put the request in the list of pending requests; no lock needed since no thread without pioman */
       nm_pkt_wrap_list_push_back(&p_core->pending_send_list, p_pw);
 #endif /* PIOMAN */
     } 
   else if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
+#ifdef PIOMAN
+      piom_ltask_completed(&p_pw->ltask);
+#endif
+      nm_core_lock(p_core);
       nm_pw_process_complete_send(p_core, p_pw);
+      nm_core_unlock(p_core);
     }
   else
     {
@@ -240,26 +244,6 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
     }
 }
 
-
-/** Main scheduler func for outgoing requests on a specific driver.
-   - this function must be called once for each driver on a regular basis
- */
-void nm_drv_post_send(nm_drv_t p_drv)
-{
-  /* post new requests	*/
-  nm_core_lock_assert(p_drv->p_core);
-  struct nm_pkt_wrap_s*p_pw = NULL;
-  do
-    {
-      NM_TRACEF("posting outbound requests");
-      p_pw = nm_pw_post_lfqueue_dequeue_single_reader(&p_drv->post_send);
-      if(p_pw)
-	{
-	  nm_pw_post_send(p_pw);
-	}
-    }
-  while(p_pw);
-}
 
 void nm_core_flush(struct nm_core*p_core)
 {

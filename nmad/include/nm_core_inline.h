@@ -116,33 +116,6 @@ static inline void nm_core_post_recv(struct nm_pkt_wrap_s *p_pw, nm_gate_t p_gat
 /* ** Sending functions ************************************ */
 /* ********************************************************* */
 
-/** Places a packet in the send request list.
- * The actual post_send operation will be done on next
- * nmad scheduling (immediately with vanilla PIOMan, 
- * maybe later with PIO-offloading, on next nm_schedule()
- * without PIOMan).
- */
-static inline void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw,
-				     nm_trk_id_t trk_id, nm_drv_t p_drv)
-{
-  nm_core_lock_assert(p_drv->p_core);
-  /* Packet is assigned to given track, driver, and gate */
-  nm_pw_assign(p_pw, trk_id, p_drv, p_gate);
-  if(trk_id == NM_TRK_SMALL)
-    {
-      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
-    }
-  /* append pkt to scheduler post list */
-  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
-  p_gdrv->active_send[trk_id]++;
-  assert(p_gdrv->active_send[trk_id] == 1);
-#ifdef PIOMAN
-  nm_ltask_submit_pw_send(p_pw);
-#else
-  int rc = nm_pw_post_lfqueue_enqueue(&p_drv->post_send, p_pw);
-  assert(rc == 0);
-#endif
-}
 
 
 /** Schedule and post new outgoing buffers

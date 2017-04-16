@@ -44,7 +44,6 @@ int nm_core_driver_load(nm_core_t p_core,
 #endif /* PM2_TOPOLOGY */
 
   nm_pw_post_lfqueue_init(&p_drv->post_recv);
-  nm_pw_post_lfqueue_init(&p_drv->post_send);
 
   nm_drv_list_push_back(&p_core->driver_list, p_drv);
   p_core->nb_drivers++;

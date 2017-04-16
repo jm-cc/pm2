@@ -107,7 +107,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 
 /** Actually post a recv request to the driver
  */
-static int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
+int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
 {
   int err = NM_ESUCCESS;
   
@@ -190,31 +190,6 @@ void nm_drv_refill_recv(nm_drv_t p_drv)
 	    }
 	}
     }
-}
-
-
-void nm_drv_post_recv(nm_drv_t p_drv)
-{
-  struct nm_pkt_wrap_s*p_pw = NULL;
-  do
-    {
-      p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
-      if(p_pw)
-	{
-  	  if(!(p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id]))
-	    {		    
-	      NM_TRACEF("posting inbound request");
-	      nm_pw_post_recv(p_pw);
-	    }
-	  else
-	    {
-	      nm_pw_post_lfqueue_enqueue(&p_drv->post_recv, p_pw);
-	      /* the driver is busy, so don't insist */
-	      break;
-	    }
-	}
-    }
-  while(p_pw);
 }
 
 

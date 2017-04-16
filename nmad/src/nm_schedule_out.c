@@ -104,6 +104,29 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
   nm_core_unlock(p_core);
 }
 
+/** Places a packet in the send request list.
+ * to be called from a strategy
+ */
+void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw,
+		       nm_trk_id_t trk_id, nm_drv_t p_drv)
+{
+  nm_core_lock_assert(p_drv->p_core);
+  /* Packet is assigned to given track, driver, and gate */
+  nm_pw_assign(p_pw, trk_id, p_drv, p_gate);
+  if(trk_id == NM_TRK_SMALL)
+    {
+      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
+    }
+  /* append pkt to scheduler post list */
+  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
+  p_gdrv->active_send[trk_id]++;
+  assert(p_gdrv->active_send[trk_id] == 1);
+#ifdef PIOMAN
+  nm_ltask_submit_pw_send(p_pw);
+#else
+  nm_pw_post_send(p_pw);
+#endif
+}
 
 /** Process a complete successful outgoing request.
  */

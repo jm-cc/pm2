@@ -28,27 +28,34 @@ PADICO_MODULE_BUILTIN(NewMad_Core, NULL, NULL, NULL);
    - this function must be called once for each driver on a regular basis
  */
 void nm_drv_post_all(nm_drv_t p_drv)
-{ 
-  /* schedule & post out requests */
+{
   nm_core_lock_assert(p_drv->p_core);
-#ifndef PIOMAN
-  struct nm_pkt_wrap_s*p_pw = NULL;
-  do
-    {
-      NM_TRACEF("posting outbound requests");
-      p_pw = nm_pw_post_lfqueue_dequeue_single_reader(&p_drv->post_send);
-      if(p_pw)
-	{
-	  nm_pw_post_send(p_pw);
-	}
-    }
-  while(p_pw);
-#endif /* PIOMAN */
   
   /* post new receive requests */
   if(p_drv->p_core->enable_schedopt)
     nm_drv_refill_recv(p_drv);
-  nm_drv_post_recv(p_drv);
+
+  /* post recv requests */
+  struct nm_pkt_wrap_s*p_pw = NULL;
+  do
+    {
+      p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
+      if(p_pw)
+	{
+  	  if(!(p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id]))
+	    {		    
+	      NM_TRACEF("posting inbound request");
+	      nm_pw_post_recv(p_pw);
+	    }
+	  else
+	    {
+	      nm_pw_post_lfqueue_enqueue(&p_drv->post_recv, p_pw);
+	      /* the driver is busy, so don't insist */
+	      break;
+	    }
+	}
+    }
+  while(p_pw);
 }
 
 

@@ -40,9 +40,6 @@ struct nm_drv_s
   /** recv request for trk#0 if driver supports recv_any */
   struct nm_pkt_wrap_s*p_in_rq;
 
-  /** Post-scheduler outgoing lists, to be posted to the driver. */
-  struct nm_pw_post_lfqueue_s post_send;
-
   /** recv requests submited by core, to be posted to the driver. */
   struct nm_pw_post_lfqueue_s post_recv;
 

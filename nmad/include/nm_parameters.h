@@ -39,7 +39,7 @@
 
 /* activate nm profiling 
  * change the define here, there's no autoconf flag */
-#define NMAD_PROFILE
+#undef NMAD_PROFILE
 
 #endif /* NM_SO_PARAMETERS_H */
 

@@ -56,8 +56,6 @@ struct nm_drv_s
   struct nm_drv_profile_s profile;
 
 #ifdef PIOMAN
-  /** task used to poll on the driver */
-  struct piom_ltask p_ltask;
   /** binding for the pioman ltask */
   piom_topo_obj_t ltask_binding;
 #endif	/* PIOMAN */

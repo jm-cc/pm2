@@ -111,7 +111,6 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
 
 #ifdef PIOMAN
   p_drv->ltask_binding = NULL;
-  nm_ltask_submit_post_drv(p_drv);
 #endif
 
   nm_ns_update(p_core, p_drv);
@@ -222,7 +221,6 @@ int nm_core_driver_exit(struct nm_core*p_core)
       /* stop polling
        */
       nm_core_unlock(p_core);
-      piom_ltask_cancel(&p_drv->p_ltask);
 #endif /* PIOMAN */
       /* cancel any pending active recv request 
        */

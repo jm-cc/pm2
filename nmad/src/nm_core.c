@@ -572,15 +572,6 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   p_core->enable_schedopt = 1;
   p_core->strategy_component = NULL;
 
-#ifdef PIOMAN
-  pioman_init(argc, argv);
-  nm_core_lock_init(p_core);
-  nm_ltask_set_policy();
-#else
-  nm_pkt_wrap_list_init(&p_core->pending_recv_list);
-  nm_pkt_wrap_list_init(&p_core->pending_send_list);
-#endif /* PIOMAN */
-
 #ifdef NMAD_PROFILE
   p_core->profiling.n_locks      = 0;
   p_core->profiling.n_schedule   = 0;
@@ -592,6 +583,16 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   p_core->profiling.n_try_and_commit = 0;
   p_core->profiling.n_strat_apply = 0;
 #endif /* NMAD_PROFILE */
+
+#ifdef PIOMAN
+  pioman_init(argc, argv);
+  nm_core_lock_init(p_core);
+  nm_ltask_set_policy();
+  nm_ltask_submit_core_progress(p_core);
+#else
+  nm_pkt_wrap_list_init(&p_core->pending_recv_list);
+  nm_pkt_wrap_list_init(&p_core->pending_send_list);
+#endif /* PIOMAN */
   
   *pp_core = p_core;
 
@@ -639,7 +640,6 @@ void nm_core_schedopt_disable(nm_core_t p_core)
   nm_drv_t p_drv;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      piom_ltask_cancel(&p_drv->p_ltask);
       if(p_drv->p_in_rq)
 	{
 	  struct nm_pkt_wrap_s*p_pw = p_drv->p_in_rq;
@@ -679,6 +679,9 @@ void nm_core_schedopt_disable(nm_core_t p_core)
  */
 int nm_core_exit(nm_core_t p_core)
 {
+#ifdef PIOMAN
+  piom_ltask_cancel(&p_core->ltask);
+#endif
   nm_core_lock(p_core);
 
 #ifdef NMAD_PROFILE

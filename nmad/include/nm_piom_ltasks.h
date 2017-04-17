@@ -32,9 +32,9 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap_s *p_pw);
  */
 void nm_ltask_submit_pw_send(struct nm_pkt_wrap_s*p_pw);
 
-/** submit an ltask to post requests on a given driver (both send and recv).
+/** submit an ltask to make progress in core tasks.
  */
-void nm_ltask_submit_post_drv(nm_drv_t p_drv);
+void nm_ltask_submit_core_progress(struct nm_core*p_core);
 
 /** submit an ltask to offload a pw processing (not implemented yet).
  */

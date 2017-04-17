@@ -193,14 +193,13 @@ static int nm_task_block_send(void*_pw)
   return NM_ESUCCESS;
 }
 
-static int nm_task_post_on_drv(void*_drv)
+static int nm_ltask_core_progress(void*_p_core)
 {
-  nm_drv_t p_drv = _drv;
-  struct nm_core*p_core = p_drv->p_core;
+  struct nm_core*p_core = _p_core;
   int ret = NM_ESUCCESS;
   if(nm_core_trylock(p_core))
     {
-      nm_core_progress(p_drv->p_core);
+      nm_core_progress(p_core);
       nm_core_unlock(p_core);
     }
   return ret;
@@ -257,14 +256,14 @@ void nm_ltask_submit_pw_send(struct nm_pkt_wrap_s*p_pw)
   piom_ltask_submit(&p_pw->ltask);
 }
 
-void nm_ltask_submit_post_drv(nm_drv_t p_drv)
+void nm_ltask_submit_core_progress(struct nm_core*p_core)
 {
-  piom_topo_obj_t ltask_binding = nm_get_binding_policy(p_drv);
-  piom_ltask_create(&p_drv->p_ltask, &nm_task_post_on_drv, p_drv,
+  piom_topo_obj_t ltask_binding = NULL;
+  piom_ltask_create(&p_core->ltask, &nm_ltask_core_progress, p_core,
 		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT);
-  piom_ltask_set_binding(&p_drv->p_ltask, ltask_binding);
-  piom_ltask_set_name(&p_drv->p_ltask, "nmad: post_on_drv");
-  piom_ltask_submit(&p_drv->p_ltask);
+  piom_ltask_set_binding(&p_core->ltask, ltask_binding);
+  piom_ltask_set_name(&p_core->ltask, "nmad: core_progress");
+  piom_ltask_submit(&p_core->ltask);
 }
 
 void nm_ltask_submit_offload(struct piom_ltask*p_ltask, struct nm_pkt_wrap_s *p_pw)

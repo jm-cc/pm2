@@ -50,6 +50,7 @@ struct nm_core
 {
 #ifdef PIOMAN
   piom_spinlock_t lock;                         /**< lock to protect req lists in core */
+  struct piom_ltask ltask;                      /**< task used for main core progress */
 #endif  /* PIOMAN */
 #ifdef NMAD_PROFILE
   struct

@@ -23,6 +23,23 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
+/** Post a pw for recv on a driver.
+ */
+void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate, 
+		       nm_trk_id_t trk_id, nm_drv_t p_drv)
+{
+  nm_pw_assign(p_pw, trk_id, p_drv, p_gate);
+  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
+  if(p_gdrv)
+    {
+      assert(p_gdrv->active_recv[trk_id] == 0);
+      p_gdrv->active_recv[trk_id]++;
+      assert(p_gdrv->active_recv[trk_id] == 1);
+      assert(p_gdrv->p_in_rq_array[p_pw->trk_id] == NULL);
+    }
+  nm_pw_post_recv(p_pw);
+}
+
 /** Poll active incoming requests 
  */
 int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)

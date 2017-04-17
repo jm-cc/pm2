@@ -34,28 +34,6 @@ void nm_drv_post_all(nm_drv_t p_drv)
   /* post new receive requests */
   if(p_drv->p_core->enable_schedopt)
     nm_drv_refill_recv(p_drv);
-
-  /* post recv requests */
-  struct nm_pkt_wrap_s*p_pw = NULL;
-  do
-    {
-      p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
-      if(p_pw)
-	{
-  	  if(!(p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id]))
-	    {		    
-	      NM_TRACEF("posting inbound request");
-	      nm_pw_post_recv(p_pw);
-	    }
-	  else
-	    {
-	      nm_pw_post_lfqueue_enqueue(&p_drv->post_recv, p_pw);
-	      /* the driver is busy, so don't insist */
-	      break;
-	    }
-	}
-    }
-  while(p_pw);
 }
 
 
@@ -723,19 +701,6 @@ int nm_core_exit(nm_core_t p_core)
     }
 
   nm_core_driver_exit(p_core);
-
-  /* purge receive requests not posted yet to the driver */
-  nm_drv_t p_drv = NULL;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      struct nm_pkt_wrap_s*p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
-      while(p_pw != NULL)
-	{
-	  NM_TRACEF("extracting pw from post_recv_list\n");
-	  nm_pw_ref_dec(p_pw);
-	  p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
-	}
-    }
 
 #ifndef PIOMAN
   /* Sanity check- everything is supposed to be empty here */

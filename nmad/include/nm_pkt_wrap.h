@@ -178,5 +178,9 @@ void nm_pw_completion_add(struct nm_pkt_wrap_s*p_pw, struct nm_req_s*p_pack, nm_
 void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw,
 		       nm_trk_id_t trk_id, nm_drv_t p_drv);
 
+void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate, 
+		       nm_trk_id_t trk_id, nm_drv_t p_drv);
+
+
 #endif /* NM_PKT_WRAP_H */
 

@@ -215,7 +215,7 @@ static void*nm_tcp_instantiate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_tcp*status = TBX_MALLOC(sizeof (struct nm_tcp));
   memset(status, 0, sizeof(struct nm_tcp));
-  
+
   return status;
 }
 
@@ -331,6 +331,8 @@ nm_tcp_query		(nm_drv_t p_drv,
 			 int nparam TBX_UNUSED) {
         int			 err;
 
+	NM_FATAL("nmad: driver tcp is deprecated.\n");
+	
 	/* private data							*/
 	struct nm_tcp_drv* p_tcp_drv = TBX_MALLOC(sizeof (struct nm_tcp_drv));
 	if (!p_tcp_drv) {

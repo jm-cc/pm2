@@ -26,7 +26,7 @@ void nm_ltask_set_policy(void);
 
 /** submit an ltask for a recv pw
  */
-void nm_ltask_submit_poll_recv(struct nm_pkt_wrap_s *p_pw);
+void nm_ltask_submit_pw_recv(struct nm_pkt_wrap_s *p_pw);
 
 /** submit an ltask for a send pw
  */

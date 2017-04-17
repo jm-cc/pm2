@@ -37,7 +37,11 @@ void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate,
       assert(p_gdrv->active_recv[trk_id] == 1);
       assert(p_gdrv->p_in_rq_array[p_pw->trk_id] == NULL);
     }
+#ifdef PIOMAN
+  nm_ltask_submit_pw_recv(p_pw);
+#else
   nm_pw_post_recv(p_pw);
+#endif
 }
 
 /** Poll active incoming requests 
@@ -126,10 +130,10 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
  */
 int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
 {
+  struct nm_core*p_core = p_pw->p_drv->p_core;
+  /* no locck needed; only this ltask is allow to touch the pw */
+  nm_core_nolock_assert(p_core);
   int err = NM_ESUCCESS;
-  
-  NM_TRACEF("posting new recv request: gate %p, drv %p, trk %d",
-	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
 
   if(p_pw->p_gate)
     {
@@ -155,16 +159,16 @@ int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
   if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
-      NM_TRACEF("request completed immediately");
+#ifdef PIOMAN
+      piom_ltask_completed(&p_pw->ltask);      
+#endif /* PIOMAN */
+      nm_core_lock(p_core);
       nm_pw_process_complete_recv(p_pw->p_drv->p_core, p_pw);
+      nm_core_unlock(p_core);
     }
   else if(err == -NM_EAGAIN)
     {
-      NM_TRACEF("new recv request pending: gate %p, drv %p, trk %d",
-		p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
-#ifdef PIOMAN
-      nm_ltask_submit_poll_recv(p_pw);      
-#endif /* PIOMAN */
+      p_pw->flags |= NM_PW_POSTED;
     }
   else if(err != -NM_ECLOSED)
     {

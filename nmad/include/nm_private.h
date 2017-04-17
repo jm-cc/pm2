@@ -129,7 +129,7 @@ __PUK_SYM_INTERNAL
 void nm_unexpected_clean(struct nm_core*p_core);
 
 __PUK_SYM_INTERNAL
-void nm_strat_apply(struct nm_core*p_core);
+void nm_core_progress(struct nm_core*p_core);
 
 __PUK_SYM_INTERNAL
 void nm_drv_refill_recv(nm_drv_t p_drv);
@@ -148,9 +148,6 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw);
 
 __PUK_SYM_INTERNAL
 void nm_out_prefetch(struct nm_core*p_core);
-
-__PUK_SYM_INTERNAL
-void nm_drv_post_all(nm_drv_t p_drv);
 
 /** Process a complete successful outgoing request.
  */

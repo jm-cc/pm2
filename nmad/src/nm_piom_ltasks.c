@@ -200,8 +200,7 @@ static int nm_task_post_on_drv(void*_drv)
   int ret = NM_ESUCCESS;
   if(nm_core_trylock(p_core))
     {
-      nm_strat_apply(p_drv->p_core);
-      nm_drv_post_all(p_drv);
+      nm_core_progress(p_drv->p_core);
       nm_core_unlock(p_core);
     }
   return ret;

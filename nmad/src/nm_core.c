@@ -24,19 +24,6 @@
 PADICO_MODULE_BUILTIN(NewMad_Core, NULL, NULL, NULL);
 
 
-/** Main scheduler func for a specific driver.
-   - this function must be called once for each driver on a regular basis
- */
-void nm_drv_post_all(nm_drv_t p_drv)
-{
-  nm_core_lock_assert(p_drv->p_core);
-  
-  /* post new receive requests */
-  if(p_drv->p_core->enable_schedopt)
-    nm_drv_refill_recv(p_drv);
-}
-
-
 /** checks whether an event matches a given core monitor */
 static inline int nm_core_event_matches(const struct nm_core_monitor_s*p_core_monitor,
 					const struct nm_core_event_s*p_event)
@@ -95,13 +82,15 @@ static void nm_core_pending_event_recover(nm_core_t p_core)
     }
 }
 
-/** apply strategy
+/** make progress on core pending operations.
+ * all operations that need lock when multithreaded.
  */
-void nm_strat_apply(struct nm_core*p_core)
+void nm_core_progress(struct nm_core*p_core)
 {
   nm_gate_t p_gate = NULL;
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_strat_apply);
+  /* apply strategy on each gate */
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
@@ -117,9 +106,19 @@ void nm_strat_apply(struct nm_core*p_core)
 
 	}
     }
+
   /* schedule pending out-of-order events */
   if(!nm_core_pending_event_list_empty(&p_core->pending_events))
      nm_core_pending_event_recover(p_core);
+
+  /* pre-post recv requests on trk#0 */
+  nm_drv_t p_drv = NULL;
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
+  {
+    nm_core_lock_assert(p_drv->p_core);
+    if(p_core->enable_schedopt)
+      nm_drv_refill_recv(p_drv);
+  }
 }
 
 /** Main function of the core scheduler loop.
@@ -139,14 +138,7 @@ int nm_schedule(struct nm_core*p_core)
   scheduling_in_progress = 1;  
 #endif /* DEBUG */
 
-  nm_strat_apply(p_core);
-
-  /* post new requests	*/
-  nm_drv_t p_drv = NULL;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-  {
-    nm_drv_post_all(p_drv);
-  }
+  nm_core_progress(p_core);
 
   /* poll pending recv requests */
   if(!nm_pkt_wrap_list_empty(&p_core->pending_recv_list))

@@ -387,6 +387,24 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
 	  padico_fatal("nmad: failed to load component '%s'\n", minidriver_local);
 	}
     }
+  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "tcp") == 0))
+    {
+      static const char minidriver_tcp[] =
+	"<puk:composite id=\"nsbe:nmminitcp\">"
+	"  <puk:component id=\"0\" name=\"Minidriver_tcp\"/>"
+	"  <puk:component id=\"1\" name=\"Minidriver_tcp\"/>"
+	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
+	"  </puk:component>"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
+	"</puk:composite>";
+      component = puk_component_parse(minidriver_tcp);
+      if(component == NULL)
+	{
+	  padico_fatal("nmad: failed to load component '%s'\n", minidriver_tcp);
+	}
+    }
   else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "dcfa") == 0))
     {
       static const char dcfa[] = 

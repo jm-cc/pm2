@@ -35,7 +35,8 @@ void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate,
       assert(p_gdrv->active_recv[trk_id] == 0);
       p_gdrv->active_recv[trk_id]++;
       assert(p_gdrv->active_recv[trk_id] == 1);
-      assert(p_gdrv->p_in_rq_array[p_pw->trk_id] == NULL);
+      assert(p_gdrv->p_in_rq_array[trk_id] == NULL);
+      p_gdrv->p_in_rq_array[trk_id] = p_pw;
     }
 #ifdef PIOMAN
   nm_ltask_submit_pw_recv(p_pw);
@@ -138,14 +139,11 @@ int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
   if(p_pw->p_gate)
     {
       struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-      /* update incoming request field in gate track if
-	 the request specifies a gate */
-      p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = p_pw;
-      err = r->driver->post_recv_iov(r->_status, p_pw);
+      err = (*r->driver->post_recv_iov)(r->_status, p_pw);
     } 
   else
     {
-      err = p_pw->p_drv->driver->post_recv_iov(NULL, p_pw);
+      err = (*p_pw->p_drv->driver->post_recv_iov)(NULL, p_pw);
     }
   
 #ifndef PIOMAN

@@ -95,6 +95,7 @@ void nm_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t
 			     const void*data, nm_len_t len)
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
+  assert(seq != NM_SEQ_NONE);
   struct iovec*hvec = &p_pw->v[0];
   struct nm_header_short_data_s *h = hvec->iov_base + hvec->iov_len;
   hvec->iov_len += NM_HEADER_SHORT_DATA_SIZE;
@@ -113,6 +114,7 @@ void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_s
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
   assert(len <= nm_pw_remaining_buf(p_pw));
+  assert(seq != NM_SEQ_NONE);
   struct iovec*hvec = &p_pw->v[0];
   struct nm_header_data_s *h = hvec->iov_base + hvec->iov_len;
   nm_header_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0xFFFF, len, chunk_offset);
@@ -132,6 +134,7 @@ void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_s
 void nm_pw_add_data_in_iovec(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 				const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t proto_flags)
 {
+  assert(seq != NM_SEQ_NONE);
   struct iovec*hvec = &p_pw->v[0];
   struct nm_header_data_s *h = hvec->iov_base + hvec->iov_len;
   const nm_len_t skip = p_pw->length - hvec->iov_len;

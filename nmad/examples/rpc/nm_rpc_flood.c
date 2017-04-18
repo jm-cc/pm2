@@ -97,9 +97,10 @@ int main(int argc, char**argv)
 	    }
 	  free(reqs);
 	}
+      nm_coll_barrier(p_comm, 0xF2);
     }
 
-  nm_coll_barrier(p_comm, 0xF2);
+  nm_coll_barrier(p_comm, 0xF3);
 
   nm_rpc_unregister(p_service);
   free(buf);

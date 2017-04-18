@@ -117,7 +117,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
     const int count = (full != 0) ? hint : 1;
     int success = 0;
     int i;
-    for(i = 0; (i < count) && !success; i++)
+    for(i = 0; ((i < count) || !piom_ltask_lfqueue_empty(&queue->submit_queue)) && !success; i++)
 	{
 	    int again = 0;
 	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue_single_reader(&queue->submit_queue);
@@ -214,6 +214,11 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 			    success = 1;
 			    piom_ltask_state_unset(task, PIOM_LTASK_STATE_SCHEDULED);
 			    piom_ltask_state_set(task, PIOM_LTASK_STATE_TERMINATED);
+			}
+		    else if(!(prestate & PIOM_LTASK_STATE_READY))
+			{
+			    /* task not ready; likely to be masked */
+			    piom_ltask_state_unset(task, PIOM_LTASK_STATE_SCHEDULED);
 			}
 		    else
 			{

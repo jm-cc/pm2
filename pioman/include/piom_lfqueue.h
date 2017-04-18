@@ -121,7 +121,7 @@
    *  Usefull to reduce active polling, though */		       	\
   static inline int ENAME ## _lfqueue_empty(struct ENAME ## _lfqueue_s*queue) \
   {									\
-    return(queue->_tail < queue->_head);				\
+    return(queue->_tail == queue->_head);				\
   }
 
 /** @} */

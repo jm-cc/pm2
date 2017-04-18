@@ -615,64 +615,7 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
 void nm_core_schedopt_disable(nm_core_t p_core)
 {
   p_core->enable_schedopt = 0;
-#ifndef PIOMAN
-  /* flush pending recv requests posted by nm_drv_refill_recv() */
-  while(!nm_pkt_wrap_list_empty(&p_core->pending_recv_list))
-    {
-      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_core->pending_recv_list);
-      if(p_pw->p_gdrv)
-	{
-	  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
-	  assert(p_pw == p_gdrv->p_in_rq_array[NM_TRK_SMALL]);
-	  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-	  (*r->driver->cancel_recv_iov)(r->_status, p_pw);
-	  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
-	  p_gdrv->active_recv[NM_TRK_SMALL] = 0;
-	}
-      else
-	{
-	  assert(p_pw->p_drv->p_in_rq == p_pw);
-	  (*p_pw->p_drv->driver->cancel_recv_iov)(NULL, p_pw);
-	  p_pw->p_drv->p_in_rq = NULL;
-	}
-    }
-#else /* !PIOMAN */
-  nm_drv_t p_drv;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      if(p_drv->p_in_rq)
-	{
-	  struct nm_pkt_wrap_s*p_pw = p_drv->p_in_rq;
-	  piom_ltask_cancel(&p_pw->ltask);
-	  if(p_pw->p_drv->driver->cancel_recv_iov)
-	    {
-	      (*p_pw->p_drv->driver->cancel_recv_iov)(NULL, p_pw);
-	      p_pw->p_drv->p_in_rq = NULL;
-	    }
-	}
-    }
-  nm_gate_t p_gate;
-  NM_FOR_EACH_GATE(p_gate, p_core)
-    {
-      nm_gdrv_vect_itor_t i;
-      puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
-	{
-	  struct nm_gate_drv*p_gdrv = *i;
-	  struct nm_pkt_wrap_s*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
-	  if(p_pw != NULL)
-	    {
-	      piom_ltask_cancel(&p_pw->ltask);
-	      struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-	      if(r->driver->cancel_recv_iov)
-		{
-		  (*r->driver->cancel_recv_iov)(r->_status, p_pw);
-		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
-		  p_gdrv->active_recv[NM_TRK_SMALL] = 0;
-		}
-	    }
-	}
-    }
-#endif /* !PIOMAN */
+  nm_core_driver_flush(p_core);
 }
 
 /** Shutdown the core struct and the main scheduler.
@@ -714,7 +657,12 @@ int nm_core_exit(nm_core_t p_core)
       strat_done = !todo;
     }
 
+  nm_core_driver_flush(p_core);
   nm_core_driver_exit(p_core);
+
+#if(defined(PIOMAN))
+  pioman_exit();
+#endif
 
 #ifndef PIOMAN
   /* Sanity check- everything is supposed to be empty here */

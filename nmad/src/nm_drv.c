@@ -208,12 +208,10 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
   return NM_ESUCCESS;
 }
 
-/** Shutdown all drivers.
- *
+/** Flush all pending pw on all drivers.
  */
-int nm_core_driver_exit(struct nm_core*p_core)
+void nm_core_driver_flush(struct nm_core*p_core)
 {
-  int err = NM_ESUCCESS;
   nm_core_lock_assert(p_core);
   struct nm_pkt_wrap_list_s*pending_pw = nm_pkt_wrap_list_new();
   nm_drv_t p_drv = NULL;
@@ -274,9 +272,15 @@ int nm_core_driver_exit(struct nm_core*p_core)
   while(p_pw != NULL);
   nm_core_lock(p_core);
   nm_pkt_wrap_list_delete(pending_pw);
-  
+}
+
+/** Shutdown & disconnect all drivers.
+ */
+void nm_core_driver_exit(struct nm_core*p_core)
+{
   /* disconnect all gates */
   nm_gate_t p_gate = NULL;
+  struct nm_drv_s*p_drv = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       p_gate->status = NM_GATE_STATUS_DISCONNECTED;
@@ -338,11 +342,5 @@ int nm_core_driver_exit(struct nm_core*p_core)
 	nm_drv_delete(p_drv);
     }
   while(p_drv);
-
-#if(defined(PIOMAN))
-  pioman_exit();
-#endif
-
-  return err;
 }
 

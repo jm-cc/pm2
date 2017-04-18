@@ -120,7 +120,10 @@ typedef uint16_t nm_drv_id_t;
 #include "nm_sampling.h"
 
 __PUK_SYM_INTERNAL
-int nm_core_driver_exit(struct nm_core *p_core);
+void nm_core_driver_flush(struct nm_core *p_core);
+
+__PUK_SYM_INTERNAL
+void nm_core_driver_exit(struct nm_core *p_core);
 
 __PUK_SYM_INTERNAL
 void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_req_s*p_req);

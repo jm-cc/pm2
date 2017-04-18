@@ -614,8 +614,10 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
 
 void nm_core_schedopt_disable(nm_core_t p_core)
 {
+  nm_core_lock(p_core);
   p_core->enable_schedopt = 0;
   nm_core_driver_flush(p_core);
+  nm_core_unlock(p_core);
 }
 
 /** Shutdown the core struct and the main scheduler.

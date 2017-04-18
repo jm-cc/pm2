@@ -111,14 +111,6 @@ void nm_core_progress(struct nm_core*p_core)
   if(!nm_core_pending_event_list_empty(&p_core->pending_events))
      nm_core_pending_event_recover(p_core);
 
-  /* pre-post recv requests on trk#0 */
-  nm_drv_t p_drv = NULL;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-  {
-    nm_core_lock_assert(p_drv->p_core);
-    if(p_core->enable_schedopt)
-      nm_drv_refill_recv(p_drv);
-  }
 }
 
 /** Main function of the core scheduler loop.

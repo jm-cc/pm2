@@ -176,10 +176,12 @@ int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
   return err;
 }
 
-void nm_drv_refill_recv(nm_drv_t p_drv)
+void nm_drv_refill_recv(nm_drv_t p_drv, nm_gate_t p_gate)
 {
   struct nm_core *p_core = p_drv->p_core;
-
+  nm_core_lock_assert(p_core);
+  if(!p_core->enable_schedopt)
+    return;
   if(p_drv->driver->capabilities.has_recv_any)
     {
       /* recv any available- single pw with no gate */
@@ -192,22 +194,12 @@ void nm_drv_refill_recv(nm_drv_t p_drv)
   else
     {
       /* no recv any- post a pw per gate */
-      nm_gate_t p_gate = NULL;
-      NM_FOR_EACH_GATE(p_gate, p_core)
-	{
-	  /* Make sure the gate is not being connected
-	   * This may happen when using multiple threads
-	   */
-	  if(p_gate->status == NM_GATE_STATUS_CONNECTED) 
-	    {
-	      struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	      if(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL])
-		{
-		  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_buffer();
-		  nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
-		}
-	    }
-	}
+      assert(p_gate != NULL);
+      assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
+      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+      assert(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL]);
+      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_buffer();
+      nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
     }
 }
 

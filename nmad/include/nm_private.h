@@ -135,7 +135,7 @@ __PUK_SYM_INTERNAL
 void nm_core_progress(struct nm_core*p_core);
 
 __PUK_SYM_INTERNAL
-void nm_drv_refill_recv(nm_drv_t p_drv);
+void nm_drv_refill_recv(nm_drv_t p_drv, nm_gate_t p_gate);
 
 __PUK_SYM_INTERNAL
 void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw);

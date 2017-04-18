@@ -899,6 +899,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
   nm_gate_t const p_gate = p_pw->p_gate;
+  nm_drv_t const p_drv = p_pw->p_drv;
   assert(p_gate != NULL);
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_pw_in);
@@ -910,10 +911,10 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
       p_pw->p_gdrv->active_recv[p_pw->trk_id]--;
       assert(p_pw->p_gdrv->active_recv[p_pw->trk_id] == 0);
     }
-  else if((!p_pw->p_gdrv) && p_pw->p_drv->p_in_rq == p_pw)
+  else if((!p_pw->p_gdrv) && p_drv->p_in_rq == p_pw)
     {
       /* request was posted on a driver, for any gate */
-      p_pw->p_drv->p_in_rq = NULL;
+      p_drv->p_in_rq = NULL;
     }
 
 #ifndef PIOMAN
@@ -934,6 +935,8 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 	  ptr += done;
 	}
       while(ptr < v0->iov_base + nm_header_global_v0len(p_pw));
+      /* refill recv on trk #0 */
+      nm_drv_refill_recv(p_drv, p_gate);
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {

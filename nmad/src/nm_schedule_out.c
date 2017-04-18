@@ -52,18 +52,13 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
 		      nm_req_flag_t flags)
 {
   int err = NM_ESUCCESS;
-  nm_core_lock(p_core);
   assert(p_gate != NULL);
   nm_status_assert(p_pack, NM_STATUS_PACK_INIT);
-  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
-  const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
-  p_so_tag->send_seq_number = seq;
   nm_status_add(p_pack, NM_STATUS_PACK_POSTED);
   p_pack->flags |= flags;
-  p_pack->seq    = seq;
+  p_pack->seq    = NM_SEQ_NONE;
   p_pack->tag    = tag;
   p_pack->p_gate = p_gate;
-  nm_core_unlock(p_core);
   return err;
 }
 
@@ -72,6 +67,10 @@ void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
   assert(hlen > 0);
   nm_core_lock(p_core);
+  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);
+  const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
+  p_so_tag->send_seq_number = seq;
+  p_pack->seq = seq;
   if(r->driver->pack_data == NULL)
     {
       fprintf(stderr, "# nmad: nm_core_pack_header not support with selected strategy (need pack_data).\n");
@@ -88,6 +87,10 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
 {
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
   nm_core_lock(p_core);
+  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);
+  const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
+  p_so_tag->send_seq_number = seq;
+  p_pack->seq = seq;
   nm_req_list_push_back(&p_core->pending_packs, p_pack);
   nm_core_polling_level(p_core);
   if(r->driver->pack_data != NULL)

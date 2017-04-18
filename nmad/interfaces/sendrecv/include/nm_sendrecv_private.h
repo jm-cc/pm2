@@ -57,6 +57,7 @@ struct nm_sr_request_s
   nm_session_t p_session;               /**< session this request belongs to */
   struct nm_sr_event_monitor_s monitor; /**< events triggered on status transitions */
   void*ref;                             /**< reference usable by end-user */
+  nm_len_t hlen;                        /**< header length, for multipart messages */
 };
 
 /* ** Requests inline ************************************** */
@@ -140,6 +141,7 @@ static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_req
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_request->ref = NULL;
   p_request->p_session = p_session;
+  p_request->hlen = 0;
 }
 static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
 {
@@ -171,14 +173,13 @@ static inline int nm_sr_send_dest(nm_session_t p_session, nm_sr_request_t*p_requ
 }
 static inline int nm_sr_send_header(nm_session_t p_session, nm_sr_request_t*p_request, nm_len_t hlen)
 {
-  nm_core_t p_core = p_session->p_core;
-  nm_core_pack_header(p_core, &p_request->req, hlen);
+  p_request->hlen = hlen;
   return NM_ESUCCESS;
 }
 static inline int nm_sr_send_submit(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_core_pack_submit(p_core, &p_request->req);
+  nm_core_pack_submit(p_core, &p_request->req, p_request->hlen);
   return NM_ESUCCESS;
 }
 
@@ -188,7 +189,7 @@ static inline int nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_req
   nm_core_t p_core = p_session->p_core;
   const nm_core_tag_t core_tag = nm_core_tag_build(p_session->hash_code, tag);
   nm_core_pack_send(p_core, &p_request->req, core_tag, p_gate, 0);
-  nm_core_pack_submit(p_core, &p_request->req);
+  nm_core_pack_submit(p_core, &p_request->req, p_request->hlen);
   return NM_ESUCCESS;
 }
 static inline int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -197,7 +198,7 @@ static inline int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_re
   nm_core_t p_core = p_session->p_core;
   const nm_core_tag_t core_tag = nm_core_tag_build(p_session->hash_code, tag);
   nm_core_pack_send(p_core, &p_request->req, core_tag, p_gate, NM_FLAG_PACK_SYNCHRONOUS);
-  nm_core_pack_submit(p_core, &p_request->req);
+  nm_core_pack_submit(p_core, &p_request->req, p_request->hlen);
   return NM_ESUCCESS;
 }
 static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -206,7 +207,7 @@ static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_req
   nm_core_t p_core = p_session->p_core;
   const nm_core_tag_t core_tag = nm_core_tag_build(p_session->hash_code, tag);
   nm_core_pack_send(p_core, &p_request->req, core_tag, p_gate, 0);
-  nm_core_pack_submit(p_core, &p_request->req);
+  nm_core_pack_submit(p_core, &p_request->req, p_request->hlen);
   return NM_ESUCCESS;
 }
 
@@ -219,6 +220,7 @@ static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_req
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_request->ref = NULL;
   p_request->p_session = p_session;
+  p_request->hlen = 0;
 }
 
 static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)

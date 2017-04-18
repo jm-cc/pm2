@@ -62,44 +62,31 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   return err;
 }
 
-void nm_core_pack_header(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen)
+void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen)
 {
   const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
-  assert(hlen > 0);
   nm_core_lock(p_core);
   struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);
   const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
   p_so_tag->send_seq_number = seq;
   p_pack->seq = seq;
-  if(r->driver->pack_data == NULL)
+  nm_req_list_push_back(&p_core->pending_packs, p_pack);
+  nm_core_polling_level(p_core);
+  if(hlen > 0 && r->driver->pack_data == NULL)
     {
       fprintf(stderr, "# nmad: nm_core_pack_header not support with selected strategy (need pack_data).\n");
       abort();
     }
-  const nm_len_t size = nm_data_size(&p_pack->data);
-  assert(hlen <= size);
-  if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
-    (*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
-  nm_core_unlock(p_core);
-}
-
-void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
-{
-  const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
-  nm_core_lock(p_core);
-  if(p_pack->seq == NM_SEQ_NONE)
-    {
-      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);
-      const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
-      p_so_tag->send_seq_number = seq;
-      p_pack->seq = seq;
-    }
-  nm_req_list_push_back(&p_core->pending_packs, p_pack);
-  nm_core_polling_level(p_core);
   if(r->driver->pack_data != NULL)
     {
-      const nm_len_t size = nm_data_size(&p_pack->data) - p_pack->pack.scheduled;
-      (*r->driver->pack_data)(r->_status, p_pack, size, p_pack->pack.scheduled);
+      const nm_len_t size = nm_data_size(&p_pack->data);
+      if(hlen > 0)
+	{
+	  assert(hlen <= size);
+	  if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
+	    (*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
+	}
+      (*r->driver->pack_data)(r->_status, p_pack, size - p_pack->pack.scheduled, p_pack->pack.scheduled);
     }
   else
     {

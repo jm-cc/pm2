@@ -680,6 +680,7 @@ void nm_core_schedopt_disable(nm_core_t p_core)
 int nm_core_exit(nm_core_t p_core)
 {
 #ifdef PIOMAN
+  /* stop posting new pw */
   piom_ltask_cancel(&p_core->ltask);
 #endif
   nm_core_lock(p_core);

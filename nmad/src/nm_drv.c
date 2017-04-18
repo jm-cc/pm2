@@ -214,31 +214,25 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 int nm_core_driver_exit(struct nm_core*p_core)
 {
   int err = NM_ESUCCESS;
+  nm_core_lock_assert(p_core);
+  struct nm_pkt_wrap_list_s*pending_pw = nm_pkt_wrap_list_new();
   nm_drv_t p_drv = NULL;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-#ifdef PIOMAN
-      /* stop polling
-       */
-      nm_core_unlock(p_core);
-#endif /* PIOMAN */
-      /* cancel any pending active recv request 
-       */
-
+      /* cancel pre-posted pw on trk #0 for anygate */
       if(p_drv->p_in_rq)
 	{
 	  struct nm_pkt_wrap_s*p_pw = p_drv->p_in_rq;
 	  p_drv->p_in_rq = NULL;
 	  if(p_drv->driver->cancel_recv_iov)
 	    p_drv->driver->cancel_recv_iov(NULL, p_pw);
-#ifdef PIOMAN
-	  piom_ltask_cancel(&p_pw->ltask);
-#else
+#ifndef PIOMAN
 	  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #endif /* PIOMAN */
-	  nm_pw_ref_dec(p_pw);
+	  nm_pkt_wrap_list_push_back(pending_pw, p_pw);
 	}
-
+      
+      /* cancel pre-posted pw on trk #0 for each gate */
       nm_gate_t p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
@@ -253,22 +247,34 @@ int nm_core_driver_exit(struct nm_core*p_core)
 		    r->driver->cancel_recv_iov(r->_status, p_pw);
 		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 
-#ifdef PIOMAN
-		  piom_ltask_cancel(&p_pw->ltask);
-#else
+#ifndef PIOMAN
 		  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #endif
-		  nm_pw_ref_dec(p_pw);
+		  nm_pkt_wrap_list_push_back(pending_pw, p_pw);
 		}
 	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 	      p_gdrv->active_recv[NM_TRK_SMALL] = 0;
 	    }
 	}
-#ifdef PIOMAN
-      nm_core_lock(p_core);
-#endif
     }
-
+  /* cancel ltasks with core unlocked */
+  nm_core_unlock(p_core);
+  struct nm_pkt_wrap_s*p_pw = NULL;
+  do
+    {
+      p_pw = nm_pkt_wrap_list_pop_front(pending_pw);
+      if(p_pw)
+	{
+#ifdef PIOMAN
+	  piom_ltask_cancel(&p_pw->ltask);
+#endif
+	  nm_pw_ref_dec(p_pw);
+	}
+    }
+  while(p_pw != NULL);
+  nm_core_lock(p_core);
+  nm_pkt_wrap_list_delete(pending_pw);
+  
   /* disconnect all gates */
   nm_gate_t p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)

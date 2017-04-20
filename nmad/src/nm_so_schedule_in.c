@@ -788,13 +788,16 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
       if(nm_core_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
 	{
 	  nm_core_lock_assert(p_core);
-	  nm_req_list_erase(&p_core->pending_packs, p_pack);
 	  nm_core_polling_level(p_core);
 	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_ACK_RECEIVED | (nm_status_test(p_pack, NM_STATUS_PACK_COMPLETED) ? NM_STATUS_FINALIZED : 0),
 	      .p_req = p_pack
 	    };
+	  if(event.status & NM_STATUS_FINALIZED)
+	    {
+	      nm_req_list_erase(&p_core->pending_packs, p_pack);
+	    }
 	  nm_core_status_event(p_core, &event, p_pack);
 	  return;
 	}

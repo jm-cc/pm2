@@ -294,32 +294,22 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
 {
   if(p_req)
     {
-      const nm_status_t notified_bits1 = (p_event->status &  p_req->monitor.event_mask) & ~NM_STATUS_FINALIZED;
-      const nm_status_t notified_bits2 = (p_event->status &  p_req->monitor.event_mask) &  NM_STATUS_FINALIZED;
-      const nm_status_t signaled_bits  =  p_event->status & ~p_req->monitor.event_mask;
-      assert((notified_bits1 | notified_bits2 | signaled_bits) == p_event->status);
-      if(notified_bits1)
+      if(p_req->monitor.p_notifier)
 	{
-	  /* add bits (no signal) and notify, for bits with a monitor listening, 
-	   * except FINALIZED (should be last) */
-	  nm_status_add(p_req, notified_bits1);
-	  nm_core_unlock(p_core);
-	  (*p_req->monitor.p_notifier)(p_event, p_req->monitor.ref);
-	  nm_core_lock(p_core);
+	  /* when a monitor is registered, add bits (no signal)
+	   * and notify only if bitmask matches */
+	  nm_status_add(p_req, p_event->status);
+	  if(p_event->status & p_req->monitor.event_mask)
+	    {
+	      nm_core_unlock(p_core);
+	      (*p_req->monitor.p_notifier)(p_event, p_req->monitor.ref);
+	      nm_core_lock(p_core);
+	    }
 	}
-      if(signaled_bits)
+      else
 	{
-	  /* signal bits with no monitors */
+	  /* no monitor: full signal */
 	  nm_status_signal(p_req, p_event->status);
-	}
-      if(notified_bits2)
-	{
-	  /* add & notify FINALIZED _last_, if a monitor listening
-	   * (if no monitor, FINALIZED is signaled) */
-	  nm_status_add(p_req, notified_bits2);
-	  nm_core_unlock(p_core);
-	  (*p_req->monitor.p_notifier)(p_event, p_req->monitor.ref);
-	  nm_core_lock(p_core);
 	}
     }
   else

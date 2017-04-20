@@ -107,35 +107,22 @@ extern int nm_sr_flush(struct nm_core*p_core)
   return NM_ESUCCESS;
 }
 
-int nm_sr_swait(nm_session_t p_session, nm_sr_request_t*p_request)
+extern void nm_sr_request_wait(nm_sr_request_t*p_request)
 {
-  nm_core_t p_core = p_session->p_core;
 #ifdef DEBUG
-  if(!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED))
-    NM_FATAL("nm_sr_swait- req=%p no send posted!\n", p_request);
-  if(p_request->monitor.mask & NM_SR_EVENT_FINALIZED)
-    NM_FATAL("nm_sr_swait- req=%p has monitor for EVENT_FINALIZED; cannot swait.\n", p_request);
+  if((!nm_status_test(&p_request->req, NM_STATUS_PACK_POSTED)) &&
+     (!nm_status_test(&p_request->req, NM_STATUS_UNPACK_POSTED)))
+    NM_FATAL("nm_sr_request_wait- req=%p not posted, cannot wait for completion!\n", p_request);
+  if(p_request->monitor.notifier != NULL)
+    NM_FATAL("nm_sr_request_wait- req=%p has monitor registered; cannot wait.\n", p_request);
 #endif /* DEBUG */
-  const nm_status_t status = (p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS) ?
-    (NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED) : (NM_STATUS_PACK_COMPLETED);
-  if(!nm_status_test_allbits(&p_request->req, status | NM_STATUS_FINALIZED))
+  nm_status_wait(&p_request->req, NM_STATUS_FINALIZED, p_request->p_session->p_core);
+  if(p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS)
     {
-      nm_sr_flush(p_core);
-      if(p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS)
-	{
-	  nm_status_wait(&p_request->req, NM_STATUS_ACK_RECEIVED, p_core);
-	  while(!nm_status_test(&p_request->req, NM_STATUS_PACK_COMPLETED))
-	    {
-	      nm_sr_progress(p_session);
-	    }
-	}
-      else
-	{
-	  nm_status_wait(&p_request->req, NM_STATUS_PACK_COMPLETED, p_core);
-	}
-      nm_status_spinwait(&p_request->req, NM_STATUS_FINALIZED);
+      assert(nm_status_test(&p_request->req, NM_STATUS_ACK_RECEIVED));
     }
-  return NM_ESUCCESS;
+  /* spinwait is _locked_ to ensure we can free the request (and the status) */
+  nm_status_spinwait(&p_request->req, NM_STATUS_FINALIZED);
 }
 
 int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t*p_request) 
@@ -173,27 +160,6 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t*p_request)
       nm_sr_progress(p_session);
       rc = -NM_EAGAIN;
     }
-  return rc;
-}
-
-int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t*p_request)
-{
-  nm_core_t p_core = p_session->p_core;
-#ifdef DEBUG
-  if(!nm_status_test(&p_request->req, NM_STATUS_UNPACK_POSTED))
-    NM_FATAL("nm_sr_rwait- req=%p no recv posted!\n", p_request);
-  if(p_request->monitor.mask & NM_SR_EVENT_FINALIZED)
-    NM_FATAL("nm_sr_rwait- req=%p has monitor for EVENT_FINALIZED; cannot rwait.\n", p_request);
-#endif /* DEBUG */
-  int rc = nm_sr_rtest(p_session, p_request);
-  if(rc != NM_ESUCCESS)
-    {
-      nm_sr_flush(p_core);
-      nm_status_wait(&p_request->req, NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED, p_core);
-      nm_status_spinwait(&p_request->req, NM_STATUS_FINALIZED);
-      rc = nm_sr_rtest(p_session, p_request);
-    }
-  assert(nm_status_test(&p_request->req, NM_STATUS_FINALIZED));
   return rc;
 }
 

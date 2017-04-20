@@ -45,7 +45,6 @@ struct nm_sr_event_monitor_s
   nm_sr_event_t mask;               /**< event bitmask */
   nm_sr_event_notifier_t notifier;  /**< notification function to call uppon event*/
 };
-
 #define NM_SR_EVENT_MONITOR_NULL ((struct nm_sr_event_monitor_s){ .mask = 0, .notifier = NULL })
 
 /* ** Request ********************************************** */
@@ -53,7 +52,7 @@ struct nm_sr_event_monitor_s
 /** internal defintion of the sendrecv request */
 struct nm_sr_request_s
 {
-  struct nm_req_s req; /**< inlined core pack/unpack request to avoid dynamic allocation */
+  struct nm_req_s req;                  /**< inlined core pack/unpack request to avoid dynamic allocation */
   nm_session_t p_session;               /**< session this request belongs to */
   struct nm_sr_event_monitor_s monitor; /**< events triggered on status transitions */
   void*ref;                             /**< reference usable by end-user */
@@ -113,25 +112,27 @@ static inline int nm_sr_request_get_size(nm_sr_request_t*p_request, nm_len_t*siz
     return -NM_EINVAL;
 }
 
-static inline void nm_sr_request_wait(nm_sr_request_t*p_request)
-{
-  nm_status_wait(&p_request->req,
-		 NM_STATUS_FINALIZED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_CANCELLED,
-		 p_request->p_session->p_core);
-  assert(nm_status_test(&p_request->req, NM_STATUS_FINALIZED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_CANCELLED));
-}
 static inline void nm_sr_request_wait_all(nm_sr_request_t**p_requests, int n)
 {
   assert(n >= 1);
   const nm_sr_request_t*p_req = NULL;
   const uintptr_t offset = (uintptr_t)&p_req->req - (uintptr_t)p_req;  /* offset of 'req' in nm_sr_request_t */
-  nm_status_wait_multiple((void**)p_requests, n, offset,
-			  NM_STATUS_FINALIZED | NM_STATUS_ACK_RECEIVED | NM_STATUS_UNPACK_CANCELLED,
+  nm_status_wait_multiple((void**)p_requests, n, offset, NM_STATUS_FINALIZED,
 			  p_requests[0]->p_session->p_core);
 }
 static inline int nm_sr_request_test(nm_sr_request_t*p_request, nm_status_t status)
 {
   return nm_status_test_allbits(&p_request->req, status);
+}
+static inline int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t*p_request)
+{
+  nm_sr_request_wait(p_request);
+  return NM_ESUCCESS;
+}
+static inline int nm_sr_swait(nm_session_t p_session, nm_sr_request_t*p_request)
+{
+  nm_sr_request_wait(p_request);
+  return NM_ESUCCESS;
 }
 
 /* ** Send inline ****************************************** */

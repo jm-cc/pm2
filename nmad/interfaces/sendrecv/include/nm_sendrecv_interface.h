@@ -115,7 +115,7 @@ static inline int nm_sr_request_get_gate(nm_sr_request_t*p_request, nm_gate_t*pp
 static inline int nm_sr_request_get_session(nm_sr_request_t*p_request, nm_session_t*pp_session);
 
 /** Wait for request completion (or cancelation) */
-static inline void nm_sr_request_wait(nm_sr_request_t*p_request);
+extern void nm_sr_request_wait(nm_sr_request_t*p_request);
 
 /** Tests whether the given status bits are set in request */
 static inline int nm_sr_request_test(nm_sr_request_t*p_request, nm_status_t status);
@@ -308,8 +308,7 @@ extern int nm_sr_progress(nm_session_t p_session);
  *  @param p_request the request to check.
  *  @return The NM status.
  */
-extern int nm_sr_swait(nm_session_t p_session,
-		       nm_sr_request_t  *p_request);
+static inline int nm_sr_swait(nm_session_t p_session, nm_sr_request_t*p_request);
 
 /** Cancel a emission request.
  *  @param p_session a pointer to a nmad session object.
@@ -412,7 +411,7 @@ extern int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request);
  *  @param p_request the request to check.
  *  @return The NM status.
  */
-extern int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request);
+static inline int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t*p_request);
 
 /** Cancel a reception request.
  *  @param p_session a pointer to a nmad session object.

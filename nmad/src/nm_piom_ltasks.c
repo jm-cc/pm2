@@ -205,6 +205,7 @@ static int nm_ltask_core_progress(void*_p_core)
       nm_core_progress(p_core);
       nm_core_unlock(p_core);
     }
+  nm_core_events_dispatch(p_core);
   return ret;
 }
 

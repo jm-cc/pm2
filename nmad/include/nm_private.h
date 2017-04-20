@@ -129,6 +129,9 @@ __PUK_SYM_INTERNAL
 void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_req_s*p_req);
 
 __PUK_SYM_INTERNAL
+void nm_core_events_dispatch(struct nm_core*p_core);
+
+__PUK_SYM_INTERNAL
 void nm_unexpected_clean(struct nm_core*p_core);
 
 __PUK_SYM_INTERNAL

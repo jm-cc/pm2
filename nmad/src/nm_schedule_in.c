@@ -98,6 +98,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
       nm_core_lock(p_core);
       nm_pw_process_complete_recv(p_core, p_pw);
       nm_core_unlock(p_core);
+      nm_core_events_dispatch(p_core);
     }
   else if(err == -NM_ECLOSED)
     {
@@ -163,6 +164,7 @@ int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
       nm_core_lock(p_core);
       nm_pw_process_complete_recv(p_pw->p_drv->p_core, p_pw);
       nm_core_unlock(p_core);
+      nm_core_events_dispatch(p_core);
     }
   else if(err == -NM_EAGAIN)
     {

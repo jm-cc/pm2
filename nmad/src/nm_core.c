@@ -23,7 +23,6 @@
 #include <Padico/Module.h>
 PADICO_MODULE_BUILTIN(NewMad_Core, NULL, NULL, NULL);
 
-
 /** checks whether an event matches a given core monitor */
 static inline int nm_core_event_matches(const struct nm_core_monitor_s*p_core_monitor,
 					const struct nm_core_event_s*p_event)
@@ -42,9 +41,7 @@ static void nm_core_pending_event_recover(nm_core_t p_core)
 {
   nm_core_lock_assert(p_core);
   nm_core_pending_event_itor_t i;
-  int matched = 0;
  restart:
-  matched = 0;
   puk_list_foreach(i, &p_core->pending_events)
     {
       struct nm_core_pending_event_s*p_pending_event = i;
@@ -55,29 +52,25 @@ static void nm_core_pending_event_recover(nm_core_t p_core)
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
       if(p_pending_event->event.seq == next_seq)
 	{
-#ifdef PIOMAN
-	  int locked = !piom_mask_acquire(&p_pending_event->p_core_monitor->dispatching);
-#else
-	  int locked = 1;
-#endif
-	  if(locked)
+	  struct nm_core_dispatching_event_s*p_dispatching_event =
+	    nm_core_dispatching_event_malloc(p_core->dispatching_event_allocator);
+	  p_dispatching_event->event = p_pending_event->event;
+	  p_dispatching_event->p_monitor = &p_pending_event->p_core_monitor->monitor;
+	  int rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
+	  if(rc)
 	    {
-	      matched = 1;
+	      nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
+	      p_dispatching_event = NULL;
+	      break; /* queue full; no need to try other events */
+	    }
+	  else
+	    {
 	      p_so_tag->recv_seq_number = next_seq;
 	      nm_core_pending_event_list_erase(&p_core->pending_events, p_pending_event);
-	      nm_core_unlock(p_core);
-	      (p_pending_event->p_core_monitor->monitor.p_notifier)(&p_pending_event->event, p_pending_event->p_core_monitor->monitor.ref);
-#ifdef PIOMAN
-	      piom_mask_release(&p_pending_event->p_core_monitor->dispatching);
-#endif
-	      nm_core_lock(p_core);
+	      nm_core_pending_event_delete(p_pending_event);
+	      p_pending_event = NULL;
+	      goto restart; /* exit the foreach loop so as not to break the iterator, retry to find another matching event */
 	    }
-	}
-      if(matched)
-	{
-	  nm_core_pending_event_delete(p_pending_event);
-	  p_pending_event = NULL;
-	  goto restart; /* exit the foreach loop so as not to break the iterator, retry to find another matching event */
 	}
     }
 }
@@ -160,6 +153,7 @@ int nm_schedule(struct nm_core*p_core)
 #endif /* DEBUG */
 
 #endif /* PIOMAN */
+  nm_core_events_dispatch(p_core);
   return NM_ESUCCESS;
 }
 
@@ -182,56 +176,54 @@ void nm_core_req_monitor(struct nm_core*p_core, struct nm_req_s*p_req, struct nm
     }
 }
 
+void nm_core_events_dispatch(struct nm_core*p_core)
+{
+  nm_core_nolock_assert(p_core);
+  struct nm_core_dispatching_event_s*p_dispatching_event =
+    nm_core_dispatching_event_lfqueue_dequeue(&p_core->dispatching_events);
+  while(p_dispatching_event != NULL)
+    {
+      if(p_dispatching_event)
+	{
+	  (*p_dispatching_event->p_monitor->p_notifier)(&p_dispatching_event->event, p_dispatching_event->p_monitor->ref);
+	  nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
+	}
+      p_dispatching_event =
+	nm_core_dispatching_event_lfqueue_dequeue(&p_core->dispatching_events);
+    }
+}
+
 /** dispatch a global event that matches the given monitor */
 static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_core_monitor_s*p_core_monitor)
 {
-  int locked = 0;
-  int pending = 0; /* mark event as pending */
+  int pending = 0; /* mark event as pending (out of order or queue full) */
   nm_core_lock_assert(p_core);
   assert(nm_core_event_matches(p_core_monitor, p_event));
   if(p_event->status & NM_STATUS_UNEXPECTED)
     {
-#ifdef PIOMAN
-      locked = !piom_mask_acquire(&p_core_monitor->dispatching);
-#else
-      locked = 1;
-#endif
-      if(locked)
+      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_event->p_gate->tags, p_event->tag);
+      const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+      if(p_event->seq == next_seq)
 	{
-	  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_event->p_gate->tags, p_event->tag);
-	  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-	  if(p_event->seq == next_seq)
+	  struct nm_core_dispatching_event_s*p_dispatching_event =
+	    nm_core_dispatching_event_malloc(p_core->dispatching_event_allocator);
+	  p_dispatching_event->event = *p_event;
+	  p_dispatching_event->p_monitor = &p_core_monitor->monitor;
+	  pending = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
+	  if(pending)
 	    {
-	      p_so_tag->recv_seq_number = next_seq;
+	      nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
+	      p_dispatching_event = NULL;
 	    }
 	  else
 	    {
-	      /*
-	      fprintf(stderr, "# nmad: WARNING- delaying event dispatch; got seq = %d; expected = %d; tag = %lx:%lx; pending_events = %d\n",
-		      p_event->seq, next_seq, nm_core_tag_get_hashcode(p_event->tag), nm_core_tag_get_tag(p_event->tag),
-		      nm_core_pending_event_list_size(&p_core->pending_events));
-	      */
-	      pending = 1;
-	      goto out;
+	      p_so_tag->recv_seq_number = next_seq;
 	    }
 	}
       else
 	{
-	  const int num_pending = nm_core_pending_event_list_size(&p_core->pending_events);
-	  fprintf(stderr, "# nmad: WARNING- delaying event dispatch; already in progress (pending = %d)\n", num_pending);
 	  pending = 1;
-	  goto out;
 	}
-    }
-  nm_core_unlock(p_core);
-  (p_core_monitor->monitor.p_notifier)(p_event, p_core_monitor->monitor.ref);
-  nm_core_lock(p_core);
- out:
-  if(locked)
-    {
-#ifdef PIOMAN
-      piom_mask_release(&p_core_monitor->dispatching);
-#endif
     }
   if(pending)
     {
@@ -248,9 +240,6 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 void nm_core_monitor_add(nm_core_t p_core, struct nm_core_monitor_s*p_core_monitor)
 {
   nm_core_lock(p_core);
-#ifdef PIOMAN
-  piom_mask_init(&p_core_monitor->dispatching);
-#endif
   if(p_core_monitor->monitor.event_mask == NM_STATUS_UNEXPECTED)
     {
       struct nm_unexpected_s*p_chunk = NULL, *p_tmp;
@@ -550,6 +539,9 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_req_list_init(&p_core->pending_packs);
   nm_unexpected_list_init(&p_core->unexpected);
   nm_core_pending_event_list_init(&p_core->pending_events);
+
+  p_core->dispatching_event_allocator = nm_core_dispatching_event_allocator_new(16);
+  nm_core_dispatching_event_lfqueue_init(&p_core->dispatching_events);
   
   p_core->enable_schedopt = 1;
   p_core->strategy_component = NULL;
@@ -612,6 +604,8 @@ int nm_core_exit(nm_core_t p_core)
 #endif
   nm_core_lock(p_core);
 
+#warning TODO- flush dispatching events before shutdown
+  
 #ifdef NMAD_PROFILE
   fprintf(stderr, "# ## profiling stats___________\n");
   fprintf(stderr, "# ## n_lock           = %lld\n", p_core->profiling.n_locks);

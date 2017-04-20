@@ -29,6 +29,15 @@ PUK_LIST_TYPE(nm_core_pending_event,
 	      struct nm_core_monitor_s*p_core_monitor;  /**< the monitor to fire (event matching already checked) */
 	      );
 
+/** an event ready for dispatch (matching already done) */
+struct nm_core_dispatching_event_s
+{
+  struct nm_core_event_s event;
+  struct nm_monitor_s*p_monitor;
+};
+PUK_LFQUEUE_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s*, NULL, 1024);
+PUK_ALLOCATOR_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s);
+
 /** a chunk of unexpected message to be stored */
 struct nm_unexpected_s
 {
@@ -52,21 +61,10 @@ struct nm_core
   piom_spinlock_t lock;                         /**< lock to protect req lists in core */
   struct piom_ltask ltask;                      /**< task used for main core progress */
 #endif  /* PIOMAN */
-#ifdef NMAD_PROFILE
-  struct
-  {
-    long long n_locks;
-    long long n_schedule;
-    long long n_packs;
-    long long n_unpacks;
-    long long n_unexpected;
-    long long n_pw_out;
-    long long n_pw_in;
-    long long n_try_and_commit;
-    long long n_strat_apply;
-  } profiling;
-#endif /* NMAD_PROFILE */
   
+  puk_component_t strategy_component;           /**< selected strategy */
+  int enable_schedopt;                          /**< whether schedopt is enabled atop drivers */
+
   struct nm_gate_list_s gate_list;              /**< list of gates. */
   struct nm_drv_list_s driver_list;             /**< list of drivers. */
   int nb_drivers;                               /**< number of drivers in drivers list */
@@ -83,8 +81,22 @@ struct nm_core
   struct nm_core_pending_event_list_s pending_events; /**< pending events not ready to dispatch */
   struct nm_core_monitor_vect_s monitors;       /**< monitors for upper layers to track events in nmad core */
 
-  puk_component_t strategy_component;           /**< selected strategy */
-  int enable_schedopt;                          /**< whether schedopt is enabled atop drivers */
+  nm_core_dispatching_event_allocator_t dispatching_event_allocator;
+  struct nm_core_dispatching_event_lfqueue_s dispatching_events;
+#ifdef NMAD_PROFILE
+  struct
+  {
+    long long n_locks;
+    long long n_schedule;
+    long long n_packs;
+    long long n_unpacks;
+    long long n_unexpected;
+    long long n_pw_out;
+    long long n_pw_in;
+    long long n_try_and_commit;
+    long long n_strat_apply;
+  } profiling;
+#endif /* NMAD_PROFILE */
 };
 
 #endif /* NM_CORE_H */

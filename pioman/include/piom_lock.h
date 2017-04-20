@@ -45,19 +45,21 @@
 typedef uint16_t piom_cond_value_t;
 
 #if defined(PIOMAN_MULTITHREAD)
-/** a mask type, used as a spinlock with only trylock/unlock */
+/** a mask type, used as a simplified wait-free lock with only trylock/unlock, without actual spin locking */
 typedef volatile int piom_mask_t;
 
+/** a waiting semaphore, i.e. someone waiting on a cond
+ * (or multiple conds at the same time) */
 struct piom_waitsem_s
 {
-  piom_sem_t sem;
-  piom_cond_value_t mask;
+  piom_sem_t sem;                   /**< the system semaphore, for blocking wait */
+  piom_cond_value_t mask;           /**< the bits we are waiting for in the cond value */
 };
 typedef struct
 {
-  volatile piom_cond_value_t value;
-  struct piom_waitsem_s*p_waitsem;
-  piom_spinlock_t lock;
+  volatile piom_cond_value_t value; /**< value associated with condition */
+  struct piom_waitsem_s*p_waitsem;  /**< semaphore for blocking wait- allocated by waiter */
+  piom_spinlock_t lock;             /**< lock to protect access to above fields (some value test/update may be lock-free) */
 } piom_cond_t;
 #else /* PIOMAN_MULTITHREAD */
 typedef piom_cond_value_t piom_cond_t;

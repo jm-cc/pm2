@@ -65,14 +65,17 @@ static inline void piom_cond_wait_blocking(piom_cond_t*cond, piom_cond_value_t m
   piom_spin_lock(&cond->lock);
   if(piom_cond_test(cond, mask))
     {
+      /* early exit- signal fired between last test and actual locking */
+      piom_sem_destroy(&waitsem.sem);
       piom_spin_unlock(&cond->lock);
       return;
     }
+#ifdef DEBUG
   if(cond->p_waitsem != NULL)
     {
-      PIOM_FATAL("waiting on cond- sem = %p", cond->p_waitsem);
-      abort();
+      PIOM_FATAL("another sempahore is already waiting on cond- sem = %p", cond->p_waitsem);
     }
+#endif
   cond->p_waitsem = &waitsem;
   piom_spin_unlock(&cond->lock);
   

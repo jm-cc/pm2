@@ -108,19 +108,12 @@ int main(int argc, char **argv)
       nm_sr_recv_unpack_contiguous(p_session, &request0, buf, short_len);
       nm_sr_request_monitor(p_session, &request0, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
       nm_sr_recv_irecv(p_session, &request0, NM_ANY_GATE, 0, NM_TAG_MASK_FULL);
-      nm_sr_rwait(p_session, &request0);
       fprintf(stderr, "# done.\n");
 
       fprintf(stderr, "# ## force recv.\n");
       /* receive the last packet to force all others to be unexpected */
       nm_sr_irecv(p_session, NM_ANY_GATE, 2, buf, short_len, &request1);
       nm_sr_rwait(p_session, &request1);
-      fprintf(stderr, "# done.\n");
-
-      fprintf(stderr, "# ## recv with ref.\n");
-      /* test the *_with_ref feature */
-      nm_sr_irecv_with_ref(p_session, NM_ANY_GATE, 0, buf, short_len, &request0, (void*)0xDEADBEEF);
-      nm_sr_rwait(p_session, &request0);
       fprintf(stderr, "# done.\n");
 
       fprintf(stderr, "# ## flushing pending requests.\n");

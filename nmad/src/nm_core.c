@@ -36,46 +36,6 @@ static inline int nm_core_event_matches(const struct nm_core_monitor_s*p_core_mo
   return matches;
 }
 
-/** try to schedule pending out-of-order events */
-static void nm_core_pending_event_recover(nm_core_t p_core)
-{
-  nm_core_lock_assert(p_core);
-  nm_core_pending_event_itor_t i;
- restart:
-  puk_list_foreach(i, &p_core->pending_events)
-    {
-      struct nm_core_pending_event_s*p_pending_event = i;
-      /* only matching events are supposed to be enqueued; check anyway */
-      assert(nm_core_event_matches(p_pending_event->p_core_monitor, &p_pending_event->event));
-      assert(p_pending_event->event.status & NM_STATUS_UNEXPECTED);
-      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pending_event->event.p_gate->tags, p_pending_event->event.tag);
-      const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-      if(p_pending_event->event.seq == next_seq)
-	{
-	  struct nm_core_dispatching_event_s*p_dispatching_event =
-	    nm_core_dispatching_event_malloc(p_core->dispatching_event_allocator);
-	  p_dispatching_event->event = p_pending_event->event;
-	  p_dispatching_event->p_monitor = &p_pending_event->p_core_monitor->monitor;
-	  int rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
-	  if(rc)
-	    {
-	      nm_profile_inc(p_core->profiling.n_event_queue_full);
-	      nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
-	      p_dispatching_event = NULL;
-	      break; /* queue full; no need to try other events */
-	    }
-	  else
-	    {
-	      p_so_tag->recv_seq_number = next_seq;
-	      nm_core_pending_event_list_erase(&p_core->pending_events, p_pending_event);
-	      nm_core_pending_event_delete(p_pending_event);
-	      p_pending_event = NULL;
-	      goto restart; /* exit the foreach loop so as not to break the iterator, retry to find another matching event */
-	    }
-	}
-    }
-}
-
 /** make progress on core pending operations.
  * all operations that need lock when multithreaded.
  */
@@ -100,11 +60,6 @@ void nm_core_progress(struct nm_core*p_core)
 
 	}
     }
-
-  /* schedule pending out-of-order events */
-  if(!nm_core_pending_event_list_empty(&p_core->pending_events))
-     nm_core_pending_event_recover(p_core);
-
 }
 
 /** Main function of the core scheduler loop.
@@ -177,6 +132,7 @@ void nm_core_req_monitor(struct nm_core*p_core, struct nm_req_s*p_req, struct nm
     }
 }
 
+/** dispatch all ready events */
 void nm_core_events_dispatch(struct nm_core*p_core)
 {
   nm_core_nolock_assert(p_core);
@@ -184,11 +140,8 @@ void nm_core_events_dispatch(struct nm_core*p_core)
     nm_core_dispatching_event_lfqueue_dequeue(&p_core->dispatching_events);
   while(p_dispatching_event != NULL)
     {
-      if(p_dispatching_event)
-	{
-	  (*p_dispatching_event->p_monitor->p_notifier)(&p_dispatching_event->event, p_dispatching_event->p_monitor->ref);
-	  nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
-	}
+      (*p_dispatching_event->p_monitor->p_notifier)(&p_dispatching_event->event, p_dispatching_event->p_monitor->ref);
+      nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
       p_dispatching_event =
 	nm_core_dispatching_event_lfqueue_dequeue(&p_core->dispatching_events);
     }
@@ -197,7 +150,6 @@ void nm_core_events_dispatch(struct nm_core*p_core)
 /** dispatch a global event that matches the given monitor */
 static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_core_monitor_s*p_core_monitor)
 {
-  int pending = 0; /* mark event as pending (out of order or queue full) */
   nm_core_lock_assert(p_core);
   assert(nm_core_event_matches(p_core_monitor, p_event));
   if(p_event->status & NM_STATUS_UNEXPECTED)
@@ -206,36 +158,75 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
       if(p_event->seq == next_seq)
 	{
+	  /* next packet in sequence; commit matching and enqueue for dispatch */
+	  p_so_tag->recv_seq_number = next_seq;
 	  struct nm_core_dispatching_event_s*p_dispatching_event =
 	    nm_core_dispatching_event_malloc(p_core->dispatching_event_allocator);
 	  p_dispatching_event->event = *p_event;
 	  p_dispatching_event->p_monitor = &p_core_monitor->monitor;
-	  pending = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
-	  if(pending)
+	  int rc = 0;
+	  do
 	    {
-	      nm_profile_inc(p_core->profiling.n_event_queue_full);
-	      nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
-	      p_dispatching_event = NULL;
+	      rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
+	      if(rc)
+		{
+		  nm_profile_inc(p_core->profiling.n_event_queue_full);
+		  nm_core_unlock(p_core);
+		  nm_core_events_dispatch(p_core);
+		  nm_core_lock(p_core);
+		}
 	    }
-	  else
+	  while(rc);
+	  if(!nm_core_pending_event_list_empty(&p_so_tag->pending_events))
 	    {
-	      p_so_tag->recv_seq_number = next_seq;
+	      /* recover pending events */
+	      nm_core_pending_event_itor_t i;
+	    restart:
+	      puk_list_foreach(i, &p_so_tag->pending_events)
+		{
+		  struct nm_core_pending_event_s*p_pending_event = i;
+		  /* only matching events are supposed to be enqueued; check anyway */
+		  assert(nm_core_event_matches(p_pending_event->p_core_monitor, &p_pending_event->event));
+		  assert(p_pending_event->event.status & NM_STATUS_UNEXPECTED);
+		  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+		  if(p_pending_event->event.seq == next_seq)
+		    {
+		      p_so_tag->recv_seq_number = next_seq;
+		      nm_core_pending_event_list_erase(&p_so_tag->pending_events, p_pending_event);
+		      struct nm_core_dispatching_event_s*p_dispatching_event =
+			nm_core_dispatching_event_malloc(p_core->dispatching_event_allocator);
+		      p_dispatching_event->event = p_pending_event->event;
+		      p_dispatching_event->p_monitor = &p_pending_event->p_core_monitor->monitor;
+		      int rc = 0;
+		      do
+			{
+			  rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
+			  if(rc)
+			    {
+			      nm_profile_inc(p_core->profiling.n_event_queue_full);
+			      nm_core_unlock(p_core);
+			      nm_core_events_dispatch(p_core);
+			      nm_core_lock(p_core);
+			    }
+			}
+		      while(rc);
+		      nm_core_pending_event_delete(p_pending_event);
+		      p_pending_event = NULL;
+		      goto restart; /* exit the foreach loop so as not to break the iterator, retry to find another matching event */
+		    }
+		}
 	    }
 	}
       else
 	{
+	  /* out-of-order event; store as pending */
 	  nm_profile_inc(p_core->profiling.n_outoforder_event);
-	  pending = 1;
+	  struct nm_core_pending_event_s*p_pending_event = nm_core_pending_event_new();
+	  p_pending_event->event = *p_event;
+	  p_pending_event->p_core_monitor = p_core_monitor;
+	  nm_core_pending_event_list_push_back(&p_so_tag->pending_events, p_pending_event);
+	  assert(nm_core_pending_event_list_size(&p_so_tag>pending_events) < NM_SEQ_MAX - 1); /* seq number overflow */
 	}
-    }
-  if(pending)
-    {
-      struct nm_core_pending_event_s*p_pending_event = nm_core_pending_event_new();
-      p_pending_event->event = *p_event;
-      p_pending_event->p_core_monitor = p_core_monitor;
-      nm_core_pending_event_list_push_back(&p_core->pending_events, p_pending_event);
-      assert(nm_core_pending_event_list_size(&p_core->pending_events) < NM_SEQ_MAX - 1); /* seq number overflow */
-      nm_core_pending_event_recover(p_core);
     }
 }
 
@@ -541,7 +532,6 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_req_list_init(&p_core->unpacks);
   nm_req_list_init(&p_core->pending_packs);
   nm_unexpected_list_init(&p_core->unexpected);
-  nm_core_pending_event_list_init(&p_core->pending_events);
 
   p_core->dispatching_event_allocator = nm_core_dispatching_event_allocator_new(16);
   nm_core_dispatching_event_lfqueue_init(&p_core->dispatching_events);

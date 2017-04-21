@@ -21,22 +21,6 @@
 #  error "Cannot include this file directly. Please include <nm_private.h>"
 #endif
 
-PUK_VECT_TYPE(nm_core_monitor, struct nm_core_monitor_s*);
-
-/** a pending event, not dispatched immediately because it was received out of order */
-PUK_LIST_TYPE(nm_core_pending_event,
-	      struct nm_core_event_s event;             /**< the event to dispatch */
-	      struct nm_core_monitor_s*p_core_monitor;  /**< the monitor to fire (event matching already checked) */
-	      );
-
-/** an event ready for dispatch (matching already done) */
-struct nm_core_dispatching_event_s
-{
-  struct nm_core_event_s event;
-  struct nm_monitor_s*p_monitor;
-};
-PUK_LFQUEUE_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s*, NULL, 1024);
-PUK_ALLOCATOR_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s);
 
 /** a chunk of unexpected message to be stored */
 struct nm_unexpected_s
@@ -78,7 +62,6 @@ struct nm_core
   struct nm_req_list_s unpacks;                 /**< list of posted unpacks */
   struct nm_unexpected_list_s unexpected;       /**< list of unexpected chunks */
   struct nm_req_list_s pending_packs;           /**< list of pack reqs in progress (or waiting for ACK) */
-  struct nm_core_pending_event_list_s pending_events; /**< pending events not ready to dispatch */
   struct nm_core_monitor_vect_s monitors;       /**< monitors for upper layers to track events in nmad core */
 
   nm_core_dispatching_event_allocator_t dispatching_event_allocator;

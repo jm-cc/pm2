@@ -47,7 +47,8 @@
 #include <tbx_topology.h>
 #endif
 
-/* ** Tracks */
+/* ** Tracks ************************************************/
+
 typedef int8_t nm_trk_id_t;
 
 #define NM_TRK_SMALL ((nm_trk_id_t)0)
@@ -56,7 +57,7 @@ typedef int8_t nm_trk_id_t;
 
 #define NM_SO_MAX_TRACKS   2
 
-/* ** Sequence numbers */
+/* ** Sequence numbers ************************************* */
 
 /** Reserved sequence number used before an unpack has been matched. */
 #define NM_SEQ_NONE ((nm_seq_t)0)
@@ -77,15 +78,7 @@ static inline nm_seq_t nm_seq_next(nm_seq_t seq)
   return seq;
 }
 
-/** Compute previous sequence number */
-static inline nm_seq_t nm_seq_prev(nm_seq_t seq)
-{
-  assert(seq != NM_SEQ_NONE);
-  seq--;
-  if(seq == NM_SEQ_NONE)
-    seq--;
-  return seq;
-}
+/* ** Profiling ******************************************** */
 
 #ifdef NMAD_PROFILE
 #define nm_profile_inc(COUNTER) do { __sync_fetch_and_add(&COUNTER, 1); } while(0)
@@ -93,9 +86,28 @@ static inline nm_seq_t nm_seq_prev(nm_seq_t seq)
 #define nm_profile_inc(COUNTER) do {} while(0)
 #endif
 
-/* ** Drivers */
+/* ** Drivers ********************************************** */
 
 typedef uint16_t nm_drv_id_t;
+
+/* ** Events *********************************************** */
+
+PUK_VECT_TYPE(nm_core_monitor, struct nm_core_monitor_s*);
+
+/** a pending event, not dispatched immediately because it was received out of order */
+PUK_LIST_TYPE(nm_core_pending_event,
+	      struct nm_core_event_s event;             /**< the event to dispatch */
+	      struct nm_core_monitor_s*p_core_monitor;  /**< the monitor to fire (event matching already checked) */
+	      );
+
+/** an event ready for dispatch (matching already done) */
+struct nm_core_dispatching_event_s
+{
+  struct nm_core_event_s event;
+  struct nm_monitor_s*p_monitor;
+};
+PUK_LFQUEUE_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s*, NULL, 1024);
+PUK_ALLOCATOR_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s);
 
 
 #include "nm_trk_cap.h"

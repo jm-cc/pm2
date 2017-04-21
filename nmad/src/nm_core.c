@@ -52,12 +52,7 @@ void nm_core_progress(struct nm_core*p_core)
 	  /* schedule new requests on all gates */
 	  nm_strat_try_and_commit(p_gate);
 	  /* process postponed recv requests */
-	  if(!nm_pkt_wrap_list_empty(&p_gate->pending_large_recv))
-	    {
-	      const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-	      strategy->driver->rdv_accept(strategy->_status, p_gate);
-	    }
-
+	  nm_strat_rdv_accept(p_gate);
 	}
     }
 }

@@ -91,8 +91,7 @@ static inline void nm_pw_ref_dec(struct nm_pkt_wrap_s *p_pw)
 }
 
 
-/** Schedule and post new outgoing buffers
- */
+/** Schedule and post new outgoing buffers */
 static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
 {
   nm_core_lock_assert(p_gate->p_core);
@@ -103,7 +102,7 @@ static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
       r->driver->try_and_commit(r->_status, p_gate);
     }
 }
-
+/** Schedule and post new large incoming buffers */
 static inline void nm_strat_rdv_accept(nm_gate_t p_gate)
 {
   nm_core_lock_assert(p_gate->p_core);

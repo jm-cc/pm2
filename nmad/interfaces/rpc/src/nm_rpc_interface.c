@@ -24,15 +24,13 @@
 /* ********************************************************* */
 
 PUK_ALLOCATOR_TYPE(nm_rpc_req, struct nm_rpc_req_s);
+PUK_ALLOCATOR_TYPE(nm_rpc_token, struct nm_rpc_token_s);
 
 static nm_rpc_req_allocator_t nm_rpc_req_allocator = NULL;
+static nm_rpc_token_allocator_t nm_rpc_token_allocator = NULL;
 
-nm_rpc_req_t nm_rpc_req_new(void)
+static inline nm_rpc_req_t nm_rpc_req_new(void)
 {
-  if(nm_rpc_req_allocator == NULL)
-    {
-      nm_rpc_req_allocator = nm_rpc_req_allocator_new(8);
-    }
   nm_rpc_req_t p_rpc_req = nm_rpc_req_malloc(nm_rpc_req_allocator);
   return p_rpc_req;
 }
@@ -116,6 +114,7 @@ static void nm_rpc_finalizer(nm_sr_event_t event, const nm_sr_event_info_t*p_inf
 {
   struct nm_rpc_token_s*p_token = _ref;
   (*p_token->p_service->p_finalizer)(p_token);
+  nm_rpc_token_free(nm_rpc_token_allocator, p_token);
 }
 
 static void nm_rpc_core_event_handler(const struct nm_core_event_s*const p_event, void*_ref)
@@ -131,7 +130,7 @@ static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info,
   assert(event & NM_SR_EVENT_RECV_UNEXPECTED);
   nm_session_t p_session = p_info->recv_unexpected.p_session;
   struct nm_rpc_service_s*p_service = _ref;
-  struct nm_rpc_token_s*p_token = &p_service->token;
+  struct nm_rpc_token_s*p_token = nm_rpc_token_malloc(nm_rpc_token_allocator);
   p_token->p_service = p_service;
   p_token->ref = NULL;
   nm_data_null_build(&p_token->body);
@@ -167,8 +166,15 @@ nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t 
       .tag_mask   = tag_mask,
       .ref        = p_service
     };
-  p_service->token.p_service = NULL;
   nm_data_contiguous_build(&p_service->header, p_service->header_ptr, p_service->hlen);
+  if(nm_rpc_req_allocator == NULL)
+    {
+      nm_rpc_req_allocator = nm_rpc_req_allocator_new(8);
+    }
+  if(nm_rpc_token_allocator == NULL)
+    {
+      nm_rpc_token_allocator = nm_rpc_token_allocator_new(8);
+    }
   nm_sr_session_monitor_set(p_session, &p_service->monitor);
   return p_service;
 }

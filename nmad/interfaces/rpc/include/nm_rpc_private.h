@@ -16,6 +16,11 @@
 #ifndef NM_RPC_PRIVATE_H
 #define NM_RPC_PRIVATE_H
 
+/** @file nm_rpc_private.h
+ * Private header for the RPC interface; this is not part of the 
+ * public API and is not supposed to be used by end-users
+ */
+
 #include <assert.h>
 
 /** an outgoing rpc request */
@@ -30,30 +35,27 @@ struct nm_rpc_req_s
 /** an incoming rpc request */
 struct nm_rpc_token_s
 {
-  nm_sr_request_t request;
-  struct nm_data_s rpc_data, body;    /**< data descriptors for rpc request and use-supplied body */
+  nm_sr_request_t request;            /**< the sr request used for the full rpc_data */
+  struct nm_data_s rpc_data, body;    /**< data descriptors for rpc request and user-supplied body */
   struct nm_rpc_service_s*p_service;  /**< service this token belongs to */
   void*ref;                           /**< user ref for the token */
 };
 
+/** descriptor for a registered RPC service */
 struct nm_rpc_service_s
 {
-  struct nm_sr_monitor_s monitor;
-  nm_rpc_handler_t p_handler;
-  nm_rpc_finalizer_t p_finalizer;
-  nm_session_t p_session;
+  struct nm_sr_monitor_s monitor;     /**< the monitor triggered by UNEXPECTED events */
+  nm_rpc_handler_t p_handler;         /**< user-supplied function, called upon header arrival */
+  nm_rpc_finalizer_t p_finalizer;     /**< user-supplied function, called upon data body arrival */
+  nm_session_t p_session;             /**< session used to send/recv requests */
   struct nm_data_s header;
   void*header_ptr;
   nm_len_t hlen;
   void*ref;
-  struct nm_rpc_token_s token;
 };
 
 /** @internal data constructor for the compound rpc data type (header + body) */
 void nm_rpc_data_build(struct nm_data_s*p_rpc_data, void*hptr, nm_len_t hlen, const struct nm_data_s*p_body);
-
-/** @internal private, exposed for inlining */
-nm_rpc_req_t nm_rpc_req_new(void);
 
 /** @internal private, exposed for inlining */
 void nm_rpc_req_delete(nm_rpc_req_t p_rpc_req);

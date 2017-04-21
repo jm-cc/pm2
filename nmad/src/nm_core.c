@@ -59,6 +59,7 @@ static void nm_core_pending_event_recover(nm_core_t p_core)
 	  int rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
 	  if(rc)
 	    {
+	      nm_profile_inc(p_core->profiling.n_event_queue_full);
 	      nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
 	      p_dispatching_event = NULL;
 	      break; /* queue full; no need to try other events */
@@ -212,6 +213,7 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 	  pending = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
 	  if(pending)
 	    {
+	      nm_profile_inc(p_core->profiling.n_event_queue_full);
 	      nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
 	      p_dispatching_event = NULL;
 	    }
@@ -222,6 +224,7 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 	}
       else
 	{
+	  nm_profile_inc(p_core->profiling.n_outoforder_event);
 	  pending = 1;
 	}
     }
@@ -556,6 +559,8 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   p_core->profiling.n_pw_in      = 0;
   p_core->profiling.n_try_and_commit = 0;
   p_core->profiling.n_strat_apply = 0;
+  p_core->profiling.n_outoforder_event = 0;
+  p_core->profiling.n_event_queue_full = 0;
 #endif /* NMAD_PROFILE */
 
 #ifdef PIOMAN
@@ -608,15 +613,17 @@ int nm_core_exit(nm_core_t p_core)
   
 #ifdef NMAD_PROFILE
   fprintf(stderr, "# ## profiling stats___________\n");
-  fprintf(stderr, "# ## n_lock           = %lld\n", p_core->profiling.n_locks);
-  fprintf(stderr, "# ## n_schedule       = %lld\n", p_core->profiling.n_schedule);
-  fprintf(stderr, "# ## n_packs          = %lld\n", p_core->profiling.n_packs);
-  fprintf(stderr, "# ## n_unpacks        = %lld\n", p_core->profiling.n_unpacks);
-  fprintf(stderr, "# ## n_unexpected     = %lld\n", p_core->profiling.n_unexpected);
-  fprintf(stderr, "# ## n_try_and_commit = %lld\n", p_core->profiling.n_try_and_commit);
-  fprintf(stderr, "# ## n_strat_apply    = %lld\n", p_core->profiling.n_strat_apply);
-  fprintf(stderr, "# ## n_pw_in          = %lld\n", p_core->profiling.n_pw_in);
-  fprintf(stderr, "# ## n_pw_out         = %lld\n", p_core->profiling.n_pw_out);
+  fprintf(stderr, "# ## n_lock             = %lld\n", p_core->profiling.n_locks);
+  fprintf(stderr, "# ## n_schedule         = %lld\n", p_core->profiling.n_schedule);
+  fprintf(stderr, "# ## n_packs            = %lld\n", p_core->profiling.n_packs);
+  fprintf(stderr, "# ## n_unpacks          = %lld\n", p_core->profiling.n_unpacks);
+  fprintf(stderr, "# ## n_unexpected       = %lld\n", p_core->profiling.n_unexpected);
+  fprintf(stderr, "# ## n_try_and_commit   = %lld\n", p_core->profiling.n_try_and_commit);
+  fprintf(stderr, "# ## n_strat_apply      = %lld\n", p_core->profiling.n_strat_apply);
+  fprintf(stderr, "# ## n_pw_in            = %lld\n", p_core->profiling.n_pw_in);
+  fprintf(stderr, "# ## n_pw_out           = %lld\n", p_core->profiling.n_pw_out);
+  fprintf(stderr, "# ## n_outoforder_event = %lld\n", p_core->profiling.n_outoforder_event);
+  fprintf(stderr, "# ## n_event_queue_full = %lld\n", p_core->profiling.n_event_queue_full);
   
 #endif /* NMAD_PROFILE */
 

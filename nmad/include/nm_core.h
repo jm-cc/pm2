@@ -95,6 +95,8 @@ struct nm_core
     long long n_pw_in;
     long long n_try_and_commit;
     long long n_strat_apply;
+    long long n_outoforder_event;
+    long long n_event_queue_full;
   } profiling;
 #endif /* NMAD_PROFILE */
 };

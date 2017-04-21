@@ -177,43 +177,37 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 		}
 	    }
 	  while(rc);
+	restart:
 	  if(!nm_core_pending_event_list_empty(&p_so_tag->pending_events))
 	    {
 	      /* recover pending events */
-	      nm_core_pending_event_itor_t i;
-	    restart:
-	      puk_list_foreach(i, &p_so_tag->pending_events)
+	      struct nm_core_pending_event_s*p_pending_event = nm_core_pending_event_list_front(&p_so_tag->pending_events);
+	      const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+	      if(p_pending_event->event.seq == next_seq)
 		{
-		  struct nm_core_pending_event_s*p_pending_event = i;
-		  /* only matching events are supposed to be enqueued; check anyway */
 		  assert(nm_core_event_matches(p_pending_event->p_core_monitor, &p_pending_event->event));
 		  assert(p_pending_event->event.status & NM_STATUS_UNEXPECTED);
-		  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-		  if(p_pending_event->event.seq == next_seq)
+		  p_so_tag->recv_seq_number = next_seq;
+		  nm_core_pending_event_list_pop_front(&p_so_tag->pending_events);
+		  struct nm_core_dispatching_event_s*p_dispatching_event =
+		    nm_core_dispatching_event_malloc(p_core->dispatching_event_allocator);
+		  p_dispatching_event->event = p_pending_event->event;
+		  p_dispatching_event->p_monitor = &p_pending_event->p_core_monitor->monitor;
+		  int rc = 0;
+		  do
 		    {
-		      p_so_tag->recv_seq_number = next_seq;
-		      nm_core_pending_event_list_erase(&p_so_tag->pending_events, p_pending_event);
-		      struct nm_core_dispatching_event_s*p_dispatching_event =
-			nm_core_dispatching_event_malloc(p_core->dispatching_event_allocator);
-		      p_dispatching_event->event = p_pending_event->event;
-		      p_dispatching_event->p_monitor = &p_pending_event->p_core_monitor->monitor;
-		      int rc = 0;
-		      do
+		      rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
+		      if(rc)
 			{
-			  rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
-			  if(rc)
-			    {
-			      nm_profile_inc(p_core->profiling.n_event_queue_full);
-			      nm_core_unlock(p_core);
-			      nm_core_events_dispatch(p_core);
-			      nm_core_lock(p_core);
-			    }
+			  nm_profile_inc(p_core->profiling.n_event_queue_full);
+			  nm_core_unlock(p_core);
+			  nm_core_events_dispatch(p_core);
+			  nm_core_lock(p_core);
 			}
-		      while(rc);
-		      nm_core_pending_event_delete(p_pending_event);
-		      p_pending_event = NULL;
-		      goto restart; /* exit the foreach loop so as not to break the iterator, retry to find another matching event */
 		    }
+		  while(rc);
+		  nm_core_pending_event_delete(p_pending_event);
+		  goto restart; /* retry to find another matching event */
 		}
 	    }
 	}
@@ -224,8 +218,28 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 	  struct nm_core_pending_event_s*p_pending_event = nm_core_pending_event_new();
 	  p_pending_event->event = *p_event;
 	  p_pending_event->p_core_monitor = p_core_monitor;
-	  nm_core_pending_event_list_push_back(&p_so_tag->pending_events, p_pending_event);
-	  assert(nm_core_pending_event_list_size(&p_so_tag>pending_events) < NM_SEQ_MAX - 1); /* seq number overflow */
+	  if(nm_core_pending_event_list_empty(&p_so_tag->pending_events))
+	    {
+	      nm_core_pending_event_list_push_back(&p_so_tag->pending_events, p_pending_event);
+	    }
+	  else
+	    {
+	      /* assume an out-of-order event comes last */
+	      nm_core_pending_event_itor_t i = nm_core_pending_event_list_rbegin(&p_so_tag->pending_events);
+	      while(i && (nm_seq_compare(p_so_tag->recv_seq_number, i->event.seq, p_pending_event->event.seq) > 0))
+		{
+		  i = nm_core_pending_event_list_rnext(i);
+		}
+	      if(i)
+		{
+		  nm_core_pending_event_list_insert_after(&p_so_tag->pending_events, i, p_pending_event);
+		}
+	      else
+		{
+		  nm_core_pending_event_list_push_front(&p_so_tag->pending_events, p_pending_event);
+		}
+	    }
+	  assert(nm_core_pending_event_list_size(&p_so_tag->pending_events) < NM_SEQ_MAX - 1); /* seq number overflow */
 	}
     }
 }

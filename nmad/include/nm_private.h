@@ -78,6 +78,22 @@ static inline nm_seq_t nm_seq_next(nm_seq_t seq)
   return seq;
 }
 
+/** compare to seq numbers, assuming they are in the future
+ * returns -1 if seq1 is before seq2, 0 if equal, 1 if seq1 after seq2 */
+static inline int nm_seq_compare(nm_seq_t current, nm_seq_t seq1, nm_seq_t seq2)
+{
+  assert(seq1 != current);
+  assert(seq2 != current);
+  const nm_seq_t seq1_abs = (seq1 > current) ? (seq1 - current) : (seq1 - current - 1);
+  const nm_seq_t seq2_abs = (seq2 > current) ? (seq2 - current) : (seq2 - current - 1);
+  if(seq1_abs < seq2_abs)
+    return -1;
+  else if(seq1_abs > seq2_abs)
+    return 1;
+  else
+    return 0;
+}
+
 /* ** Profiling ******************************************** */
 
 #ifdef NMAD_PROFILE

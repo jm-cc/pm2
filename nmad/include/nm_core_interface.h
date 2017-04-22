@@ -144,7 +144,7 @@ typedef uint16_t nm_req_flag_t;
 #define NM_FLAG_UNPACK_MATCHED       ((nm_req_flag_t)0x8000)
 
 /** Sequence number */
-typedef uint16_t nm_seq_t;
+typedef uint32_t nm_seq_t;
 
 /* ** tags ************************************************* */
 

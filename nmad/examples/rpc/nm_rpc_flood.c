@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <tbx.h>
+
 #include <nm_launcher.h>
 #include <nm_coll_interface.h>
 #include <nm_rpc_interface.h>
@@ -82,10 +84,13 @@ int main(int argc, char**argv)
   for(burst = 1; burst < MAX_REQS; burst = burst * 1.5 + 1)
     {
       fprintf(stderr, "# req bursts = %d\n", burst);
+      nm_rpc_req_t*reqs = malloc(sizeof(nm_rpc_req_t) * burst);
+      tbx_tick_t t1, t2;
       int k;
+      nm_coll_barrier(p_comm, 0xF2);
+      TBX_GET_TICK(t1);
       for(k = 0; k < ITERATIONS; k++)
 	{
-	  nm_rpc_req_t*reqs = malloc(sizeof(nm_rpc_req_t) * burst);
 	  int i;
 	  for(i = 0; i < burst; i++)
 	    {
@@ -95,9 +100,13 @@ int main(int argc, char**argv)
 	    {
 	      nm_rpc_req_wait(reqs[i]);
 	    }
-	  free(reqs);
 	}
       nm_coll_barrier(p_comm, 0xF2);
+      TBX_GET_TICK(t2);
+      const double delay = TBX_TIMING_DELAY(t1, t2);
+      const double t = delay / (ITERATIONS * burst);
+      fprintf(stderr, "# %8.4g usec. / req\n", t);
+      free(reqs);
     }
 
   nm_coll_barrier(p_comm, 0xF3);

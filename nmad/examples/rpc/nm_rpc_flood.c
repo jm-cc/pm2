@@ -30,8 +30,8 @@ struct rpc_flood_header_s
   nm_len_t len;
 } __attribute__((packed));
 
-#define MAX_REQS   25000
-#define ITERATIONS 10
+#define MAX_REQS   40000
+#define ITERATIONS 5
 
 static void rpc_flood_handler(nm_rpc_token_t p_token)
 {
@@ -56,6 +56,18 @@ static void rpc_flood_finalizer(nm_rpc_token_t p_token)
   free(buf);
 }
 
+static int comp_double(const void*_a, const void*_b)
+{
+  const double*a = _a;
+  const double*b = _b;
+  if(*a < *b)
+    return -1;
+  else if(*a > *b)
+    return 1;
+  else
+    return 0;
+}
+
 int main(int argc, char**argv)
 {
   nm_launcher_init(&argc, argv);
@@ -78,20 +90,25 @@ int main(int argc, char**argv)
 
   nm_coll_barrier(p_comm, 0xF1);
 
+  if(rank == 0)
+    {
+      printf("# burst \t min lat \t med \t \t d1  \t d9  \n");
+    }
   struct nm_data_s data;
   nm_data_contiguous_build(&data, (void*)msg, len);
   int burst;
-  for(burst = 1; burst < MAX_REQS; burst = burst * 1.2 + 1)
+  for(burst = 1; burst < MAX_REQS; burst = burst * 1.1 + 1)
     {
       const int iterations = (ITERATIONS * MAX_REQS) / burst;
-      fprintf(stderr, "# req bursts = %d; iterations = %d\n", burst, iterations);
+      fprintf(stderr, "# req bursts = %d; iterations = %d (total = %d)\n", burst, iterations, burst * iterations);
       nm_rpc_req_t*reqs = malloc(sizeof(nm_rpc_req_t) * burst);
       tbx_tick_t t1, t2;
       int k;
+      double lats[iterations];
       nm_coll_barrier(p_comm, 0xF2);
-      TBX_GET_TICK(t1);
       for(k = 0; k < iterations; k++)
 	{
+	  TBX_GET_TICK(t1);
 	  int i;
 	  for(i = 0; i < burst; i++)
 	    {
@@ -101,12 +118,22 @@ int main(int argc, char**argv)
 	    {
 	      nm_rpc_req_wait(reqs[i]);
 	    }
+	  nm_coll_barrier(p_comm, 0xF2);
+	  TBX_GET_TICK(t2);
+	  const double delay = TBX_TIMING_DELAY(t1, t2);
+	  const double t = delay / burst;
+	  lats[k] = t;
 	}
-      nm_coll_barrier(p_comm, 0xF2);
-      TBX_GET_TICK(t2);
-      const double delay = TBX_TIMING_DELAY(t1, t2);
-      const double t = delay / (iterations * burst);
-      fprintf(stderr, "%d %8.4g \n", burst, t);
+      if(rank == 0)
+	{
+	  qsort(lats, iterations, sizeof(double), &comp_double);
+	  const double min_lat = lats[0];
+	  const double max_lat = lats[iterations - 1];
+	  const double med_lat = lats[(iterations - 1) / 2];
+	  const double d1_lat  = lats[(iterations - 1) / 10];
+	  const double d9_lat  = lats[ 9 *(iterations - 1) / 10];
+	  printf("%d \t %8.4g \t %8g \t %8.4g \t %8.4g \n", burst, min_lat, med_lat, d1_lat, d9_lat);
+	}
       free(reqs);
     }
 

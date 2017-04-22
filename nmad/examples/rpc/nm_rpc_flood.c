@@ -30,8 +30,8 @@ struct rpc_flood_header_s
   nm_len_t len;
 } __attribute__((packed));
 
-#define MAX_REQS   20000
-#define ITERATIONS 100
+#define MAX_REQS   25000
+#define ITERATIONS 10
 
 static void rpc_flood_handler(nm_rpc_token_t p_token)
 {
@@ -81,15 +81,16 @@ int main(int argc, char**argv)
   struct nm_data_s data;
   nm_data_contiguous_build(&data, (void*)msg, len);
   int burst;
-  for(burst = 1; burst < MAX_REQS; burst = burst * 1.5 + 1)
+  for(burst = 1; burst < MAX_REQS; burst = burst * 1.2 + 1)
     {
-      fprintf(stderr, "# req bursts = %d\n", burst);
+      const int iterations = (ITERATIONS * MAX_REQS) / burst;
+      fprintf(stderr, "# req bursts = %d; iterations = %d\n", burst, iterations);
       nm_rpc_req_t*reqs = malloc(sizeof(nm_rpc_req_t) * burst);
       tbx_tick_t t1, t2;
       int k;
       nm_coll_barrier(p_comm, 0xF2);
       TBX_GET_TICK(t1);
-      for(k = 0; k < ITERATIONS; k++)
+      for(k = 0; k < iterations; k++)
 	{
 	  int i;
 	  for(i = 0; i < burst; i++)
@@ -104,8 +105,8 @@ int main(int argc, char**argv)
       nm_coll_barrier(p_comm, 0xF2);
       TBX_GET_TICK(t2);
       const double delay = TBX_TIMING_DELAY(t1, t2);
-      const double t = delay / (ITERATIONS * burst);
-      fprintf(stderr, "# %8.4g usec. / req\n", t);
+      const double t = delay / (iterations * burst);
+      fprintf(stderr, "%d %8.4g \n", burst, t);
       free(reqs);
     }
 

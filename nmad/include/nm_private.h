@@ -136,8 +136,8 @@ PUK_ALLOCATOR_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s
 #include "nm_piom_ltasks.h"
 #endif
 
-#include "nm_strategy.h"
 #include "nm_headers.h"
+#include "nm_strategy.h"
 #include "nm_gate.h"
 #include "nm_core.h"
 

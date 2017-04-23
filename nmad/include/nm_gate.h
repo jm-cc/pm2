@@ -86,6 +86,12 @@ struct nm_gate_s
   struct puk_receptacle_NewMad_Strategy_s strategy_receptacle;
   puk_instance_t strategy_instance;
 
+  /** submission lock-free list of reqs */
+  struct nm_req_chunk_lfqueue_s req_chunk_submission;
+  
+  /** send reqs posted to the gate */
+  struct nm_req_chunk_list_s req_chunk_list;
+  
   /** pw ready to be sent, formed by strategy */
   struct nm_pkt_wrap_list_s out_list;
 

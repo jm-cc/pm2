@@ -16,7 +16,7 @@
 
 #include "piom_private.h"
 
-#define PIOM_PTHREAD_MAX_THREADS 8
+#define PIOM_PTHREAD_MAX_THREADS 64
 
 #ifdef PIOMAN_PTHREAD
 static struct

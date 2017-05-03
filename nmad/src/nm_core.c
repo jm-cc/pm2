@@ -131,14 +131,17 @@ void nm_core_req_monitor(struct nm_core*p_core, struct nm_req_s*p_req, struct nm
 void nm_core_events_dispatch(struct nm_core*p_core)
 {
   nm_core_nolock_assert(p_core);
-  struct nm_core_dispatching_event_s*p_dispatching_event =
-    nm_core_dispatching_event_lfqueue_dequeue(&p_core->dispatching_events);
-  while(p_dispatching_event != NULL)
+  if(!nm_core_dispatching_event_lfqueue_empty(&p_core->dispatching_events))
     {
-      (*p_dispatching_event->p_monitor->p_notifier)(&p_dispatching_event->event, p_dispatching_event->p_monitor->ref);
-      nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
-      p_dispatching_event =
+      struct nm_core_dispatching_event_s*p_dispatching_event =
 	nm_core_dispatching_event_lfqueue_dequeue(&p_core->dispatching_events);
+      while(p_dispatching_event != NULL)
+	{
+	  (*p_dispatching_event->p_monitor->p_notifier)(&p_dispatching_event->event, p_dispatching_event->p_monitor->ref);
+	  nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
+	  p_dispatching_event =
+	    nm_core_dispatching_event_lfqueue_dequeue(&p_core->dispatching_events);
+	}
     }
 }
 

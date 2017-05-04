@@ -367,7 +367,7 @@ dnl -- nmad content
 dnl --
 
 nmad_drivers="${nmad_drivers} self local tcp minidriver"
-nmad_strategies="${nmad_strategies} default aggreg split_balance decision_tree immediate"
+nmad_strategies="${nmad_strategies} default aggreg split_balance decision_tree"
 nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session connector coll rpc"
 
 nmad_alldirs=

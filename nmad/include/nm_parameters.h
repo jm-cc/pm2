@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
  */
 
 
-#ifndef NM_SO_PARAMETERS_H
-#define NM_SO_PARAMETERS_H
+#ifndef NM_PARAMETERS_H
+#define NM_PARAMETERS_H
 
 
 /** Maximum size of unexpected packets. Used for preallocated header zone within packet wrappers */
@@ -25,7 +25,7 @@
 #define NM_LARGE_MIN_DENSITY  1024
 
 /** default window size for aggregation */
-#define NM_SO_DEFAULT_WINDOW  16
+#define NM_SO_DEFAULT_WINDOW  64
 
 /** Number of preallocated iovec entries within packet wrappers */
 #define NM_SO_PREALLOC_IOV_LEN 32
@@ -37,9 +37,9 @@
 #define NM_ALIGN_FRONTIER  sizeof(NM_ALIGN_TYPE)
 #define nm_aligned(x)      tbx_aligned((x), NM_ALIGN_FRONTIER)
 
-/* activate nm profiling 
+/** activate nm profiling 
  * change the define here, there's no autoconf flag */
 #undef NMAD_PROFILE
 
-#endif /* NM_SO_PARAMETERS_H */
+#endif /* NM_PARAMETERS_H */
 

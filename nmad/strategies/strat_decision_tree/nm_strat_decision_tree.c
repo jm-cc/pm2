@@ -37,7 +37,6 @@ static void strat_decision_tree_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_decision_tree_driver =
   {
-    .pack_chunk         = NULL,
     .pack_data          = &strat_decision_tree_pack_data,
     .pack_ctrl          = &strat_decision_tree_pack_ctrl,
     .try_and_commit     = &strat_decision_tree_try_and_commit,

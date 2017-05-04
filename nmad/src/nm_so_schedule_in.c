@@ -750,17 +750,9 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	      /* rdv eventually accepted on trk#0- rollback and repack */
 	      struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
 	      p_pack->pack.scheduled -= chunk_len;
-	      if(p_large_pw->p_data == NULL)
-		{
-		  void*ptr = p_large_pw->v[0].iov_base;
-		  /* repack chunk on trk#0 */
-		  (*r->driver->pack_chunk)(r->_status, p_pack, ptr, chunk_len, chunk_offset);
-		}
-	      else
-		{
-		  /* repack chunk on trk#0 */
-		  (*r->driver->pack_data)(r->_status, p_pack, chunk_len, chunk_offset);
-		}
+	      assert(p_large_pw->p_data != NULL);
+	      /* repack chunk on trk#0 */
+	      (*r->driver->pack_data)(r->_status, p_pack, chunk_len, chunk_offset);
 	      nm_pw_free(p_large_pw);
 	    }
 	  return;

@@ -39,15 +39,6 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
   p_pack->monitor   = NM_MONITOR_NULL;
 }
 
-/** data iterator to call strategy pack on every chunk of data */
-static void nm_core_pack_chunk(void*ptr, nm_len_t len, void*_context)
-{
-  struct nm_req_s*p_pack = _context;
-  const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
-  assert(r->driver->pack_chunk != NULL);
-  (*r->driver->pack_chunk)(r->_status, p_pack, ptr, len, p_pack->pack.scheduled);
-}
-
 int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
 		      nm_req_flag_t flags)
 {
@@ -76,22 +67,15 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
       fprintf(stderr, "# nmad: nm_core_pack_header not support with selected strategy (need pack_data).\n");
       abort();
     }
-  if(r->driver->pack_data != NULL)
+  assert(r->driver->pack_data != NULL);
+  const nm_len_t size = nm_data_size(&p_pack->data);
+  if(hlen > 0)
     {
-      const nm_len_t size = nm_data_size(&p_pack->data);
-      if(hlen > 0)
-	{
-	  assert(hlen <= size);
-	  if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
-	    (*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
-	}
-      (*r->driver->pack_data)(r->_status, p_pack, size - p_pack->pack.scheduled, p_pack->pack.scheduled);
+      assert(hlen <= size);
+      if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
+	(*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
     }
-  else
-    {
-      assert(p_pack->pack.scheduled == 0);
-      nm_data_aggregator_traversal(&p_pack->data, &nm_core_pack_chunk, p_pack);
-    }
+  (*r->driver->pack_data)(r->_status, p_pack, size - p_pack->pack.scheduled, p_pack->pack.scheduled);
   nm_core_polling_level(p_core);
   nm_profile_inc(p_core->profiling.n_packs);
   nm_core_unlock(p_core);

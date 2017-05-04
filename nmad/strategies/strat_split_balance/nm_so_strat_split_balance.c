@@ -36,7 +36,6 @@ static void strat_split_balance_rdv_accept(void*, nm_gate_t );
 static const struct nm_strategy_iface_s nm_strat_split_balance_driver =
   {
     .pack_data          = &strat_split_balance_pack_data,
-    .pack_chunk         = NULL,
     .pack_ctrl          = &strat_split_balance_pack_ctrl,
     .try_and_commit     = &strat_split_balance_try_and_commit,
     .rdv_accept         = &strat_split_balance_rdv_accept,

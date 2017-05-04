@@ -35,7 +35,6 @@ static void strat_aggreg_rdv_accept(void*, nm_gate_t );
 static const struct nm_strategy_iface_s nm_strat_aggreg_driver =
   {
     .pack_data          = &strat_aggreg_pack_data,
-    .pack_chunk         = NULL,
     .pack_ctrl          = &strat_aggreg_pack_ctrl,
     .try_and_commit     = &strat_aggreg_try_and_commit,
     .rdv_accept         = &strat_aggreg_rdv_accept,

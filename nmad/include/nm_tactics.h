@@ -59,17 +59,6 @@ static inline void nm_tactic_pack_small_new_pw(struct nm_req_s*p_pack, nm_len_t 
 /** Pack large data into a new packet wrapper stored as pending large,
  * and pack a rdv for this data.
  */
-static inline void nm_tactic_pack_rdv(struct nm_req_s*p_pack, const char*data, nm_len_t len, nm_len_t offset)
-{
-  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
-  nm_pw_add_data_chunk(p_pw, p_pack, data, len, offset, NM_PW_NOHEADER);
-  nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_pw);
-  union nm_header_ctrl_generic_s ctrl;
-  nm_header_init_rdv(&ctrl, p_pack, len, offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
-  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_pack->p_gate->strategy_receptacle;
-  (*strategy->driver->pack_ctrl)(strategy->_status, p_pack->p_gate, &ctrl);
-}
-
 static inline void nm_tactic_pack_data_rdv(struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset)
 {
   struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();

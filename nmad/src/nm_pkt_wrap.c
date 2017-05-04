@@ -408,7 +408,7 @@ void nm_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack, co
 	      nm_header_init_short_data(h, tag, seq, chunk_len);
 	      if(chunk_len)
 		{
-		  nm_data_copy_from(p_data, chunk_offset /* = 0 */, chunk_len, hvec->iov_base + hvec->iov_len);
+		  nm_data_copy_from(p_data, 0 /* chunk_offset == 0 */, chunk_len, hvec->iov_base + hvec->iov_len);
 		  hvec->iov_len += chunk_len;
 		}
 	      p_pw->length += NM_HEADER_SHORT_DATA_SIZE + chunk_len;

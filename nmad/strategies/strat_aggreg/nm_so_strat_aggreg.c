@@ -60,33 +60,6 @@ struct nm_strat_aggreg_s
 
 static int num_instances = 0;
 
-
-static inline nm_len_t strat_aggreg_max_small(struct nm_core*p_core)
-{
-  static ssize_t nm_max_small = -1;
-    /* lazy init */
-  if(nm_max_small > 0)
-    return nm_max_small;
-  else
-    {
-      
-      nm_drv_t p_drv;
-      NM_FOR_EACH_DRIVER(p_drv, p_core)
-	{
-	  if(nm_max_small <= 0 || (p_drv->driver->capabilities.max_unexpected > 0 && p_drv->driver->capabilities.max_unexpected < nm_max_small))
-	    {
-	      nm_max_small = p_drv->driver->capabilities.max_unexpected;
-	    }
-	}
-      if(nm_max_small <= 0 || nm_max_small > (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER))
-	{
-	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER);
-	}
-      NM_DISPF("# nmad: aggreg- max_small = %lu\n", nm_max_small);
-    }
-  return nm_max_small;
-}
-
 /** Component declaration */
 static int nm_strat_aggreg_load(void)
 {
@@ -153,7 +126,7 @@ static void strat_aggreg_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_
   const nm_len_t max_blocks = (p_props->blocks > chunk_len) ? chunk_len : p_props->blocks;
   const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + max_blocks * sizeof(struct nm_header_pkt_data_chunk_s) + NM_ALIGN_FRONTIER;
   const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : 0; /* average block size */
-  if(chunk_len + max_header_len < strat_aggreg_max_small(p_pack->p_gate->p_core))
+  if(chunk_len + max_header_len < nm_drv_max_small(p_pack->p_gate->p_core))
     {
       /* ** small send */
       struct nm_pkt_wrap_s*p_pw = nm_tactic_try_to_aggregate(&p_pack->p_gate->out_list, max_header_len + chunk_len, NM_SO_DEFAULT_WINDOW);

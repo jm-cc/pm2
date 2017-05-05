@@ -22,10 +22,6 @@
 
 PADICO_MODULE_HOOK(NewMad_Core);
 
-/** allocator for request chunks */
-PUK_ALLOCATOR_TYPE(nm_req_chunk, struct nm_req_chunk_s);
-static nm_req_chunk_allocator_t nm_req_chunk_allocator = NULL;
-
 
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data)
 {
@@ -50,30 +46,55 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   p_pack->seq    = NM_SEQ_NONE;
   p_pack->tag    = tag;
   p_pack->p_gate = p_gate;
+  p_pack->req_chunk.p_req = NULL;
   return err;
+}
+
+static inline void nm_req_chunk_submit(struct nm_core*p_core, struct nm_req_chunk_s*p_req_chunk)
+{
+  int rc;
+  do
+    {
+      rc = nm_req_chunk_lfqueue_enqueue(&p_core->pack_submissions, p_req_chunk);
+      if(rc)
+	nm_core_flush(p_core);
+    }
+  while(rc);
 }
 
 void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen)
 {
-  const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
-  nm_core_lock(p_core);
-  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);
-  const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
-  p_so_tag->send_seq_number = seq;
-  p_pack->seq = seq;
-  nm_req_list_push_back(&p_core->pending_packs, p_pack);
-  assert(r->driver->pack_data != NULL);
   const nm_len_t size = nm_data_size(&p_pack->data);
   if(hlen > 0)
     {
       assert(hlen <= size);
-      if((hlen < size) && (size > NM_DATA_IOV_THRESHOLD))
-	(*r->driver->pack_data)(r->_status, p_pack, hlen, p_pack->pack.scheduled);
+      if(size > NM_DATA_IOV_THRESHOLD)
+	{
+	  struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_malloc(p_core->req_chunk_allocator);
+	  p_req_chunk->p_req             = p_pack;
+	  p_req_chunk->chunk_offset      = 0;
+	  p_req_chunk->chunk_len         = hlen;
+	  p_pack->req_chunk.p_req        = p_pack;
+	  p_pack->req_chunk.chunk_offset = hlen;
+	  p_pack->req_chunk.chunk_len    = size - hlen;
+	  nm_req_chunk_submit(p_core, p_req_chunk);
+	  nm_req_chunk_submit(p_core, &p_pack->req_chunk);
+	}
+      else
+	{
+	  p_pack->req_chunk.p_req        = p_pack;
+	  p_pack->req_chunk.chunk_offset = 0;
+	  p_pack->req_chunk.chunk_len    = size;
+	  nm_req_chunk_submit(p_core, &p_pack->req_chunk);
+	}
     }
-  (*r->driver->pack_data)(r->_status, p_pack, size - p_pack->pack.scheduled, p_pack->pack.scheduled);
-  nm_core_polling_level(p_core);
-  nm_profile_inc(p_core->profiling.n_packs);
-  nm_core_unlock(p_core);
+  else
+    {
+      p_pack->req_chunk.p_req        = p_pack;
+      p_pack->req_chunk.chunk_offset = 0;
+      p_pack->req_chunk.chunk_len    = size;
+      nm_req_chunk_submit(p_core, &p_pack->req_chunk);
+    }
 }
 
 /** Places a packet in the send request list.
@@ -237,21 +258,6 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
     {
       NM_FATAL("post_send failed- err = %d", err);
     }
-}
-
-
-void nm_core_flush(struct nm_core*p_core)
-{
-  nm_gate_t p_gate = NULL;
-  nm_core_lock(p_core);
-  NM_FOR_EACH_GATE(p_gate, p_core)
-    {
-      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-	{
-	  /* TODO */
-	}
-    } 
-  nm_core_unlock(p_core);
 }
 
 #ifndef PIOMAN

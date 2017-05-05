@@ -36,6 +36,39 @@ static inline int nm_core_event_matches(const struct nm_core_monitor_s*p_core_mo
   return matches;
 }
 
+static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
+{
+  nm_core_lock_assert(p_core);
+  /* flush submitted reqs */
+  struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_lfqueue_dequeue_single_reader(&p_core->pack_submissions);
+  while(p_req_chunk != NULL)
+    {
+      struct nm_req_s*p_pack = p_req_chunk->p_req;
+      if(p_pack->seq == NM_SEQ_NONE)
+	{
+	  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);
+	  const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
+	  p_so_tag->send_seq_number = seq;
+	  p_pack->seq = seq;
+	}
+      nm_req_list_push_back(&p_core->pending_packs, p_pack);
+      const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
+      (*r->driver->pack_data)(r->_status, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset);
+      nm_core_polling_level(p_core);
+      nm_profile_inc(p_core->profiling.n_packs);
+      if(p_req_chunk != &p_pack->req_chunk)
+	{
+	  nm_req_chunk_free(p_core->req_chunk_allocator, p_req_chunk);
+	}
+      else
+	{
+	  p_pack->req_chunk.p_req = NULL;
+	}
+      p_req_chunk = nm_req_chunk_lfqueue_dequeue_single_reader(&p_core->pack_submissions);
+    }
+}
+
+
 /** make progress on core pending operations.
  * all operations that need lock when multithreaded.
  */
@@ -44,6 +77,7 @@ void nm_core_progress(struct nm_core*p_core)
   nm_gate_t p_gate = NULL;
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_strat_apply);
+  nm_core_pack_submissions_flush(p_core);
   /* apply strategy on each gate */
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
@@ -55,6 +89,13 @@ void nm_core_progress(struct nm_core*p_core)
 	  nm_strat_rdv_accept(p_gate);
 	}
     }
+}
+
+void nm_core_flush(struct nm_core*p_core)
+{
+  nm_core_lock(p_core);
+  nm_core_pack_submissions_flush(p_core);
+  nm_core_unlock(p_core);
 }
 
 /** Main function of the core scheduler loop.
@@ -545,6 +586,9 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_req_list_init(&p_core->pending_packs);
   nm_unexpected_list_init(&p_core->unexpected);
 
+  nm_req_chunk_lfqueue_init(&p_core->pack_submissions);
+  p_core->req_chunk_allocator = nm_req_chunk_allocator_new(NM_REQ_CHUNK_QUEUE_SIZE);
+  
   p_core->dispatching_event_allocator = nm_core_dispatching_event_allocator_new(16);
   nm_core_dispatching_event_lfqueue_init(&p_core->dispatching_events);
   

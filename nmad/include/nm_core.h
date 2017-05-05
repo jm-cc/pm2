@@ -45,6 +45,7 @@ struct nm_core
 #endif /* !PIOMAN */
  
   struct nm_req_chunk_lfqueue_s pack_submissions; /**< list of new pack reqs (lock-free submission list) */
+  nm_req_chunk_allocator_t req_chunk_allocator;   /**< allocator for req_chunk elements */
   struct nm_req_list_s unpacks;                 /**< list of posted unpacks */
   struct nm_unexpected_list_s unexpected;       /**< list of unexpected chunks */
   struct nm_req_list_s pending_packs;           /**< list of pack reqs in progress (or waiting for ACK) */

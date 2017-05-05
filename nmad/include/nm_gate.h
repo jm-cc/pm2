@@ -98,9 +98,6 @@ struct nm_gate_s
   /** Gate data for each driver. */
   struct nm_gdrv_vect_s gdrv_array;
 
-  /** user reference */
-  void*ref;
-
   /** NM core object. */
   struct nm_core *p_core;
 

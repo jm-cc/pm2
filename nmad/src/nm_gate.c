@@ -33,7 +33,6 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 
   p_gate->status = NM_GATE_STATUS_INIT;
   p_gate->p_core = p_core;
-  p_gate->ref    = NULL;
   nm_gdrv_vect_init(&p_gate->gdrv_array);
   nm_gtag_table_init(&p_gate->tags);
 
@@ -106,18 +105,5 @@ int nm_core_gate_connect(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_drv
  out:
   nm_core_unlock(p_core);
   return err;
-}
-
-
-/** Get the user-registered per-gate data */
-void*nm_gate_ref_get(nm_gate_t p_gate)
-{
-  return p_gate->ref;
-}
-
-/** Set the user-registered per-gate data */
-void nm_gate_ref_set(nm_gate_t p_gate, void*ref)
-{
-  p_gate->ref = ref;
 }
 

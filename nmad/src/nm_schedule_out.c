@@ -248,15 +248,7 @@ void nm_core_flush(struct nm_core*p_core)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
-	  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-	  if(tbx_unlikely(r->driver->flush))
-	    {
-	      (*r->driver->flush)(r->_status, p_gate);
-	    }
-	  else
-	    {
-	      break;
-	    }
+	  /* TODO */
 	}
     } 
   nm_core_unlock(p_core);

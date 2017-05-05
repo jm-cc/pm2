@@ -39,8 +39,7 @@ static const struct nm_strategy_iface_s nm_strat_default_driver =
     .pack_data          = &strat_default_pack_data,
     .pack_ctrl          = &strat_default_pack_ctrl,
     .try_and_commit     = &strat_default_try_and_commit,
-    .rdv_accept         = &strat_default_rdv_accept,
-    .flush              = NULL
+    .rdv_accept         = &strat_default_rdv_accept
 };
 
 static void*strat_default_instantiate(puk_instance_t, puk_context_t);

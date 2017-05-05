@@ -33,9 +33,6 @@ struct nm_strategy_iface_s
   /** Emit RTR series for received RDV requests. */
   void (*rdv_accept)(void*_status, nm_gate_t p_gate);
 
-  /** flush pending packs */
-  int (*flush)(void*_status, nm_gate_t p_gate);
-
   /** process strat private protocol */
   void (*proto)(void*_status, nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw, const void*ptr, nm_len_t len);
 

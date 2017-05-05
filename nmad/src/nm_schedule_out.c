@@ -62,11 +62,6 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
   p_so_tag->send_seq_number = seq;
   p_pack->seq = seq;
   nm_req_list_push_back(&p_core->pending_packs, p_pack);
-  if(hlen > 0 && r->driver->pack_data == NULL)
-    {
-      fprintf(stderr, "# nmad: nm_core_pack_header not support with selected strategy (need pack_data).\n");
-      abort();
-    }
   assert(r->driver->pack_data != NULL);
   const nm_len_t size = nm_data_size(&p_pack->data);
   if(hlen > 0)

@@ -257,14 +257,14 @@ void nm_core_req_monitor(struct nm_core*p_core, struct nm_req_s*p_req, struct nm
 /** a generic pack/unpack request */
 struct nm_req_s
 {
-  PUK_LIST_LINK(nm_req);
-  struct nm_data_s data;
-  struct nm_monitor_s monitor;
-  nm_cond_status_t status;
-  nm_req_flag_t flags;
-  nm_gate_t p_gate;
-  nm_core_tag_t tag;
-  nm_seq_t seq;
+  PUK_LIST_LINK(nm_req);        /**< link to enqueue req in pending requests lists */
+  nm_cond_status_t status;      /**< status, including status bits and synchronization */
+  struct nm_data_s data;        /**< data descriptor to send/recv */
+  struct nm_monitor_s monitor;  /**< monitor attached to this request (only 1) */
+  nm_req_flag_t flags;          /**< flags given by user */
+  nm_gate_t p_gate;             /**< dest/src gate; NULL if recv from any source */
+  nm_core_tag_t tag;            /**< tag to send to/from (works in combination with tag_mask for recv) */
+  nm_seq_t seq;                 /**< sequence number on the given tag */
   union
   {
     struct
@@ -330,52 +330,64 @@ void nm_core_flush(struct nm_core*p_core);
 
 /* ** Status transition ************************************ */
 
+/* not part of the public API; defined here for inline */
+
 #if defined(PIOMAN)
-/* ** status with pioman */
+
+/** @internal */
 static inline void nm_cond_init(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   piom_cond_init(p_cond, bitmask);
 }
+/** @internal */
 static inline nm_status_t nm_cond_test(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   if(bitmask & NM_STATUS_FINALIZED)
     return piom_cond_test_locked(p_cond, bitmask);
   return piom_cond_test(p_cond, bitmask);
 }
+/** @internal */
 static inline void nm_cond_add(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   piom_cond_add(p_cond, bitmask);
 }
+/** @internal */
 static inline void nm_cond_wait(nm_cond_status_t*p_cond, nm_status_t bitmask, nm_core_t p_core)
 {
   piom_cond_wait(p_cond, bitmask);
 }
+/** @internal */
 static inline void nm_cond_signal(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   piom_cond_signal(p_cond, bitmask);
 }
+/** @internal */
 static inline void nm_cond_wait_multiple(void**pp_conds, int n, uintptr_t offset, nm_status_t bitmask, nm_core_t p_core)
 {
   piom_cond_wait_all(pp_conds, n, offset, bitmask);
 }
 #else /* PIOMAN */
-/* ** status without pioman */
+/** @internal */
 static inline void nm_cond_init(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   *p_cond = bitmask;
 }
+/** @internal */
 static inline nm_status_t nm_cond_test(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   return ((*p_cond) & bitmask);
 }
+/** @internal */
 static inline void nm_cond_add(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   *p_cond |= bitmask;
 }
+/** @internal */
 static inline void nm_cond_signal(nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   *p_cond |= bitmask;
 }
+/** @internal */
 static inline void nm_cond_wait(nm_cond_status_t*p_cond, nm_status_t bitmask, nm_core_t p_core)
 {
   while(!nm_cond_test(p_cond, bitmask))
@@ -383,6 +395,7 @@ static inline void nm_cond_wait(nm_cond_status_t*p_cond, nm_status_t bitmask, nm
       nm_schedule(p_core);
     }
 }
+/** @internal */
 static inline void nm_cond_wait_multiple(void**pp_conds, int n, uintptr_t offset, nm_status_t bitmask, nm_core_t p_core)
 {
   int i;
@@ -436,7 +449,7 @@ static inline void nm_status_assert(struct nm_req_s*p_req, nm_status_t value)
 static inline void nm_status_spinwait(struct nm_req_s*p_req, nm_status_t status)
 {
   while(!nm_status_test(p_req, status))
-    {  }
+    { /* bust wait*/ }
 }
 /** tests for all given bits in status */
 static inline int nm_status_test_allbits(struct nm_req_s*p_req, nm_status_t bitmask)

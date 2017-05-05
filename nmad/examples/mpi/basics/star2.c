@@ -20,7 +20,8 @@
 
 #define LOOPS 10
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   int numtasks, rank;
   int tag = 1;
 
@@ -29,48 +30,55 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-  if (rank == 0) {
-    int child, loop, success=1;
-    MPI_Request *out_requests;
-    MPI_Request *in_requests;
-
-    for(loop=0 ; loop<LOOPS ; loop++) {
-      out_requests = malloc(numtasks * sizeof(MPI_Request));
-      in_requests = malloc(numtasks * sizeof(MPI_Request));
-
-      for(child=1 ; child<numtasks ; child++) {
-        MPI_Isend(&child, 1, MPI_INT, child, tag, MPI_COMM_WORLD, &out_requests[child-1]);
-      }
-
-      for(child=1 ; child<numtasks ; child++) {
-        MPI_Wait(&out_requests[child-1], MPI_STATUS_IGNORE);
-      }
-
-      for(child=1 ; child<numtasks ; child++) {
-        int recv;
-        MPI_Recv(&recv, 1, MPI_INT, child, tag, MPI_COMM_WORLD, NULL);
-        if (recv != child) {
-          success = 0;
-          fprintf(stdout, "Expected [%d] - Received [%d]\n", child, recv);
-        }
-      }
-
+  if (rank == 0)
+    {
+      int child, loop, success=1;
+      MPI_Request*out_requests = malloc(numtasks * sizeof(MPI_Request));
+      MPI_Request*in_requests = malloc(numtasks * sizeof(MPI_Request));
+      
+      for(loop = 0 ; loop < LOOPS ; loop++)
+	{
+	  int*childs = malloc(sizeof(int) * numtasks);
+	  for(child = 1 ; child < numtasks ; child++)
+	    {
+	      childs[child] = child;
+	      MPI_Isend(&childs[child], 1, MPI_INT, child, tag, MPI_COMM_WORLD, &out_requests[child-1]);
+	    }
+	  
+	  for(child = 1 ; child < numtasks ; child++)
+	    {
+	      MPI_Wait(&out_requests[child-1], MPI_STATUS_IGNORE);
+	    }
+	  free(childs);
+	  for(child = 1 ; child < numtasks ; child++)
+	    {
+	      int recv;
+	      MPI_Recv(&recv, 1, MPI_INT, child, tag, MPI_COMM_WORLD, NULL);
+	      if(recv != child)
+		{
+		  success = 0;
+		  fprintf(stdout, "Expected [%d] - Received [%d]\n", child, recv);
+		}
+	    }
+	}
       free(out_requests);
       free(in_requests);
+      if(success)
+	{
+	  fprintf(stdout, "Success\n");
+	}
     }
-    if (success) {
+  else
+    {
+      int father = 0;
+      int r_buffer, loop;
+      for(loop = 0 ; loop < LOOPS ; loop++)
+	{
+	  MPI_Recv(&r_buffer, 1, MPI_INT, father, tag, MPI_COMM_WORLD, NULL);
+	  MPI_Send(&r_buffer, 1, MPI_INT, father, tag, MPI_COMM_WORLD);
+	}
       fprintf(stdout, "Success\n");
     }
-  }
-  else {
-    int father = 0;
-    int r_buffer, loop;
-    for(loop=0 ; loop<LOOPS ; loop++) {
-      MPI_Recv(&r_buffer, 1, MPI_INT, father, tag, MPI_COMM_WORLD, NULL);
-      MPI_Send(&r_buffer, 1, MPI_INT, father, tag, MPI_COMM_WORLD);
-    }
-    fprintf(stdout, "Success\n");
-  }
   MPI_Finalize();
-  exit(0);
+  return 0;
 }

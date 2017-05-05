@@ -16,30 +16,6 @@
 #ifndef NM_STRATEGY_H
 #define NM_STRATEGY_H
 
-
-/** a chunk of request */
-struct nm_req_chunk_s
-{
-  PUK_LIST_LINK(nm_req_chunk);
-  enum { NM_REQ_CHUNK_DATA = 1, NM_REQ_CHUNK_CTRL } kind;
-  union
-  {
-    struct
-    {
-      struct nm_req_s*p_req; /**< the request this chunk belongs to */
-      nm_len_t chunk_len;    /**< length of the chunk */
-      nm_len_t chunk_offset; /**< offset of the chunk relative to the full data in the req */
-    } data;
-    struct
-    {
-      nm_header_ctrl_generic_t header;
-    } ctrl;
-  };
-};
-PUK_LIST_DECLARE_TYPE(nm_req_chunk);
-PUK_LIST_CREATE_FUNCS(nm_req_chunk);
-PUK_LFQUEUE_TYPE(nm_req_chunk, struct nm_req_chunk_s*, NULL, 128);
-
 /** Driver for 'NewMad_Strategy' component interface
  */
 struct nm_strategy_iface_s

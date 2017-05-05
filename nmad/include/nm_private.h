@@ -47,7 +47,17 @@
 #include <tbx_topology.h>
 #endif
 
-/* ** Tracks ************************************************/
+/* ** Requests ********************************************* */
+
+PUK_LIST_DECLARE_TYPE(nm_req);
+PUK_LIST_CREATE_FUNCS(nm_req);
+
+PUK_LIST_DECLARE_TYPE(nm_req_chunk);
+PUK_LIST_CREATE_FUNCS(nm_req_chunk);
+PUK_LFQUEUE_TYPE(nm_req_chunk, struct nm_req_chunk_s*, NULL, 128);
+
+
+/* ** Tracks *********************************************** */
 
 typedef int8_t nm_trk_id_t;
 

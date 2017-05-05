@@ -254,6 +254,15 @@ void nm_core_req_monitor(struct nm_core*p_core, struct nm_req_s*p_req, struct nm
 
 /* ** Packs/unpacks **************************************** */
 
+/** a chunk of request */
+struct nm_req_chunk_s
+{
+  PUK_LIST_LINK(nm_req_chunk);
+  struct nm_req_s*p_req; /**< the request this chunk belongs to */
+  nm_len_t chunk_len;    /**< length of the chunk */
+  nm_len_t chunk_offset; /**< offset of the chunk relative to the full data in the req */
+};
+
 /** a generic pack/unpack request */
 struct nm_req_s
 {
@@ -280,10 +289,8 @@ struct nm_req_s
       nm_core_tag_t tag_mask; /**< mask applied to tag for matching (only bits in mask need to match) */
     } unpack;
   };
+  struct nm_req_chunk_s req_chunk; /**< preallocated chunk for the common case (single-chunk) */
 };
-
-PUK_LIST_DECLARE_TYPE(nm_req);
-PUK_LIST_CREATE_FUNCS(nm_req);
 
 /** build a pack request from data descriptor */
 void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm_data_s*p_data);

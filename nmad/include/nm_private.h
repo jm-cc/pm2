@@ -135,6 +135,24 @@ struct nm_core_dispatching_event_s
 PUK_LFQUEUE_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s*, NULL, 1024);
 PUK_ALLOCATOR_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s);
 
+/* ** Unexpected chunks ************************************ */
+
+
+/** a chunk of unexpected message to be stored */
+struct nm_unexpected_s
+{
+  PUK_LIST_LINK(nm_unexpected);
+  const struct nm_header_generic_s*p_header;
+  struct nm_pkt_wrap_s*p_pw;
+  nm_gate_t p_gate;
+  nm_seq_t seq;
+  nm_core_tag_t tag;
+  nm_len_t msg_len; /**< length of full message on last chunk, NM_LEN_UNDEFINED if not last chunk */
+};
+
+PUK_LIST_DECLARE_TYPE(nm_unexpected);
+PUK_LIST_CREATE_FUNCS(nm_unexpected);
+
 
 #include "nm_trk_cap.h"
 #include "nm_tags.h"

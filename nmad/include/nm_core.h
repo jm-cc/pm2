@@ -22,21 +22,6 @@
 #endif
 
 
-/** a chunk of unexpected message to be stored */
-struct nm_unexpected_s
-{
-  PUK_LIST_LINK(nm_unexpected);
-  const struct nm_header_generic_s*p_header;
-  struct nm_pkt_wrap_s*p_pw;
-  nm_gate_t p_gate;
-  nm_seq_t seq;
-  nm_core_tag_t tag;
-  nm_len_t msg_len; /**< length of full message on last chunk, NM_LEN_UNDEFINED if not last chunk */
-};
-
-PUK_LIST_DECLARE_TYPE(nm_unexpected);
-PUK_LIST_CREATE_FUNCS(nm_unexpected);
-
 /** Core NewMadeleine structure.
  */
 struct nm_core
@@ -59,13 +44,15 @@ struct nm_core
   struct nm_pkt_wrap_list_s pending_recv_list;  /**< active pw for recv to poll */
 #endif /* !PIOMAN */
  
+  struct nm_req_chunk_lfqueue_s pack_submissions; /**< list of new pack reqs (lock-free submission list) */
   struct nm_req_list_s unpacks;                 /**< list of posted unpacks */
   struct nm_unexpected_list_s unexpected;       /**< list of unexpected chunks */
   struct nm_req_list_s pending_packs;           /**< list of pack reqs in progress (or waiting for ACK) */
   struct nm_core_monitor_vect_s monitors;       /**< monitors for upper layers to track events in nmad core */
-
+  
   nm_core_dispatching_event_allocator_t dispatching_event_allocator;
   struct nm_core_dispatching_event_lfqueue_s dispatching_events;
+  
 #ifdef NMAD_PROFILE
   struct
   {

@@ -101,9 +101,10 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t*p_request)
   return rc;
 }
 
-extern int nm_sr_flush(struct nm_core*p_core)
+extern int nm_sr_flush(struct nm_session_s*p_session)
 {
-  nm_core_flush(p_core);
+  nm_core_flush(p_session->p_core);
+  nm_schedule(p_session->p_core);
   return NM_ESUCCESS;
 }
 

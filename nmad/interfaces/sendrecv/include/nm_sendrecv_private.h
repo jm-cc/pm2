@@ -34,7 +34,7 @@
 
 /* ** Polling and locking ********************************** */
 
-extern int nm_sr_flush(struct nm_core *p_core);
+extern int nm_sr_flush(struct nm_session_s*p_session);
 
 
 /* ** Events *********************************************** */

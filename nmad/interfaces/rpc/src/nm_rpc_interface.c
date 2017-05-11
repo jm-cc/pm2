@@ -181,6 +181,7 @@ nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t 
 
 void nm_rpc_unregister(nm_rpc_service_t p_service)
 {
+  nm_sr_flush(p_service->p_session);
   nm_sr_session_monitor_remove(p_service->p_session, &p_service->monitor);
   free(p_service->header_ptr);
   free(p_service);

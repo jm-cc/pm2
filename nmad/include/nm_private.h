@@ -59,8 +59,6 @@ PUK_LFQUEUE_TYPE(nm_req_chunk, struct nm_req_chunk_s*, NULL, NM_REQ_CHUNK_QUEUE_
 /** allocator for request chunks */
 PUK_ALLOCATOR_TYPE(nm_req_chunk, struct nm_req_chunk_s);
 
-PUK_LFQUEUE_TYPE(nm_ctrl_chunk, struct nm_ctrl_chunk_s*, NULL, NM_REQ_CHUNK_QUEUE_SIZE);
-
 /* ** Tracks *********************************************** */
 
 typedef int8_t nm_trk_id_t;

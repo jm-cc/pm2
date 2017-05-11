@@ -88,6 +88,9 @@ struct nm_gate_s
 
   /** send reqs posted to the gate */
   struct nm_req_chunk_list_s req_chunk_list;
+
+  /** control chunks posted to the gate */
+  struct nm_ctrl_chunk_list_s ctrl_chunk_list;
   
   /** pw ready to be sent, formed by strategy */
   struct nm_pkt_wrap_list_s out_list;

@@ -588,6 +588,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 
   nm_req_chunk_lfqueue_init(&p_core->pack_submissions);
   p_core->req_chunk_allocator = nm_req_chunk_allocator_new(NM_REQ_CHUNK_QUEUE_SIZE);
+  p_core->ctrl_chunk_allocator = nm_ctrl_chunk_allocator_new(NM_REQ_CHUNK_QUEUE_SIZE);
   
   p_core->dispatching_event_allocator = nm_core_dispatching_event_allocator_new(16);
   nm_core_dispatching_event_lfqueue_init(&p_core->dispatching_events);

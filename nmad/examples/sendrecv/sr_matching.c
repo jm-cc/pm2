@@ -20,8 +20,8 @@
 
 #include "../common/nm_examples_helper.h"
 
-#define COUNT 100
-#define MAX_REQS 32768
+#define ITERATIONS 5
+#define MAX_REQS 200000
 
 int peer = -1;
 
@@ -42,66 +42,76 @@ int main(int argc, char**argv)
   nm_examples_init_topo(&argc, argv, NM_EXAMPLES_TOPO_PAIRS);
 
   char small = 1;
+  nm_sr_request_t*sreqs = malloc(MAX_REQS * sizeof(nm_sr_request_t));
+  nm_sr_request_t*rreqs = malloc(MAX_REQS * sizeof(nm_sr_request_t));
 
   if(is_server)
     {
-      printf("# reqs  | lat. (usec.)\t| min   \t| max\n");
-      double*lats = malloc(sizeof(double) * COUNT);
-      int i, k, r;
-      for(i = 1; i < MAX_REQS; i = i*1.1 + 1)
+      printf("# reqs  |\t min lat |\t med |\t \t d1  |\t d9  \n");
+      int burst, k, r;
+      for(burst = 1; burst < MAX_REQS; burst = burst * 1.1 + 1)
 	{
-	  nm_sr_request_t sreqs[i], rreqs[i];
 	  tbx_tick_t t1, t2;
+	  const int iterations = (ITERATIONS * MAX_REQS) / burst;
+	  double*lats = malloc(sizeof(double) * iterations);
 	  nm_examples_barrier(-1);
-	  for(k = 0; k < COUNT; k++)
+	  for(k = 0; k < iterations; k++)
 	    {
 	      TBX_GET_TICK(t1);
-	      for(r = 0; r < i; r++)
+	      for(r = 0; r < burst; r++)
 		{
 		  int tag = r;
 		  nm_sr_isend(p_session, p_gate, tag, &small, 1, &sreqs[r]);
 		  nm_sr_irecv(p_session, p_gate, tag, &small, 1, &rreqs[r]);
 		}
-	      for(r = 0; r < i; r++)
+	      for(r = 0; r < burst; r++)
 		{
 		  nm_sr_swait(p_session, &sreqs[r]);
 		  nm_sr_rwait(p_session, &rreqs[r]);
 		}
 	      TBX_GET_TICK(t2);
-	      lats[k] = TBX_TIMING_DELAY(t1, t2) / i;
+	      lats[k] = TBX_TIMING_DELAY(t1, t2) / burst;
 	    }
-	  qsort(lats, COUNT, sizeof(double), &comp_double);
-	  printf("%d  \t %8.2f \t %8.2f \t %8.2f\n", i, lats[COUNT/2], lats[0], lats[COUNT-2]);
+	  qsort(lats, iterations, sizeof(double), &comp_double);
+	  const double min_lat = lats[0];
+	  const double max_lat = lats[iterations - 1];
+	  const double med_lat = lats[(iterations - 1) / 2];
+	  const double d1_lat  = lats[(iterations - 1) / 10];
+	  const double d9_lat  = lats[ 9 *(iterations - 1) / 10];
+	  printf("%d \t %8.03f \t %8.03f \t %8.03f \t %8.03f \n", burst, min_lat, med_lat, d1_lat, d9_lat);
+	  free(lats);
 	}
-      free(lats);
     }
   else
     {
-      int i, k, r;
-      for(i = 1; i < MAX_REQS; i = i*1.1 + 1)
+      int burst, k, r;
+      for(burst = 1; burst < MAX_REQS; burst = burst * 1.1 + 1)
 	{
-	  nm_sr_request_t sreqs[i], rreqs[i];
+	  const int iterations = (ITERATIONS * MAX_REQS) / burst;
 	  nm_examples_barrier(-1);
-	  for(k = 0; k < COUNT; k++)
+	  for(k = 0; k < iterations; k++)
 	    {
-	      for(r = 0; r < i; r++)
+	      for(r = 0; r < burst; r++)
 		{
 		  int tag = r;
 		  nm_sr_irecv(p_session, p_gate, tag, &small, 1, &rreqs[r]);
 		}
-	      for(r = 0; r < i; r++)
+	      for(r = 0; r < burst; r++)
 		{
 		  int tag = r;
 		  nm_sr_rwait(p_session, &rreqs[r]);
 		  nm_sr_isend(p_session, p_gate, tag, &small, 1, &sreqs[r]);
 		}
-	      for(r = 0; r < i; r++)
+	      for(r = 0; r < burst; r++)
 		{
 		  nm_sr_swait(p_session, &sreqs[r]);
 		}
 	    }
 	}
     }
+
+  free(sreqs);
+  free(rreqs);
 
   nm_examples_exit();
   return 0;

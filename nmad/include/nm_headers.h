@@ -165,6 +165,19 @@ struct nm_header_strat_s
 typedef union nm_header_ctrl_generic_s nm_header_ctrl_generic_t;
 typedef union nm_header_data_generic_s nm_header_data_generic_t;
 
+/** a chunk of control data */
+struct nm_ctrl_chunk_s
+{
+  PUK_LIST_LINK(nm_ctrl_chunk);
+  nm_header_ctrl_generic_t ctrl;
+};
+PUK_LIST_DECLARE_TYPE(nm_ctrl_chunk);
+PUK_LIST_CREATE_FUNCS(nm_ctrl_chunk);
+
+/** allocator for control chunks */
+PUK_ALLOCATOR_TYPE(nm_ctrl_chunk, struct nm_ctrl_chunk_s);
+
+
 #define NM_HEADER_PKT_DATA_SIZE			\
   sizeof(struct nm_header_pkt_data_s)
 

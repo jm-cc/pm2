@@ -44,12 +44,14 @@ struct nm_core
   struct nm_pkt_wrap_list_s pending_recv_list;  /**< active pw for recv to poll */
 #endif /* !PIOMAN */
  
-  struct nm_req_chunk_lfqueue_s pack_submissions; /**< list of new pack reqs (lock-free submission list) */
-  nm_req_chunk_allocator_t req_chunk_allocator;   /**< allocator for req_chunk elements */
-  struct nm_req_list_s unpacks;                 /**< list of posted unpacks */
-  struct nm_unexpected_list_s unexpected;       /**< list of unexpected chunks */
-  struct nm_req_list_s pending_packs;           /**< list of pack reqs in progress (or waiting for ACK) */
-  struct nm_core_monitor_vect_s monitors;       /**< monitors for upper layers to track events in nmad core */
+  struct nm_req_chunk_lfqueue_s pack_submissions;  /**< list of new pack reqs (lock-free submission list) */
+  struct nm_ctrl_chunk_lfqueue_s ctrl_submissions; /**< list of submitted control chunks */
+  nm_req_chunk_allocator_t req_chunk_allocator;    /**< allocator for req_chunk elements */
+  nm_ctrl_chunk_allocator_t ctrl_chunk_allocator;  /**< allocator for control chunks */
+  struct nm_req_list_s unpacks;                    /**< list of posted unpacks */
+  struct nm_unexpected_list_s unexpected;          /**< list of unexpected chunks */
+  struct nm_req_list_s pending_packs;              /**< list of pack reqs in progress (or waiting for ACK) */
+  struct nm_core_monitor_vect_s monitors;          /**< monitors for upper layers to track events in nmad core */
   
   nm_core_dispatching_event_allocator_t dispatching_event_allocator;
   struct nm_core_dispatching_event_lfqueue_s dispatching_events;

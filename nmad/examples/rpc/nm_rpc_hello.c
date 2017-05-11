@@ -57,9 +57,11 @@ int main(int argc, char**argv)
   nm_launcher_init(&argc, argv);
   nm_session_t p_session = NULL;
   nm_launcher_session_open(&p_session, "nm_rpc_hello");
+  int size = 0;
+  nm_launcher_get_size(&size);
   int rank = -1;
   nm_launcher_get_rank(&rank);
-  int peer = 1 - rank;
+  int peer = (size > 1) ? (1 - rank) : rank;
   nm_gate_t p_gate = NULL;
   nm_launcher_get_gate(peer, &p_gate);
 
@@ -77,7 +79,7 @@ int main(int argc, char**argv)
   nm_data_contiguous_build(&data, (void*)msg, len);
   /* send the RPC request */
   nm_rpc_send(p_session, p_gate, tag, &header, sizeof(struct rpc_hello_header_s), &data);
-
+  
   /* generic nmad termination */
   nm_coll_barrier(p_comm, 0xF2);
   nm_rpc_unregister(p_service);

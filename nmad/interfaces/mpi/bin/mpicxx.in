@@ -14,7 +14,7 @@
 # General Public License for more details.
 
 CXX="g++"
-CFLAGS="@NMAD_CFLAGS@"
+CFLAGS="-I@nmad_root@/include"
 LIBS="@NMAD_LIBS@ -lmadmpi @nmad_mpi_romio_libs@"
 
 if [ "x${NMAD_BUILD}" != "x" ]; then

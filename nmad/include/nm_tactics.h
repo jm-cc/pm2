@@ -67,8 +67,7 @@ static inline void nm_tactic_pack_data_rdv(struct nm_req_s*p_pack, nm_len_t chun
   union nm_header_ctrl_generic_s ctrl;
   nm_header_init_rdv(&ctrl, p_pack, chunk_len, chunk_offset,
 		     (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
-  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_pack->p_gate->strategy_receptacle;
-  (*strategy->driver->pack_ctrl)(strategy->_status, p_pack->p_gate, &ctrl);
+  nm_strat_pack_ctrl(p_pack->p_gate, &ctrl);
 }
 
 /** Find in the given outlist a packet wrapper with

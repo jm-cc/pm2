@@ -139,6 +139,12 @@ static inline void nm_strat_rdv_accept(nm_gate_t p_gate)
     }
 }
 
+static inline void nm_strat_pack_ctrl(nm_gate_t p_gate, nm_header_ctrl_generic_t*p_header)
+{
+  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
+  (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, p_header);
+}
+
 /** Post a ready-to-receive
  */
 static inline void nm_core_post_rtr(nm_gate_t p_gate,  nm_core_tag_t tag, nm_seq_t seq,
@@ -158,8 +164,7 @@ static inline void nm_core_post_rtr(nm_gate_t p_gate,  nm_core_tag_t tag, nm_seq
     }
   assert(gdrv_index >= 0);
   nm_header_init_rtr(&h, tag, seq, gdrv_index, trk_id, chunk_offset, chunk_len);
-  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-  (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
+  nm_strat_pack_ctrl(p_gate, &h);
 }
 
 /** Post an ACK
@@ -168,8 +173,7 @@ static inline void nm_core_post_ack(nm_gate_t p_gate, nm_core_tag_t tag, nm_seq_
 {
   nm_header_ctrl_generic_t h;
   nm_header_init_ack(&h, tag, seq);
-  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-  (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
+  nm_strat_pack_ctrl(p_gate, &h);
 }
 
 /** dynamically adapt pioman polling frequency level depending on the number of pending requests */

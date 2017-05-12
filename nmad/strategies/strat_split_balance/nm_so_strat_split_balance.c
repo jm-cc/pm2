@@ -138,8 +138,7 @@ static void strat_split_balance_pack_data(void*_status, struct nm_req_s*p_pack, 
       nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_pw);
       union nm_header_ctrl_generic_s ctrl;
       nm_header_init_rdv(&ctrl, p_pack, chunk_len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
-      struct puk_receptacle_NewMad_Strategy_s*strategy = &p_pack->p_gate->strategy_receptacle;
-      (*strategy->driver->pack_ctrl)(strategy->_status, p_pack->p_gate, &ctrl);
+      nm_strat_pack_ctrl(p_pack->p_gate, &ctrl);
     }
   
 }

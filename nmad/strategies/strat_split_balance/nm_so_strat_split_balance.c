@@ -121,7 +121,7 @@ static void strat_split_balance_pack_data(void*_status, struct nm_req_s*p_pack, 
 	  p_pw = nm_pw_alloc_global_header();
 	  nm_pkt_wrap_list_push_back(&p_pack->p_gate->out_list, p_pw);
 	}
-      nm_pw_add_data_chunk(p_pw, p_pack, &p_pack->data, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
+      nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
       assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
     }
   else
@@ -134,7 +134,7 @@ static void strat_split_balance_pack_data(void*_status, struct nm_req_s*p_pack, 
 	  flags |= NM_PW_DATA_USE_COPY;
 	}
       struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
-      nm_pw_add_data_chunk(p_pw, p_pack, &p_pack->data, chunk_len, chunk_offset, flags);
+      nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, flags);
       nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_pw);
       union nm_header_ctrl_generic_s ctrl;
       nm_header_init_rdv(&ctrl, p_pack, chunk_len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);

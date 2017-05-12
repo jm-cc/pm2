@@ -146,23 +146,17 @@ struct nm_pkt_wrap_s*nm_pw_alloc_global_header(void);
 
 int nm_pw_free(struct nm_pkt_wrap_s*p_pw);
 
-int nm_pw_split_data(struct nm_pkt_wrap_s *p_pw,
-			struct nm_pkt_wrap_s *pp_pw2,
-			nm_len_t offset);
+int nm_pw_split_data(struct nm_pkt_wrap_s*p_pw, struct nm_pkt_wrap_s*pp_pw2, nm_len_t offset);
 
 void nm_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack,
-			     const void *data, nm_len_t len, nm_len_t offset, int flags);
-
-void nm_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-			     const void*data, nm_len_t len);
+			  nm_len_t len, nm_len_t offset, int flags);
 
 void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-				 const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t flags);
-
-void nm_pw_add_data_in_iovec(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-				const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t proto_flags);
+			      struct nm_data_s*p_data, nm_len_t len, nm_len_t chunk_offset, uint8_t flags);
 
 void nm_pw_add_raw(struct nm_pkt_wrap_s*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset);
+
+void nm_pw_set_data_raw(struct nm_pkt_wrap_s*p_pw, struct nm_data_s*p_data, nm_len_t chunk_len, nm_len_t chunk_offset);
 
 struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap_s*p_pw);
 

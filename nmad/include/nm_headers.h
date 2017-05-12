@@ -26,6 +26,7 @@ static inline void nm_header_global_finalize(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_header_global_s*h = p_pw->v[0].iov_base;
   const int v0len = p_pw->v[0].iov_len;
+  assert(p_pw->trk_id == NM_TRK_SMALL);
   assert(v0len <= UINT16_MAX);
   h->v0len = v0len;
 }

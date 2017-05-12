@@ -90,61 +90,36 @@ struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap_s*p_pw)
 }
 
 
-/** Add short data to pw, with compact header */
-void nm_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-			     const void*data, nm_len_t len)
-{
-  assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
-  assert(seq != NM_SEQ_NONE);
-  struct iovec*hvec = &p_pw->v[0];
-  struct nm_header_short_data_s *h = hvec->iov_base + hvec->iov_len;
-  hvec->iov_len += NM_HEADER_SHORT_DATA_SIZE;
-  nm_header_init_short_data(h, tag, seq, len);
-  if(len)
-    {
-      memcpy(hvec->iov_base + hvec->iov_len, data, len);
-      hvec->iov_len += len;
-    }
-  p_pw->length += NM_HEADER_SHORT_DATA_SIZE + len;
-}
-
 /** Add small data to pw, in header */
 void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-				 const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t flags)
+			      struct nm_data_s*p_data, nm_len_t chunk_len, nm_len_t chunk_offset, uint8_t flags)
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
-  assert(len <= nm_pw_remaining_buf(p_pw));
+  assert(chunk_len <= nm_pw_remaining_buf(p_pw));
   assert(seq != NM_SEQ_NONE);
   struct iovec*hvec = &p_pw->v[0];
-  struct nm_header_data_s *h = hvec->iov_base + hvec->iov_len;
-  nm_header_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0xFFFF, len, chunk_offset);
+  struct nm_header_data_s*h = hvec->iov_base + hvec->iov_len;
+  nm_header_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0xFFFF, chunk_len, chunk_offset);
   hvec->iov_len += NM_HEADER_DATA_SIZE;
   p_pw->length  += NM_HEADER_DATA_SIZE;
-  if(len)
+  if(chunk_len)
     {
-      const nm_len_t size = nm_aligned(len);
-      memcpy(hvec->iov_base + hvec->iov_len, data, len);
+      const nm_len_t size = nm_aligned(chunk_len);
+      nm_data_copy_from(p_data, chunk_offset, chunk_len, hvec->iov_base + hvec->iov_len);
       hvec->iov_len += size;
       p_pw->length  += size;
     }
   assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 }
 
-/** Add small data to pw, in iovec */
-void nm_pw_add_data_in_iovec(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-				const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t proto_flags)
+/** Add raw data to pw, without header */
+void nm_pw_set_data_raw(struct nm_pkt_wrap_s*p_pw, struct nm_data_s*p_data, nm_len_t chunk_len, nm_len_t chunk_offset)
 {
-  assert(seq != NM_SEQ_NONE);
-  struct iovec*hvec = &p_pw->v[0];
-  struct nm_header_data_s *h = hvec->iov_base + hvec->iov_len;
-  const nm_len_t skip = p_pw->length - hvec->iov_len;
-  hvec->iov_len += NM_HEADER_DATA_SIZE;
-  struct iovec *dvec = nm_pw_grow_iovec(p_pw);
-  dvec->iov_base = (void*)data;
-  dvec->iov_len = len;
-  nm_header_init_data(h, tag, seq, proto_flags, skip, len, chunk_offset);
-  p_pw->length += NM_HEADER_DATA_SIZE + len;
-  assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
+  assert(p_pw->flags & NM_PW_NOHEADER);
+  assert(p_pw->p_data == NULL);
+  p_pw->length       = chunk_len;
+  p_pw->chunk_offset = chunk_offset;
+  p_pw->p_data       = p_data;
 }
 
 /** Add raw data to pw, without header */
@@ -366,20 +341,19 @@ int nm_pw_split_data(struct nm_pkt_wrap_s *p_pw,
 /** Append a chunk of data to the pkt wrapper being built for sending.
  *
  *  @param p_pw the pkt wrapper pointer.
- *  @param tag the tag id which generated the fragment.
- *  @param seq the sequence number of the fragment.
- *  @param data the data fragment pointer.
  *  @param chunk_len the data fragment length.
  *  @param chunk_offset offset of the chunk in the full message
  *  @param flags the flags controlling the way the fragment is appended.
  *  @return The NM status.
  */
-void nm_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack, const void*ptr, nm_len_t chunk_len, nm_len_t chunk_offset, int flags)
+void nm_pw_add_data_chunk(struct nm_pkt_wrap_s*p_pw, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset, int flags)
 {
   const nm_core_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;
   nm_proto_t proto_flags = 0;
   assert(!p_pw->p_unpack);
+  assert(flags & NM_PW_DATA_ITERATOR);
+  struct nm_data_s*p_data = &p_pack->data;
 
   /* add the contrib ref to the pw */
   nm_pw_completion_add(p_pw, p_pack, chunk_len);
@@ -395,60 +369,35 @@ void nm_pw_add_data_chunk(struct nm_pkt_wrap_s *p_pw, struct nm_req_s*p_pack, co
   if(p_pw->flags & NM_PW_GLOBAL_HEADER)
     {
       /* ** Data with a global header in v[0] */
-      if(flags & NM_PW_DATA_ITERATOR)
+      if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0))
 	{
-	  /* data defined with iterator */
-	  const struct nm_data_s*p_data = ptr;
-	  if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0))
+	  /* short data with short header */
+	  struct iovec*hvec = &p_pw->v[0];
+	  struct nm_header_short_data_s*h = hvec->iov_base + hvec->iov_len;
+	  hvec->iov_len += NM_HEADER_SHORT_DATA_SIZE;
+	  nm_header_init_short_data(h, tag, seq, chunk_len);
+	  if(chunk_len)
 	    {
-	      /* short data with iterator */
-	      struct iovec*hvec = &p_pw->v[0];
-	      struct nm_header_short_data_s *h = hvec->iov_base + hvec->iov_len;
-	      hvec->iov_len += NM_HEADER_SHORT_DATA_SIZE;
-	      nm_header_init_short_data(h, tag, seq, chunk_len);
-	      if(chunk_len)
-		{
-		  nm_data_copy_from(p_data, 0 /* chunk_offset == 0 */, chunk_len, hvec->iov_base + hvec->iov_len);
-		  hvec->iov_len += chunk_len;
-		}
-	      p_pw->length += NM_HEADER_SHORT_DATA_SIZE + chunk_len;
+	      nm_data_copy_from(p_data, 0 /* chunk_offset == 0 */, chunk_len, hvec->iov_base + hvec->iov_len);
+	      hvec->iov_len += chunk_len;
 	    }
-	  else
-	    {
-	      /* long data with iterator */
-	      nm_data_pkt_pack(p_pw, tag, seq, p_data, chunk_offset, chunk_len, proto_flags);
-	    }
-	}
-      else if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0))
-	{
-	  /* Small data case */
-	  nm_pw_add_short_data(p_pw, tag, seq, ptr, chunk_len);
+	  p_pw->length += NM_HEADER_SHORT_DATA_SIZE + chunk_len;
 	}
       else if(flags & NM_PW_DATA_USE_COPY)
 	{
 	  /* Data immediately follows its header */
-	  nm_pw_add_data_in_header(p_pw, tag, seq, ptr, chunk_len, chunk_offset, proto_flags);
+	  nm_pw_add_data_in_header(p_pw, tag, seq, p_data, chunk_len, chunk_offset, proto_flags);
 	}
-      else 
+      else
 	{
-	  /* Data handled by a separate iovec entry */
-	  nm_pw_add_data_in_iovec(p_pw, tag, seq, ptr, chunk_len, chunk_offset, proto_flags);
+	  /* long data with iterator */
+	  nm_data_pkt_pack(p_pw, tag, seq, p_data, chunk_offset, chunk_len, proto_flags);
 	}
     }
   else if(p_pw->flags & NM_PW_NOHEADER)
     {
-      if(flags & NM_PW_DATA_ITERATOR)
-	{
-	  const struct nm_data_s*p_data = ptr;
-	  p_pw->length = chunk_len;
-	  p_pw->chunk_offset = chunk_offset;
-	  p_pw->p_data = p_data;
-	}
-      else
-	{
-	  /* ** Add raw data to pw, without header */
-	  nm_pw_add_raw(p_pw, ptr, chunk_len, chunk_offset);
-	}
+      /* ** Add raw data to pw, without header */
+      nm_pw_set_data_raw(p_pw, p_data, chunk_len, chunk_offset);
     }
 }
 

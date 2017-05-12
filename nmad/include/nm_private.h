@@ -223,11 +223,9 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 __PUK_SYM_INTERNAL
 void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw);
 
-__PUK_SYM_INTERNAL
 void nm_data_pkt_pack(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 		      const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len, uint8_t flags);
 
-__PUK_SYM_INTERNAL
 void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap_s*p_pw,
 			nm_len_t chunk_offset, nm_len_t chunk_len);
 

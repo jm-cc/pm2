@@ -707,8 +707,9 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
   const nm_len_t chunk_offset = header->chunk_offset;
   const nm_len_t chunk_len    = header->chunk_len;
   nm_gate_t p_gate      = p_rtr_pw->p_gate;
+  struct nm_core*p_core = p_gate->p_core;
   struct nm_pkt_wrap_s*p_large_pw = NULL, *p_pw_save;
-  nm_core_lock_assert(p_rtr_pw->p_drv->p_core);
+  nm_core_lock_assert(p_core);
   puk_list_foreach_safe(p_large_pw, p_pw_save, &p_gate->pending_large_send)
     {
       assert(p_large_pw->n_completions == 1);
@@ -748,12 +749,14 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	  else
 	    {
 	      /* rdv eventually accepted on trk#0- rollback and repack */
-	      struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
-	      p_pack->pack.scheduled -= chunk_len;
 	      assert(p_large_pw->p_data != NULL);
-	      /* repack chunk on trk#0 */
-	      (*r->driver->pack_data)(r->_status, p_pack, chunk_len, chunk_offset);
+	      p_pack->pack.scheduled -= chunk_len;
 	      nm_pw_free(p_large_pw);
+	      struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_malloc(p_core->req_chunk_allocator);
+	      p_req_chunk->p_req             = p_pack;
+	      p_req_chunk->chunk_offset      = chunk_offset;
+	      p_req_chunk->chunk_len         = chunk_len;
+	      nm_req_chunk_list_push_back(&p_gate->req_chunk_list, p_req_chunk);
 	    }
 	  return;
 	}

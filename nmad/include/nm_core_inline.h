@@ -141,8 +141,19 @@ static inline void nm_strat_rdv_accept(nm_gate_t p_gate)
 
 static inline void nm_strat_pack_ctrl(nm_gate_t p_gate, nm_header_ctrl_generic_t*p_header)
 {
+  struct nm_core*p_core = p_gate->p_core;
+  nm_core_lock_assert(p_core);
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-  (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, p_header);
+  if(strategy->driver->pack_ctrl != NULL)
+    {
+      (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, p_header);
+    }
+  else
+    {
+      struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_malloc(p_core->ctrl_chunk_allocator);
+      p_ctrl_chunk->ctrl = *p_header;
+      nm_ctrl_chunk_list_push_back(&p_gate->ctrl_chunk_list, p_ctrl_chunk);
+    }
 }
 
 /** Post a ready-to-receive

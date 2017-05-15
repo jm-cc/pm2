@@ -48,18 +48,6 @@ void nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_ta
   p_pack->req_chunk.p_req = NULL;
 }
 
-static inline void nm_req_chunk_submit(struct nm_core*p_core, struct nm_req_chunk_s*p_req_chunk)
-{
-  int rc;
-  do
-    {
-      rc = nm_req_chunk_lfqueue_enqueue(&p_core->pack_submissions, p_req_chunk);
-      if(rc)
-	nm_core_flush(p_core);
-    }
-  while(rc);
-}
-
 void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen)
 {
   const nm_len_t size = nm_data_size(&p_pack->data);

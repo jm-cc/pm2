@@ -156,6 +156,33 @@ static inline void nm_strat_pack_ctrl(nm_gate_t p_gate, nm_header_ctrl_generic_t
     }
 }
 
+static inline void nm_req_chunk_submit(struct nm_core*p_core, struct nm_req_chunk_s*p_req_chunk)
+{
+  nm_core_nolock_assert(p_core);
+  int rc;
+  do
+    {
+      rc = nm_req_chunk_lfqueue_enqueue(&p_core->pack_submissions, p_req_chunk);
+      if(rc)
+	nm_core_flush(p_core);
+    }
+  while(rc);
+}
+
+static inline void nm_req_chunk_destroy(struct nm_core*p_core, struct nm_req_chunk_s*p_req_chunk)
+{
+  struct nm_req_s*p_pack = p_req_chunk->p_req;
+
+  if(p_req_chunk != &p_pack->req_chunk)
+    {
+      nm_req_chunk_free(p_core->req_chunk_allocator, p_req_chunk);
+    }
+  else
+    {
+      p_pack->req_chunk.p_req = NULL;
+    }
+}
+
 /** Post a ready-to-receive
  */
 static inline void nm_core_post_rtr(nm_gate_t p_gate,  nm_core_tag_t tag, nm_seq_t seq,

@@ -53,17 +53,18 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
 	}
       nm_req_list_push_back(&p_core->pending_packs, p_pack);
       const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
-      (*r->driver->pack_data)(r->_status, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset);
-      nm_core_polling_level(p_core);
-      nm_profile_inc(p_core->profiling.n_packs);
-      if(p_req_chunk != &p_pack->req_chunk)
+      if(r->driver->pack_data != NULL)
 	{
-	  nm_req_chunk_free(p_core->req_chunk_allocator, p_req_chunk);
+	  (*r->driver->pack_data)(r->_status, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset);
+	  nm_profile_inc(p_core->profiling.n_packs);
+	  /* free req_chunk immediately */
+	  nm_req_chunk_destroy(p_core, p_req_chunk);
 	}
       else
 	{
-	  p_pack->req_chunk.p_req = NULL;
+	  nm_req_chunk_list_push_back(&p_pack->p_gate->req_chunk_list, p_req_chunk);
 	}
+      nm_core_polling_level(p_core);
       p_req_chunk = nm_req_chunk_lfqueue_dequeue_single_reader(&p_core->pack_submissions);
     }
 }

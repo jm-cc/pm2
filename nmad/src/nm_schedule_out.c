@@ -195,7 +195,7 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_core*p_core = p_pw->p_drv->p_core;
-  /* no locck needed; only this ltask is allow to touch the pw */
+  /* no lock needed; only this ltask is allowed to touch the pw */
   nm_core_nolock_assert(p_core);
 
 #ifdef PIO_OFFLOAD

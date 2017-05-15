@@ -35,10 +35,9 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
   p_pack->monitor   = NM_MONITOR_NULL;
 }
 
-int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
-		      nm_req_flag_t flags)
+void nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
+		       nm_req_flag_t flags)
 {
-  int err = NM_ESUCCESS;
   assert(p_gate != NULL);
   nm_status_assert(p_pack, NM_STATUS_PACK_INIT);
   nm_status_add(p_pack, NM_STATUS_PACK_POSTED);
@@ -47,7 +46,6 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag
   p_pack->tag    = tag;
   p_pack->p_gate = p_gate;
   p_pack->req_chunk.p_req = NULL;
-  return err;
 }
 
 static inline void nm_req_chunk_submit(struct nm_core*p_core, struct nm_req_chunk_s*p_req_chunk)

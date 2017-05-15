@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2015 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
  */
 
 #include <stdint.h>
-#include <sys/uio.h>
 #include <assert.h>
 
 
@@ -29,15 +28,13 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_default, &nm_strat_default_load, NULL, NUL
 /* Components structures:
  */
 
-static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset);
-static void strat_default_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
 static int  strat_default_try_and_commit(void*, nm_gate_t );
 static void strat_default_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_default_driver =
   {
-    .pack_data          = &strat_default_pack_data,
-    .pack_ctrl          = &strat_default_pack_ctrl,
+    .pack_data          = NULL,
+    .pack_ctrl          = NULL,
     .try_and_commit     = &strat_default_try_and_commit,
     .rdv_accept         = &strat_default_rdv_accept
 };
@@ -91,35 +88,6 @@ static void strat_default_destroy(void*_status)
   TBX_FREE(_status);
 }
 
-
-/** Add a new control "header" to the flow of outgoing packets.
- *
- *  @param _status the strat_default instance status.
- *  @param p_ctrl a pointer to the ctrl header.
- *  @return The NM status.
- */
-static void strat_default_pack_ctrl(void*_status, nm_gate_t p_gate, const union nm_header_ctrl_generic_s *p_ctrl)
-{
-  nm_tactic_pack_ctrl(p_ctrl, &p_gate->out_list);
-}
-
-/** push a message chunk */
-static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset)
-{
-  struct nm_strat_default_s*p_status = _status;
-  const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
-  const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
-  if(chunk_len + max_header_len <= p_status->nm_max_small)
-    {
-      nm_tactic_pack_small_new_pw(p_pack, chunk_len, chunk_offset, &p_pack->p_gate->out_list);
-    }
-  else
-    {
-      nm_tactic_pack_data_rdv(p_pack, chunk_len, chunk_offset);
-    }
-}
-
-
 /** Compute and apply the best possible packet rearrangement, then
  *  return next packet to send.
  *
@@ -128,47 +96,51 @@ static void strat_default_pack_data(void*_status, struct nm_req_s*p_pack, nm_len
  */
 static int strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
 {
-#ifdef PROFILE_NMAD
-  static long double wait_time = 0.0;
-  static int count = 0, send_count = 0;
-  static long long int send_size = 0;
-  static tbx_tick_t t_orig;
-#endif /* PROFILE_NMAD */
-
+  struct nm_strat_default_s*p_status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  if((p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
-     !(nm_pkt_wrap_list_empty(&p_gate->out_list)))
+  struct nm_core*p_core = p_gate->p_core;
+  if(p_gdrv->active_send[NM_TRK_SMALL] == 0)
     {
-#ifdef PROFILE_NMAD
-      if(count != 0)
+      if(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	{
-	  tbx_tick_t t2;
-	  TBX_GET_TICK(t2);
-	  const long double t = TBX_TIMING_DELAY(t_orig, t2);
-	  wait_time += t;
-	  if(random() < 100000)
-	    fprintf(stderr, "wait time = %fus (%fs) send = %d; size = %dMB; avg %d bytes/msg\n", 
-		    (double)t, (double)wait_time / 1000000.0, send_count, (int)(send_size / 1000000),
-		    (int)(send_size/send_count));
+	  /* post ctrl on trk #0 */
+	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_pop_front(&p_gate->ctrl_chunk_list);
+	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
+	  nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
+	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
+	  nm_ctrl_chunk_free(p_core->ctrl_chunk_allocator, p_ctrl_chunk);
 	}
-      count = 0;
-      send_count++;
-      send_size += p_pw->length;
-#endif /* PROFILE_NMAD */
-      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_gate->out_list);
-      /* Post packet on track 0 */
-      nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
-    }
-  else if((p_gdrv->active_send[NM_TRK_SMALL] != 0) && !(nm_pkt_wrap_list_empty(&p_gate->out_list)))
-    {
-#ifdef PROFILE_NMAD
-      if(count == 0)
+      else if(!nm_req_chunk_list_empty(&p_gate->req_chunk_list))
 	{
-	  TBX_GET_TICK(t_orig);
+	  struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_pop_front(&p_gate->req_chunk_list);
+	  struct nm_req_s*p_pack = p_req_chunk->p_req;
+	  const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
+	  const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
+	  if(p_req_chunk->chunk_len + max_header_len <= p_status->nm_max_small)
+	    {
+	      /* post short data on trk #0 */
+	      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
+	      nm_pw_add_data_chunk(p_pw, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset, NM_PW_DATA_ITERATOR);
+	      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
+	      nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
+	    }
+	  else
+	    {
+	      /* post RDV for large data */
+	      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
+	      nm_pw_add_data_chunk(p_large_pw, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset,
+				   NM_PW_NOHEADER | NM_PW_DATA_ITERATOR);
+	      nm_pkt_wrap_list_push_back(&p_gate->pending_large_send, p_large_pw);
+	      union nm_header_ctrl_generic_s rdv;
+	      nm_header_init_rdv(&rdv, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset,
+				 (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
+	      struct nm_pkt_wrap_s*p_rdv_pw = nm_pw_alloc_global_header();
+	      nm_pw_add_control(p_rdv_pw, &rdv);
+	      nm_core_post_send(p_gate, p_rdv_pw, NM_TRK_SMALL, p_drv);
+	    }
+	  nm_req_chunk_destroy(p_core, p_req_chunk);
 	}
-      count++;
-#endif /* PROFILE_NMAD */
     }
   return NM_ESUCCESS;
 }
@@ -177,17 +149,16 @@ static int strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
  */
 static void strat_default_rdv_accept(void*_status, nm_gate_t p_gate)
 {
-  struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_gate->pending_large_recv);
-  if(p_pw != NULL)
+  if(!nm_pkt_wrap_list_empty(&p_gate->pending_large_recv))
     {
       nm_drv_t p_drv = nm_drv_default(p_gate);
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
       if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
 	{
 	  /* The large-packet track is available- post recv and RTR */
+	  struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_gate->pending_large_recv);
 	  struct nm_rdv_chunk chunk = 
 	    { .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_LARGE };
-	  nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	}
     }

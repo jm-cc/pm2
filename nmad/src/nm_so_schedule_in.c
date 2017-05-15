@@ -753,6 +753,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	      p_pack->pack.scheduled -= chunk_len;
 	      nm_pw_free(p_large_pw);
 	      struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_malloc(p_core->req_chunk_allocator);
+	      nm_req_chunk_list_cell_init(p_req_chunk);
 	      p_req_chunk->p_req             = p_pack;
 	      p_req_chunk->chunk_offset      = chunk_offset;
 	      p_req_chunk->chunk_len         = chunk_len;

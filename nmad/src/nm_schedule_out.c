@@ -57,9 +57,11 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
       if(size > NM_DATA_IOV_THRESHOLD)
 	{
 	  struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_malloc(p_core->req_chunk_allocator);
+	  nm_req_chunk_list_cell_init(p_req_chunk);
 	  p_req_chunk->p_req             = p_pack;
 	  p_req_chunk->chunk_offset      = 0;
 	  p_req_chunk->chunk_len         = hlen;
+	  nm_req_chunk_list_cell_init(&p_pack->req_chunk);
 	  p_pack->req_chunk.p_req        = p_pack;
 	  p_pack->req_chunk.chunk_offset = hlen;
 	  p_pack->req_chunk.chunk_len    = size - hlen;
@@ -68,6 +70,7 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
 	}
       else
 	{
+	  nm_req_chunk_list_cell_init(&p_pack->req_chunk);
 	  p_pack->req_chunk.p_req        = p_pack;
 	  p_pack->req_chunk.chunk_offset = 0;
 	  p_pack->req_chunk.chunk_len    = size;
@@ -76,6 +79,7 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
     }
   else
     {
+      nm_req_chunk_list_cell_init(&p_pack->req_chunk);
       p_pack->req_chunk.p_req        = p_pack;
       p_pack->req_chunk.chunk_offset = 0;
       p_pack->req_chunk.chunk_len    = size;

@@ -309,6 +309,11 @@ void piom_ltask_poll_level_set(int level)
     __piom_ltask.poll_level = level;
 }
 
+int piom_ltask_poll_level_get(void)
+{
+    return __piom_ltask.poll_level;
+}
+
 void piom_ltask_submit(struct piom_ltask*task)
 {
     assert(task != NULL);
@@ -360,7 +365,7 @@ void piom_ltask_schedule(int point)
 				}
 			}
 		}
-	    else if(point == PIOM_POLL_POINT_TIMER)
+	    else if(point == PIOM_POLL_POINT_TIMER || point == PIOM_POLL_POINT_FORCED)
 		{
 		    /* timer poll- poll all tasks from all queues */
 		    int i;

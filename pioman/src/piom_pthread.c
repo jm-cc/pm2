@@ -123,8 +123,9 @@ static void*__piom_ltask_idle_worker(void*_dummy)
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    tbx_tick_t s1, s2;
-	    const int hint1 = (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK;
-	    const int granularity = (hint1 > 0) ? granularity0 : 100 * (granularity0 + 1);
+	    const int poll_level = piom_ltask_poll_level_get();
+	    const int granularity = (poll_level && !piom_ltask_lfqueue_empty(&queue->ltask_queue)) ?
+		granularity0 : 10 * (granularity0 + 1);
 	    TBX_GET_TICK(s1);
 	    piom_trace_local_event(PIOM_TRACE_EVENT_IDLE_POLL, NULL);
 	    if(prio_enable)

@@ -228,6 +228,8 @@ static inline void piom_ltask_set_destructor(struct piom_ltask*ltask, void(*dest
 /** set the polling level- 0 for low; 1 for high */
 extern void piom_ltask_poll_level_set(int level);
 
+extern int piom_ltask_poll_level_get(void);
+
 /** suspend the ltask scheduling
  * @note blocks if the ltask is currently scheduled
  */

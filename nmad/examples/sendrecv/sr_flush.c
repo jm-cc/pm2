@@ -22,9 +22,9 @@
 
 #include "../common/nm_examples_helper.h"
 
-/* test up to 128k pending isend/irecv at the same time */
+/* test up to 2M pending isend/irecv at the same time */
 
-#define MAX_PENDING (1024*128)
+#define MAX_PENDING (2*1024*1024)
 
 int main(int argc, char	**argv)
 {

@@ -38,7 +38,6 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
 /** fast allocator for struct nm_unexpected_s */
 PUK_ALLOCATOR_TYPE(nm_unexpected, struct nm_unexpected_s);
 static nm_unexpected_allocator_t nm_unexpected_allocator = NULL;
-
 #define NM_UNEXPECTED_PREALLOC 256
 
 static inline struct nm_unexpected_s*nm_unexpected_alloc(void)
@@ -233,15 +232,6 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
   p_chunk->tag    = tag;
   nm_pw_ref_inc(p_pw);
   nm_profile_inc(p_core->profiling.n_unexpected);
-#ifdef DEBUG
-  const long unsigned int nm_unexpected_mem_size = nm_unexpected_list_size(&p_core->unexpected);
-  if(nm_unexpected_mem_size > 32*1024)
-    {
-      NM_WARN("%lu unexpected chunks allocated.\n", nm_unexpected_mem_size);
-      if(nm_unexpected_mem_size > 64*1024)
-	NM_FATAL("%lu unexpected chunks allocated; giving up.\n", nm_unexpected_mem_size);
-    }
-#endif /* DEBUG */
   nm_core_lock_assert(p_core);
   nm_unexpected_list_push_back(&p_core->unexpected, p_chunk);
   const nm_proto_t proto_id = p_header->proto_id;

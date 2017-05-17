@@ -125,7 +125,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	  struct nm_req_s*p_pack = p_req_chunk->p_req;
 	  const nm_len_t chunk_len = p_req_chunk->chunk_len;
 	  const nm_len_t chunk_offset = p_req_chunk->chunk_offset;
-	  if((chunk_offset == 0) && (chunk_len < 256) && (chunk_offset + chunk_len == p_pack->pack.len))
+	  if((chunk_offset == 0) && (chunk_len < 255) && (chunk_offset + chunk_len == p_pack->pack.len))
 	    {
 	      /* ** short send */
 	      if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_SHORT_DATA_SIZE + chunk_len)

@@ -20,9 +20,6 @@
  */
 struct nm_strategy_iface_s
 {
-  /** attach a strategy instance to a gate */
-  void (*init)(void*_status, nm_gate_t p_gate);
-  
   /** submit a pack with iterator-based data description */
   void (*pack_data)(void*_status, struct nm_req_s*p_pack, nm_len_t len, nm_len_t chunk_offset);
 

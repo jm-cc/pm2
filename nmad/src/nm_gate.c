@@ -47,11 +47,6 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   puk_instance_indirect_NewMad_Strategy(p_gate->strategy_instance, NULL,
 					&p_gate->strategy_receptacle);
   nm_gate_list_push_back(&p_core->gate_list, p_gate);
-  const struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  if(r->driver->init)
-    {
-      (*r->driver->init)(r->_status, p_gate);
-    }
 
 #ifdef NMAD_TRACE
   static int nm_trace_gate_count = 0;

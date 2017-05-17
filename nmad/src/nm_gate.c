@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,8 +46,12 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   p_gate->strategy_instance = puk_component_instantiate(p_core->strategy_component);
   puk_instance_indirect_NewMad_Strategy(p_gate->strategy_instance, NULL,
 					&p_gate->strategy_receptacle);
-
   nm_gate_list_push_back(&p_core->gate_list, p_gate);
+  const struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  if(r->driver->init)
+    {
+      (*r->driver->init)(r->_status, p_gate);
+    }
 
 #ifdef NMAD_TRACE
   static int nm_trace_gate_count = 0;

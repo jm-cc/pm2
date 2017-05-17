@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2015 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  */
 struct nm_strategy_iface_s
 {
+  /** attach a strategy instance to a gate */
+  void (*init)(void*_status, nm_gate_t p_gate);
+  
   /** submit a pack with iterator-based data description */
   void (*pack_data)(void*_status, struct nm_req_s*p_pack, nm_len_t len, nm_len_t chunk_offset);
 

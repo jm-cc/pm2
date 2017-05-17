@@ -123,51 +123,68 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	{
 	  struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_pop_front(&p_gate->req_chunk_list);
 	  struct nm_req_s*p_pack = p_req_chunk->p_req;
-	  const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
-#warning TODO- max block count and header size are rough estimates
-	  /* maximum header length- real leength depends on block size */
 	  const nm_len_t chunk_len = p_req_chunk->chunk_len;
 	  const nm_len_t chunk_offset = p_req_chunk->chunk_offset;
-	  const nm_len_t max_blocks = (p_props->blocks > chunk_len) ? chunk_len : p_props->blocks;
-	  const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + max_blocks * sizeof(struct nm_header_pkt_data_chunk_s) + NM_ALIGN_FRONTIER;
-	  const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : 0; /* average block size */
-	  if(chunk_len + max_header_len < nm_drv_max_small(p_pack->p_gate->p_core))
+	  if((chunk_offset == 0) && (chunk_len < 256) && (chunk_offset + chunk_len == p_pack->pack.len))
 	    {
-	      /* ** small send */
-	      if(nm_pw_remaining_buf(p_pw) >= max_header_len + chunk_len)
+	      /* ** short send */
+	      if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_SHORT_DATA_SIZE + chunk_len)
 		{
-#warning TODO- select pack strategy depending on data sparsity
 		  nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
 		  assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 		}
 	      else
 		{
-#warning TODO- no optimize window for now.
 		  nm_req_chunk_list_push_front(&p_gate->req_chunk_list, p_req_chunk); /* rollback */
 		  break;
 		}
 	    }
 	  else
 	    {
-	      /* ** large send */
-	      if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_CTRL_SIZE)
+	      const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
+#warning TODO- max block count and header size are rough estimates
+	      /* maximum header length- real leength depends on block size */
+	      const nm_len_t max_blocks = (p_props->blocks > chunk_len) ? chunk_len : p_props->blocks;
+	      const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + max_blocks * sizeof(struct nm_header_pkt_data_chunk_s) + NM_ALIGN_FRONTIER;
+	      const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : 0; /* average block size */
+	      if(chunk_len + max_header_len < nm_drv_max_small(p_pack->p_gate->p_core))
 		{
-		  nm_pw_flag_t flags = NM_PW_NOHEADER | NM_PW_DATA_ITERATOR;
-		  if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->data.ops.p_generator == NULL))
+		  /* ** small send */
+		  if(nm_pw_remaining_buf(p_pw) >= max_header_len + chunk_len)
 		    {
-		      flags |= NM_PW_DATA_USE_COPY;
+#warning TODO- select pack strategy depending on data sparsity
+		      nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
+		      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 		    }
-		  struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
-		  nm_pw_add_data_chunk(p_large_pw, p_pack, chunk_len, chunk_offset, flags);
-		  nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_large_pw);
-		  union nm_header_ctrl_generic_s rdv;
-		  nm_header_init_rdv(&rdv, p_pack, chunk_len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
-		  nm_pw_add_control(p_pw, &rdv);
+		  else
+		    {
+#warning TODO- no optimize window for now.
+		      nm_req_chunk_list_push_front(&p_gate->req_chunk_list, p_req_chunk); /* rollback */
+		      break;
+		    }
 		}
 	      else
 		{
-		  nm_req_chunk_list_push_front(&p_gate->req_chunk_list, p_req_chunk); /* rollback */
-		  break;
+		  /* ** large send */
+		  if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_CTRL_SIZE)
+		    {
+		      nm_pw_flag_t flags = NM_PW_NOHEADER | NM_PW_DATA_ITERATOR;
+		      if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->data.ops.p_generator == NULL))
+			{
+			  flags |= NM_PW_DATA_USE_COPY;
+			}
+		      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
+		      nm_pw_add_data_chunk(p_large_pw, p_pack, chunk_len, chunk_offset, flags);
+		      nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_large_pw);
+		      union nm_header_ctrl_generic_s rdv;
+		      nm_header_init_rdv(&rdv, p_pack, chunk_len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
+		      nm_pw_add_control(p_pw, &rdv);
+		    }
+		  else
+		    {
+		      nm_req_chunk_list_push_front(&p_gate->req_chunk_list, p_req_chunk); /* rollback */
+		      break;
+		    }
 		}
 	    }
 	  nm_req_chunk_destroy(p_core, p_req_chunk);

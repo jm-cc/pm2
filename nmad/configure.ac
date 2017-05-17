@@ -334,16 +334,16 @@ dnl -- TODO- check whether tbx and nmad FC match, don't know about F77
 dnl -- Mad-MPI
 dnl --
 AC_ARG_ENABLE(mpi,
-	      [AS_HELP_STRING([--enable-mpi], [Enable builtin MPI implementation Mad-MPI]) ],
+	      [AS_HELP_STRING([--enable-mpi], [Enable builtin MPI implementation MadMPI]) ],
 	      [ if test $enableval = yes; then
-	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
+	            AC_DEFINE([MAD_MPI], 1, [enable MadMPI])
                     nmad_enable_mpi=yes
 		    nmad_interfaces="${nmad_interfaces} mpi"
-		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpirun])
-		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpicc])
-		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpicxx])
-		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpif77])
-		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpif90])
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpirun.madmpi])
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpicc.madmpi])
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpicxx.madmpi])
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpif77.madmpi])
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpif90.madmpi])
 	        fi
 	      ],
 	      [

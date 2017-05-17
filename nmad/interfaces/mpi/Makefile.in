@@ -71,5 +71,17 @@ $(madmpi_f90_builddir)/mpi1.mod: | $(madmpi_f90_builddir)/mpi_constants.mod
 install: install-link
 
 install-link: | install-bin
+	$(SHOWMK) "  [LN]     mpiexec.madmpi"
+	$(Q)$(LN) mpirun.madmpi @nmad_root@/bin/mpiexec.madmpi
+	$(SHOWMK) "  [LN]     mpicc"
+	$(Q)$(LN) mpicc.madmpi @nmad_root@/bin/mpicc
+	$(SHOWMK) "  [LN]     mpicxx"
+	$(Q)$(LN) mpicxx.madmpi @nmad_root@/bin/mpicxx
+	$(SHOWMK) "  [LN]     mpif77"
+	$(Q)$(LN) mpif77.madmpi @nmad_root@/bin/mpif77
+	$(SHOWMK) "  [LN]     mpif90"
+	$(Q)$(LN) mpif90.madmpi @nmad_root@/bin/mpif90
+	$(SHOWMK) "  [LN]     mpirun"
+	$(Q)$(LN) mpirun.madmpi @nmad_root@/bin/mpirun
 	$(SHOWMK) "  [LN]     mpiexec"
-	$(Q)$(LN) mpirun @nmad_root@/bin/mpiexec
+	$(Q)$(LN) mpiexec.madmpi @nmad_root@/bin/mpiexec

@@ -30,7 +30,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_split_balance, &nm_strat_split_balance_loa
 
 static void strat_split_balance_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset);
 static void strat_split_balance_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
-static int  strat_split_balance_try_and_commit(void*, nm_gate_t );
+static void strat_split_balance_try_and_commit(void*, nm_gate_t );
 static void strat_split_balance_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_split_balance_driver =
@@ -145,7 +145,7 @@ static void strat_split_balance_pack_data(void*_status, struct nm_req_s*p_pack, 
 
 /* Compute and apply the best possible packet rearrangement, then
    return next packet to send */
-static int strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
+static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 {
   struct nm_strat_split_balance*status = _status;
   int nb_drivers = p_gate->p_core->nb_drivers;
@@ -168,7 +168,6 @@ static int strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 	}
       n++;
     }
-  return NM_ESUCCESS;
 }
 
 /** Emit RTR for received RDV requests

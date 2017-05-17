@@ -125,7 +125,7 @@ static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
   if((r->driver->pack_data == NULL) || !nm_pkt_wrap_list_empty(&p_gate->out_list))
     {
       nm_profile_inc(p_gate->p_core->profiling.n_try_and_commit);
-      r->driver->try_and_commit(r->_status, p_gate);
+      (*r->driver->try_and_commit)(r->_status, p_gate);
     }
 }
 /** Schedule and post new large incoming buffers */
@@ -134,8 +134,8 @@ static inline void nm_strat_rdv_accept(nm_gate_t p_gate)
   nm_core_lock_assert(p_gate->p_core);
   if(!nm_pkt_wrap_list_empty(&p_gate->pending_large_recv))
     {
-      const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-      strategy->driver->rdv_accept(strategy->_status, p_gate);
+      const struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+      (*r->driver->rdv_accept)(r->_status, p_gate);
     }
 }
 

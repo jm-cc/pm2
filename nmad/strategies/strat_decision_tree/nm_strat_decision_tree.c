@@ -32,7 +32,7 @@
 
 static void strat_decision_tree_pack_data(void*_status, struct nm_req_s*p_pack, nm_len_t len, nm_len_t chunk_offset);
 static void strat_decision_tree_pack_ctrl(void*, nm_gate_t , const union nm_header_ctrl_generic_s*);
-static int  strat_decision_tree_try_and_commit(void*, nm_gate_t );
+static void strat_decision_tree_try_and_commit(void*, nm_gate_t );
 static void strat_decision_tree_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_decision_tree_driver =
@@ -204,7 +204,7 @@ static void strat_decision_tree_pack_data(void*_status, struct nm_req_s*p_pack, 
  *  @param p_gate a pointer to the gate object.
  *  @return The NM status.
  */
-static int strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
+static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 {
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
@@ -262,7 +262,6 @@ static int strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
       count++;
 #endif /* PROFILE_NMAD */
     }
-  return NM_ESUCCESS;
 }
 
 /** Emit RTR for received RDV requests

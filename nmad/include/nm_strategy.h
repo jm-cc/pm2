@@ -28,7 +28,7 @@ struct nm_strategy_iface_s
   
   /** Compute and apply the best possible packet rearrangement, then
       return next packet to send */
-  int (*try_and_commit)(void*_status, nm_gate_t p_gate);
+  void (*try_and_commit)(void*_status, nm_gate_t p_gate);
 
   /** Emit RTR series for received RDV requests. */
   void (*rdv_accept)(void*_status, nm_gate_t p_gate);

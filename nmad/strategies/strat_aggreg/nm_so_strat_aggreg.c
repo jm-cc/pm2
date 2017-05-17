@@ -27,7 +27,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_aggreg, &nm_strat_aggreg_load, NULL, NULL)
 /* Components structures:
  */
 
-static int  strat_aggreg_try_and_commit(void*, nm_gate_t );
+static void strat_aggreg_try_and_commit(void*, nm_gate_t );
 static void strat_aggreg_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_aggreg_driver =
@@ -87,9 +87,8 @@ static void strat_aggreg_destroy(void*_status)
  *  return next packet to send.
  *
  *  @param p_gate a pointer to the gate object.
- *  @return The NM status.
  */
-static int strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
+static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 {
   struct nm_strat_aggreg_s*p_status = _status;
   struct nm_core*p_core = p_gate->p_core;
@@ -176,7 +175,6 @@ static int strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
     post_send:
       nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
     }
-  return NM_ESUCCESS;
 }
 
 /** Emit RTR for received RDV requests

@@ -28,7 +28,7 @@ PADICO_MODULE_BUILTIN(NewMad_Strategy_default, &nm_strat_default_load, NULL, NUL
 /* Components structures:
  */
 
-static int  strat_default_try_and_commit(void*, nm_gate_t );
+static void strat_default_try_and_commit(void*, nm_gate_t );
 static void strat_default_rdv_accept(void*, nm_gate_t );
 
 static const struct nm_strategy_iface_s nm_strat_default_driver =
@@ -92,9 +92,8 @@ static void strat_default_destroy(void*_status)
  *  return next packet to send.
  *
  *  @param p_gate a pointer to the gate object.
- *  @return The NM status.
  */
-static int strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
+static void strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
 {
   struct nm_strat_default_s*p_status = _status;
   nm_drv_t p_drv = nm_drv_default(p_gate);
@@ -142,7 +141,6 @@ static int strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
 	  nm_req_chunk_destroy(p_core, p_req_chunk);
 	}
     }
-  return NM_ESUCCESS;
 }
 
 /** Emit RTR for received RDV requests

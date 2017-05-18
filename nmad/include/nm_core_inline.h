@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -122,7 +122,8 @@ static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
 {
   nm_core_lock_assert(p_gate->p_core);
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  if((r->driver->pack_data == NULL) || !nm_pkt_wrap_list_empty(&p_gate->out_list))
+  if((!nm_req_chunk_list_empty(&p_gate->req_chunk_list)) ||
+     (!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list)))
     {
       nm_profile_inc(p_gate->p_core->profiling.n_try_and_commit);
       (*r->driver->try_and_commit)(r->_status, p_gate);

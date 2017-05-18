@@ -675,19 +675,20 @@ int nm_core_exit(nm_core_t p_core)
   
 #endif /* NMAD_PROFILE */
 
-  /* flush strategies */
-  int strat_done = 0;
-  while(!strat_done)
+  /* flush pending requests */
+  int flush_done = 0;
+  while(!flush_done)
     {
-      int todo = 0;
+      int todo = !nm_req_chunk_lfqueue_empty(&p_core->pack_submissions);
       nm_gate_t p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
-	  todo += !nm_pkt_wrap_list_empty(&p_gate->out_list);
+	  todo += !nm_req_chunk_list_empty(&p_gate->req_chunk_list);
+	  todo += !nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list);
 	}
       if(todo)
 	nm_schedule(p_core);
-      strat_done = !todo;
+      flush_done = !todo;
     }
 
   nm_core_driver_flush(p_core);

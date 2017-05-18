@@ -38,7 +38,6 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 
   nm_pkt_wrap_list_init(&p_gate->pending_large_recv);
   nm_pkt_wrap_list_init(&p_gate->pending_large_send);
-  nm_pkt_wrap_list_init(&p_gate->out_list);
 
   nm_req_chunk_list_init(&p_gate->req_chunk_list);
   nm_ctrl_chunk_list_init(&p_gate->ctrl_chunk_list);

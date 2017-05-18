@@ -31,7 +31,7 @@ static inline int nm_tactic_pack_ctrl(nm_gate_t p_gate,
 				      struct nm_ctrl_chunk_s*p_ctrl_chunk,
 				      struct nm_pkt_wrap_s*p_pw)
 {
-  if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_CTRL_SIZE)
+  if(NM_HEADER_CTRL_SIZE + p_pw->length < nm_drv_max_small(p_gate->p_core))
     {
       nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
       nm_ctrl_chunk_list_erase(&p_gate->ctrl_chunk_list, p_ctrl_chunk);

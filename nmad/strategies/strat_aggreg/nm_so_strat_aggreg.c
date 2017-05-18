@@ -99,6 +99,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
        nm_req_chunk_list_empty(&p_gate->req_chunk_list)))
     {
       /* no active send && pending chunks */
+      const nm_len_t max_small = nm_drv_max_small(p_core);
       struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
       int opt_window = 8;
       /* ** control */
@@ -123,10 +124,10 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	  if((chunk_offset == 0) && (chunk_len < 255) && (chunk_offset + chunk_len == p_pack->pack.len))
 	    {
 	      /* ** short send */
-	      if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_SHORT_DATA_SIZE + chunk_len)
+	      if(NM_HEADER_SHORT_DATA_SIZE + chunk_len + p_pw->length <= max_small)
 		{
 		  nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
-		  assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
+		  assert(p_pw->length <= max_small);
 		}
 	      else
 		{
@@ -142,14 +143,14 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	      const nm_len_t max_blocks = (p_props->blocks > chunk_len) ? chunk_len : p_props->blocks;
 	      const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + max_blocks * sizeof(struct nm_header_pkt_data_chunk_s) + NM_ALIGN_FRONTIER;
 	      const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : 0; /* average block size */
-	      if(chunk_len + max_header_len < nm_drv_max_small(p_pack->p_gate->p_core))
+	      if(chunk_len + max_header_len < max_small)
 		{
 		  /* ** small send */
-		  if(nm_pw_remaining_buf(p_pw) >= max_header_len + chunk_len)
+		  if(max_header_len + chunk_len + p_pw->length <= max_small)
 		    {
 #warning TODO- select pack strategy depending on data sparsity
 		      nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
-		      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
+		      assert(p_pw->length <= max_small);
 		    }
 		  else
 		    {
@@ -161,7 +162,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	      else
 		{
 		  /* ** large send */
-		  if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_CTRL_SIZE)
+		  if(NM_HEADER_CTRL_SIZE + p_pw->length <= max_small)
 		    {
 		      nm_pw_flag_t flags = NM_PW_NOHEADER | NM_PW_DATA_ITERATOR;
 		      if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->data.ops.p_generator == NULL))

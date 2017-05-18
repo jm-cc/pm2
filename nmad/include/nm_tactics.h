@@ -23,14 +23,25 @@ static inline nm_len_t nm_pw_remaining_buf(struct nm_pkt_wrap_s*p_pw)
   return NM_SO_MAX_UNEXPECTED - p_pw->length;
 }
 
-/** Pack a generic control header as a new packet wrapper on track #0.
+/** Try to pack a control chunk in a pw.
+ * @return NM_ESUCCESS for success, -NM_EBUSY if pw full
+ * @note function takes ownership of p_ctrl_chunk
  */
-static inline void nm_tactic_pack_ctrl(const union nm_header_ctrl_generic_s*p_ctrl,
-				       struct nm_pkt_wrap_list_s*p_out_list)
+static inline int nm_tactic_pack_ctrl(nm_gate_t p_gate,
+				      struct nm_ctrl_chunk_s*p_ctrl_chunk,
+				      struct nm_pkt_wrap_s*p_pw)
 {
-  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
-  nm_pw_add_control(p_pw, p_ctrl);
-  nm_pkt_wrap_list_push_back(p_out_list, p_pw);
+  if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_CTRL_SIZE)
+    {
+      nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
+      nm_ctrl_chunk_list_erase(&p_gate->ctrl_chunk_list, p_ctrl_chunk);
+      nm_ctrl_chunk_free(p_gate->p_core->ctrl_chunk_allocator, p_ctrl_chunk);
+      return NM_ESUCCESS;
+    }
+  else
+    {
+      return -NM_EBUSY;
+    }
 }
 
 /** Pack small data into an existing packet wrapper on track #0

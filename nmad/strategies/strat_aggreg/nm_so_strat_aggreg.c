@@ -105,16 +105,11 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
       while(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	{
 	  /* ** post ctrl on trk #0 */
-	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_pop_front(&p_gate->ctrl_chunk_list);
-	  if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_CTRL_SIZE)
-	    {
-	      nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
-	      nm_ctrl_chunk_free(p_core->ctrl_chunk_allocator, p_ctrl_chunk);
-	    }
-	  else
+	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_begin(&p_gate->ctrl_chunk_list);
+	  int rc = nm_tactic_pack_ctrl(p_gate, p_ctrl_chunk, p_pw);
+	  if(rc)
 	    {
 	      /* don't even try to aggregate data if pw cannot even contain any ctrl header */
-	      nm_ctrl_chunk_list_push_front(&p_gate->ctrl_chunk_list, p_ctrl_chunk); /* rollback */
 	      goto post_send;
 	    }
 	}

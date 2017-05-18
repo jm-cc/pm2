@@ -104,11 +104,11 @@ static void strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
       if(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	{
 	  /* post ctrl on trk #0 */
-	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_pop_front(&p_gate->ctrl_chunk_list);
+	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_begin(&p_gate->ctrl_chunk_list);
 	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
-	  nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
-	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
-	  nm_ctrl_chunk_free(p_core->ctrl_chunk_allocator, p_ctrl_chunk);
+	  int rc __attribute__((unused));
+	  rc = nm_tactic_pack_ctrl(p_gate, p_ctrl_chunk, p_pw);
+	  assert(rc == NM_ESUCCESS);
 	}
       else if(!nm_req_chunk_list_empty(&p_gate->req_chunk_list))
 	{

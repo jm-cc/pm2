@@ -109,6 +109,7 @@ static void strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
 	  int rc __attribute__((unused));
 	  rc = nm_tactic_pack_ctrl(p_gate, p_ctrl_chunk, p_pw);
 	  assert(rc == NM_ESUCCESS);
+	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
 	}
       else if(!nm_req_chunk_list_empty(&p_gate->req_chunk_list))
 	{

@@ -64,12 +64,6 @@ typedef uint32_t nm_pw_flag_t;
 /* pointer is a struct nm_data_s */
 #define NM_PW_DATA_ITERATOR   0x0400
 
-/** notification of pw send completion */
-struct nm_pw_completion_s
-{
-  struct nm_req_s*p_pack; /**< pack the pw contributes to */
-  nm_len_t len; /**< length of the pack enclosed in the pw (a pw may contain a partial chunk of a pack) */
-};
 
 /** Internal packet wrapper.
  */
@@ -110,10 +104,7 @@ struct nm_pkt_wrap_s
 
   /* ** fields used when sending */
 
-  struct nm_pw_completion_s*completions;  /**< list of completion notifier for this pw (sending) */
-  int n_completions;                      /**< number of completion notifiers actually registered in this pw */
-  int completions_size;                   /**< size of the allocated completions array */
-  struct nm_pw_completion_s prealloc_completions[NM_SO_PREALLOC_IOV_LEN]; /**< pre-allocated completions */
+  struct nm_req_chunk_list_s req_chunks;  /**< list of req chunks contained in this pw (sending) */
 
   /* ** fields used when receiving */
 
@@ -165,8 +156,6 @@ union nm_header_ctrl_generic_s;
 int nm_pw_add_control(struct nm_pkt_wrap_s*p_pw, const union nm_header_ctrl_generic_s*p_ctrl);
 
 int nm_pw_finalize(struct nm_pkt_wrap_s *p_pw);
-
-void nm_pw_completion_add(struct nm_pkt_wrap_s*p_pw, struct nm_req_s*p_pack, nm_len_t len);
 
 void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw,
 		       nm_trk_id_t trk_id, nm_drv_t p_drv);

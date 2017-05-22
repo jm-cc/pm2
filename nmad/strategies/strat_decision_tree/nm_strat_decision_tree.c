@@ -212,17 +212,17 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 	  else
 	    {
 	      /* post RDV for large data */
+	      const int is_lastchunk = (p_req_chunk->chunk_offset + p_req_chunk->chunk_len == p_pack->pack.len);
 	      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
 	      nm_pw_add_req_chunk(p_large_pw, p_req_chunk, NM_PW_DATA_ITERATOR);
 	      nm_pkt_wrap_list_push_back(&p_gate->pending_large_send, p_large_pw);
 	      union nm_header_ctrl_generic_s rdv;
 	      nm_header_init_rdv(&rdv, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset,
-				 (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
+				 is_lastchunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
 	      struct nm_pkt_wrap_s*p_rdv_pw = nm_pw_alloc_global_header();
 	      nm_pw_add_control(p_rdv_pw, &rdv);
 	      nm_core_post_send(p_gate, p_rdv_pw, NM_TRK_SMALL, p_drv);
 	    }
-	  nm_req_chunk_destroy(p_core, p_req_chunk);
 	}
     }
 }

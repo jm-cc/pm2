@@ -31,7 +31,6 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
   p_pack->data      = *p_data;
   p_pack->pack.len  = nm_data_size(&p_pack->data);
   p_pack->pack.done = 0;
-  p_pack->pack.scheduled = 0;
   p_pack->monitor   = NM_MONITOR_NULL;
 }
 
@@ -110,13 +109,13 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
   p_pw->p_gdrv->active_send[p_pw->trk_id]--;
   assert(p_pw->p_gdrv->active_send[p_pw->trk_id] == 0);
-  int i;
-  for(i = 0; i < p_pw->n_completions; i++)
+  while(!nm_req_chunk_list_empty(&p_pw->req_chunks))
     {
-      const struct nm_pw_completion_s*p_completion = &p_pw->completions[i];
-      struct nm_req_s*p_pack = p_completion->p_pack;
+      struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_pop_front(&p_pw->req_chunks);
+      struct nm_req_s*p_pack = p_req_chunk->p_req;
+      const nm_len_t chunk_len = p_req_chunk->chunk_len;
       assert(nm_status_test(p_pack, NM_STATUS_PACK_POSTED));
-      p_pack->pack.done += p_completion->len;
+      p_pack->pack.done += chunk_len;
       if(p_pack->pack.done == p_pack->pack.len)
 	{
 	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->pack.len);
@@ -138,6 +137,7 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 	  NM_FATAL("more bytes sent than posted (should have been = %lu; actually sent = %lu)\n",
 		       p_pack->pack.len, p_pack->pack.done);
 	}
+      nm_req_chunk_destroy(p_core, p_req_chunk);
     }
   nm_pw_ref_dec(p_pw);
   nm_strat_try_and_commit(p_gate);

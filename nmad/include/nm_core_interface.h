@@ -279,7 +279,6 @@ struct nm_req_s
     struct
     {
       nm_len_t len;       /**< cumulated data length */
-      nm_len_t scheduled; /**< cumulated length of data scheduled for sending */
       nm_len_t done;      /**< cumulated length of data sent so far */
     } pack;
     struct

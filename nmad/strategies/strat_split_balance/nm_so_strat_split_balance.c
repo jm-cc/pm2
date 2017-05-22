@@ -176,6 +176,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 		      const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : 0; /* average block size */
 		      if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_CTRL_SIZE)
 			{
+			  const int is_lastchunk = (p_req_chunk->chunk_offset + p_req_chunk->chunk_len == p_pack->pack.len);
 			  nm_pw_flag_t flags = NM_PW_NOHEADER | NM_PW_DATA_ITERATOR;
 			  if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->data.ops.p_generator == NULL))
 			    {
@@ -185,7 +186,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 			  nm_pw_add_req_chunk(p_large_pw, p_req_chunk, flags);
 			  nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_large_pw);
 			  union nm_header_ctrl_generic_s rdv;
-			  nm_header_init_rdv(&rdv, p_pack, chunk_len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);
+			  nm_header_init_rdv(&rdv, p_pack, chunk_len, chunk_offset, is_lastchunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
 			  nm_pw_add_control(p_pw, &rdv);
 			}
 		      else
@@ -195,7 +196,6 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 			}
 		    }
 		}
-	      nm_req_chunk_destroy(p_core, p_req_chunk);
 	    }
 	post_send:
 	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);

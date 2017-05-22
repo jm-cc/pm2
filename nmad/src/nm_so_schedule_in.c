@@ -702,9 +702,10 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
   nm_core_lock_assert(p_core);
   puk_list_foreach_safe(p_large_pw, p_pw_save, &p_gate->pending_large_send)
     {
-      assert(p_large_pw->n_completions == 1);
-      const struct nm_pw_completion_s*p_completion = &p_large_pw->completions[0];
-      struct nm_req_s*p_pack = p_completion->p_pack;
+      /* this is a large pw with rdv- it must contain a single req chunk */
+      assert(nm_req_chunk_list_size(&p_large_pw->req_chunks) == 1);
+      struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_begin(&p_large_pw->req_chunks);
+      struct nm_req_s*p_pack = p_req_chunk->p_req;
       NM_TRACEF("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
 		p_pack->seq, p_large_pw->chunk_offset);
       if((p_pack->seq == seq) && nm_core_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
@@ -722,10 +723,10 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	      p_pw2->p_gate   = p_gate;
 	      p_pw2->p_gdrv   = p_large_pw->p_gdrv;
 	      p_pw2->p_unpack = NULL;
-	      /* this is a large pw with rdv- it must contain a single completion */
-	      assert(p_large_pw->n_completions == 1);
-	      nm_pw_completion_add(p_pw2, p_large_pw->completions[0].p_pack, p_large_pw->completions[0].len - chunk_len);
-	      p_large_pw->completions[0].len = chunk_len; /* truncate the contrib */
+	      struct nm_req_chunk_s*p_req_chunk2 = nm_req_chunk_alloc(p_core);
+	      nm_req_chunk_init(p_req_chunk2, p_req_chunk->p_req, NM_LEN_UNDEFINED, p_req_chunk->chunk_len - chunk_len);
+	      nm_req_chunk_list_push_back(&p_pw2->req_chunks, p_req_chunk2);
+	      p_req_chunk->chunk_len = chunk_len; /* truncate the contrib */
 	      /* populate p_pw2 iovec */
 	      nm_pw_split_data(p_large_pw, p_pw2, chunk_len);
 	      nm_pkt_wrap_list_push_front(&p_gate->pending_large_send, p_pw2);
@@ -740,24 +741,15 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	    {
 	      /* rdv eventually accepted on trk#0- rollback and repack */
 	      assert(p_large_pw->p_data != NULL);
-	      p_pack->pack.scheduled -= chunk_len;
 	      nm_pw_free(p_large_pw);
-	      struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_malloc(p_core->req_chunk_allocator);
-	      nm_req_chunk_list_cell_init(p_req_chunk);
-	      p_req_chunk->p_req             = p_pack;
-	      p_req_chunk->chunk_offset      = chunk_offset;
-	      p_req_chunk->chunk_len         = chunk_len;
-	      nm_req_chunk_list_push_back(&p_gate->req_chunk_list, p_req_chunk);
+	      struct nm_req_chunk_s*p_req_chunk0 = nm_req_chunk_malloc(p_core->req_chunk_allocator);
+	      nm_req_chunk_init(p_req_chunk0, p_pack, chunk_offset, chunk_len);
+	      nm_req_chunk_list_push_back(&p_gate->req_chunk_list, p_req_chunk0);
 	    }
 	  return;
 	}
     }
-  NM_WARN("FATAL- cannot find matching packet for received RTR: seq = %d; offset = %lu- dumping pending large packets\n", seq, chunk_offset);
-  puk_list_foreach(p_large_pw, &p_gate->pending_large_send)
-    {
-      const struct nm_req_s*p_pack = p_large_pw->completions[0].p_pack;
-      fprintf(stderr, "  packet- seq = %d; chunk_offset = %lu\n", p_pack->seq, p_large_pw->chunk_offset);
-    }
+  NM_FATAL("FATAL- cannot find matching packet for received RTR: seq = %d; offset = %lu\n", seq, chunk_offset);
   abort();
 }
 /** Process an acknowledgement.

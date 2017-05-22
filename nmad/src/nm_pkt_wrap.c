@@ -165,10 +165,8 @@ static inline void nm_pw_init(struct nm_pkt_wrap_s *p_pw)
 
   p_pw->destructor = NULL;
   p_pw->destructor_key = NULL;
-  
-  p_pw->completions = p_pw->prealloc_completions;
-  p_pw->completions_size = NM_SO_PREALLOC_IOV_LEN;
-  p_pw->n_completions = 0;
+
+  nm_req_chunk_list_init(&p_pw->req_chunks);
 
   p_pw->p_unpack = NULL;
   p_pw->chunk_offset = 0;
@@ -248,11 +246,6 @@ int nm_pw_free(struct nm_pkt_wrap_s*p_pw)
   if(p_pw->v != p_pw->prealloc_v)
     {
       TBX_FREE(p_pw->v);
-    }
-  /* clean the contribs */
-  if(p_pw->completions != p_pw->prealloc_completions)
-    {
-      TBX_FREE(p_pw->completions);
     }
   
 #ifdef DEBUG
@@ -358,7 +351,7 @@ void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
   struct nm_data_s*p_data = &p_pack->data;
 
   /* add the contrib ref to the pw */
-  nm_pw_completion_add(p_pw, p_pack, chunk_len);
+  nm_req_chunk_list_push_back(&p_pw->req_chunks, p_req_chunk);
   assert(chunk_offset + chunk_len <= p_pack->pack.len);
   if(chunk_offset + chunk_len == p_pack->pack.len)
     {
@@ -417,38 +410,5 @@ int nm_pw_finalize(struct nm_pkt_wrap_s *p_pw)
   nm_header_global_finalize(p_pw);
   p_pw->flags |= NM_PW_FINALIZED;
   return NM_ESUCCESS;
-}
-
-
-/* ********************************************************* */
-/* ** completions */
-
-void nm_pw_completion_add(struct nm_pkt_wrap_s*p_pw, struct nm_req_s*p_pack, nm_len_t len)
-{
-  if((p_pw->n_completions > 0) &&
-     (p_pw->completions[p_pw->n_completions - 1].p_pack == p_pack))
-    {
-      p_pw->completions[p_pw->n_completions - 1].len += len;
-    }
-   else
-     {
-       const struct nm_pw_completion_s completion = { .p_pack = p_pack, .len = len };
-       if(p_pw->n_completions >= p_pw->completions_size)
-	 {
-	   p_pw->completions_size *= 2;
-	   if(p_pw->completions == p_pw->prealloc_completions)
-	     {
-	       p_pw->completions = TBX_MALLOC(sizeof(struct nm_pw_completion_s) * p_pw->completions_size);
-	       memcpy(p_pw->completions, p_pw->prealloc_completions, sizeof(struct nm_pw_completion_s) * NM_SO_PREALLOC_IOV_LEN);
-	     }
-	   else
-	     {
-	       p_pw->completions = TBX_REALLOC(p_pw->completions, sizeof(struct nm_pw_completion_s) * p_pw->completions_size);
-	     }
-	 }
-       memcpy(&p_pw->completions[p_pw->n_completions], &completion, sizeof(struct nm_pw_completion_s));
-       p_pw->n_completions++;
-     }
-  p_pack->pack.scheduled += len;
 }
 

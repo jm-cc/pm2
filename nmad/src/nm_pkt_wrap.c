@@ -341,13 +341,15 @@ int nm_pw_split_data(struct nm_pkt_wrap_s *p_pw,
 /** Append a chunk of data to the pkt wrapper being built for sending.
  *
  *  @param p_pw the pkt wrapper pointer.
- *  @param chunk_len the data fragment length.
- *  @param chunk_offset offset of the chunk in the full message
+ *  @param p_req_chunk the data fragment.
  *  @param flags the flags controlling the way the fragment is appended.
- *  @return The NM status.
  */
-void nm_pw_add_data_chunk(struct nm_pkt_wrap_s*p_pw, struct nm_req_s*p_pack, nm_len_t chunk_len, nm_len_t chunk_offset, int flags)
+void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
+			 struct nm_req_chunk_s*__restrict__ p_req_chunk, int flags)
 {
+  struct nm_req_s*__restrict__ p_pack = p_req_chunk->p_req;
+  const nm_len_t chunk_len = p_req_chunk->chunk_len;
+  const nm_len_t chunk_offset = p_req_chunk->chunk_offset;
   const nm_core_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;
   nm_proto_t proto_flags = 0;

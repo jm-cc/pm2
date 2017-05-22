@@ -126,7 +126,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	      /* ** short send */
 	      if(NM_HEADER_SHORT_DATA_SIZE + chunk_len + p_pw->length <= max_small)
 		{
-		  nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
+		  nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_PW_DATA_ITERATOR);
 		  assert(p_pw->length <= max_small);
 		}
 	      else
@@ -149,7 +149,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 		  if(max_header_len + chunk_len + p_pw->length <= max_small)
 		    {
 #warning TODO- select pack strategy depending on data sparsity
-		      nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
+		      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_PW_DATA_ITERATOR);
 		      assert(p_pw->length <= max_small);
 		    }
 		  else
@@ -170,7 +170,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 			  flags |= NM_PW_DATA_USE_COPY;
 			}
 		      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
-		      nm_pw_add_data_chunk(p_large_pw, p_pack, chunk_len, chunk_offset, flags);
+		      nm_pw_add_req_chunk(p_large_pw, p_req_chunk, flags);
 		      nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_large_pw);
 		      union nm_header_ctrl_generic_s rdv;
 		      nm_header_init_rdv(&rdv, p_pack, chunk_len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);

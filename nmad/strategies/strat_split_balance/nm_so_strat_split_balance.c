@@ -138,7 +138,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 		  /* ** short send */
 		  if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_SHORT_DATA_SIZE + chunk_len)
 		    {
-		      nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR);
+		      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_PW_DATA_ITERATOR);
 		      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 		    }
 		  else
@@ -160,7 +160,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 		      /* ** small send- always flatten data */
 		      if(NM_HEADER_DATA_SIZE + chunk_len <= nm_pw_remaining_buf(p_pw))
 			{
-			  nm_pw_add_data_chunk(p_pw, p_pack, chunk_len, chunk_offset, NM_PW_DATA_ITERATOR | NM_PW_DATA_USE_COPY);
+			  nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_PW_DATA_ITERATOR | NM_PW_DATA_USE_COPY);
 			  assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 			}
 		      else
@@ -182,7 +182,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 			      flags |= NM_PW_DATA_USE_COPY;
 			    }
 			  struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
-			  nm_pw_add_data_chunk(p_large_pw, p_pack, chunk_len, chunk_offset, flags);
+			  nm_pw_add_req_chunk(p_large_pw, p_req_chunk, flags);
 			  nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_large_pw);
 			  union nm_header_ctrl_generic_s rdv;
 			  nm_header_init_rdv(&rdv, p_pack, chunk_len, chunk_offset, (p_pack->pack.scheduled == p_pack->pack.len) ? NM_PROTO_FLAG_LASTCHUNK : 0);

@@ -184,6 +184,22 @@ static inline void nm_req_chunk_destroy(struct nm_core*p_core, struct nm_req_chu
     }
 }
 
+static inline struct nm_req_chunk_s*nm_req_chunk_alloc(struct nm_core*p_core)
+{
+  struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_malloc(p_core->req_chunk_allocator);
+  nm_req_chunk_list_cell_init(p_req_chunk);
+  return p_req_chunk;
+}
+
+static inline void nm_req_chunk_init(struct nm_req_chunk_s*p_req_chunk, struct nm_req_s*p_req,
+				     nm_len_t chunk_offset, nm_len_t chunk_len)
+{
+  nm_req_chunk_list_cell_init(p_req_chunk);
+  p_req_chunk->p_req        = p_req;
+  p_req_chunk->chunk_offset = chunk_offset;
+  p_req_chunk->chunk_len    = chunk_len;
+}
+
 /** Post a ready-to-receive
  */
 static inline void nm_core_post_rtr(nm_gate_t p_gate,  nm_core_tag_t tag, nm_seq_t seq,

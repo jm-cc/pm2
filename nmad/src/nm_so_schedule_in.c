@@ -470,7 +470,9 @@ int nm_core_iprobe(struct nm_core*p_core,
 		   nm_gate_t p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
 		   nm_gate_t *pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size)
 {
+  int rc = -NM_EAGAIN;
   struct nm_unexpected_s*p_chunk;
+  nm_core_lock(p_core);
   puk_list_foreach(p_chunk, &p_core->unexpected)
     {
       struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_chunk->p_gate->tags, p_chunk->tag);
@@ -532,12 +534,15 @@ int nm_core_iprobe(struct nm_core*p_core,
 		*p_out_tag = p_chunk->tag;
 	      if(p_out_size)
 		*p_out_size = len;
-	      return NM_ESUCCESS;
+	      rc = NM_ESUCCESS;
+	      goto out;
 	    }
 	}
     }
   *pp_out_gate = NM_ANY_GATE;
-  return -NM_EAGAIN;
+ out:
+  nm_core_unlock(p_core);
+  return rc;
 }
 
 int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)

@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/sr_*.c))
+TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/nm_sr_*.c))
 TARGET_LIB =
 SUBDIRS =
 
@@ -22,17 +22,17 @@ LIBS    += $(shell env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs nmad
 
 include @abs_top_builddir@/common_rules.mk
 
-$(TARGET_BIN): sr_%: sr_%.pic.o
+$(TARGET_BIN): nm_sr_%: nm_sr_%.pic.o
 
-sr_thread: LIBS += -lpthread
+nm_sr_thread: LIBS += -lpthread
 
-sr_iovec: CFLAGS += -g
+nm_sr_iovec: CFLAGS += -g
 
-BENCH += sr_latency
+BENCH += nm_sr_latency
 
 include @nmad_srcdir@/nmad-tests.mk
 
-test-sr_star: NMAD_NODES = 4
+test-nm_sr_star: NMAD_NODES = 4
 
-test-sr_event: TEST_FILTER = sort -i
+test-nm_sr_event: TEST_FILTER = sort -i
 

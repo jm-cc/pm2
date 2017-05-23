@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = pingpong 
+TARGET_BIN = nm_mpi_pingpong 
 TARGET_LIB =
 SUBDIRS =
 
@@ -32,16 +32,16 @@ BENCH +=
 include @nmad_srcdir@/nmad-tests.mk
 
 
-mpi_para_ping: mpi_para_ping.pic.o
+nm_mpi_para_ping: mpi_para_ping.pic.o
 
-pingpong: pingpong.pic.o structType.pic.o vectorType.pic.o indexType.pic.o toolbox.pic.o
+nm_mpi_pingpong: pingpong.pic.o structType.pic.o vectorType.pic.o indexType.pic.o toolbox.pic.o
 
-index: index.pic.o indexType.pic.o toolbox.pic.o
+nm_mpi_index: index.pic.o indexType.pic.o toolbox.pic.o
 
-vector: vector.pic.o vectorType.pic.o toolbox.pic.o
+nm_mpi_vector: vector.pic.o vectorType.pic.o toolbox.pic.o
 
-struct: struct.pic.o structType.pic.o toolbox.pic.o
+nm_mpi_struct: struct.pic.o structType.pic.o toolbox.pic.o
 
-indexType_hetero_size: indexType_hetero_size.pic.o
+nm_mpi_indexType_hetero_size: indexType_hetero_size.pic.o
 
 

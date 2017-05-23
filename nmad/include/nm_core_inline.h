@@ -160,6 +160,7 @@ static inline void nm_strat_pack_ctrl(nm_gate_t p_gate, nm_header_ctrl_generic_t
 static inline void nm_req_chunk_submit(struct nm_core*p_core, struct nm_req_chunk_s*p_req_chunk)
 {
   nm_core_nolock_assert(p_core);
+  assert(p_req_chunk->p_req != NULL);
   int rc;
   do
     {
@@ -173,7 +174,10 @@ static inline void nm_req_chunk_submit(struct nm_core*p_core, struct nm_req_chun
 static inline void nm_req_chunk_destroy(struct nm_core*p_core, struct nm_req_chunk_s*p_req_chunk)
 {
   struct nm_req_s*p_pack = p_req_chunk->p_req;
-
+#ifdef DEBUG
+  p_req_chunk->chunk_len = NM_LEN_UNDEFINED;
+  p_req_chunk->chunk_offset = NM_LEN_UNDEFINED;
+#endif
   if(p_req_chunk != &p_pack->req_chunk)
     {
       nm_req_chunk_free(p_core->req_chunk_allocator, p_req_chunk);

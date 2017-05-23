@@ -21,27 +21,28 @@
 
 #define SIZE (8 * 1024 * 1024)
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   int numtasks, rank, i, flag;
   char *buffer;
   MPI_Request *requests;
-
+  
   // Initialise MPI
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-  if(numtasks != 2) {
-	  fprintf(stderr, "This program requires two machines, aborting...\n");
-	  printf("failed (wrong configuration)\n");
-	  MPI_Finalize();
-	  exit(1);
+  
+  if(numtasks != 2)
+    {
+      fprintf(stderr, "This program requires two machines, aborting...\n");
+      printf("failed (wrong configuration)\n");
+      MPI_Abort(MPI_COMM_WORLD, -1);
   }
-
   requests = malloc(5 * sizeof(MPI_Request));
   buffer = calloc(SIZE, sizeof(char));
-
-  if (rank == 0) {
+  
+  if(rank == 0)
+    {
       MPI_Irecv(buffer, SIZE, MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD, &requests[0]);
       MPI_Iprobe(1, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
       MPI_Wait(&requests[0], MPI_STATUS_IGNORE);
@@ -58,19 +59,21 @@ int main(int argc, char **argv) {
       /* Wait for req 3 and 4 in a reverse order */
       MPI_Wait(&requests[4], MPI_STATUS_IGNORE);
       MPI_Wait(&requests[3], MPI_STATUS_IGNORE);
-  }
-  else {
-    for( i=0; i<5; i++) {
-      MPI_Isend(buffer, SIZE, MPI_CHAR, 0, i*42, MPI_COMM_WORLD, &requests[i]);
-      MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
-    }    
-  }
-
+    }
+  else
+    {
+      for(i = 0; i < 5; i++)
+	{
+	  MPI_Isend(buffer, SIZE, MPI_CHAR, 0, i*42, MPI_COMM_WORLD, &requests[i]);
+	  MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
+	}    
+    }
+  
   free(buffer);
   free(requests);
 
   MPI_Finalize();
   printf("success\n");
-  exit(0);
+  return 0;
 }
 

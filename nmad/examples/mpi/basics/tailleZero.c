@@ -17,7 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   int numtasks, rank, tag=1;
   int ping_side, rank_dst;
   int counter,  message;
@@ -39,17 +40,19 @@ int main(int argc, char **argv) {
   ping_side = !(rank & 1);
   rank_dst = ping_side?(rank | 1) : (rank & ~1);
 
-  if (ping_side) {
-    message=-1;
-    counter=1;
-    MPI_Send(&counter, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD);
-    MPI_Recv(&message, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD, &stat);
-    fprintf(stdout, "Received %d\n", message);
-  }
-  else {
-    MPI_Recv(&message, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD, &stat);
-    MPI_Send(&message, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD);
-  }
+  if (ping_side)
+    {
+      message=-1;
+      counter=1;
+      MPI_Send(&counter, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD);
+      MPI_Recv(&message, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD, &stat);
+      fprintf(stdout, "Received %d\n", message);
+    }
+  else
+    {
+      MPI_Recv(&message, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD, &stat);
+      MPI_Send(&message, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD);
+    }
   MPI_Finalize();
-  exit(0);
+  return 0;
 }

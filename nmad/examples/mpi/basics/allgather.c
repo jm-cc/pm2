@@ -18,46 +18,46 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   int numtasks, rank, i;
-
+  
   // Initialise MPI
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-  {
-    int success=1;
-    int *rrbuf = malloc(numtasks * 2 * sizeof(int));
-    int sendarray[2];
-    sendarray[0] = rank*2;
-    sendarray[1] = rank+1;
-
-    MPI_Allgather(sendarray, 2, MPI_INT, rrbuf, 2, MPI_INT, MPI_COMM_WORLD);
-
-    for(i=0 ; i<numtasks ; i+=2) {
-      if (rrbuf[i] != (i/2)*2  || rrbuf[i+1] != (i/2)+1) {
-        success=0;
-      }
+  int success = 1;
+  int *rrbuf = malloc(numtasks * 2 * sizeof(int));
+  int sendarray[2];
+  sendarray[0] = rank*2;
+  sendarray[1] = rank+1;
+  
+  MPI_Allgather(sendarray, 2, MPI_INT, rrbuf, 2, MPI_INT, MPI_COMM_WORLD);
+  
+  for(i = 0 ; i < numtasks ; i+=2)
+    {
+      if(rrbuf[i] != (i/2)*2  || rrbuf[i+1] != (i/2)+1)
+	{
+	  success=0;
+	}
     }
-
-    if (success) {
+  if (success)
+    {
       fprintf(stdout, "Success\n");
     }
-    else {
+  else
+    {
       fprintf(stdout, "[%d] Error!!! Received: ", rank);
-      for(i=0 ; i<numtasks*2 ; i++) {
-        fprintf(stdout, "%d ", rrbuf[i]);
-      }
+      for(i = 0 ; i < numtasks*2 ; i++)
+	{
+	  fprintf(stdout, "%d ", rrbuf[i]);
+	}
       fprintf(stdout, "\n");
     }
-
-    free(rrbuf);
-  }
-
+  free(rrbuf);
   fflush(stdout);
-
   MPI_Finalize();
-  exit(0);
+  return 0;
 }
 

@@ -20,58 +20,61 @@
 
 //#define ALLTOALL_DEBUG
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   int numtasks, rank, i;
-
+  
   // Initialise MPI
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-  {
-    int success=1;
-    int *rrbuf = malloc(numtasks * 2 * sizeof(int));
-    int *sendarray = malloc(numtasks * 2 * sizeof(int));
-    for(i=0 ; i<numtasks*2 ; i++) {
+  int success = 1;
+  int *rrbuf = malloc(numtasks * 2 * sizeof(int));
+  int *sendarray = malloc(numtasks * 2 * sizeof(int));
+  for(i = 0 ; i < numtasks*2 ; i++)
+    {
       sendarray[i] = rank*10+i;
     }
 #ifdef ALLTOALL_DEBUG
-    fprintf(stdout, "[%d] Sending: ", rank);
-    for(i=0 ; i<numtasks*2 ; i++) {
+  fprintf(stdout, "[%d] Sending: ", rank);
+  for(i = 0 ; i < numtasks*2 ; i++)
+    {
       fprintf(stdout, "%d ", sendarray[i]);
     }
-    fprintf(stdout, "\n");
+  fprintf(stdout, "\n");
 #endif
-
-    MPI_Alltoall(sendarray, 2, MPI_INT, rrbuf, 2, MPI_INT, MPI_COMM_WORLD);
-
+  
+  MPI_Alltoall(sendarray, 2, MPI_INT, rrbuf, 2, MPI_INT, MPI_COMM_WORLD);
+  
 #ifdef ALLTOALL_DEBUG
-    fprintf(stdout, "[%d] Received: ", rank);
-    for(i=0 ; i<numtasks*2 ; i++) {
+  fprintf(stdout, "[%d] Received: ", rank);
+  for(i = 0 ; i < numtasks*2 ; i++)
+    {
       fprintf(stdout, "%d ", rrbuf[i]);
     }
-    fprintf(stdout, "\n");
+  fprintf(stdout, "\n");
 #endif
 
-    for(i=0 ; i<numtasks ; i+=2) {
-      if (rrbuf[i] != (rank*2)+(i/2)*10  || rrbuf[i+1] != (rank*2+1)+(i/2)*10) {
-        fprintf(stdout, "[%d] Error. rrbuf[%d] != %d --- rrbuf[%d] != %d\n",
-                rank, i, (rank*2)+(i/2)*10, i+1, (rank*2+1)+(i/2)*10);
-        success=0;
-      }
+  for(i = 0 ; i < numtasks ; i += 2)
+    {
+      if (rrbuf[i] != (rank*2)+(i/2)*10  || rrbuf[i+1] != (rank*2+1)+(i/2)*10)
+	{
+	  fprintf(stdout, "[%d] Error. rrbuf[%d] != %d --- rrbuf[%d] != %d\n",
+		  rank, i, (rank*2)+(i/2)*10, i+1, (rank*2+1)+(i/2)*10);
+	  success=0;
+	}
     }
-
-    if (success) {
+  if (success)
+    {
       fprintf(stdout, "Success\n");
     }
-
-    free(rrbuf);
-    free(sendarray);
-  }
-
+  free(rrbuf);
+  free(sendarray);
+  
   fflush(stdout);
 
   MPI_Finalize();
-  exit(0);
+  return 0;
 }
 

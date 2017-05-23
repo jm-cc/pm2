@@ -26,7 +26,7 @@ include @puk_root@/etc/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
-TESTS +=
+TESTS += pscw_put pscw_get
 BENCH += 
 
 include @nmad_srcdir@/nmad-tests.mk

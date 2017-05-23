@@ -25,8 +25,8 @@ include @abs_top_builddir@/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
-TESTS += pack_latency large_small_large_small
-BENCH += pack_latency pack_ping pack_ping_anysrc
+TESTS += nm_pack_latency nm_pack_large_small_large_small
+BENCH += nm_pack_latency nm_pack_ping nm_pack_ping_anysrc
 
 include @nmad_srcdir@/nmad-tests.mk
 

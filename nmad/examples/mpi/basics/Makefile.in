@@ -27,36 +27,36 @@ include @puk_root@/etc/common_rules.mk
 $(TARGET_BIN): %: %.pic.o
 
 TESTS +=
-BENCH += mpi_bench mpi_latency
+BENCH += nm_mpi_bench nm_mpi_latency
 
 include @nmad_srcdir@/nmad-tests.mk
 
 
-test-star: NMAD_NODES = 4
+test-nm_mpi_star: NMAD_NODES = 4
 
-test-star2: NMAD_NODES = 4
+test-nm_mpi_star2: NMAD_NODES = 4
 
-test-scatter: NMAD_NODES = 4
+test-nm_mpi_scatter: NMAD_NODES = 4
 
-test-group: NMAD_NODES = 4
-test-group: TEST_FILTER = sort --ignore-case
+test-nm_mpi_group: NMAD_NODES = 4
+test-nm_mpi_group: TEST_FILTER = sort --ignore-case
 
-test-global: NMAD_NODES = 8
-test-global: TEST_FILTER = sort
+test-nm_mpi_global: NMAD_NODES = 8
+test-nm_mpi_global: TEST_FILTER = sort
 
-test-gatherv: NMAD_NODES = 4
+test-nm_mpi_gatherv: NMAD_NODES = 4
 
-test-gather: NMAD_NODES = 4
+test-nm_mpi_gather: NMAD_NODES = 4
 
-test-datatype: NMAD_NODES = 4 
-test-datatype: TEST_FILTER = sort
+test-nm_mpi_datatype: NMAD_NODES = 4 
+test-nm_mpi_datatype: TEST_FILTER = sort
 
-test-freedatatype: TEST_FILTER = sort
+test-nm_mpi_freedatatype: TEST_FILTER = sort
 
-test-communicator: TEST_FILTER = sort
+test-nm_mpi_communicator: TEST_FILTER = sort
 
-test-anysource: NMAD_NODES = 8
+test-nm_mpi_anysource: NMAD_NODES = 8
 
-test-alltoall: NMAD_NODES = 8
+test-nm_mpi_alltoall: NMAD_NODES = 8
 
-test-allgather: NMAD_NODES = 8
+test-nm_mpi_allgather: NMAD_NODES = 8

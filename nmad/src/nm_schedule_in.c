@@ -29,6 +29,7 @@ void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate,
 		       nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
   nm_pw_assign(p_pw, trk_id, p_drv, p_gate);
+  p_pw->flags |= NM_PW_RECV;
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
   if(p_gdrv)
     {
@@ -92,6 +93,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
    
   if(err == NM_ESUCCESS)
     {
+      p_pw->flags |= NM_PW_COMPLETED;
 #ifdef PIOMAN
       piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOMAN */
@@ -158,6 +160,7 @@ int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
   if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
+      p_pw->flags |= NM_PW_COMPLETED;
 #ifdef PIOMAN
       piom_ltask_completed(&p_pw->ltask);      
 #endif /* PIOMAN */

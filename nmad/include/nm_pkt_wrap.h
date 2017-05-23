@@ -54,15 +54,21 @@ typedef uint32_t nm_pw_flag_t;
 /** Pkt has bee posted */
 #define NM_PW_POSTED        (nm_pw_flag_t)0x0040
 
+#define NM_PW_COMPLETED     (nm_pw_flag_t)0x0080
+
+#define NM_PW_SEND          (nm_pw_flag_t)0x0100
+
+#define NM_PW_RECV          (nm_pw_flag_t)0x0200
+
 /*@}*/
 
 /* Data flags, used when packing  */
 
 /** use memcpy, not iovec/iterator */
-#define NM_PW_DATA_USE_COPY   0x0200
+#define NM_PW_DATA_USE_COPY   0x020000
 
 /* pointer is a struct nm_data_s */
-#define NM_PW_DATA_ITERATOR   0x0400
+#define NM_PW_DATA_ITERATOR   0x040000
 
 
 /** Internal packet wrapper.

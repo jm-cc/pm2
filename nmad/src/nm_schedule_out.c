@@ -83,6 +83,7 @@ void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw,
   nm_core_lock_assert(p_drv->p_core);
   /* Packet is assigned to given track, driver, and gate */
   nm_pw_assign(p_pw, trk_id, p_drv, p_gate);
+  p_pw->flags |= NM_PW_SEND;
   if(trk_id == NM_TRK_SMALL)
     {
       assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
@@ -154,6 +155,7 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
   int err = (*r->driver->poll_send_iov)(r->_status, p_pw);
   if(err == NM_ESUCCESS)
     {
+      p_pw->flags |= NM_PW_COMPLETED;
 #ifdef PIOMAN
       piom_ltask_completed(&p_pw->ltask);
 #else
@@ -225,6 +227,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   else if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
+      p_pw->flags |= NM_PW_COMPLETED;
 #ifdef PIOMAN
       piom_ltask_completed(&p_pw->ltask);
 #endif

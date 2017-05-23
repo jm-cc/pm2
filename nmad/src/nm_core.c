@@ -44,6 +44,7 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
   while(p_req_chunk != NULL)
     {
       struct nm_req_s*p_pack = p_req_chunk->p_req;
+      assert(p_pack != NULL);
       if(p_pack->seq == NM_SEQ_NONE)
 	{
 	  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);

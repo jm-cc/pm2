@@ -116,6 +116,7 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
       const nm_len_t chunk_len = p_req_chunk->chunk_len;
       assert(nm_status_test(p_pack, NM_STATUS_PACK_POSTED));
       p_pack->pack.done += chunk_len;
+      nm_req_chunk_destroy(p_core, p_req_chunk);
       if(p_pack->pack.done == p_pack->pack.len)
 	{
 	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->pack.len);
@@ -137,7 +138,6 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 	  NM_FATAL("more bytes sent than posted (should have been = %lu; actually sent = %lu)\n",
 		       p_pack->pack.len, p_pack->pack.done);
 	}
-      nm_req_chunk_destroy(p_core, p_req_chunk);
     }
   nm_pw_ref_dec(p_pw);
   nm_strat_try_and_commit(p_gate);

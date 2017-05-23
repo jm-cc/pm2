@@ -20,20 +20,20 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "helper.h"
+#include "../common/nm_examples_helper.h"
+#include <nm_pack_interface.h>
 
 #define SIZE  (64 * 1024)
 
 const char *msg_beg	= "hello", *msg_end = "world!";
 
-int
-main(int	  argc,
-     char	**argv) {
+int main(int argc, char**argv)
+{
   char *message = NULL;
   char *src, *dst;
   nm_pack_cnx_t cnx;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   /* Build the message to be sent */
   message = malloc(SIZE+1);
@@ -59,7 +59,7 @@ main(int	  argc,
     memset(buf, 'z', SIZE);
     *(buf + SIZE - 1) = '\0';
 
-    nm_begin_unpacking(p_core, gate_id, 0, &cnx);
+    nm_begin_unpacking(p_session, p_gate, 0, &cnx);
     nm_unpack(&cnx, buf, SIZE);
     nm_end_unpacking(&cnx);
 
@@ -76,7 +76,7 @@ main(int	  argc,
      */
     //printf("Here's the message we're going to send : [%s]\n", buf);
 
-    nm_begin_packing(p_core, gate_id, 0, &cnx);
+    nm_begin_packing(p_session, p_gate, 0, &cnx);
 
     nm_pack(&cnx, message, SIZE);
 
@@ -84,6 +84,6 @@ main(int	  argc,
   }
 
   free(message);
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

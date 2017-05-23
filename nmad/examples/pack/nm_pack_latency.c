@@ -21,7 +21,8 @@
 #include <unistd.h>
 #include <values.h>
 
-#include "helper.h"
+#include "../common/nm_examples_helper.h"
+#include <nm_pack_interface.h>
 
 #define LOOPS 50000
 
@@ -29,7 +30,7 @@ int main(int argc, char**argv)
 {
   nm_pack_cnx_t cnx;
   
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   if (is_server)
     {
@@ -38,11 +39,11 @@ int main(int argc, char**argv)
       int i;
       for(i = 0; i < LOOPS; i++)
 	{
-	  nm_begin_unpacking(p_core, gate_id, 0, &cnx);
+	  nm_begin_unpacking(p_session, p_gate, 0, &cnx);
 	  nm_unpack(&cnx, NULL, 0);
 	  nm_end_unpacking(&cnx);
 
-	  nm_begin_packing(p_core, gate_id, 0, &cnx);
+	  nm_begin_packing(p_session, p_gate, 0, &cnx);
 	  nm_pack(&cnx, NULL, 0);
 	  nm_end_packing(&cnx);
 	}
@@ -58,11 +59,11 @@ int main(int argc, char**argv)
 	  tbx_tick_t t1, t2;
 	  TBX_GET_TICK(t1);
 
-	  nm_begin_packing(p_core, gate_id, 0, &cnx);
+	  nm_begin_packing(p_session, p_gate, 0, &cnx);
 	  nm_pack(&cnx, NULL, 0);
 	  nm_end_packing(&cnx);
 	  
-	  nm_begin_unpacking(p_core, gate_id, 0, &cnx);
+	  nm_begin_unpacking(p_session, p_gate, 0, &cnx);
 	  nm_unpack(&cnx, NULL, 0);
 	  nm_end_unpacking(&cnx);
 	  TBX_GET_TICK(t2);
@@ -76,6 +77,6 @@ int main(int argc, char**argv)
       
     }
   
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

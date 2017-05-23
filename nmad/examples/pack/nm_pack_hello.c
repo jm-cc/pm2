@@ -20,17 +20,18 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "helper.h"
+#include "../common/nm_examples_helper.h"
+#include <nm_pack_interface.h>
 
 const char *msg	= "hello, world";
 
 int main(int argc, char **argv)
 {
   char *buf = NULL;
-  uint64_t len;
+  nm_len_t len;
   nm_pack_cnx_t cnx;
   
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   len = 1+strlen(msg);
   buf = malloc((size_t)len);
   
@@ -39,7 +40,7 @@ int main(int argc, char **argv)
       /* server */
       memset(buf, 0, len);
       
-      nm_begin_unpacking(p_core, NM_ANY_GATE, 0, &cnx);
+      nm_begin_unpacking(p_session, NM_ANY_GATE, 0, &cnx);
       nm_unpack(&cnx, buf, len);
       nm_end_unpacking(&cnx);
       
@@ -50,12 +51,12 @@ int main(int argc, char **argv)
       /* client */
       strcpy(buf, msg);
       
-      nm_begin_packing(p_core, gate_id, 0, &cnx);
+      nm_begin_packing(p_session, p_gate, 0, &cnx);
       nm_pack(&cnx, buf, len);
       nm_end_packing(&cnx);
     }
   
   free(buf);
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

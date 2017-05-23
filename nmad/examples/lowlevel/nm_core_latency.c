@@ -26,7 +26,8 @@
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
 #include <nm_launcher.h>
-#include <nm_sendrecv_interface.h>
+#include <nm_core_interface.h>
+#include <tbx.h>
 
 const int roundtrips = 50000;
 

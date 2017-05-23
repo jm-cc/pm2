@@ -31,36 +31,36 @@ BENCH +=
 
 include @nmad_srcdir@/nmad-tests.mk
 
-test-pscw_put: NMAD_NODES = 2
+test-nm_mpi_pscw_put: NMAD_NODES = 2
 
-test-pscw_put-struct: NMAD_NODES = 2
+test-nm_mpi_pscw_put-struct: NMAD_NODES = 2
 
-test-pscw_get: NMAD_NODES = 2
+test-nm_mpi_pscw_get: NMAD_NODES = 2
 
-test-pscw_rget: NMAD_NODES = 2
+test-nm_mpi_pscw_rget: NMAD_NODES = 2
 
-test-pscw_get-struct: NMAD_NODES = 2
+test-nm_mpi_pscw_get-struct: NMAD_NODES = 2
 
-test-fence_put: NMAD_NODES = 2
+test-nm_mpi_fence_put: NMAD_NODES = 2
 
-test-fence_put-struct: NMAD_NODES = 2
+test-nm_mpi_fence_put-struct: NMAD_NODES = 2
 
-test-fence_get: NMAD_NODES = 2
+test-nm_mpi_fence_get: NMAD_NODES = 2
 
-test-fence_rget: NMAD_NODES = 2
+test-nm_mpi_fence_rget: NMAD_NODES = 2
 
-test-fence_get-struct: NMAD_NODES = 2
+test-nm_mpi_fence_get-struct: NMAD_NODES = 2
 
-test-lock_put: NMAD_NODES = 2
+test-nm_mpi_lock_put: NMAD_NODES = 2
 
-test-lock_put_self: NMAD_NODES = 2
+test-nm_mpi_lock_put_self: NMAD_NODES = 2
 
-test-lock_put-struct: NMAD_NODES = 2
+test-nm_mpi_lock_put-struct: NMAD_NODES = 2
 
-test-lock_get: NMAD_NODES = 2
+test-nm_mpi_lock_get: NMAD_NODES = 2
 
-test-lock_rget: NMAD_NODES = 2
+test-nm_mpi_lock_rget: NMAD_NODES = 2
 
-test-lock_get-struct: NMAD_NODES = 2
+test-nm_mpi_lock_get-struct: NMAD_NODES = 2
 
-test-win_errhandler: NMAD_NODES = 1
+test-nm_mpi_win_errhandler: NMAD_NODES = 1

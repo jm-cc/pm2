@@ -19,7 +19,7 @@
 #include <tbx.h>
 #include <pthread.h>
 
-#include "piom_helper.h"
+#include "nm_piom_helper.h"
 
 #ifndef PIOMAN_MULTITHREAD
 

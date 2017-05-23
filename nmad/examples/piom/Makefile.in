@@ -24,6 +24,6 @@ include @abs_top_builddir@/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
-BENCH += pio_offload piom_1toN
+BENCH += nm_piom_offload nm_piom_1toN
 
 include @nmad_srcdir@/nmad-tests.mk

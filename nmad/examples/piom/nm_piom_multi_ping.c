@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "piom_helper.h"
+#include "nm_piom_helper.h"
 
 #ifdef PIOMAN_MULTITHREAD
 

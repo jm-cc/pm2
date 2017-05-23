@@ -20,7 +20,7 @@
 #include <math.h>
 #include <errno.h>
 
-#include "piom_helper.h"
+#include "nm_piom_helper.h"
 
 
 /* This program performs a latency test with 0..n computing threads per CPU */

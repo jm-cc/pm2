@@ -21,9 +21,6 @@
 #endif
 
 
-/** LF queue type for post send/recv lists */
-PUK_LFQUEUE_TYPE(nm_pw_post, struct nm_pkt_wrap_s*, NULL, 1024);
-
 /** Driver.
  */
 struct nm_drv_s

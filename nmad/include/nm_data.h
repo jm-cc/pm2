@@ -45,10 +45,10 @@
 struct nm_data_s;
 
 /** function to apply to each data chunk upon traversal */
-typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_ref);
+typedef void (*nm_data_apply_t)(void*ptr, nm_len_t len, void*_context);
 
 /** funtion to traverse data with app layout, i.e. ='map' functional operation
- * @param p_data data descriptor
+ * @param _content content description of data type
  * @param apply function to apply to all chunks
  * @param _context context pointer given to apply function
  */

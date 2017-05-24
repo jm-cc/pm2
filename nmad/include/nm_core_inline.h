@@ -157,6 +157,45 @@ static inline void nm_strat_pack_ctrl(nm_gate_t p_gate, nm_header_ctrl_generic_t
     }
 }
 
+/** enqueue a pw completion, or process immediately if possible */
+static inline void nm_pw_completed_enqueue(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
+{
+  nm_core_nolock_assert(p_core);
+  assert(!(p_pw->flags & NM_PW_COMPLETED));
+  p_pw->flags |= NM_PW_COMPLETED;
+#ifdef PIOMAN
+  piom_ltask_completed(&p_pw->ltask);
+#endif
+  if(nm_core_trylock(p_core))
+    {
+      /* got lock- immediate completion */
+      if(p_pw->flags & NM_PW_SEND)
+	nm_pw_process_complete_send(p_core, p_pw);
+      else if(p_pw->flags & NM_PW_RECV)
+	nm_pw_process_complete_recv(p_core, p_pw);
+      else
+	NM_FATAL("wrong state for completed pw.");
+      nm_core_unlock(p_core);
+    }
+  else
+    {
+      /* busy lock- don't wait, enqueue for ltask */
+      int rc;
+      do
+	{
+	  rc = nm_pkt_wrap_lfqueue_enqueue(&p_core->completed_pws, p_pw);
+	  if(tbx_unlikely(rc))
+	    {
+	      nm_core_flush(p_core);
+	    }
+	}
+      while(rc);
+    }
+#ifndef PIOMAN
+  nm_core_events_dispatch(p_core);
+#endif
+}
+
 static inline void nm_req_chunk_submit(struct nm_core*p_core, struct nm_req_chunk_s*p_req_chunk)
 {
   nm_core_nolock_assert(p_core);

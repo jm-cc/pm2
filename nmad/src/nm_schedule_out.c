@@ -155,15 +155,10 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
   int err = (*r->driver->poll_send_iov)(r->_status, p_pw);
   if(err == NM_ESUCCESS)
     {
-      p_pw->flags |= NM_PW_COMPLETED;
-#ifdef PIOMAN
-      piom_ltask_completed(&p_pw->ltask);
-#else
+#ifndef PIOMAN
       nm_pkt_wrap_list_erase(&p_core->pending_send_list, p_pw);
 #endif /* PIOMAN */
-      nm_core_lock(p_core);
-      nm_pw_process_complete_send(p_core, p_pw);
-      nm_core_unlock(p_core);
+      nm_pw_completed_enqueue(p_core, p_pw);
     }
   else if(err != -NM_EAGAIN)
     {
@@ -227,13 +222,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   else if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
-      p_pw->flags |= NM_PW_COMPLETED;
-#ifdef PIOMAN
-      piom_ltask_completed(&p_pw->ltask);
-#endif
-      nm_core_lock(p_core);
-      nm_pw_process_complete_send(p_core, p_pw);
-      nm_core_unlock(p_core);
+      nm_pw_completed_enqueue(p_core, p_pw);
     }
   else
     {

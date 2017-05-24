@@ -70,6 +70,21 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
     }
 }
 
+static inline void nm_core_pw_completions_flush(struct nm_core*p_core)
+{
+  nm_core_lock_assert(p_core);
+  while(!nm_pkt_wrap_lfqueue_empty(&p_core->completed_pws))
+    {
+      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_lfqueue_dequeue_single_reader(&p_core->completed_pws);
+      assert(p_pw->flags & NM_PW_COMPLETED);
+      if(p_pw->flags & NM_PW_SEND)
+	nm_pw_process_complete_send(p_core, p_pw);
+      else if(p_pw->flags & NM_PW_RECV)
+	nm_pw_process_complete_recv(p_core, p_pw);
+      else
+	NM_FATAL("wrong state for completed pw.");
+    }      
+}
 
 /** make progress on core pending operations.
  * all operations that need lock when multithreaded.
@@ -80,6 +95,7 @@ void nm_core_progress(struct nm_core*p_core)
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_strat_apply);
   nm_core_pack_submissions_flush(p_core);
+  nm_core_pw_completions_flush(p_core);
   /* apply strategy on each gate */
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
@@ -97,6 +113,7 @@ void nm_core_flush(struct nm_core*p_core)
 {
   nm_core_lock(p_core);
   nm_core_pack_submissions_flush(p_core);
+  nm_core_pw_completions_flush(p_core);
   nm_core_unlock(p_core);
 }
 
@@ -591,6 +608,8 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_req_chunk_lfqueue_init(&p_core->pack_submissions);
   p_core->req_chunk_allocator = nm_req_chunk_allocator_new(NM_REQ_CHUNK_QUEUE_SIZE);
   p_core->ctrl_chunk_allocator = nm_ctrl_chunk_allocator_new(NM_REQ_CHUNK_QUEUE_SIZE);
+
+  nm_pkt_wrap_lfqueue_init(&p_core->completed_pws);
   
   p_core->dispatching_event_allocator = nm_core_dispatching_event_allocator_new(16);
   nm_core_dispatching_event_lfqueue_init(&p_core->dispatching_events);

@@ -59,6 +59,13 @@ PUK_LFQUEUE_TYPE(nm_req_chunk, struct nm_req_chunk_s*, NULL, NM_REQ_CHUNK_QUEUE_
 /** allocator for request chunks */
 PUK_ALLOCATOR_TYPE(nm_req_chunk, struct nm_req_chunk_s);
 
+
+/* ** Packet wrappers ************************************** */
+
+/** LF queue type for completed pw */
+PUK_LFQUEUE_TYPE(nm_pkt_wrap, struct nm_pkt_wrap_s*, NULL, 512);
+
+
 /* ** Tracks *********************************************** */
 
 typedef int8_t nm_trk_id_t;
@@ -172,10 +179,6 @@ PUK_LIST_CREATE_FUNCS(nm_unexpected);
 #include "nm_core.h"
 
 #include "nm_lock.h"
-#include "nm_core_inline.h"
-#include "nm_tactics.h"
-
-#include "nm_sampling.h"
 
 __PUK_SYM_INTERNAL
 void nm_core_driver_flush(struct nm_core *p_core);
@@ -228,5 +231,9 @@ void nm_data_pkt_pack(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq
 
 void nm_data_pkt_unpack(const struct nm_data_s*p_data, const struct nm_header_pkt_data_s*h, const struct nm_pkt_wrap_s*p_pw,
 			nm_len_t chunk_offset, nm_len_t chunk_len);
+
+#include "nm_core_inline.h"
+#include "nm_tactics.h"
+#include "nm_sampling.h"
 
 #endif /* NM_PRIVATE_H */

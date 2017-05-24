@@ -29,7 +29,7 @@
 int main(int argc, char	**argv)
 {
   const int len = MAX_PENDING + 1;
-  char buf[MAX_PENDING + 1];
+  char*buf = malloc(MAX_PENDING + 1);
   nm_sr_request_t*requests = malloc(MAX_PENDING * sizeof(nm_sr_request_t));
   int i;
   int max_pending;
@@ -82,6 +82,7 @@ int main(int argc, char	**argv)
       nm_examples_barrier(max_pending);
     }
   free(requests);
+  free(buf);
   nm_examples_exit();
   return 0;
 }

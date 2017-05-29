@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,38 @@ static inline int nm_tactic_pack_ctrl(nm_gate_t p_gate,
       return -NM_EBUSY;
     }
 }
+
+static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw, struct nm_req_chunk_s*p_req_chunk)
+{
+  if(NM_HEADER_CTRL_SIZE + p_pw->length < nm_drv_max_small(p_gate->p_core))
+    {
+      nm_req_chunk_list_erase(&p_gate->req_chunk_list, p_req_chunk);
+      struct nm_req_s*p_pack = p_req_chunk->p_req;
+      const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
+      const nm_len_t density = p_props->size / p_props->blocks;
+      const int is_lastchunk = (p_req_chunk->chunk_offset + p_req_chunk->chunk_len == p_pack->pack.len);
+      nm_pw_flag_t flags = NM_REQ_FLAG_NONE;
+      if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->data.ops.p_generator == NULL))
+	{
+	  flags |= NM_REQ_FLAG_USE_COPY;
+	}
+      if(is_lastchunk)
+	{
+	  flags |= NM_REQ_FLAG_LAST_CHUNK;
+	}
+      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
+      nm_pw_add_req_chunk(p_large_pw, p_req_chunk, flags);
+      nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_large_pw);
+      union nm_header_ctrl_generic_s rdv;
+      nm_header_init_rdv(&rdv, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset, is_lastchunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
+      nm_pw_add_control(p_pw, &rdv);
+    }
+  else
+    {
+      return -NM_EBUSY;
+    }
+}
+				     
 
 /** Find in the given outlist a packet wrapper with
  * at least 'message_len' available, with a visibility window of length 'window'

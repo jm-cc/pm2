@@ -60,15 +60,9 @@ typedef uint32_t nm_pw_flag_t;
 
 #define NM_PW_RECV          (nm_pw_flag_t)0x0200
 
+#define NM_PW_DATA_COPY     (nm_pw_flag_t)0x0400
+
 /*@}*/
-
-/* Data flags, used when packing  */
-
-/** use memcpy, not iovec/iterator */
-#define NM_PW_DATA_USE_COPY   0x020000
-
-/* pointer is a struct nm_data_s */
-#define NM_PW_DATA_ITERATOR   0x040000
 
 
 /** Internal packet wrapper.
@@ -145,7 +139,7 @@ int nm_pw_free(struct nm_pkt_wrap_s*p_pw);
 
 int nm_pw_split_data(struct nm_pkt_wrap_s*p_pw, struct nm_pkt_wrap_s*pp_pw2, nm_len_t offset);
 
-void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*p_pw, struct nm_req_chunk_s*p_req_chunk, int flags);
+void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*p_pw, struct nm_req_chunk_s*p_req_chunk, nm_req_flag_t flags);
 
 void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 			      struct nm_data_s*p_data, nm_len_t len, nm_len_t chunk_offset, uint8_t flags);

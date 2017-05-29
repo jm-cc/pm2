@@ -338,7 +338,7 @@ int nm_pw_split_data(struct nm_pkt_wrap_s *p_pw,
  *  @param flags the flags controlling the way the fragment is appended.
  */
 void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
-			 struct nm_req_chunk_s*__restrict__ p_req_chunk, int flags)
+			 struct nm_req_chunk_s*__restrict__ p_req_chunk, nm_req_flag_t req_flags)
 {
   struct nm_req_s*__restrict__ p_pack = p_req_chunk->p_req;
   const nm_len_t chunk_len = p_req_chunk->chunk_len;
@@ -347,7 +347,6 @@ void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
   const nm_seq_t seq = p_pack->seq;
   nm_proto_t proto_flags = 0;
   assert(!p_pw->p_unpack);
-  assert(flags & NM_PW_DATA_ITERATOR);
   struct nm_data_s*p_data = &p_pack->data;
 
   /* add the contrib ref to the pw */
@@ -357,20 +356,21 @@ void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
     {
       proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
     }
-  if(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)
+  if(p_pack->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS)
     {
       proto_flags |= NM_PROTO_FLAG_ACKREQ;
     }
   if(p_pw->flags & NM_PW_GLOBAL_HEADER)
     {
       /* ** Data with a global header in v[0] */
-      if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0))
+      if(req_flags & NM_REQ_FLAG_SHORT_CHUNK)
 	{
 	  /* short data with short header */
+	  assert((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0));
 	  struct iovec*hvec = &p_pw->v[0];
 	  struct nm_header_short_data_s*h = hvec->iov_base + hvec->iov_len;
-	  hvec->iov_len += NM_HEADER_SHORT_DATA_SIZE;
 	  nm_header_init_short_data(h, tag, seq, chunk_len);
+	  hvec->iov_len += NM_HEADER_SHORT_DATA_SIZE;
 	  if(chunk_len)
 	    {
 	      nm_data_copy_from(p_data, 0 /* chunk_offset == 0 */, chunk_len, hvec->iov_base + hvec->iov_len);
@@ -378,7 +378,7 @@ void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
 	    }
 	  p_pw->length += NM_HEADER_SHORT_DATA_SIZE + chunk_len;
 	}
-      else if(flags & NM_PW_DATA_USE_COPY)
+      else if(req_flags & NM_REQ_FLAG_USE_COPY)
 	{
 	  /* Data immediately follows its header */
 	  nm_pw_add_data_in_header(p_pw, tag, seq, p_data, chunk_len, chunk_offset, proto_flags);
@@ -393,6 +393,8 @@ void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
     {
       /* ** Add raw data to pw, without header */
       nm_pw_set_data_raw(p_pw, p_data, chunk_len, chunk_offset);
+      if(req_flags & NM_REQ_FLAG_USE_COPY)
+	p_pw->flags |= NM_PW_DATA_COPY;
     }
 }
 

@@ -27,7 +27,7 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
 {
   nm_status_init(p_pack, NM_STATUS_PACK_INIT);
   nm_req_list_cell_init(p_pack);
-  p_pack->flags     = NM_FLAG_PACK;
+  p_pack->flags     = NM_REQ_FLAG_PACK;
   p_pack->data      = *p_data;
   p_pack->pack.len  = nm_data_size(&p_pack->data);
   p_pack->pack.done = 0;
@@ -124,7 +124,7 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_PACK_COMPLETED |
-	      ( ((!(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)) || nm_status_test(p_pack, NM_STATUS_ACK_RECEIVED)) ? NM_STATUS_FINALIZED : 0),
+	      ( ((!(p_pack->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS)) || nm_status_test(p_pack, NM_STATUS_ACK_RECEIVED)) ? NM_STATUS_FINALIZED : 0),
 	      .p_req = p_pack
 	    };
 	  if(event.status & NM_STATUS_FINALIZED)
@@ -184,7 +184,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 
   /* flatten data if needed */
   if((p_pw->p_data != NULL) &&
-     ((p_pw->flags & NM_PW_DATA_USE_COPY) || !p_pw->p_drv->trk_caps[p_pw->trk_id].supports_data))
+     ((p_pw->flags & NM_PW_DATA_COPY) || !p_pw->p_drv->trk_caps[p_pw->trk_id].supports_data))
     {
       const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pw->p_data);
       void*buf = NULL;

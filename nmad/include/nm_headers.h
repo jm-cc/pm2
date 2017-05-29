@@ -227,7 +227,7 @@ static inline void nm_header_init_short_data(struct nm_header_short_data_s*p_hea
 static inline void nm_header_init_rdv(union nm_header_ctrl_generic_s*p_ctrl, struct nm_req_s*p_pack,
 				      nm_len_t len, nm_len_t chunk_offset, uint8_t rdv_flags)
 {
-  if(p_pack->flags & NM_FLAG_PACK_SYNCHRONOUS)
+  if(p_pack->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS)
     rdv_flags |= NM_PROTO_FLAG_ACKREQ;
   assert((rdv_flags & NM_PROTO_ID_MASK) == 0);
   p_ctrl->rdv.proto_id     = NM_PROTO_RDV | rdv_flags;

@@ -261,7 +261,7 @@ void nm_core_unpack_init(struct nm_core*p_core, struct nm_req_s*p_unpack)
 #ifdef DEBUG
   nm_data_null_build(&p_unpack->data);
 #endif
-  p_unpack->flags   = NM_FLAG_UNPACK;
+  p_unpack->flags   = NM_REQ_FLAG_UNPACK;
   p_unpack->monitor = NM_MONITOR_NULL;
   p_unpack->unpack.cumulated_len = 0;
   p_unpack->unpack.expected_len  = NM_LEN_UNDEFINED;
@@ -283,7 +283,7 @@ static inline void nm_core_unpack_match(struct nm_core*p_core, struct nm_req_s*p
   p_unpack->seq    = seq;
   p_unpack->tag    = tag;
   p_unpack->unpack.tag_mask = tag_mask;
-  p_unpack->flags |= NM_FLAG_UNPACK_MATCHED;
+  p_unpack->flags |= NM_REQ_FLAG_UNPACK_MATCHED;
 }
 void nm_core_unpack_match_event(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event)
 {
@@ -301,7 +301,7 @@ void nm_core_unpack_match_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, 
 /** probes whether an incoming packet matched this request */
 int nm_core_unpack_iprobe(struct nm_core*p_core, struct nm_req_s*p_unpack)
 {
-  if(!(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
+  if(!(p_unpack->flags & NM_REQ_FLAG_UNPACK_MATCHED))
     {
       NM_WARN("cannot probe unmatched request.\n");
       return -NM_EINVAL;
@@ -318,7 +318,7 @@ int nm_core_unpack_iprobe(struct nm_core*p_core, struct nm_req_s*p_unpack)
 
 int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data)
 {
-  if((p_unpack->seq == NM_SEQ_NONE) || (p_unpack->p_gate == NM_GATE_NONE) || !(p_unpack->flags & NM_FLAG_UNPACK_MATCHED))
+  if((p_unpack->seq == NM_SEQ_NONE) || (p_unpack->p_gate == NM_GATE_NONE) || !(p_unpack->flags & NM_REQ_FLAG_UNPACK_MATCHED))
     {
       NM_WARN("cannot peek unmatched request.\n");
       return -NM_EINVAL;

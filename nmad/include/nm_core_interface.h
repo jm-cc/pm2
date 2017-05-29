@@ -102,7 +102,7 @@ typedef nm_status_t nm_cond_status_t;
 #endif /* PIOMAN */
 
 /** pack/unpack flags */
-typedef uint16_t nm_req_flag_t;
+typedef uint32_t nm_req_flag_t;
 
 /* ** status and flags, used in pack/unpack requests and events */
 
@@ -133,16 +133,26 @@ typedef uint16_t nm_req_flag_t;
 #define NM_STATUS_MASK_FULL                ((nm_status_t)-1)
 
 /** no flag set */
-#define NM_FLAG_NONE                 ((nm_req_flag_t)0x0000)
+#define NM_REQ_FLAG_NONE                   ((nm_req_flag_t)0x00000000)
 /** flag pack as synchronous (i.e. request the receiver to send an ack) */
-#define NM_FLAG_PACK_SYNCHRONOUS     ((nm_req_flag_t)0x1000)
+#define NM_REQ_FLAG_PACK_SYNCHRONOUS       ((nm_req_flag_t)0x00001000)
 /** flag request as a pack */
-#define NM_FLAG_PACK                 ((nm_req_flag_t)0x2000)
+#define NM_REQ_FLAG_PACK                   ((nm_req_flag_t)0x00002000)
 /** flag request as an unpack */
-#define NM_FLAG_UNPACK               ((nm_req_flag_t)0x4000)
+#define NM_REQ_FLAG_UNPACK                 ((nm_req_flag_t)0x00004000)
 /** flag unpack request as matched */
-#define NM_FLAG_UNPACK_MATCHED       ((nm_req_flag_t)0x8000)
+#define NM_REQ_FLAG_UNPACK_MATCHED         ((nm_req_flag_t)0x00008000)
 
+/** flag req_chunk as short */
+#define NM_REQ_FLAG_SHORT_CHUNK            ((nm_req_flag_t)0x00010000)
+/** flag req_chunk as last in req */
+#define NM_REQ_FLAG_LAST_CHUNK             ((nm_req_flag_t)0x00020000)
+/** flatten data as contiguous block before send */
+#define NM_REQ_FLAG_USE_COPY               ((nm_req_flag_t)0x00040000)
+/* use iterator-based data description in pw */
+#define NM_REQ_FLAG_DATA_ITERATOR          ((nm_req_flag_t)0x00080000)
+
+  
 /** Sequence number */
 typedef uint32_t nm_seq_t;
 

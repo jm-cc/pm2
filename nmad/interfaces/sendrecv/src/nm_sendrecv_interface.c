@@ -118,7 +118,7 @@ extern void nm_sr_request_wait(nm_sr_request_t*p_request)
     NM_FATAL("nm_sr_request_wait- req=%p has monitor registered; cannot wait.\n", p_request);
 #endif /* DEBUG */
   nm_status_wait(&p_request->req, NM_STATUS_FINALIZED, p_request->p_session->p_core);
-  if(p_request->req.flags & NM_FLAG_PACK_SYNCHRONOUS)
+  if(p_request->req.flags & NM_REQ_FLAG_PACK_SYNCHRONOUS)
     {
       assert(nm_status_test(&p_request->req, NM_STATUS_ACK_RECEIVED));
     }
@@ -358,8 +358,8 @@ static void nm_sr_event_req_handler(const struct nm_core_event_s*const p_event, 
   if( (masked_status & NM_STATUS_FINALIZED) ||
       (masked_status & NM_STATUS_UNPACK_COMPLETED) ||
       ( (masked_status & NM_STATUS_PACK_COMPLETED) &&
-	(((p_req->flags & NM_FLAG_PACK_SYNCHRONOUS) && (p_event->status & NM_STATUS_ACK_RECEIVED)) ||
-	((!(p_req->flags & NM_FLAG_PACK_SYNCHRONOUS)) && (p_event->status & NM_STATUS_PACK_COMPLETED))
+	(((p_req->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS) && (p_event->status & NM_STATUS_ACK_RECEIVED)) ||
+	((!(p_req->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS)) && (p_event->status & NM_STATUS_PACK_COMPLETED))
 	 ))
       )
     {

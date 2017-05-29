@@ -98,12 +98,12 @@ static inline int nm_sr_request_set_ref(nm_sr_request_t*p_request, void*ref)
 
 static inline int nm_sr_request_get_size(nm_sr_request_t*p_request, nm_len_t*size)
 {
-  if(p_request->req.flags & NM_FLAG_PACK)
+  if(p_request->req.flags & NM_REQ_FLAG_PACK)
     {
       *size = p_request->req.pack.done;
       return NM_ESUCCESS;
     }
-  else if(p_request->req.flags & NM_FLAG_UNPACK)
+  else if(p_request->req.flags & NM_REQ_FLAG_UNPACK)
     {
       *size = p_request->req.unpack.cumulated_len;
       return NM_ESUCCESS;
@@ -198,7 +198,7 @@ static inline int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_re
 {
   nm_core_t p_core = p_session->p_core;
   const nm_core_tag_t core_tag = nm_core_tag_build(p_session->hash_code, tag);
-  nm_core_pack_send(p_core, &p_request->req, core_tag, p_gate, NM_FLAG_PACK_SYNCHRONOUS);
+  nm_core_pack_send(p_core, &p_request->req, core_tag, p_gate, NM_REQ_FLAG_PACK_SYNCHRONOUS);
   nm_core_pack_submit(p_core, &p_request->req, p_request->hlen);
   return NM_ESUCCESS;
 }
@@ -273,7 +273,7 @@ static inline void nm_sr_recv_match_event(nm_session_t p_session, nm_sr_request_
 static inline int nm_sr_recv_post(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  const int err = nm_core_unpack_submit(p_core, &p_request->req, NM_FLAG_NONE);
+  const int err = nm_core_unpack_submit(p_core, &p_request->req, NM_REQ_FLAG_NONE);
   return err;
 }
 

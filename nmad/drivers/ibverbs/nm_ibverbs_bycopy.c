@@ -78,20 +78,16 @@ struct nm_ibverbs_bycopy
   } window;
   
   struct {
-    int done;           /**< size of data received so far */
-    int msg_size;       /**< size of whole message */
-    void*buf_posted;    /**< buffer posted for receive */
-    int size_posted;    /**< length of above buffer */
+    nm_data_slicer_t slicer;  /**< data slicer for data to recv */
+    nm_len_t chunk_len;       /**< length of chunk to send */
+    nm_len_t done;            /**< size of data received so far */
   } recv;
   
   struct {
-    const struct iovec*v;
-    int n;              /**< size of above iovec */
-    int current_packet; /**< current buffer for sending */
-    int msg_size;       /**< total size of message to send */
-    int done;           /**< total amount of data sent */
-    int v_done;         /**< size of current iovec segment already sent */
-    int v_current;      /**< current iovec segment beeing sent */
+    nm_data_slicer_t slicer;       /**< data slicer for data to send */
+    nm_len_t chunk_len;            /**< length of chunk to send */
+    nm_len_t done;                 /**< total amount of data sent */
+    int current_packet;            /**< current buffer for sending */
   } send;
 
   struct nm_ibverbs_segment seg; /**< remote segment */
@@ -104,9 +100,9 @@ static void nm_ibverbs_bycopy_getprops(int index, struct nm_minidriver_propertie
 static void nm_ibverbs_bycopy_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_ibverbs_bycopy_close(puk_context_t context);
 static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_ibverbs_bycopy_send_post(void*_status, const struct iovec*v, int n);
+static void nm_ibverbs_bycopy_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_ibverbs_bycopy_send_poll(void*_status);
-static void nm_ibverbs_bycopy_recv_init(void*_status,  struct iovec*v, int n);
+static void nm_ibverbs_bycopy_recv_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_ibverbs_bycopy_poll_one(void*_status);
 static int  nm_ibverbs_bycopy_cancel_recv(void*_status);
 
@@ -116,9 +112,11 @@ static const struct nm_minidriver_iface_s nm_ibverbs_bycopy_minidriver =
     .init        = &nm_ibverbs_bycopy_init,
     .close       = &nm_ibverbs_bycopy_close,
     .connect     = &nm_ibverbs_bycopy_connect,
-    .send_post   = &nm_ibverbs_bycopy_send_post,
+    .send_post   = NULL,
+    .send_data   = &nm_ibverbs_bycopy_send_data,
     .send_poll   = &nm_ibverbs_bycopy_send_poll,
-    .recv_init   = &nm_ibverbs_bycopy_recv_init,
+    .recv_init   = NULL,
+    .recv_data   = &nm_ibverbs_bycopy_recv_data,
     .poll_one    = &nm_ibverbs_bycopy_poll_one,
     .cancel_recv = &nm_ibverbs_bycopy_cancel_recv
   };
@@ -151,7 +149,7 @@ static void* nm_ibverbs_bycopy_instantiate(puk_instance_t instance, puk_context_
     }
   else
     {
-      bycopy = TBX_MALLOC(sizeof(struct nm_ibverbs_bycopy));
+      bycopy = malloc(sizeof(struct nm_ibverbs_bycopy));
     }
   memset(&bycopy->buffer, 0, sizeof(bycopy->buffer));
   bycopy->window.next_out = 1;
@@ -159,8 +157,8 @@ static void* nm_ibverbs_bycopy_instantiate(puk_instance_t instance, puk_context_
   bycopy->window.credits  = NM_IBVERBS_BYCOPY_RBUF_NUM;
   bycopy->window.to_ack   = 0;
   bycopy->mr              = NULL;
-  bycopy->recv.buf_posted = NULL;
-  bycopy->send.v          = NULL;
+  bycopy->recv.slicer     = NM_DATA_SLICER_NULL;
+  bycopy->send.slicer     = NM_DATA_SLICER_NULL;
   bycopy->context         = context;
   bycopy->cnx             = NULL;
   return bycopy;
@@ -184,6 +182,7 @@ static void nm_ibverbs_bycopy_destroy(void*_status)
 static void nm_ibverbs_bycopy_getprops(int index, struct nm_minidriver_properties_s*props)
 {
   nm_ibverbs_hca_get_profile(index, &props->profile);
+  props->capabilities.supports_data = 1;
 }
 
 static void nm_ibverbs_bycopy_init(puk_context_t context, const void**drv_url, size_t*url_size)
@@ -252,28 +251,22 @@ static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_
 
 /* ** bycopy I/O ******************************************* */
 
-static void nm_ibverbs_bycopy_send_post(void*_status, const struct iovec*v, int n)
+static void nm_ibverbs_bycopy_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_ibverbs_bycopy*bycopy = _status;
-  bycopy->send.v              = v;
-  bycopy->send.n              = n;
+  nm_data_slicer_generator_init(&bycopy->send.slicer, p_data);
+  if(chunk_offset > 0)
+    nm_data_slicer_generator_forward(&bycopy->send.slicer, chunk_offset);
+  bycopy->send.chunk_len      = chunk_len;
   bycopy->send.current_packet = 0;
-  bycopy->send.msg_size       = 0;
   bycopy->send.done           = 0;
-  bycopy->send.v_done         = 0;
-  bycopy->send.v_current      = 0;
-  int i;
-  for(i = 0; i < bycopy->send.n; i++)
-    {
-      bycopy->send.msg_size += bycopy->send.v[i].iov_len;
-    }
 }
 
 static int nm_ibverbs_bycopy_send_poll(void*_status)
 {
   struct nm_ibverbs_bycopy*__restrict__ bycopy = _status;
-  while(bycopy->send.done < bycopy->send.msg_size)
-    { 
+  while(bycopy->send.done < bycopy->send.chunk_len)
+    {
       /* 1- check credits */
       const int rack = bycopy->buffer.rack;
       if(rack) {
@@ -307,26 +300,11 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
       
       /* 3- prepare and send packet */
       struct nm_ibverbs_bycopy_packet*__restrict__ packet = &bycopy->buffer.sbuf[bycopy->send.current_packet];
-      const int remaining = bycopy->send.msg_size - bycopy->send.done;
-      const int offset = (remaining > NM_IBVERBS_BYCOPY_DATA_SIZE) ? 0 : (NM_IBVERBS_BYCOPY_DATA_SIZE - remaining);
-      int available   = NM_IBVERBS_BYCOPY_DATA_SIZE - offset;
-      int packet_size = 0;
-      while((available > 0) &&
-	    (bycopy->send.v_current < bycopy->send.n))
-	{
-	  const int v_remaining = bycopy->send.v[bycopy->send.v_current].iov_len - bycopy->send.v_done;
-	  const int fragment_size = (v_remaining > available) ? available : v_remaining;
-	  memcpy(&packet->data[offset + packet_size],
-		 bycopy->send.v[bycopy->send.v_current].iov_base + bycopy->send.v_done, fragment_size);
-	  packet_size += fragment_size;
-	  available   -= fragment_size;
-	  bycopy->send.v_done += fragment_size;
-	  if(bycopy->send.v_done >= bycopy->send.v[bycopy->send.v_current].iov_len) 
-	    {
-	      bycopy->send.v_current++;
-	      bycopy->send.v_done = 0;
-	    }
-	}
+      const nm_len_t remaining   = bycopy->send.chunk_len - bycopy->send.done;
+      const nm_len_t offset      = (remaining > NM_IBVERBS_BYCOPY_DATA_SIZE) ? 0 : (NM_IBVERBS_BYCOPY_DATA_SIZE - remaining);
+      const nm_len_t available   = NM_IBVERBS_BYCOPY_DATA_SIZE - offset;
+      const nm_len_t packet_size = (remaining <= available) ? remaining : available;
+      nm_data_slicer_generator_copy_from(&bycopy->send.slicer, &packet->data[offset], packet_size);
       assert(NM_IBVERBS_BYCOPY_DATA_SIZE - offset == packet_size);
       
       packet->header.offset = offset;
@@ -336,7 +314,7 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
 	packet->header.checksum = nm_ibverbs_checksum(&packet->data[offset], packet_size);
       bycopy->window.to_ack = 0;
       bycopy->send.done += packet_size;
-      if(bycopy->send.done >= bycopy->send.msg_size)
+      if(bycopy->send.done >= bycopy->send.chunk_len)
 	packet->header.status |= NM_IBVERBS_BYCOPY_STATUS_LAST;
       int padding = 0;
       const int size = sizeof(struct nm_ibverbs_bycopy_packet) - offset;
@@ -359,19 +337,22 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
     {
       goto wouldblock;
     }
+  nm_data_slicer_generator_destroy(&bycopy->send.slicer);
+  bycopy->send.slicer = NM_DATA_SLICER_NULL;
   return NM_ESUCCESS;
  wouldblock:
   return -NM_EAGAIN;
 }
 
-static void nm_ibverbs_bycopy_recv_init(void*_status, struct iovec*v, int n)
+static void nm_ibverbs_bycopy_recv_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_ibverbs_bycopy*bycopy = _status;
-  assert(bycopy->recv.buf_posted == NULL);
-  bycopy->recv.done        = 0;
-  bycopy->recv.msg_size    = -1;
-  bycopy->recv.buf_posted  = v->iov_base;
-  bycopy->recv.size_posted = v->iov_len;
+  assert(nm_data_slicer_isnull(&bycopy->recv.slicer));
+  nm_data_slicer_generator_init(&bycopy->recv.slicer, p_data);
+  if(chunk_offset > 0)
+    nm_data_slicer_generator_forward(&bycopy->recv.slicer, chunk_offset);
+  bycopy->recv.chunk_len = chunk_len;
+  bycopy->recv.done      = 0;
 }
 
 static int nm_ibverbs_bycopy_poll_one(void*_status)
@@ -380,14 +361,12 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
   int complete = 0;
   struct nm_ibverbs_bycopy*__restrict__ bycopy = _status;
   struct nm_ibverbs_bycopy_packet*__restrict__ packet = &bycopy->buffer.rbuf[bycopy->window.next_in];
-  while( ( (bycopy->recv.msg_size == -1) || (!complete) ) &&
-	 (packet->header.status != 0) ) 
+  while( (!complete) && (packet->header.status != 0) ) 
     {
-      assert(bycopy->recv.msg_size <= bycopy->recv.size_posted);
-      if(bycopy->recv.msg_size == -1) 
+      assert(bycopy->recv.done <= bycopy->recv.chunk_len);
+      if(bycopy->recv.done == 0)
 	{
 	  assert((packet->header.status & NM_IBVERBS_BYCOPY_STATUS_DATA) != 0);
-	  bycopy->recv.msg_size = 0;
 	}
       complete = (packet->header.status & NM_IBVERBS_BYCOPY_STATUS_LAST);
       const int offset = packet->header.offset;
@@ -402,8 +381,7 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
 	      abort();
 	    }
 	}
-      memcpy(bycopy->recv.buf_posted + bycopy->recv.done, &packet->data[offset], packet_size);
-      bycopy->recv.msg_size += packet_size;
+      nm_data_slicer_generator_copy_to(&bycopy->recv.slicer, &packet->data[offset], packet_size);
       bycopy->recv.done += packet_size;
       bycopy->window.credits += packet->header.ack;
       packet->header.ack = 0;
@@ -427,9 +405,10 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
       packet = &bycopy->buffer.rbuf[bycopy->window.next_in];
     }
   nm_ibverbs_rdma_poll(bycopy->cnx);
-  if((bycopy->recv.msg_size > 0) && complete)
+  if(complete)
     {
-      bycopy->recv.buf_posted = NULL;
+      nm_data_slicer_generator_destroy(&bycopy->recv.slicer);
+      bycopy->recv.slicer = NM_DATA_SLICER_NULL;
       nm_ibverbs_send_flush(bycopy->cnx, NM_IBVERBS_WRID_ACK);
       err = NM_ESUCCESS;
     }
@@ -446,8 +425,8 @@ static int nm_ibverbs_bycopy_cancel_recv(void*_status)
   struct nm_ibverbs_bycopy*__restrict__ bycopy = _status;
   if(bycopy->recv.done == 0)
     {
-      bycopy->recv.buf_posted = NULL;
-      bycopy->recv.size_posted = 0;
+      nm_data_slicer_generator_destroy(&bycopy->recv.slicer);
+      bycopy->recv.slicer = NM_DATA_SLICER_NULL;
       err = NM_ESUCCESS;
     }
   return err;

@@ -305,15 +305,27 @@ static inline int nm_data_slicer_isnull(const nm_data_slicer_t*p_slicer)
 #define nm_data_slicer_destroy   nm_data_slicer_generator_destroy
 #endif /* NM_DATA_USE_COROUTINE_SLICER */
 
-void nm_data_slicer_init(nm_data_slicer_t*p_slicer, const struct nm_data_s*p_data);
+void nm_data_slicer_coroutine_init(nm_data_slicer_t*p_slicer, const struct nm_data_s*p_data);
 
-void nm_data_slicer_forward(nm_data_slicer_t*p_slicer, nm_len_t offset);
+void nm_data_slicer_coroutine_forward(nm_data_slicer_t*p_slicer, nm_len_t offset);
 
-void nm_data_slicer_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len);
+void nm_data_slicer_coroutine_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len);
 
-void nm_data_slicer_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_len_t slice_len);
+void nm_data_slicer_coroutine_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_len_t slice_len);
 
-void nm_data_slicer_destroy(nm_data_slicer_t*p_slicer);
+void nm_data_slicer_coroutine_destroy(nm_data_slicer_t*p_slicer);
+
+
+void nm_data_slicer_generator_init(nm_data_slicer_t*p_slicer, const struct nm_data_s*p_data);
+
+void nm_data_slicer_generator_forward(nm_data_slicer_t*p_slicer, nm_len_t offset);
+
+void nm_data_slicer_generator_copy_from(nm_data_slicer_t*p_slicer, void*dest_ptr, nm_len_t slice_len);
+
+void nm_data_slicer_generator_copy_to(nm_data_slicer_t*p_slicer, const void*src_ptr, nm_len_t slice_len);
+
+void nm_data_slicer_generator_destroy(nm_data_slicer_t*p_slicer);
+
 
 #endif /* NM_DATA_H */
 

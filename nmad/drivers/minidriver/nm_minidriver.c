@@ -303,6 +303,8 @@ static int nm_minidriver_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv,
     }
   const void*p_chunk_content = ((void*)p_chunk_size) + sizeof(int);
   (*minidriver->driver->connect)(minidriver->_status, p_chunk_content, *p_chunk_size);
+  nm_data_null_build(&status->trks[trk_id].sdata);
+  nm_data_null_build(&status->trks[trk_id].rdata);
 
   free(orig_url_chunks);
   return NM_ESUCCESS;
@@ -342,6 +344,7 @@ static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap_s*__rest
 	{
 	  assert(minidriver->driver->send_data);
 	  struct nm_data_s*p_data = &status->trks[p_pw->trk_id].sdata;
+	  assert(nm_data_isnull(p_data));
 	  nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
 	  (*minidriver->driver->send_data)(minidriver->_status, p_data, 0 /* chunk_offset */, p_pw->length);
 	}
@@ -425,6 +428,7 @@ static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap_s*__rest
 	    {
 	      assert(minidriver->driver->recv_data);
 	      struct nm_data_s*p_data = &status->trks[p_pw->trk_id].rdata;
+	      assert(nm_data_isnull(p_data));
 	      nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
 	      (*minidriver->driver->recv_data)(minidriver->_status, p_data, 0 /* chunk_offset */, p_pw->length);
 	    }

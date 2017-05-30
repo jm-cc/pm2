@@ -425,7 +425,8 @@ static int nm_ibverbs_bycopy_cancel_recv(void*_status)
   struct nm_ibverbs_bycopy*__restrict__ bycopy = _status;
   if(bycopy->recv.done == 0)
     {
-      nm_data_slicer_generator_destroy(&bycopy->recv.slicer);
+      if(!nm_data_slicer_isnull(&bycopy->recv.slicer))
+	nm_data_slicer_generator_destroy(&bycopy->recv.slicer);
       bycopy->recv.slicer = NM_DATA_SLICER_NULL;
       err = NM_ESUCCESS;
     }

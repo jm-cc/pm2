@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015 (see AUTHORS file)
+ * Copyright (C) 2015-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,31 +25,31 @@ static void*flypack_buffer = NULL;
 static struct nm_data_s data;
 
 
-static void nm_bench_flypack_slicer_init(void*buf, nm_len_t len)
+static void nm_bench_flypack_slicer_generator_init(void*buf, nm_len_t len)
 {
   buffer = realloc(buffer, len);
   flypack_buffer = realloc(flypack_buffer, 2 * len);
   nm_data_flypack_set(&data, (struct flypack_data_s){ .buf = flypack_buffer, .len = len });
 }
 
-static void nm_bench_flypack_slicer(void*buf, nm_len_t len)
+static void nm_bench_flypack_slicer_generator(void*buf, nm_len_t len)
 {
   nm_data_slicer_t slicer;
-  nm_data_slicer_init(&slicer, &data);
-  nm_data_slicer_copy_from(&slicer, buffer, len);
-  nm_data_slicer_destroy(&slicer);
+  nm_data_slicer_generator_init(&slicer, &data);
+  nm_data_slicer_generator_copy_from(&slicer, buffer, len);
+  nm_data_slicer_generator_destroy(&slicer);
 
-  nm_data_slicer_init(&slicer, &data);
-  nm_data_slicer_copy_to(&slicer, buffer, len);
-  nm_data_slicer_destroy(&slicer);
+  nm_data_slicer_generator_init(&slicer, &data);
+  nm_data_slicer_generator_copy_to(&slicer, buffer, len);
+  nm_data_slicer_generator_destroy(&slicer);
 
 }
 
 const struct nm_bench_s nm_bench =
   {
-    .name = "slicer for flypack",
-    .server = &nm_bench_flypack_slicer,
-    .client = &nm_bench_flypack_slicer,
-    .init   = &nm_bench_flypack_slicer_init
+    .name = "generator-based slicer for flypack",
+    .server = &nm_bench_flypack_slicer_generator,
+    .client = &nm_bench_flypack_slicer_generator,
+    .init   = &nm_bench_flypack_slicer_generator_init
   };
 

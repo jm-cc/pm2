@@ -30,7 +30,7 @@
 #define NM_IBVERBS_RDMA_DEPTH   4
 #define NM_IBVERBS_MAX_SG_SQ    1
 #define NM_IBVERBS_MAX_SG_RQ    1
-#define NM_IBVERBS_MAX_INLINE   128
+#define NM_IBVERBS_MAX_INLINE   256
 #define NM_IBVERBS_MTU          IBV_MTU_1024
 
 /** timeout to receive connection check after sending ACK and check (in msec.) */

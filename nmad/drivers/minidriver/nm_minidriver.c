@@ -42,6 +42,7 @@ struct nm_minidriver
   struct
   {
     struct puk_receptacle_NewMad_minidriver_s minidriver;
+    struct nm_data_s sdata, rdata;
   } trks[2];
 };
 
@@ -49,7 +50,7 @@ struct nm_minidriver
 
 /* ** component declaration */
 
-static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param*params, int nparam);
 static int nm_minidriver_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_minidriver_close(nm_drv_t p_drv);
 static int nm_minidriver_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
@@ -59,7 +60,7 @@ static int nm_minidriver_poll_send_iov(void*_status, struct nm_pkt_wrap_s*p_pw);
 static int nm_minidriver_send_prefetch(void*_status,  struct nm_pkt_wrap_s *p_pw);
 static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap_s*p_pw);
 static int nm_minidriver_poll_recv_iov(void*_status, struct nm_pkt_wrap_s*p_pw);
-static int nm_minidriver_cancel_recv_iov(void*_status, struct nm_pkt_wrap_s *p_pw);
+static int nm_minidriver_cancel_recv_iov(void*_status, struct nm_pkt_wrap_s*p_pw);
 static const char* nm_minidriver_get_driver_url(nm_drv_t p_drv);
 
 static const struct nm_drv_iface_s nm_minidriver_driver =
@@ -115,7 +116,7 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_minidriver,
 /** Instanciate functions */
 static void* nm_minidriver_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_minidriver*status = TBX_MALLOC(sizeof(struct nm_minidriver));
+  struct nm_minidriver*status = malloc(sizeof(struct nm_minidriver));
   puk_context_indirect_NewMad_minidriver(instance, "trk0", &status->trks[0].minidriver);
   puk_context_indirect_NewMad_minidriver(instance, "trk1", &status->trks[1].minidriver);
   return status;
@@ -124,7 +125,7 @@ static void* nm_minidriver_instantiate(puk_instance_t instance, puk_context_t co
 static void nm_minidriver_destroy(void*_status)
 {
   struct nm_minidriver*status = _status;
-  TBX_FREE(status);
+  free(status);
 }
 
 const static char*nm_minidriver_get_driver_url(nm_drv_t p_drv)
@@ -141,7 +142,7 @@ static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *par
 {
   int err = NM_ESUCCESS;
   puk_context_t context = NULL;
-  struct nm_minidriver_drv*p_minidriver_drv = TBX_MALLOC(sizeof(struct nm_minidriver_drv));
+  struct nm_minidriver_drv*p_minidriver_drv = malloc(sizeof(struct nm_minidriver_drv));
   p_minidriver_drv->context = NULL;
   /* hack here- find self context in the composite */
   const struct puk_composite_driver_s*const composite_driver = 
@@ -163,7 +164,7 @@ static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *par
     {
       padico_fatal("NewMad_Driver_minidriver: bad assembly.\n");
     }
-  struct nm_minidriver_context_s*p_minidriver_context = TBX_MALLOC(sizeof(struct nm_minidriver_context_s));
+  struct nm_minidriver_context_s*p_minidriver_context = malloc(sizeof(struct nm_minidriver_context_s));
   puk_context_set_status(context, p_minidriver_context);
   p_minidriver_context->url = NULL;
   /* resolve sub-drivers for trk#0 & trk#1 and get properties */
@@ -279,9 +280,9 @@ static int nm_minidriver_close(nm_drv_t p_drv)
 #ifdef PM2_TOPOLOGY
   hwloc_bitmap_free(p_drv->profile.cpuset);
 #endif
-  TBX_FREE(p_minidriver_context->url);
-  TBX_FREE(p_minidriver_context);
-  TBX_FREE(p_minidriver_drv);
+  free(p_minidriver_context->url);
+  free(p_minidriver_context);
+  free(p_minidriver_drv);
   return NM_ESUCCESS;
 }
 
@@ -333,7 +334,17 @@ static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap_s*__rest
     }
   else
     {
-      (*minidriver->driver->send_post)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
+      if(minidriver->driver->send_post)
+	{
+	  (*minidriver->driver->send_post)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
+	}
+      else
+	{
+	  assert(minidriver->driver->send_data);
+	  struct nm_data_s*p_data = &status->trks[p_pw->trk_id].sdata;
+	  nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
+	  (*minidriver->driver->send_data)(minidriver->_status, p_data, 0 /* chunk_offset */, p_pw->length);
+	}
     }
   int err = nm_minidriver_poll_send_iov(_status, p_pw);
   return err;
@@ -344,6 +355,14 @@ static int nm_minidriver_poll_send_iov(void*_status, struct nm_pkt_wrap_s*__rest
   struct nm_minidriver*status = _status;
   struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
   int err = (*minidriver->driver->send_poll)(minidriver->_status);
+#ifdef DEBUG
+  if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && (minidriver->driver->send_post == NULL))
+    {
+      struct nm_data_s*p_data = &status->trks[p_pw->trk_id].sdata;
+      assert(!nm_data_isnull(p_data));
+      nm_data_null_build(p_data);
+    }
+#endif /* DEBUG */
   return err;
 }
 
@@ -367,6 +386,14 @@ static int nm_minidriver_poll_recv_iov(void*_status, struct nm_pkt_wrap_s*__rest
       struct nm_minidriver*status = _status;
       struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
       err = (*minidriver->driver->poll_one)(minidriver->_status);
+#ifdef DEBUG
+      if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && (minidriver->driver->recv_init == NULL))
+	{
+	  struct nm_data_s*p_data = &status->trks[p_pw->trk_id].rdata;
+	  assert(!nm_data_isnull(p_data));
+	  nm_data_null_build(p_data);
+	}
+#endif /* DEBUG */
     }
   else
     {
@@ -382,14 +409,25 @@ static int nm_minidriver_post_recv_iov(void*_status, struct nm_pkt_wrap_s*__rest
     {
       struct nm_minidriver*status = _status;
       struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
-      if(p_pw->p_data != NULL && p_pw->v_nb == 0)
+      if(p_pw->p_data != NULL)
 	{
+	  assert(p_pw->v_nb == 0);
 	  assert(minidriver->driver->recv_data != NULL);
 	  (*minidriver->driver->recv_data)(minidriver->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
 	}
       else
 	{
-	  (*minidriver->driver->recv_init)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
+	  if(minidriver->driver->recv_init)
+	    {
+	      (*minidriver->driver->recv_init)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
+	    }
+	  else
+	    {
+	      assert(minidriver->driver->recv_data);
+	      struct nm_data_s*p_data = &status->trks[p_pw->trk_id].rdata;
+	      nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
+	      (*minidriver->driver->recv_data)(minidriver->_status, p_data, 0 /* chunk_offset */, p_pw->length);
+	    }
 	}
     }
   err = nm_minidriver_poll_recv_iov(_status, p_pw);

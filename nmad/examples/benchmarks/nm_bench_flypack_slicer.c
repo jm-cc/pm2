@@ -37,9 +37,11 @@ static void nm_bench_flypack_slicer(void*buf, nm_len_t len)
   nm_data_slicer_t slicer;
   nm_data_slicer_init(&slicer, &data);
   nm_data_slicer_copy_from(&slicer, buffer, len);
+  nm_data_slicer_destroy(&slicer);
 
   nm_data_slicer_init(&slicer, &data);
   nm_data_slicer_copy_to(&slicer, buffer, len);
+  nm_data_slicer_destroy(&slicer);
 
 }
 

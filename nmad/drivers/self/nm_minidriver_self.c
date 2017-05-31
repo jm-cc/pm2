@@ -97,7 +97,6 @@ struct nm_self_s
 
 static void*nm_self_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  fprintf(stderr, "minidriver self #####################\n");
   struct nm_self_s*p_status = malloc(sizeof(struct nm_self_s));
   struct nm_self_context_s*p_self_context = puk_context_get_status(context);
   p_status->p_self_context = p_self_context;

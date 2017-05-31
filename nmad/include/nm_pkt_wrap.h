@@ -23,10 +23,10 @@
  */
 /*@{*/
 
+/** flags to describe packet wrappers */
 typedef uint32_t nm_pw_flag_t;
 
-/** Headerless pkt, if set.
- */
+/** Headerless pkt, if set. */
 #define NM_PW_NOHEADER      (nm_pw_flag_t)0x0001
 
 /** pw allocated with NM_SO_MAX_UNEXPECTED contiguous buffer.
@@ -39,27 +39,28 @@ typedef uint32_t nm_pw_flag_t;
  */
 #define NM_PW_GLOBAL_HEADER (nm_pw_flag_t)0x0004
 
-/** v[0] is dynamically allocated
- */
+/** v[0] is dynamically allocated */
 #define NM_PW_DYNAMIC_V0    (nm_pw_flag_t)0x0008
 
-/** Pkt has been finalized- ready to send on the wire.
- */
+/** Pkt has been finalized- ready to send on the wire. */
 #define NM_PW_FINALIZED     (nm_pw_flag_t)0x0010
 
-/** Pkt has been prefetched
- */
+/** Pkt has been prefetched */
 #define NM_PW_PREFETCHED    (nm_pw_flag_t)0x0020
 
 /** Pkt has bee posted */
 #define NM_PW_POSTED        (nm_pw_flag_t)0x0040
 
+/** send/recv of pw is completed */
 #define NM_PW_COMPLETED     (nm_pw_flag_t)0x0080
 
+/** pw used for sending */
 #define NM_PW_SEND          (nm_pw_flag_t)0x0100
 
+/** pw used for recv */
 #define NM_PW_RECV          (nm_pw_flag_t)0x0200
 
+/** requests to copy data to contiguous block before sending */
 #define NM_PW_DATA_COPY     (nm_pw_flag_t)0x0400
 
 /*@}*/

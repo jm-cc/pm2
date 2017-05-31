@@ -43,7 +43,7 @@ int nm_session_open(nm_session_t*pp_session, const char*label);
  * @note call to this function is optional. Default drivers will be loaded
  * if no driver is loaded manually.
  */
-void nm_session_add_driver(puk_component_t component, int index);
+nm_drv_t nm_session_add_driver(puk_component_t component, int index);
 
 
 PUK_VECT_TYPE(nm_drv, nm_drv_t );

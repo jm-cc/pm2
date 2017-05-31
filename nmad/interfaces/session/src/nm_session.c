@@ -35,6 +35,7 @@ static struct
   int ref_count;              /**< ref. counter for core = number of active sessions */
   nm_session_selector_t selector;
   void*selector_arg;
+  nm_drv_t p_drv_self;        /**< driver to connect to self */
 } nm_session =
   {
     .p_core    = NULL,
@@ -42,7 +43,8 @@ static struct
     .url_string = NULL,
     .sessions  = NULL,
     .ref_count = 0,
-    .selector  = NULL
+    .selector  = NULL,
+    .p_drv_self = NULL
   };
 
 
@@ -79,7 +81,7 @@ static void nm_session_init_strategy(void)
 
 /** add the given driver to the session */
 #warning TODO- include index as a NewMad_Driver component attribute
-void nm_session_add_driver(puk_component_t component, int index)
+nm_drv_t nm_session_add_driver(puk_component_t component, int index)
 {
   assert(component != NULL);
   const char*driver_url = NULL;
@@ -104,6 +106,7 @@ void nm_session_add_driver(puk_component_t component, int index)
       padico_string_catf(nm_session.url_string, "+");
     }
   padico_string_catf(nm_session.url_string, "%s#%d=%s", component->name, p_drv->index, driver_url);
+  return p_drv;
 }
 
 /** Initialize default drivers */
@@ -149,8 +152,8 @@ static void nm_session_init_drivers(void)
   free(driver_string);
 
   /* load default driver */
-  puk_component_t driver_self = puk_component_resolve("NewMad_Driver_self");
-  nm_session_add_driver(driver_self, -1);
+  puk_component_t driver_self = nm_core_component_load("Driver", "self");
+  nm_session.p_drv_self = nm_session_add_driver(driver_self, -1);
 }
 
 
@@ -268,15 +271,8 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
   if(strcmp(peer_url, nm_session.local_url) == 0)
     {
       /* ** loopback connect- use driver 'self' (hardwired) */
-      nm_drv_t p_drv;
-      NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
-	{
-	  if(strcmp(p_drv->driver->name, "self") == 0)
-	    {
-	      nm_drv_vect_push_back(v, p_drv);
-	      break;
-	    }
-	}
+      nm_drv_t p_drv = nm_session.p_drv_self;
+      nm_drv_vect_push_back(v, p_drv);
     }
   else
     {
@@ -286,7 +282,7 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
 	{
 	  char driver_name[256];
 	  snprintf(driver_name, 256, "%s#%d", p_drv->assembly->name, p_drv->index);
-	  if(strcmp(p_drv->driver->name, "self") == 0)
+	  if(p_drv == nm_session.p_drv_self)
 	    {
 	      continue;
 	    }

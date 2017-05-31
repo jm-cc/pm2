@@ -27,11 +27,11 @@ static inline nm_len_t nm_pw_remaining_buf(struct nm_pkt_wrap_s*p_pw)
  * @return NM_ESUCCESS for success, -NM_EBUSY if pw full
  * @note function takes ownership of p_ctrl_chunk
  */
-static inline int nm_tactic_pack_ctrl(nm_gate_t p_gate,
+static inline int nm_tactic_pack_ctrl(nm_gate_t p_gate, nm_drv_t p_drv,
 				      struct nm_ctrl_chunk_s*p_ctrl_chunk,
 				      struct nm_pkt_wrap_s*p_pw)
 {
-  if(NM_HEADER_CTRL_SIZE + p_pw->length < nm_drv_max_small(p_gate->p_core))
+  if(NM_HEADER_CTRL_SIZE + p_pw->length < nm_drv_max_small(p_drv))
     {
       nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
       nm_ctrl_chunk_list_erase(&p_gate->ctrl_chunk_list, p_ctrl_chunk);
@@ -44,9 +44,11 @@ static inline int nm_tactic_pack_ctrl(nm_gate_t p_gate,
     }
 }
 
-static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw, struct nm_req_chunk_s*p_req_chunk)
+static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
+				     struct nm_req_chunk_s*p_req_chunk,
+				     struct nm_pkt_wrap_s*p_pw)
 {
-  if(NM_HEADER_CTRL_SIZE + p_pw->length < nm_drv_max_small(p_gate->p_core))
+  if(NM_HEADER_CTRL_SIZE + p_pw->length < nm_drv_max_small(p_drv))
     {
       nm_req_chunk_list_erase(&p_gate->req_chunk_list, p_req_chunk);
       struct nm_req_s*p_pack = p_req_chunk->p_req;

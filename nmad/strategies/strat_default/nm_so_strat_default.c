@@ -107,7 +107,7 @@ static void strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
 	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_begin(&p_gate->ctrl_chunk_list);
 	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
 	  int rc __attribute__((unused));
-	  rc = nm_tactic_pack_ctrl(p_gate, p_ctrl_chunk, p_pw);
+	  rc = nm_tactic_pack_ctrl(p_gate, p_drv, p_ctrl_chunk, p_pw);
 	  assert(rc == NM_ESUCCESS);
 	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
 	}

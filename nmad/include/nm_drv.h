@@ -49,6 +49,9 @@ struct nm_drv_s
   /** Index of the board managed by this instance of driver */
   int index;
 
+  /** size of largest packet on trk#0 */
+  nm_len_t max_small;
+  
   /** Performance information */
   struct nm_drv_profile_s profile;
 

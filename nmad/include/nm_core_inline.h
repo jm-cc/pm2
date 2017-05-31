@@ -55,30 +55,10 @@ static inline nm_drv_t nm_drv_get_by_index(nm_gate_t p_gate, int index)
   return p_gdrv->p_drv;
 }
 
-/** get maximum size for small messages accross all drivers */
-static inline nm_len_t nm_drv_max_small(struct nm_core*p_core)
+/** get maximum size for small messages for the given driver */
+static inline nm_len_t nm_drv_max_small(nm_drv_t p_drv)
 {
-  static ssize_t nm_max_small = -1;
-    /* lazy init */
-  if(nm_max_small > 0)
-    return nm_max_small;
-  else
-    {      
-      nm_drv_t p_drv;
-      NM_FOR_EACH_DRIVER(p_drv, p_core)
-	{
-	  if(nm_max_small <= 0 || (p_drv->driver->capabilities.max_unexpected > 0 && p_drv->driver->capabilities.max_unexpected < nm_max_small))
-	    {
-	      nm_max_small = p_drv->driver->capabilities.max_unexpected;
-	    }
-	}
-      if(nm_max_small <= 0 || nm_max_small > (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER))
-	{
-	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER);
-	}
-      NM_DISPF("# nmad: max_small = %lu\n", nm_max_small);
-    }
-  return nm_max_small;
+  return p_drv->max_small;
 }
 
 

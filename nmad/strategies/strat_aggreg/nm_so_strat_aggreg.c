@@ -99,7 +99,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
        nm_req_chunk_list_empty(&p_gate->req_chunk_list)))
     {
       /* no active send && pending chunks */
-      const nm_len_t max_small = nm_drv_max_small(p_core);
+      const nm_len_t max_small = nm_drv_max_small(p_drv);
       struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
       int opt_window = 8;
       /* ** control */
@@ -107,7 +107,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	{
 	  /* ** post ctrl on trk #0 */
 	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_begin(&p_gate->ctrl_chunk_list);
-	  int rc = nm_tactic_pack_ctrl(p_gate, p_ctrl_chunk, p_pw);
+	  int rc = nm_tactic_pack_ctrl(p_gate, p_drv, p_ctrl_chunk, p_pw);
 	  if(rc)
 	    {
 	      /* don't even try to aggregate data if pw cannot even contain any ctrl header */
@@ -162,7 +162,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	      else
 		{
 		  /* ** large send */
-		  int rc = nm_tactic_pack_rdv(p_gate, p_pw, p_req_chunk);
+		  int rc = nm_tactic_pack_rdv(p_gate, p_drv, p_req_chunk, p_pw);
 		  if(rc)
 		    {
 		      goto post_send;

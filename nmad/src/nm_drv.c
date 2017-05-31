@@ -33,11 +33,12 @@ int nm_core_driver_load(nm_core_t p_core,
 {
   nm_drv_t p_drv = nm_drv_new();
   assert(driver_assembly != NULL);
-  p_drv->p_core   = p_core;
-  p_drv->assembly = driver_assembly;
-  p_drv->driver   = puk_component_get_driver_NewMad_Driver(p_drv->assembly, NULL);
-  p_drv->p_in_rq  = NULL;
-  p_drv->index = -1;
+  p_drv->p_core    = p_core;
+  p_drv->assembly  = driver_assembly;
+  p_drv->driver    = puk_component_get_driver_NewMad_Driver(p_drv->assembly, NULL);
+  p_drv->p_in_rq   = NULL;
+  p_drv->index     = -1;
+  p_drv->max_small = NM_LEN_UNDEFINED;
   p_drv->priv = NULL;
 #ifdef PM2_TOPOLOGY
   p_drv->profile.cpuset = NULL;
@@ -115,6 +116,16 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
 
   nm_ns_update(p_core, p_drv);
   err = NM_ESUCCESS;
+
+  if(p_drv->driver->capabilities.max_unexpected > 0)
+    {
+      p_drv->max_small = p_drv->driver->capabilities.max_unexpected;
+    }
+  else
+    {
+      p_drv->max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER);
+    }
+  NM_DISPF("# nmad: driver = %s; max_small = %lu\n", p_drv->driver->name, p_drv->max_small);
 
  out:
 

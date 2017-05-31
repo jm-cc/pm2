@@ -155,7 +155,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 		      nm_req_chunk_list_push_front(&p_gate->req_chunk_list, p_req_chunk); /* rollback */
 		      goto post_send;
 		    }
-		  if(NM_HEADER_DATA_SIZE + chunk_len < nm_drv_max_small(p_core))
+		  if(NM_HEADER_DATA_SIZE + chunk_len < nm_drv_max_small(p_drv))
 		    {
 		      /* ** small send- always flatten data */
 		      if(NM_HEADER_DATA_SIZE + chunk_len <= nm_pw_remaining_buf(p_pw))

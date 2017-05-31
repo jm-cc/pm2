@@ -312,7 +312,7 @@ static int nm_ibverbs_bybuf_buf_send_poll(void*_status)
   assert(bybuf->chunk_len <= NM_IBVERBS_BYBUF_DATA_SIZE);
   p_header->offset = offset;
   p_header->ack    = bybuf->window.to_ack;
-  p_header->status = NM_IBVERBS_BYBUF_STATUS_DATA;
+  p_header->status = NM_IBVERBS_BYBUF_STATUS_DATA | NM_IBVERBS_BYBUF_STATUS_LAST;
   bybuf->window.to_ack = 0;
   bybuf->send.done = bybuf->send.chunk_len;
   nm_ibverbs_rdma_send(bybuf->cnx,

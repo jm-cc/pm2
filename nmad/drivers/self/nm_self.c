@@ -150,6 +150,9 @@ static int nm_self_query(nm_drv_t p_drv,
 
 static int nm_self_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
+
+  NM_FATAL("nmad: this driver is deprecated. Use Minidriver_self instead.\n");
+  
   /* open the requested number of tracks */
   int i;
   for(i = 0; i < nb_trks; i++)

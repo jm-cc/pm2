@@ -71,12 +71,16 @@ struct nm_minidriver_iface_s
   void (*send_post)(void*_status, const struct iovec*v, int n);
   void (*send_data)(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
   int  (*send_poll)(void*_status);
-  void (*send_prefetch)(void*_status, const void*ptr, uint64_t size);
+  void (*send_prefetch)(void*_status, const void*ptr, nm_len_t size);
   /* receiving primitives */
   void (*recv_init)(void*_status, struct iovec*v, int n);
   void (*recv_data)(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
   int  (*poll_one)(void*_status);
-  int  (*cancel_recv)(void*_status); 
+  int  (*cancel_recv)(void*_status);
+  /* buffer-based sending */
+  void (*buf_send_get)(void*_status, void**p_buffer, nm_len_t*p_len);
+  void (*buf_send_post)(void*_status, nm_len_t len);
+  int  (*buf_send_poll)(void*_status);
 };
 PUK_IFACE_TYPE(NewMad_minidriver, struct nm_minidriver_iface_s);
 

@@ -171,8 +171,7 @@ static inline void nm_pw_init(struct nm_pkt_wrap_s *p_pw)
   p_pw->p_unpack = NULL;
   p_pw->chunk_offset = 0;
 
-  p_pw->ref_count = 0;
-  nm_pw_ref_inc(p_pw);
+  p_pw->ref_count = 1;
   
 #ifdef PIOMAN
   piom_ltask_init(&p_pw->ltask);

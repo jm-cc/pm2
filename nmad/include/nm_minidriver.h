@@ -48,6 +48,7 @@ struct nm_drv_cap_s
   int is_exportable;  /**< blocking calls may be exported by PIOMan */
   int max_unexpected; /**< maximum size of unexpected messages on trk #0 */
   int supports_data;  /**< driver can send/recv direct nm_data_s */
+  int supports_buf_send;
 };
 
 struct nm_minidriver_properties_s

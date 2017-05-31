@@ -4,7 +4,7 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_MOD = NewMad_ibverbs_common NewMad_ibverbs_bycopy NewMad_ibverbs_lr2 NewMad_ibverbs_rcache NewMad_ibverbs_adaptrdma
+TARGET_MOD = NewMad_ibverbs_common NewMad_ibverbs_bycopy NewMad_ibverbs_lr2 NewMad_ibverbs_rcache NewMad_ibverbs_adaptrdma NewMad_ibverbs_bybuf
 TARGET_BIN =
 TARGET_LIB =
 
@@ -25,6 +25,9 @@ NewMad_ibverbs_common: nm_ibverbs_common.pic.o
 
 NewMad_ibverbs_bycopy: MODLIBS += --requires NewMad_ibverbs_common
 NewMad_ibverbs_bycopy: nm_ibverbs_bycopy.pic.o
+
+NewMad_ibverbs_bybuf: MODLIBS += --requires NewMad_ibverbs_common
+NewMad_ibverbs_bybuf: nm_ibverbs_bybuf.pic.o
 
 NewMad_ibverbs_adaptrdma: MODLIBS += --requires NewMad_ibverbs_common
 NewMad_ibverbs_adaptrdma: nm_ibverbs_adaptrdma.pic.o

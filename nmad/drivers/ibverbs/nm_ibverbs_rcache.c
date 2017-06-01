@@ -65,6 +65,13 @@ struct nm_ibverbs_rcache_sighdr
   volatile int busy;
 };
 
+/** context for ibverbs 'rcache' */
+struct nm_ibverbs_rcache_context_s
+{
+  struct nm_ibverbs_hca_s*p_hca;
+  struct nm_connector_s*p_connector;
+};
+
 /** Connection state for 'rcache' tracks */
 struct nm_ibverbs_rcache
 {
@@ -100,7 +107,7 @@ struct nm_ibverbs_rcache
   } headers;
 };
 
-static void nm_ibverbs_rcache_getprops(int index, struct nm_minidriver_properties_s*props);
+static void nm_ibverbs_rcache_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
 static void nm_ibverbs_rcache_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int n);
@@ -159,7 +166,9 @@ static void nm_ibverbs_mem_unreg(void*context, const void*ptr, void*key)
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_rcache,
   puk_component_declare("NewMad_ibverbs_rcache",
 			puk_component_provides("PadicoComponent", "component", &nm_ibverbs_rcache_component),
-			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_rcache_minidriver)));
+			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_rcache_minidriver),
+			puk_component_attr("ibv_device", "auto"),
+			puk_component_attr("ibv_port", "auto")));
 
 
 static void* nm_ibverbs_rcache_instantiate(puk_instance_t instance, puk_context_t context)
@@ -186,17 +195,21 @@ static void nm_ibverbs_rcache_destroy(void*_status)
 
 /* *** rcache connection *********************************** */
 
-static void nm_ibverbs_rcache_getprops(int index, struct nm_minidriver_properties_s*props)
+static void nm_ibverbs_rcache_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
-  nm_ibverbs_hca_get_profile(index, &props->profile);
+  struct nm_ibverbs_rcache_context_s*p_rcache_context = malloc(sizeof(struct nm_ibverbs_rcache_context_s));
+  puk_context_set_status(context, p_rcache_context);
+  p_rcache_context->p_hca = nm_ibverbs_hca_from_context(context);
+  nm_ibverbs_hca_get_profile(p_rcache_context->p_hca, &props->profile);
   props->capabilities.supports_data = 0;
 }
 
 
 static void nm_ibverbs_rcache_init(puk_context_t context, const void**drv_url, size_t*url_size)
-{ 
+{
+  struct nm_ibverbs_rcache_context_s*p_rcache_context = puk_context_get_status(context);
   const char*url = NULL;
-  nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
+  p_rcache_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
   puk_context_putattr(context, "local_url", url);
   *drv_url = url;
   *url_size = strlen(url);
@@ -205,9 +218,8 @@ static void nm_ibverbs_rcache_init(puk_context_t context, const void**drv_url, s
 static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_t url_size)
 {
   struct nm_ibverbs_rcache*rcache = _status; 
-  const char*s_index = puk_context_getattr(rcache->context, "index");
-  const int index= atoi(s_index);
-  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
+  struct nm_ibverbs_rcache_context_s*p_rcache_context = puk_context_get_status(rcache->context);
+  struct nm_ibverbs_hca_s*p_hca = p_rcache_context->p_hca;
   struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
   rcache->cnx = p_ibverbs_cnx;
   rcache->pd = p_hca->pd;

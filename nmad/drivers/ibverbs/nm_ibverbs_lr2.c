@@ -97,7 +97,7 @@ struct nm_ibverbs_lr2
   } recv;
 };
 
-static void nm_ibverbs_lr2_getprops(int index, struct nm_minidriver_properties_s*props);
+static void nm_ibverbs_lr2_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
 static void nm_ibverbs_lr2_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_ibverbs_lr2_close(puk_context_t context);
 static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t url_size);
@@ -139,7 +139,10 @@ static const struct puk_component_driver_s nm_ibverbs_lr2_component =
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_lr2,
   puk_component_declare("NewMad_ibverbs_lr2",
 			puk_component_provides("PadicoComponent", "component", &nm_ibverbs_lr2_component),
-			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_lr2_minidriver)));
+			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_lr2_minidriver),
+			puk_component_attr("ibv_device", "auto"),
+			puk_component_attr("ibv_port", "auto"))
+);
 
 
 /* ********************************************************* */
@@ -175,21 +178,20 @@ static void nm_ibverbs_lr2_destroy(void*_status)
 
 /* *** lr2 connection ************************************** */
 
-static void nm_ibverbs_lr2_getprops(int index, struct nm_minidriver_properties_s*props)
+static void nm_ibverbs_lr2_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
-  nm_ibverbs_hca_get_profile(index, &props->profile);
+  struct nm_ibverbs_lr2_context_s*p_lr2_context = malloc(sizeof(struct nm_ibverbs_lr2_context_s));
+  puk_context_set_status(context, p_lr2_context);
+  p_lr2_context->p_hca = nm_ibverbs_hca_from_context(context);
+  nm_ibverbs_hca_get_profile(p_lr2_context->p_hca, &props->profile);
   props->capabilities.supports_data = 1;
 }
 
 static void nm_ibverbs_lr2_init(puk_context_t context, const void**drv_url, size_t*url_size)
 { 
   const char*url = NULL;
-  const char*s_index = puk_context_getattr(context, "index");
-  const int index = s_index ? atoi(s_index) : 0;
-  struct nm_ibverbs_lr2_context_s*p_lr2_context = malloc(sizeof(struct nm_ibverbs_lr2_context_s));
+  struct nm_ibverbs_lr2_context_s*p_lr2_context = puk_context_get_status(context);
   p_lr2_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
-  p_lr2_context->p_hca = nm_ibverbs_hca_resolve(index);
-  puk_context_set_status(context, p_lr2_context);
   puk_context_putattr(context, "local_url", url);
   *drv_url = url;
   *url_size = strlen(url);

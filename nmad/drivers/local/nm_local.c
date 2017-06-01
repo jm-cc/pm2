@@ -38,7 +38,7 @@ static const struct puk_component_driver_s nm_local_component =
     .destroy     = &nm_local_destroy
   };
 
-static void nm_local_getprops(int index, struct nm_minidriver_properties_s*props);
+static void nm_local_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
 static void nm_local_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_local_close(puk_context_t context);
 static void nm_local_connect(void*_status, const void*remote_url, size_t url_size);
@@ -135,7 +135,7 @@ static void nm_local_destroy(void*_status)
 
 /* ********************************************************* */
 
-static void nm_local_getprops(int index, struct nm_minidriver_properties_s*props)
+static void nm_local_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
   props->profile.latency = 500;
   props->profile.bandwidth = 8000;

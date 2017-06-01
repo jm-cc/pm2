@@ -42,7 +42,7 @@ static const struct puk_component_driver_s nm_tcp_component =
     .destroy     = &nm_tcp_destroy
   };
 
-static void nm_tcp_getprops(int index, struct nm_minidriver_properties_s*props);
+static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
 static void nm_tcp_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_tcp_close(puk_context_t context);
 static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size);
@@ -140,7 +140,7 @@ static void nm_tcp_destroy(void*_status)
 
 /* ********************************************************* */
 
-static void nm_tcp_getprops(int index, struct nm_minidriver_properties_s*props)
+static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
   props->profile.latency = 500;
   props->profile.bandwidth = 8000;

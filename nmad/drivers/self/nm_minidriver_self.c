@@ -35,7 +35,7 @@ static const struct puk_component_driver_s nm_self_component =
     .destroy     = &nm_self_destroy
   };
 
-static void nm_self_getprops(int index, struct nm_minidriver_properties_s*props);
+static void nm_self_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
 static void nm_self_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_self_close(puk_context_t context);
 static void nm_self_connect(void*_status, const void*remote_url, size_t url_size);
@@ -117,7 +117,7 @@ static void nm_self_destroy(void*_status)
 
 /* ********************************************************* */
 
-static void nm_self_getprops(int index, struct nm_minidriver_properties_s*props)
+static void nm_self_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
   props->profile.latency = 200;
   props->profile.bandwidth = 20000;

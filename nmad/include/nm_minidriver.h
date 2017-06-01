@@ -63,7 +63,7 @@ struct nm_minidriver_properties_s
  */
 struct nm_minidriver_iface_s
 {
-  void (*getprops)(int index, struct nm_minidriver_properties_s*props);
+  void (*getprops)(puk_context_t context, struct nm_minidriver_properties_s*props);
   /* connection establishment */
   void (*init)(puk_context_t context, const void**drv_url, size_t*url_size);
   void (*connect)(void*_status, const void*remote_url, size_t url_size);

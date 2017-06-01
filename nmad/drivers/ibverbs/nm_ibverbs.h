@@ -24,7 +24,6 @@
 
 /* *** global IB parameters ******************************** */
 
-#define NM_IBVERBS_PORT         1
 #define NM_IBVERBS_TX_DEPTH     4
 #define NM_IBVERBS_RX_DEPTH     2
 #define NM_IBVERBS_RDMA_DEPTH   4
@@ -100,7 +99,11 @@ struct nm_ibverbs_hca_s
     int data_rate;
   } ib_caps;
   int refcount;
-  int index;
+  struct nm_ibverbs_hca_key_s
+  {
+    const char*device;
+    int port;
+  } key;
 };
 
 
@@ -113,6 +116,7 @@ struct nm_ibverbs_cnx
   struct ibv_cq*of_cq;    /**< CQ for outgoing packets */
   struct ibv_cq*if_cq;    /**< CQ for incoming packets */
   int max_inline;         /**< max size of data for IBV inline RDMA */
+  struct nm_ibverbs_hca_s*p_hca;
   struct
   {
     int total;
@@ -124,12 +128,14 @@ struct nm_ibverbs_cnx
 /* ********************************************************* */
 
 /** resolve the HCA for given index; return existing reference if HCA already open */
-struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index);
+struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port);
+
+struct nm_ibverbs_hca_s*nm_ibverbs_hca_from_context(puk_context_t context);
 
 /** release ref on HCA; close if last reference */
 void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca);
 
-void nm_ibverbs_hca_get_profile(int index, struct nm_drv_profile_s*p_profile);
+void nm_ibverbs_hca_get_profile(struct nm_ibverbs_hca_s*p_hca, struct nm_drv_profile_s*p_profile);
 
 struct nm_ibverbs_cnx*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca);
 

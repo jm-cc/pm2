@@ -60,7 +60,7 @@ PADICO_MODULE_DECLARE(NewMad_ibverbs_common);
 static struct
 {
   int refcount;              /**< number of drivers using ibverbs common */
-  puk_hashtable_t hca_table; /**< HCAs, hashed by index (as int) */
+  puk_hashtable_t hca_table; /**< HCAs, hashed by key(device+port) */
 } nm_ibverbs_common = { .refcount = 0, .hca_table = NULL };
 
 static tbx_checksum_t _nm_ibverbs_checksum = NULL;
@@ -82,9 +82,22 @@ static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, stru
 
 /* ********************************************************* */
 
+uint32_t nm_ibverbs_hca_hash(const void*_key)
+{
+  return puk_hash_oneatatime(_key, sizeof(struct nm_ibverbs_hca_key_s));
+}
+
+int nm_ibverbs_hca_eq(const void*_key1, const void*_key2)
+{
+  const struct nm_ibverbs_hca_key_s*key1 = _key1;
+  const struct nm_ibverbs_hca_key_s*key2 = _key2;
+  return ((strcmp(key1->device, key2->device) == 0) &&
+	  (key1->port == key2->port));
+}
+
 static void nm_ibverbs_common_init(void)
 {
-  nm_ibverbs_common.hca_table = puk_hashtable_new_int();
+  nm_ibverbs_common.hca_table = puk_hashtable_new(&nm_ibverbs_hca_hash, &nm_ibverbs_hca_eq);
   const char*checksum_env = getenv("NMAD_IBVERBS_CHECKSUM");
   if(_nm_ibverbs_checksum == NULL && checksum_env != NULL)
     {
@@ -108,13 +121,24 @@ static void nm_ibverbs_common_init(void)
     }
 }
 
-struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
+struct nm_ibverbs_hca_s*nm_ibverbs_hca_from_context(puk_context_t context)
+{
+  assert(context != NULL);
+  const char*device = puk_context_getattr(context, "ibv_device");
+  const char*s_port = puk_context_getattr(context, "ibv_port");
+  const int port = (strcmp(s_port, "auto") == 0) ? 0 : atoi(s_port);
+  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(device, port);
+  return p_hca;
+}
+
+struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
 {
   if(nm_ibverbs_common.hca_table == NULL)
     nm_ibverbs_common_init();
-  if(index == -1)
-    index = 0;
- struct nm_ibverbs_hca_s*p_hca = puk_hashtable_lookup(nm_ibverbs_common.hca_table, (void*)(uintptr_t)(index + 1));
+  if(port == -1)
+    port = 0;
+  struct nm_ibverbs_hca_key_s key = { .device = device, .port = port };
+  struct nm_ibverbs_hca_s*p_hca = puk_hashtable_lookup(nm_ibverbs_common.hca_table, &key);
   if(p_hca)
     {
       p_hca->refcount++;
@@ -124,20 +148,38 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
   p_hca = TBX_MALLOC(sizeof(struct nm_ibverbs_hca_s));
 
   /* find IB device */
-  int dev_number = index;
-  int dev_amount;
+  int dev_amount = -1;
   struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
   if(!dev_list) 
     {
       fprintf(stderr, "nmad: FATAL- ibverbs: no device found.\n");
       abort();
     }
-  if (dev_number >= dev_amount)
+  if(strcmp(device, "auto") == 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: device #%d/%d not available.\n", dev_number, dev_amount);
+      p_hca->ib_dev = *dev_list;
+    }
+  else
+    {
+      struct ibv_device**dev_ptr = dev_list;
+      p_hca->ib_dev = NULL;
+      while((p_hca->ib_dev == NULL) && (*dev_ptr != NULL))
+	{
+	  struct ibv_device*ib_dev = *dev_ptr;
+	  const char*ib_devname = ibv_get_device_name(ib_dev);
+	  if(strcmp(ib_devname, device) == 0)
+	    {
+	      p_hca->ib_dev = ib_dev;
+	      break;
+	    }
+	  dev_ptr++;
+	}
+    }
+  if(p_hca->ib_dev == NULL)
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: cannot find required device %s.\n", device);
       abort();
     }
-  p_hca->ib_dev = dev_list[dev_number];
   
   /* open IB context */
   p_hca->context = ibv_open_device(p_hca->ib_dev);
@@ -160,11 +202,16 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
 
   /* detect LID */
   struct ibv_port_attr port_attr;
-  rc = ibv_query_port(p_hca->context, NM_IBVERBS_PORT, &port_attr);
+  rc = ibv_query_port(p_hca->context, port, &port_attr);
   if(rc != 0)
     {
       fprintf(stderr, "nmad: FATAL- ibverbs: cannot get local port attributes.\n");
       abort();
+    }
+  if(port_attr.state != IBV_PORT_ACTIVE)
+    {
+      fprintf(stderr, "# nmad: ibverbs- dev = %s; port = %d; port is down.\n",
+	      ibv_get_device_name(p_hca->ib_dev), port);
     }
   p_hca->lid = port_attr.lid;
   if(p_hca->lid == 0)
@@ -224,14 +271,14 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
       abort();
     }
   p_hca->refcount = 1;
-  p_hca->index = index;
-  puk_hashtable_insert(nm_ibverbs_common.hca_table, (void*)(uintptr_t)(index + 1), p_hca);
+  p_hca->key.device = strdup(device);
+  p_hca->key.port = port;
+  puk_hashtable_insert(nm_ibverbs_common.hca_table, &p_hca->key, p_hca);
   return p_hca;
 }
 
-void nm_ibverbs_hca_get_profile(int index, struct nm_drv_profile_s*p_profile)
+void nm_ibverbs_hca_get_profile(struct nm_ibverbs_hca_s*p_hca, struct nm_drv_profile_s*p_profile)
 {
-  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
   /* driver profile encoding */
 #ifdef PM2_TOPOLOGY
   static hwloc_topology_t __topology = NULL;
@@ -250,7 +297,6 @@ void nm_ibverbs_hca_get_profile(int index, struct nm_drv_profile_s*p_profile)
 #endif /* PM2_TOPOLOGY */
   p_profile->latency = 1200; /* from sampling */
   p_profile->bandwidth = 1024 * (p_hca->ib_caps.data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
-  p_hca->refcount--; /* decrease refcount, but do not free for now */
 }
 
 void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca)
@@ -258,7 +304,7 @@ void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca)
   p_hca->refcount--;
   if(p_hca->refcount <= 0)
     {
-      puk_hashtable_remove(nm_ibverbs_common.hca_table, (void*)(uintptr_t)(p_hca->index + 1));
+      puk_hashtable_remove(nm_ibverbs_common.hca_table, &p_hca->key);
       ibv_dealloc_pd(p_hca->pd);
       ibv_close_device(p_hca->context);
       free(p_hca);
@@ -375,6 +421,7 @@ static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx*p_ibverbs_cnx, struct
       abort();
     }
   p_ibverbs_cnx->max_inline = qp_init_attr.cap.max_inline_data;
+  p_ibverbs_cnx->p_hca = p_hca;
 }
 
 /** modify QP to state RESET */
@@ -400,7 +447,7 @@ static void nm_ibverbs_cnx_qp_init(struct nm_ibverbs_cnx*p_ibverbs_cnx)
     {
       .qp_state        = IBV_QPS_INIT,
       .pkey_index      = 0,
-      .port_num        = NM_IBVERBS_PORT,
+      .port_num        = p_ibverbs_cnx->p_hca->key.port,
       .qp_access_flags = IBV_ACCESS_REMOTE_WRITE
     };
   int rc = ibv_modify_qp(p_ibverbs_cnx->qp, &attr,
@@ -431,7 +478,7 @@ static void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx*p_ibverbs_cnx)
 	.dlid             = p_ibverbs_cnx->remote_addr.lid,
 	.sl               = 0,
 	.src_path_bits    = 0,
-	.port_num         = NM_IBVERBS_PORT
+	.port_num         =  p_ibverbs_cnx->p_hca->key.port
       }
     };
   int rc = ibv_modify_qp(p_ibverbs_cnx->qp, &attr,

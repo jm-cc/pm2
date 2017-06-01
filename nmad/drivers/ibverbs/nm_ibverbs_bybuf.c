@@ -96,7 +96,7 @@ struct nm_ibverbs_bybuf
   puk_context_t context;
 };
 
-static void nm_ibverbs_bybuf_getprops(int index, struct nm_minidriver_properties_s*props);
+static void nm_ibverbs_bybuf_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
 static void nm_ibverbs_bybuf_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_ibverbs_bybuf_close(puk_context_t context);
 static void nm_ibverbs_bybuf_connect(void*_status, const void*remote_url, size_t url_size);
@@ -184,23 +184,22 @@ static void nm_ibverbs_bybuf_destroy(void*_status)
 }
 
 
-static void nm_ibverbs_bybuf_getprops(int index, struct nm_minidriver_properties_s*props)
+static void nm_ibverbs_bybuf_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
-  nm_ibverbs_hca_get_profile(index, &props->profile);
+  assert(context != NULL);
+  struct nm_ibverbs_bybuf_context_s*p_bybuf_context = malloc(sizeof(struct nm_ibverbs_bybuf_context_s));
+  p_bybuf_context->p_hca = nm_ibverbs_hca_from_context(context);
+  puk_context_set_status(context, p_bybuf_context);
+  nm_ibverbs_hca_get_profile(p_bybuf_context->p_hca, &props->profile);
   props->capabilities.supports_data = 1;
   props->capabilities.supports_buf_send = 1;
 }
 
 static void nm_ibverbs_bybuf_init(puk_context_t context, const void**drv_url, size_t*url_size)
 {
+  struct nm_ibverbs_bybuf_context_s*p_bybuf_context = puk_context_get_status(context);
   const char*url = NULL;
-  assert(context != NULL);
-  const char*s_index = puk_context_getattr(context, "index");
-  const int index = s_index ? atoi(s_index) : 0;
-  struct nm_ibverbs_bybuf_context_s*p_bybuf_context = malloc(sizeof(struct nm_ibverbs_bybuf_context_s));
   p_bybuf_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
-  p_bybuf_context->p_hca = nm_ibverbs_hca_resolve(index);
-  puk_context_set_status(context, p_bybuf_context);
   puk_context_putattr(context, "local_url", url);
   *drv_url = url;
   *url_size = strlen(url);

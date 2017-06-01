@@ -73,7 +73,7 @@ struct nm_ibverbs_adaptrdma
   } recv;
 };
 
-static void nm_ibverbs_adaptrdma_getprops(int index, struct nm_minidriver_properties_s*props);
+static void nm_ibverbs_adaptrdma_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
 static void nm_ibverbs_adaptrdma_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_ibverbs_adaptrdma_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_adaptrdma_send_post(void*_status, const struct iovec*v, int n);
@@ -108,7 +108,9 @@ static const struct puk_component_driver_s nm_ibverbs_adaptrdma_component =
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_adaptrdma,
   puk_component_declare("NewMad_ibverbs_adaptrdma",
 			puk_component_provides("PadicoComponent", "component", &nm_ibverbs_adaptrdma_component),
-			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_adaptrdma_minidriver)));
+			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_adaptrdma_minidriver),
+			puk_component_attr("ibv_device", "auto"),
+			puk_component_attr("ibv_port", "auto")));
 
 
 /* ********************************************************* */
@@ -129,9 +131,10 @@ static void nm_ibverbs_adaptrdma_destroy(void*_status)
 
 /* ********************************************************* */
 
-static void nm_ibverbs_adaptrdma_getprops(int index, struct nm_minidriver_properties_s*props)
+static void nm_ibverbs_adaptrdma_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
-  nm_ibverbs_hca_get_profile(index, &props->profile);
+  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_from_context(context);
+  nm_ibverbs_hca_get_profile(p_hca, &props->profile);
 }
 
 static void nm_ibverbs_adaptrdma_init(puk_context_t context, const void**drv_url, size_t*url_size)
@@ -146,9 +149,7 @@ static void nm_ibverbs_adaptrdma_init(puk_context_t context, const void**drv_url
 static void nm_ibverbs_adaptrdma_connect(void*_status, const void*remote_url, size_t url_size)
 {
   struct nm_ibverbs_adaptrdma*adaptrdma = _status;
-  const char*s_index = puk_context_getattr(adaptrdma->context, "index");
-  const int index= atoi(s_index);
-  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
+  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_from_context(adaptrdma->context);
   struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
   adaptrdma->cnx = p_ibverbs_cnx;
   /* register Memory Region */

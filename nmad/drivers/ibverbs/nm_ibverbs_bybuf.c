@@ -309,7 +309,7 @@ static int nm_ibverbs_bybuf_buf_send_poll(void*_status)
   void*p_packet = &bybuf->buffer.sbuf;
   /* TODO- padding */
   struct nm_ibverbs_bybuf_header_s*p_header = p_packet + bybuf->send.chunk_len;
-  assert(bybuf->chunk_len <= NM_IBVERBS_BYBUF_DATA_SIZE);
+  assert(bybuf->send.chunk_len <= NM_IBVERBS_BYBUF_DATA_SIZE);
   p_header->offset = offset;
   p_header->ack    = bybuf->window.to_ack;
   p_header->status = NM_IBVERBS_BYBUF_STATUS_DATA | NM_IBVERBS_BYBUF_STATUS_LAST;

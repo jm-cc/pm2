@@ -125,7 +125,6 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
     {
       p_drv->max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER);
     }
-  NM_DISPF("# nmad: driver = %s; max_small = %lu\n", p_drv->driver->name, p_drv->max_small);
 
  out:
 
@@ -213,7 +212,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       NM_WARN("nm_core_driver_init returned %d", err);
       return err;
     }
-  NM_DISPF("# nmad: driver name = %s; url = %s\n", driver->name, *p_url);
+  NM_DISPF("# nmad: driver name = %s; url = %s; max_small = %d\n", driver->name, *p_url, (int)p_drv->max_small);
 
   *pp_drv = p_drv;
   return NM_ESUCCESS;

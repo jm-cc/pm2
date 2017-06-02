@@ -19,7 +19,7 @@
 
 
 /** Maximum size of unexpected packets. Used for preallocated header zone within packet wrappers */
-#define NM_SO_MAX_UNEXPECTED  (16 * 1024)
+#define NM_SO_MAX_UNEXPECTED  (64 * 1024)
 
 /** size of the queue to submit requests */
 #define NM_REQ_CHUNK_QUEUE_SIZE 256

@@ -163,7 +163,6 @@ PUK_LIST_DECLARE_TYPE(nm_unexpected);
 PUK_LIST_CREATE_FUNCS(nm_unexpected);
 
 
-#include "nm_trk_cap.h"
 #include "nm_tags.h"
 #include "nm_pkt_wrap.h"
 #include "nm_minidriver.h"

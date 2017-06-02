@@ -205,7 +205,8 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   rc = ibv_query_port(p_hca->context, port, &port_attr);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get local port attributes.\n");
+      fprintf(stderr, "nmad: FATAL- ibverbs: dev = %s; port = %d; cannot get local port attributes (%s).\n",
+	      ibv_get_device_name(p_hca->ib_dev), port, strerror(rc));
       abort();
     }
   if(port_attr.state != IBV_PORT_ACTIVE)

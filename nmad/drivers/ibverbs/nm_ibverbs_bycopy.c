@@ -29,7 +29,7 @@
 
 #define NM_IBVERBS_BYCOPY_BUFSIZE     (NM_IBVERBS_BYCOPY_BLOCKSIZE - sizeof(struct nm_ibverbs_bycopy_header))
 #define NM_IBVERBS_BYCOPY_DATA_SIZE (nm_ibverbs_checksum_enabled() ? NM_IBVERBS_BYCOPY_BUFSIZE : NM_IBVERBS_BYCOPY_BUFSIZE + sizeof(uint32_t))
-#define NM_IBVERBS_BYCOPY_SBUF_NUM    2
+#define NM_IBVERBS_BYCOPY_SBUF_NUM    3
 #define NM_IBVERBS_BYCOPY_CREDITS_THR ((NM_IBVERBS_BYCOPY_RBUF_NUM / 2) + 1)
 
 #define NM_IBVERBS_BYCOPY_STATUS_EMPTY   0x00  /**< no message in buffer */
@@ -188,6 +188,7 @@ static void nm_ibverbs_bycopy_getprops(puk_context_t context, struct nm_minidriv
   p_bycopy_context->p_hca = nm_ibverbs_hca_from_context(context);
   nm_ibverbs_hca_get_profile(p_bycopy_context->p_hca, &props->profile);
   props->capabilities.supports_data = 1;
+  props->capabilities.max_unexpected = NM_IBVERBS_BYCOPY_DATA_SIZE * NM_IBVERBS_BYCOPY_SBUF_NUM;
 }
 
 static void nm_ibverbs_bycopy_init(puk_context_t context, const void**drv_url, size_t*url_size)

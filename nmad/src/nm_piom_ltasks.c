@@ -225,7 +225,7 @@ static void nm_ltask_destructor(struct piom_ltask*p_ltask)
   nm_pw_ref_dec(p_pw);
 }
 
-void nm_ltask_submit_pw_recv(struct nm_pkt_wrap_s *p_pw)
+void nm_ltask_submit_pw_recv(struct nm_pkt_wrap_s*p_pw)
 {
   piom_topo_obj_t ltask_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(&p_pw->ltask, &nm_ltask_pw_recv,  p_pw,
@@ -234,8 +234,7 @@ void nm_ltask_submit_pw_recv(struct nm_pkt_wrap_s *p_pw)
   piom_ltask_set_name(&p_pw->ltask, "nmad: poll_recv");
   piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
   nm_pw_ref_inc(p_pw);
-  const struct nm_drv_iface_s*driver = p_pw->p_drv->driver;
-  if((driver->wait_recv_iov != NULL) && p_pw->p_drv->trk_caps[p_pw->trk_id].is_exportable)
+  if(p_pw->p_drv->trk_caps[p_pw->trk_id].is_exportable)
     {
       piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_recv, 2 * p_pw->p_drv->profile.latency);
     }
@@ -252,8 +251,7 @@ void nm_ltask_submit_pw_send(struct nm_pkt_wrap_s*p_pw)
   piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
   nm_pw_ref_inc(p_pw);
   assert(p_pw->p_gdrv);
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  if((r->driver->wait_send_iov != NULL) && p_pw->p_drv->trk_caps[p_pw->trk_id].is_exportable)
+  if(p_pw->p_drv->trk_caps[p_pw->trk_id].is_exportable)
     {
       piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_send, 2 * p_pw->p_drv->profile.latency);
     }

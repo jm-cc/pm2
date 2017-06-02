@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_MOD = NewMad_Driver_tcp Minidriver_tcp
+TARGET_MOD = Minidriver_tcp
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
@@ -16,7 +16,5 @@ CPPFLAGS += @NMAD_CORE_CPPFLAGS@
 CFLAGS   += @NMAD_CORE_CFLAGS@
 
 include @abs_top_builddir@/common_rules.mk
-
-NewMad_Driver_tcp: nm_tcp.pic.o
 
 Minidriver_tcp: nm_minidriver_tcp.pic.o

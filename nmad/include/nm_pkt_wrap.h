@@ -63,6 +63,9 @@ typedef uint32_t nm_pw_flag_t;
 /** requests to copy data to contiguous block before sending */
 #define NM_PW_DATA_COPY     (nm_pw_flag_t)0x0400
 
+/** use buffer-based driver for send */
+#define NM_PW_BUF_SEND      (nm_pw_flag_t)0x0800
+
 /*@}*/
 
 

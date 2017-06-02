@@ -185,6 +185,8 @@ static void nm_ibverbs_lr2_getprops(puk_context_t context, struct nm_minidriver_
   p_lr2_context->p_hca = nm_ibverbs_hca_from_context(context);
   nm_ibverbs_hca_get_profile(p_lr2_context->p_hca, &props->profile);
   props->capabilities.supports_data = 1;
+  props->capabilities.max_msg_size = 0; /* unlimited */
+  props->capabilities.trk_rdv = 1;
 }
 
 static void nm_ibverbs_lr2_init(puk_context_t context, const void**drv_url, size_t*url_size)

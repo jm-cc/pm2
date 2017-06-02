@@ -44,7 +44,7 @@ struct nm_drv_s
   int nb_tracks;
 
   /** track capabilities */
-  struct nm_trk_cap trk_caps[NM_SO_MAX_TRACKS];
+  struct nm_minidriver_capabilities_s trk_caps[NM_SO_MAX_TRACKS];
   
   /** Index of the board managed by this instance of driver */
   int index;
@@ -77,7 +77,7 @@ struct nm_drv_iface_s
   const char*name;
 
   int (*query)     (nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
-  int (*init)      (nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+  int (*init)      (nm_drv_t p_drv, struct nm_minidriver_capabilities_s*trk_caps, int nb_trks);
   int (*close)     (nm_drv_t p_drv);
 
   int (*connect)   (void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
@@ -100,8 +100,6 @@ struct nm_drv_iface_s
   int (*poll_recv_any_iov)(void*_status, struct nm_pkt_wrap_s **p_pw);
 
   const char* (*get_driver_url)(nm_drv_t p_drv);
-
-  const struct nm_drv_cap_s capabilities; /**< static capabilities */
 
 };
 

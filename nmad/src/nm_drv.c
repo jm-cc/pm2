@@ -73,31 +73,9 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   /* open tracks */
   const int nb_trks = NM_SO_MAX_TRACKS;
   /* Track 0- for unexpected packets */
-  p_drv->trk_caps[NM_TRK_SMALL] = (struct nm_trk_cap)
-    {
-      .rq_type		   = nm_trk_rq_unspecified,
-      .iov_type		   = nm_trk_iov_unspecified,
-      .max_pending_send_request  = 0,
-      .max_pending_recv_request  = 0,
-      .min_single_request_length = 0,
-      .max_single_request_length = 0,
-      .max_iovec_request_length  = 0,
-      .max_iovec_size		   = 0,
-      .supports_data             = 0
-    };
+  p_drv->trk_caps[NM_TRK_SMALL] = (struct nm_minidriver_capabilities_s) { 0 };
   /* Track 1- for long packets with rendezvous */
-  p_drv->trk_caps[NM_TRK_LARGE] = (struct nm_trk_cap)
-    {
-      .rq_type		   = nm_trk_rq_rdv,
-      .iov_type		   = nm_trk_iov_unspecified,
-      .max_pending_send_request  = 0,
-      .max_pending_recv_request  = 0,
-      .min_single_request_length = 0,
-      .max_single_request_length = 0,
-      .max_iovec_request_length  = 0,
-      .max_iovec_size	           = 0,
-      .supports_data             = 0
-    };
+  p_drv->trk_caps[NM_TRK_LARGE] = (struct nm_minidriver_capabilities_s) { 0 };
 
   err = p_drv->driver->init(p_drv, p_drv->trk_caps, nb_trks);
   if (err != NM_ESUCCESS)
@@ -117,9 +95,10 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   nm_ns_update(p_core, p_drv);
   err = NM_ESUCCESS;
 
-  if(p_drv->driver->capabilities.max_unexpected > 0)
+  const nm_len_t max_small = p_drv->trk_caps[NM_TRK_SMALL].max_msg_size;
+  if(max_small > 0)
     {
-      p_drv->max_small = p_drv->driver->capabilities.max_unexpected;
+      p_drv->max_small = max_small;
     }
   else
     {

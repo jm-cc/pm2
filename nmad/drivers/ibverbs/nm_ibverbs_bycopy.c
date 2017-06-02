@@ -188,7 +188,7 @@ static void nm_ibverbs_bycopy_getprops(puk_context_t context, struct nm_minidriv
   p_bycopy_context->p_hca = nm_ibverbs_hca_from_context(context);
   nm_ibverbs_hca_get_profile(p_bycopy_context->p_hca, &props->profile);
   props->capabilities.supports_data = 1;
-  props->capabilities.max_unexpected = NM_IBVERBS_BYCOPY_DATA_SIZE * NM_IBVERBS_BYCOPY_SBUF_NUM;
+  props->capabilities.max_msg_size = NM_IBVERBS_BYCOPY_DATA_SIZE * NM_IBVERBS_BYCOPY_SBUF_NUM;
 }
 
 static void nm_ibverbs_bycopy_init(puk_context_t context, const void**drv_url, size_t*url_size)

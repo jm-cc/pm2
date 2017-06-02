@@ -40,21 +40,22 @@ struct nm_drv_profile_s
 
 /** Static driver capabilities.
  */
-struct nm_drv_cap_s
+struct nm_minidriver_capabilities_s
 {
-  int has_recv_any;   /**< driver accepts receive from NM_GATE_ANY */
-  int rdv_threshold;  /**< preferred length for switching to rendez-vous. */
-  int min_period;     /**< minimum delay between poll (in microseconds) */
-  int is_exportable;  /**< blocking calls may be exported by PIOMan */
-  int max_unexpected; /**< maximum size of unexpected messages on trk #0 */
-  int supports_data;  /**< driver can send/recv direct nm_data_s */
+  int supports_data;     /**< driver can send/recv direct nm_data_s */
+  int has_recv_any;      /**< driver accepts receive from NM_GATE_ANY */
+  int min_period;        /**< minimum delay between poll (in microseconds) */
+  int is_exportable;     /**< blocking calls may be exported by PIOMan */
+  nm_len_t max_msg_size; /**< maximum message size for the track */
   int supports_buf_send;
+  int trk_rdv;           /**< trk needs a rdv for matched send/recv size; if 0, trk preserves boudaries */
+  int rdv_threshold;     /**< preferred length for switching to rendez-vous. */
 };
 
 struct nm_minidriver_properties_s
 {
   struct nm_drv_profile_s profile;
-  struct nm_drv_cap_s capabilities;
+  struct nm_minidriver_capabilities_s capabilities;
 };
 
 /** Interface driver for the 'NewMad_minidriver' component interface.

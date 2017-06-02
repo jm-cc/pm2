@@ -60,7 +60,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 	    p_pw->p_gate,
 	    p_pw->p_drv,
 	    p_pw->trk_id);
-  if(p_pw->p_drv->driver->capabilities.min_period > 0)
+  if(p_pw->p_drv->trk_caps[p_pw->trk_id].min_period > 0)
     {
       struct timespec t;
 #ifdef CLOCK_MONOTONIC_RAW
@@ -173,7 +173,7 @@ void nm_drv_refill_recv(nm_drv_t p_drv, nm_gate_t p_gate)
   nm_core_lock_assert(p_core);
   if(!p_core->enable_schedopt)
     return;
-  if(p_drv->driver->capabilities.has_recv_any)
+  if(p_drv->trk_caps[NM_TRK_SMALL].has_recv_any)
     {
       /* recv any available- single pw with no gate */
       if(p_drv->p_in_rq == NULL)

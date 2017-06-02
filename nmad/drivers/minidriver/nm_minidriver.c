@@ -51,7 +51,7 @@ struct nm_minidriver
 /* ** component declaration */
 
 static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param*params, int nparam);
-static int nm_minidriver_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+static int nm_minidriver_init(nm_drv_t p_drv, struct nm_minidriver_capabilities_s*trk_caps, int nb_trks);
 static int nm_minidriver_close(nm_drv_t p_drv);
 static int nm_minidriver_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
 static int nm_minidriver_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
@@ -88,9 +88,7 @@ static const struct nm_drv_iface_s nm_minidriver_driver =
     .cancel_recv_iov    = &nm_minidriver_cancel_recv_iov,
 
     .get_driver_url     = &nm_minidriver_get_driver_url,
-
-    .capabilities.min_period    = 0,
-    .capabilities.rdv_threshold = 32 * 1024
+    
   };
 
 /** 'PadicoComponent' facet for Minidriver driver */
@@ -179,7 +177,7 @@ static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *par
       char s_index[16];
       sprintf(s_index, "%d", p_drv->index);
       puk_context_putattr(conn->context, "index", s_index);
-      p_minidriver_context->trks_array[i].props.capabilities = (struct nm_drv_cap_s){ 0 };
+      p_minidriver_context->trks_array[i].props.capabilities = (struct nm_minidriver_capabilities_s){ 0 };
 #ifdef PM2_TOPOLOGY
       p_minidriver_context->trks_array[i].props.profile.cpuset = NULL;
 #endif /* PM2_TOPOLOGY */
@@ -208,7 +206,7 @@ static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *par
   return err;
 }
 
-static int nm_minidriver_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
+static int nm_minidriver_init(nm_drv_t p_drv, struct nm_minidriver_capabilities_s*trk_caps, int nb_trks)
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
   struct nm_minidriver_context_s*p_minidriver_context = puk_context_get_status(p_minidriver_drv->context);
@@ -219,28 +217,7 @@ static int nm_minidriver_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb
   nm_trk_id_t i;
   for(i = 0; i < nb_trks; i++)
     {
-      if(trk_caps[i].rq_type == nm_trk_rq_rdv)
-	{
-	  trk_caps[i].rq_type  = nm_trk_rq_rdv;
-	  trk_caps[i].iov_type = nm_trk_iov_none;
-	  trk_caps[i].max_pending_send_request	= 1;
-	  trk_caps[i].max_pending_recv_request	= 1;
-	  trk_caps[i].max_single_request_length	= SSIZE_MAX;
-	  trk_caps[i].max_iovec_request_length	= 0;
-	  trk_caps[i].max_iovec_size		= 1;
-	  trk_caps[i].supports_data             = p_minidriver_context->trks_array[i].props.capabilities.supports_data;
-	}
-      else
-	{
-	  trk_caps[i].rq_type  = nm_trk_rq_dgram;
-	  trk_caps[i].iov_type = nm_trk_iov_send_only;
-	  trk_caps[i].max_pending_send_request	= 1;
-	  trk_caps[i].max_pending_recv_request	= 1;
-	  trk_caps[i].max_single_request_length	= SSIZE_MAX;
-	  trk_caps[i].max_iovec_request_length	= 0;
-	  trk_caps[i].max_iovec_size		= 0;
-	  trk_caps[i].supports_data             = p_minidriver_context->trks_array[i].props.capabilities.supports_data;
-	}
+      trk_caps[i] = p_minidriver_context->trks_array[i].props.capabilities;
       puk_context_t context = p_minidriver_context->trks_array[i].minidriver;
       const struct nm_minidriver_iface_s*minidriver_iface = 
 	puk_component_get_driver_NewMad_minidriver(context->component, "minidriver");

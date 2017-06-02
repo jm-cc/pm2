@@ -46,9 +46,6 @@ struct nm_drv_s
   /** track capabilities */
   struct nm_minidriver_capabilities_s trk_caps[NM_SO_MAX_TRACKS];
   
-  /** Index of the board managed by this instance of driver */
-  int index;
-
   /** size of largest packet on trk#0 */
   nm_len_t max_small;
   

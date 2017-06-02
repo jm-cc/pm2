@@ -80,18 +80,12 @@ static void nm_session_init_strategy(void)
 }
 
 /** add the given driver to the session */
-#warning TODO- include index as a NewMad_Driver component attribute
-nm_drv_t nm_session_add_driver(puk_component_t component, int index)
+nm_drv_t nm_session_add_driver(puk_component_t component)
 {
   assert(component != NULL);
   const char*driver_url = NULL;
   nm_drv_t p_drv = NULL;
   struct nm_driver_query_param param = { .key = NM_DRIVER_QUERY_BY_NOTHING };
-  if(index >= 0)
-    {
-      param.key = NM_DRIVER_QUERY_BY_INDEX;
-      param.value.index = index;
-    }
   int err = nm_core_driver_load_init(nm_session.p_core, component, &param, &p_drv, &driver_url);
   if(err != NM_ESUCCESS)
     {
@@ -105,7 +99,7 @@ nm_drv_t nm_session_add_driver(puk_component_t component, int index)
     {
       padico_string_catf(nm_session.url_string, "+");
     }
-  padico_string_catf(nm_session.url_string, "%s#%d=%s", component->name, p_drv->index, driver_url);
+  padico_string_catf(nm_session.url_string, "%s=%s", component->name, driver_url);
   return p_drv;
 }
 
@@ -145,7 +139,7 @@ static void nm_session_init_drivers(void)
 	  driver_name = strdup("mx");
 	}
       puk_component_t driver_assembly = nm_core_component_load("Driver", driver_name);
-      nm_session_add_driver(driver_assembly, index);
+      nm_session_add_driver(driver_assembly);
       free(driver_name);
       token = strtok(NULL, "+");
     }
@@ -153,7 +147,7 @@ static void nm_session_init_drivers(void)
 
   /* load default driver */
   puk_component_t driver_self = nm_core_component_load("Driver", "self");
-  nm_session.p_drv_self = nm_session_add_driver(driver_self, -1);
+  nm_session.p_drv_self = nm_session_add_driver(driver_self);
 }
 
 
@@ -281,7 +275,7 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
       NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
 	{
 	  char driver_name[256];
-	  snprintf(driver_name, 256, "%s#%d", p_drv->assembly->name, p_drv->index);
+	  snprintf(driver_name, 256, "%s", p_drv->assembly->name);
 	  if(p_drv == nm_session.p_drv_self)
 	    {
 	      continue;
@@ -343,7 +337,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
     {
       nm_drv_t p_drv = *i;
       char driver_name[256];
-      snprintf(driver_name, 256, "%s#%d", p_drv->assembly->name, p_drv->index);
+      snprintf(driver_name, 256, "%s", p_drv->assembly->name);
       const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
       assert(driver_url != NULL);
       err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);

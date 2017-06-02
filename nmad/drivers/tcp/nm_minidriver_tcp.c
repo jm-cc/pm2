@@ -279,7 +279,7 @@ static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size)
     }
   int val = 1;
   socklen_t len = sizeof(val);
-  NM_SYS(setsockopt)(p_status->fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len);
+  NM_SYS(setsockopt)(p_status->fd, IPPROTO_TCP, TCP_NODELAY, (void*)&val, len);
 }
 
 static void nm_tcp_send_post(void*_status, const struct iovec*v, int n)

@@ -126,7 +126,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_from_context(puk_context_t context)
   assert(context != NULL);
   const char*device = puk_context_getattr(context, "ibv_device");
   const char*s_port = puk_context_getattr(context, "ibv_port");
-  const int port = (strcmp(s_port, "auto") == 0) ? 0 : atoi(s_port);
+  const int port = (strcmp(s_port, "auto") == 0) ? 1 : atoi(s_port);
   struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(device, port);
   return p_hca;
 }
@@ -136,7 +136,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   if(nm_ibverbs_common.hca_table == NULL)
     nm_ibverbs_common_init();
   if(port == -1)
-    port = 0;
+    port = 1;
   struct nm_ibverbs_hca_key_s key = { .device = device, .port = port };
   struct nm_ibverbs_hca_s*p_hca = puk_hashtable_lookup(nm_ibverbs_common.hca_table, &key);
   if(p_hca)

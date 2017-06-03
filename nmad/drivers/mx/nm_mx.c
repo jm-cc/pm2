@@ -143,7 +143,7 @@ struct nm_mx_pkt_wrap
 /* MX 'NewMad_Driver' facet */
 
 static int nm_mx_query(nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
-static int nm_mx_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+static int nm_mx_init(nm_drv_t p_drv, struct nm_minidriver_capabilities_s*trk_caps, int nb_trks);
 static int nm_mx_close(nm_drv_t p_drv);
 static int nm_mx_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*remote_url);
 static int nm_mx_disconnect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id);
@@ -179,10 +179,6 @@ static const struct nm_drv_iface_s nm_mx_driver =
 
     .get_driver_url     = &nm_mx_get_driver_url,
 
-
-    .capabilities.min_period    = 0,
-    .capabilities.is_exportable = 1,
-    .capabilities.has_recv_any  = 1
   };
 
 /* 'PadicoComponent' facet for MX driver */
@@ -365,7 +361,7 @@ static int nm_mx_query(nm_drv_t p_drv,
   return err;
 }
 
-static int nm_mx_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
+static int nm_mx_init(nm_drv_t p_drv, struct nm_minidriver_capabilities_s*trk_caps, int nb_trks)
 {
   mx_endpoint_t		 ep;
   mx_endpoint_addr_t	 ep_addr;
@@ -438,18 +434,8 @@ static int nm_mx_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
         memset(&p_mx_drv->trks_array[trk_id], 0, sizeof (struct nm_mx_trk));
 	p_mx_drv->trks_array[trk_id].next_peer_id = 1;
 
-        /* track capabilities encoding					*/
-        trk_caps[trk_id].rq_type	= nm_trk_rq_dgram;
-        trk_caps[trk_id].iov_type	= nm_trk_iov_both_sym;
-        trk_caps[trk_id].max_pending_send_request	= 1;
-        trk_caps[trk_id].max_pending_recv_request	= 1;
-        trk_caps[trk_id].max_single_request_length	= SSIZE_MAX;
-        trk_caps[trk_id].max_iovec_request_length	= 32768;
-#ifdef IOV_MAX
-        trk_caps[trk_id].max_iovec_size		= IOV_MAX;
-#else /* IOV_MAX */
-        trk_caps[trk_id].max_iovec_size		= sysconf(_SC_IOV_MAX);
-#endif /* IOV_MAX */
+        trk_caps[trk_id].has_recv_any = 1;
+        trk_caps[trk_id].is_exportable = 1;
     }
 
   return NM_ESUCCESS;

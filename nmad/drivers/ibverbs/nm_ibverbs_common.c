@@ -492,7 +492,8 @@ static void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx*p_ibverbs_cnx)
 			 IBV_QP_MIN_RNR_TIMER);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: failed to modify QP to RTR\n");
+      fprintf(stderr, "nmad: FATAL- ibverbs: dev = %s; port = %d; failed to modify QP to RTR (%s)\n",
+	      ibv_get_device_name(p_ibverbs_cnx->p_hca->ib_dev), p_ibverbs_cnx->p_hca->key.port, strerror(rc));
       abort();
     }
 }

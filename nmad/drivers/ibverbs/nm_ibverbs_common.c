@@ -144,20 +144,23 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
       p_hca->refcount++;
       return p_hca;
     }
-
+  const int autodetect = (strcmp(device, "auto") == 0);
+  
   p_hca = TBX_MALLOC(sizeof(struct nm_ibverbs_hca_s));
 
   /* find IB device */
   int dev_amount = -1;
+  int dev_auto = 0;
   struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
   if(!dev_list) 
     {
       fprintf(stderr, "nmad: FATAL- ibverbs: no device found.\n");
       abort();
     }
-  if(strcmp(device, "auto") == 0)
+ retry_autodetect:
+  if(autodetect)
     {
-      p_hca->ib_dev = *dev_list;
+      p_hca->ib_dev = dev_list[dev_auto];
     }
   else
     {
@@ -189,8 +192,6 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
       abort();
     }
 
-  ibv_free_device_list(dev_list);
-  
   /* get IB context attributes */
   struct ibv_device_attr device_attr;
   int rc = ibv_query_device(p_hca->context, &device_attr);
@@ -213,6 +214,19 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
     {
       fprintf(stderr, "# nmad: ibverbs- dev = %s; port = %d; port is down.\n",
 	      ibv_get_device_name(p_hca->ib_dev), port);
+      if(autodetect)
+	{
+	  if(port < device_attr.phys_port_cnt)
+	    port++;
+	  else
+	    dev_auto++;
+	  if(dev_list[dev_auto] == NULL)
+	    {
+	      NM_FATAL("ibverbs: cannot find active IB device.\n");
+	    }
+	  goto retry_autodetect;
+	}
+      
     }
   p_hca->lid = port_attr.lid;
   if(p_hca->lid == 0)
@@ -275,6 +289,9 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   p_hca->key.device = strdup(device);
   p_hca->key.port = port;
   puk_hashtable_insert(nm_ibverbs_common.hca_table, &p_hca->key, p_hca);
+
+  ibv_free_device_list(dev_list);
+  
   return p_hca;
 }
 

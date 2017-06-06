@@ -45,8 +45,6 @@ int nm_session_open(nm_session_t*pp_session, const char*label);
  */
 nm_drv_t nm_session_add_driver(puk_component_t component);
 
-
-PUK_VECT_TYPE(nm_drv, nm_drv_t );
 /** Type for 'selector'. Returns drivers to connect to given gate.
  */
 typedef nm_drv_vect_t (*nm_session_selector_t)(const char*url, void*_arg);

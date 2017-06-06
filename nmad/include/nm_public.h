@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include <nm_errno.h>
 #include <nm_config.h>
+#include <Padico/Puk.h>
 
 /* ** Config sanity checks ********************************* */
 
@@ -141,6 +142,8 @@ static inline void nm_abi_config_check(const struct nm_abi_config_s*p_nm_abi_con
 
 /** a nmad driver; opaque type for the user */
 typedef struct nm_drv_s*nm_drv_t;
+
+PUK_VECT_TYPE(nm_drv, nm_drv_t);
 
 /* ** Gates ************************************************ */
 

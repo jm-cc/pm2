@@ -332,6 +332,13 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
     }
   free(parse_string);
   /* connect all drivers */
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  if(r->driver->connect)
+    {
+      nm_drv_vect_t v2 = (*r->driver->connect)(r->_status, p_gate, v);
+      nm_drv_vect_delete(v);
+      v = v2;
+    }
   nm_drv_vect_itor_t i;
   puk_vect_foreach(i, nm_drv, v)
     {

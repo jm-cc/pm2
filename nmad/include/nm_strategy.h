@@ -20,6 +20,9 @@
  */
 struct nm_strategy_iface_s
 {
+  /** selects the drivers to actually use, among the list of available drivers for the given gate */
+  nm_drv_vect_t (*connect)(void*_status, nm_gate_t p_gate, nm_drv_vect_t p_available_drvs);
+  
   /** submit a pack with iterator-based data description */
   void (*pack_data)(void*_status, struct nm_req_s*p_pack, nm_len_t len, nm_len_t chunk_offset);
 

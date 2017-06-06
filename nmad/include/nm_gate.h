@@ -44,10 +44,8 @@ struct nm_gate_drv
   nm_drv_t p_drv;                                   /**< driver reference */
   struct puk_receptacle_NewMad_Driver_s receptacle; /**< receptacle for the driver */
   puk_instance_t instance;                          /**< driver instance */
-  /** Array of reference to current incoming requests, (indexed by trk_id). */
-  struct nm_pkt_wrap_s*p_in_rq_array[NM_SO_MAX_TRACKS];
-  int active_recv[NM_SO_MAX_TRACKS];                /**< whether a recv is active on the given trk */
-  int active_send[NM_SO_MAX_TRACKS];                /**< whether a send is active on the given trk */
+  struct nm_pkt_wrap_s*p_pw_recv[NM_SO_MAX_TRACKS]; /**< the active pw for recv on the given trk */
+  struct nm_pkt_wrap_s*p_pw_send[NM_SO_MAX_TRACKS]; /**< the active pw for send on the given trk */
 };
 
 PUK_VECT_TYPE(nm_gdrv, struct nm_gate_drv*);

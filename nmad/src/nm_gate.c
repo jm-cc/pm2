@@ -65,9 +65,6 @@ int nm_core_gate_connect(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_drv
   nm_core_lock(p_core);
   struct nm_gate_drv *p_gdrv = TBX_MALLOC(sizeof(struct nm_gate_drv));
 
-  memset(p_gdrv->active_recv, 0, sizeof(p_gdrv->active_recv));
-  memset(p_gdrv->active_send, 0, sizeof(p_gdrv->active_send));
-
   int err;
 
   p_gate->status = NM_GATE_STATUS_CONNECTING;
@@ -84,7 +81,8 @@ int nm_core_gate_connect(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_drv
   nm_trk_id_t trk_id;
   for(trk_id = 0; trk_id < p_drv->nb_tracks; trk_id++)
     {
-      p_gdrv->p_in_rq_array[trk_id] = NULL;
+      p_gdrv->p_pw_send[trk_id] = NULL;
+      p_gdrv->p_pw_recv[trk_id] = NULL;
       err = p_gdrv->receptacle.driver->connect(p_gdrv->receptacle._status, p_gate, p_drv, trk_id, url);
       if(err != NM_ESUCCESS)
 	{

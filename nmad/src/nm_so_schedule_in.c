@@ -890,12 +890,10 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_pw_in);
   /* clear the input request field */
-  if(p_pw->p_gdrv && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
+  if(p_pw->p_gdrv && p_pw->p_gdrv->p_pw_recv[p_pw->trk_id] == p_pw)
     {
       /* request was posted on a given gate */
-      p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
-      p_pw->p_gdrv->active_recv[p_pw->trk_id]--;
-      assert(p_pw->p_gdrv->active_recv[p_pw->trk_id] == 0);
+      p_pw->p_gdrv->p_pw_recv[p_pw->trk_id] = NULL;
     }
   else if((!p_pw->p_gdrv) && p_drv->p_in_rq == p_pw)
     {

@@ -90,8 +90,8 @@ void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw,
     }
   /* append pkt to scheduler post list */
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
-  p_gdrv->active_send[trk_id]++;
-  assert(p_gdrv->active_send[trk_id] == 1);
+  assert(p_gdrv->p_pw_send[trk_id] == NULL);
+  p_gdrv->p_pw_send[trk_id] = p_pw;
 #ifdef PIOMAN
   nm_ltask_submit_pw_send(p_pw);
 #else
@@ -108,8 +108,8 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
   nm_profile_inc(p_core->profiling.n_pw_out);
   NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
-  p_pw->p_gdrv->active_send[p_pw->trk_id]--;
-  assert(p_pw->p_gdrv->active_send[p_pw->trk_id] == 0);
+  assert(p_pw->p_gdrv->p_pw_send[p_pw->trk_id] == p_pw);
+  p_pw->p_gdrv->p_pw_send[p_pw->trk_id] = NULL;
   while(!nm_req_chunk_list_empty(&p_pw->req_chunks))
     {
       struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_pop_front(&p_pw->req_chunks);

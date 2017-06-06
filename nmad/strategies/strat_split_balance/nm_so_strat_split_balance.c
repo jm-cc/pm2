@@ -105,8 +105,8 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
       /* find a driver with no active message on any track */
       if((p_gdrv != NULL) &&
-	 (p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
-	 (p_gdrv->active_send[NM_TRK_LARGE] == 0))
+	 (p_gdrv->p_pw_send[NM_TRK_SMALL] == NULL) &&
+	 (p_gdrv->p_pw_send[NM_TRK_LARGE] == NULL))
 	{
 	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
 	  /* ** control */
@@ -221,7 +221,7 @@ static void strat_split_balance_rdv_accept(void*_status, nm_gate_t p_gate)
 	{
 	  nm_drv_t p_drv = ordered_drv_id_by_bw[i];
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	  if(p_gdrv != NULL && p_gdrv->active_recv[trk_id] == 0)
+	  if(p_gdrv != NULL && p_gdrv->p_pw_recv[trk_id] == NULL)
 	    {
 	      chunks[chunk_index].p_drv = p_drv;
 	      chunks[chunk_index].trk_id = NM_TRK_LARGE;

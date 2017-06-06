@@ -94,7 +94,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
   struct nm_core*p_core = p_gate->p_core;
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  if((p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
+  if((p_gdrv->p_pw_send[NM_TRK_SMALL] == NULL) &&
      !(nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list) &&
        nm_req_chunk_list_empty(&p_gate->req_chunk_list)))
     {
@@ -186,7 +186,7 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
       if(p_pw->length > NM_LARGE_MIN_DENSITY)
 	{
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	  if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
+	  if(p_gdrv->p_pw_recv[NM_TRK_LARGE] == NULL)
 	    {
 	      /* The large-packet track is available- post recv and RTR */
 	      struct nm_rdv_chunk chunk = 

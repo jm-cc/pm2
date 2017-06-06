@@ -99,7 +99,7 @@ static void strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
   nm_drv_t p_drv = nm_drv_default(p_gate);
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct nm_core*p_core = p_gate->p_core;
-  if(p_gdrv->active_send[NM_TRK_SMALL] == 0)
+  if(p_gdrv->p_pw_send[NM_TRK_SMALL] == NULL)
     {
       if(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	{
@@ -151,7 +151,7 @@ static void strat_default_rdv_accept(void*_status, nm_gate_t p_gate)
     {
       nm_drv_t p_drv = nm_drv_default(p_gate);
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-      if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
+      if(p_gdrv->p_pw_recv[NM_TRK_LARGE] == NULL)
 	{
 	  /* The large-packet track is available- post recv and RTR */
 	  struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_gate->pending_large_recv);

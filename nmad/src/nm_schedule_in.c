@@ -33,11 +33,8 @@ void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate,
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
   if(p_gdrv)
     {
-      assert(p_gdrv->active_recv[trk_id] == 0);
-      p_gdrv->active_recv[trk_id]++;
-      assert(p_gdrv->active_recv[trk_id] == 1);
-      assert(p_gdrv->p_in_rq_array[trk_id] == NULL);
-      p_gdrv->p_in_rq_array[trk_id] = p_pw;
+      assert(p_gdrv->p_pw_recv[trk_id] == NULL);
+      p_gdrv->p_pw_recv[trk_id] = p_pw;
     }
 #ifdef PIOMAN
   nm_ltask_submit_pw_recv(p_pw);
@@ -102,10 +99,9 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
       p_gate->status = NM_GATE_STATUS_DISCONNECTING;
       if(p_pw->p_gdrv)
 	{
-	  p_pw->p_gdrv->active_recv[NM_TRK_SMALL] = 0;
-	  if (p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
+	  if(p_pw->p_gdrv->p_pw_recv[p_pw->trk_id] == p_pw)
 	    {
-	      p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
+	      p_pw->p_gdrv->p_pw_recv[p_pw->trk_id] = NULL;
 	    }
 	}
 #ifdef PIOMAN
@@ -188,7 +184,7 @@ void nm_drv_refill_recv(nm_drv_t p_drv, nm_gate_t p_gate)
       assert(p_gate != NULL);
       assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-      assert(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL]);
+      assert(p_gdrv != NULL && !p_gdrv->p_pw_recv[NM_TRK_SMALL]);
       struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_buffer();
       nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
     }

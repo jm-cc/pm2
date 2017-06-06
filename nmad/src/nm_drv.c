@@ -220,21 +220,20 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
 	  if(p_gdrv != NULL)
 	    {
-	      struct nm_pkt_wrap_s*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
+	      struct nm_pkt_wrap_s*p_pw = p_gdrv->p_pw_recv[NM_TRK_SMALL];
 	      if(p_pw)
 		{
 		  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
 		  if(r->driver->cancel_recv_iov)
 		    r->driver->cancel_recv_iov(r->_status, p_pw);
-		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
+		  p_gdrv->p_pw_recv[NM_TRK_SMALL] = NULL;
 
 #ifndef PIOMAN
 		  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #endif
 		  nm_pkt_wrap_list_push_back(pending_pw, p_pw);
 		}
-	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
-	      p_gdrv->active_recv[NM_TRK_SMALL] = 0;
+	      p_gdrv->p_pw_recv[NM_TRK_SMALL] = NULL;
 	    }
 	}
     }
@@ -276,7 +275,7 @@ void nm_core_driver_exit(struct nm_core*p_core)
 	      for(trk_id = 0 ; trk_id < p_drv->nb_tracks; trk_id++)
 		{
 		  p_gdrv->receptacle.driver->disconnect(p_gdrv->receptacle._status, p_gate, p_drv, trk_id);
-		  p_gdrv->p_in_rq_array[trk_id] = NULL;
+		  p_gdrv->p_pw_recv[trk_id] = NULL;
 		}
 	    }
 	}

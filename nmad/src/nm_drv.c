@@ -17,24 +17,19 @@
 
 PADICO_MODULE_HOOK(NewMad_Core);
 
-static int nm_core_driver_load(nm_core_t p_core, puk_component_t driver, nm_drv_t*pp_drv);
 
-static int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char**p_url);
-
-
-/** Load a driver.
- *
- * Out parameters:
- * p_id  - contains the id of the new driver
+/** Load and initialize a driver with a parameter,
+ * and applying numa binding in-between.
  */
-int nm_core_driver_load(nm_core_t p_core,
-			puk_component_t driver_assembly,
-			nm_drv_t*pp_drv)
+int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
+			     struct nm_driver_query_param*param,
+			     nm_drv_t *pp_drv, const char**p_url)
 {
+  /* ** allocate & init nm_drv */
   nm_drv_t p_drv = nm_drv_new();
-  assert(driver_assembly != NULL);
+  assert(driver_component != NULL);
   p_drv->p_core    = p_core;
-  p_drv->assembly  = driver_assembly;
+  p_drv->assembly  = driver_component;
   p_drv->driver    = puk_component_get_driver_NewMad_Driver(p_drv->assembly, NULL);
   p_drv->p_in_rq   = NULL;
   p_drv->max_small = NM_LEN_UNDEFINED;
@@ -42,99 +37,22 @@ int nm_core_driver_load(nm_core_t p_core,
 #ifdef PM2_TOPOLOGY
   p_drv->profile.cpuset = NULL;
 #endif /* PM2_TOPOLOGY */
-
   nm_drv_list_push_back(&p_core->driver_list, p_drv);
   p_core->nb_drivers++;
 
-  *pp_drv = p_drv;
-  return NM_ESUCCESS;
-}
-
-
-
-/** Initialize a driver using previously registered resources.
- *
- * Out parameters:
- * p_url - contains the URL of the driver (memory for the URL is allocated by
- * nm_core)
- */
-int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
-{
-  int err;
-
-  p_drv->p_core = p_core;
-
-  if (!p_drv->driver->init)
-    {
-      err = -NM_EINVAL;
-      goto out;
-    }
-  /* open tracks */
-  const int nb_trks = NM_SO_MAX_TRACKS;
-  /* Track 0- for unexpected packets */
-  p_drv->trk_caps[NM_TRK_SMALL] = (struct nm_minidriver_capabilities_s) { 0 };
-  /* Track 1- for long packets with rendezvous */
-  p_drv->trk_caps[NM_TRK_LARGE] = (struct nm_minidriver_capabilities_s) { 0 };
-
-  err = p_drv->driver->init(p_drv, p_drv->trk_caps, nb_trks);
-  if (err != NM_ESUCCESS)
-    {
-      NM_WARN("drv.init returned %d", err);
-      goto out;
-    }
-  p_drv->nb_tracks = nb_trks;
-
-  const char*drv_url = (*p_drv->driver->get_driver_url)(p_drv);
-  *p_url = drv_url;
-
-#ifdef PIOMAN
-  p_drv->ltask_binding = NULL;
-#endif
-
-  nm_ns_update(p_core, p_drv);
-  err = NM_ESUCCESS;
-
-  const nm_len_t max_small = p_drv->trk_caps[NM_TRK_SMALL].max_msg_size;
-  if(max_small > 0)
-    {
-      p_drv->max_small = max_small;
-    }
-  else
-    {
-      p_drv->max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER);
-    }
-
- out:
-
-  return err;
-}
-
-/** Helper to load and init a driver with a parameter,
- * and applying numa binding in-between.
- */
-int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
-			     struct nm_driver_query_param*param,
-			     nm_drv_t *pp_drv, const char**p_url)
-{
-  nm_drv_t p_drv = NULL;
-  int err = nm_core_driver_load(p_core, driver, &p_drv);
-  if (err != NM_ESUCCESS) 
-    {
-      NM_WARN("nm_core_driver_load returned %d", err);
-      return err;
-    }
-  
+  /* ** driver pre-init */
   if(!p_drv->driver->query)
     {
       NM_FATAL("nmad: FATAL- driver %s has no 'query' method.\n", p_drv->driver->name);
     }
-  err = p_drv->driver->query(p_drv, param, 1);
+  int err = (*p_drv->driver->query)(p_drv, param, 1);
   if(err != NM_ESUCCESS)
     {
       NM_FATAL("nmad: FATAL- error %d while querying driver %s\n", err, p_drv->driver->name);
     }
 
 #ifdef PM2_TOPOLOGY
+  /* ** NUIOA */
   if(!getenv("NMAD_NUIOA_DISABLE"))
     {
       hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
@@ -179,13 +97,45 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
   NM_DISPF("# nmad: nuioa- hwloc not available\n");
 #endif /* PM2_TOPOLOGY */
 
-  err = nm_core_driver_init(p_core, p_drv, p_url);
-  if (err != NM_ESUCCESS) 
+  /* ** driver init*/
+  if(!p_drv->driver->init)
     {
-      NM_WARN("nm_core_driver_init returned %d", err);
-      return err;
+      NM_FATAL("nmad: FATAL- driver %s has no 'init' method.\n", p_drv->driver->name);
     }
-  NM_DISPF("# nmad: driver name = %s; url = %s; max_small = %d\n", driver->name, *p_url, (int)p_drv->max_small);
+  /* open tracks */
+  const int nb_trks = NM_SO_MAX_TRACKS;
+  /* Track 0- for unexpected packets */
+  p_drv->trk_caps[NM_TRK_SMALL] = (struct nm_minidriver_capabilities_s) { 0 };
+  /* Track 1- for long packets with rendezvous */
+  p_drv->trk_caps[NM_TRK_LARGE] = (struct nm_minidriver_capabilities_s) { 0 };
+
+  err = (*p_drv->driver->init)(p_drv, p_drv->trk_caps, nb_trks);
+  if(err != NM_ESUCCESS)
+    {
+      NM_FATAL("drv.init returned %d", err);
+    }
+  p_drv->nb_tracks = nb_trks;
+
+  const char*drv_url = (*p_drv->driver->get_driver_url)(p_drv);
+  *p_url = drv_url;
+
+#ifdef PIOMAN
+  p_drv->ltask_binding = NULL;
+#endif
+
+  nm_ns_update(p_core, p_drv);
+
+  const nm_len_t max_small = p_drv->trk_caps[NM_TRK_SMALL].max_msg_size;
+  if(max_small > 0)
+    {
+      p_drv->max_small = max_small;
+    }
+  else
+    {
+      p_drv->max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER);
+    }
+
+  NM_DISPF("# nmad: driver name = %s; url = %s; max_small = %d\n", driver_component->name, *p_url, (int)p_drv->max_small);
 
   *pp_drv = p_drv;
   return NM_ESUCCESS;

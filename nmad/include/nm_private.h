@@ -123,7 +123,6 @@ static inline int nm_seq_compare(nm_seq_t current, nm_seq_t seq1, nm_seq_t seq2)
 
 /* ** Drivers ********************************************** */
 
-typedef uint16_t nm_drv_id_t;
 
 /* ** Events *********************************************** */
 

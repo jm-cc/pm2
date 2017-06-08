@@ -17,6 +17,9 @@
 #ifndef NM_LOG_H
 #define NM_LOG_H
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #define NM_DISPF(str, ...)						\
   {									\
     if(!(getenv("NMAD_QUIET") || getenv("PADICO_QUIET")))		\

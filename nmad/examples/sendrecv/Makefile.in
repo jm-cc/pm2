@@ -28,11 +28,13 @@ nm_sr_thread: LIBS += -lpthread
 
 nm_sr_iovec: CFLAGS += -g
 
-BENCH += nm_sr_latency
+BENCH += nm_sr_latency nm_sr_self
 
 include @nmad_srcdir@/nmad-tests.mk
 
 test-nm_sr_star: NMAD_NODES = 4
 
 test-nm_sr_event: TEST_FILTER = sort -i
+
+bench-nm_sr_self: NMAD_NODES = 1
 

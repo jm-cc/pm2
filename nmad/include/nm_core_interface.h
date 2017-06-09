@@ -78,9 +78,11 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 
 /* ** Gates ************************************************ */
 
-int nm_core_gate_init(nm_core_t p_core, nm_gate_t *pp_gate);
+typedef int8_t nm_trk_id_t;
 
-int nm_core_gate_connect(nm_core_t p_core, nm_gate_t gate, nm_drv_t  p_drv, const char *url);
+void nm_core_gate_init(nm_core_t p_core, nm_gate_t *pp_gate, nm_drv_vect_t*p_drvs);
+
+void nm_core_gate_connect(nm_core_t p_core, nm_gate_t gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char *url);
 
 
 /* ** Progression ****************************************** */

@@ -62,7 +62,7 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, nm_drv_t p_drv)
   const char *archi = machine_info.machine;
   snprintf(sampling_file_path, sizeof(sampling_file_path),
 	   "%s/var/sampling/%s_%s.nm_ns",
-	   NMAD_ROOT, p_drv->driver->name, archi);
+	   NMAD_ROOT, p_drv->assembly->name, archi);
 
   sampling_file = fopen(sampling_file_path, "r");
   if(sampling_file)
@@ -114,10 +114,10 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, nm_drv_t p_drv)
 	       sampling_file_path);
       p_set->nb_samples = 0;
       p_set->bandwidth_samples = NULL;
-      p_set->bw  = p_drv->profile.bandwidth;
-      p_set->lat = p_drv->profile.latency / 1000.0;
+      p_set->bw  = p_drv->props.profile.bandwidth;
+      p_set->lat = p_drv->props.profile.latency / 1000.0;
       NM_DISPF("# sampling: capabilities for driver %s; lat = %5.2f usec.; bw = %5.2f MB/s\n",
-	       p_drv->driver->name, p_set->lat, p_set->bw);
+	       p_drv->assembly->name, p_set->lat, p_set->bw);
     }
 
   return NM_ESUCCESS;
@@ -281,7 +281,7 @@ int nm_ns_inc_lats(struct nm_core *p_core, nm_drv_t const**p_drvs, int*nb_driver
   return NM_ESUCCESS;
 }
 
-int nm_ns_multiple_split_ratio(nm_len_t len, struct nm_core *p_core,
+int nm_ns_multiple_split_ratio(nm_len_t len, struct nm_core *p_core, struct nm_gate_s*p_gate,
 			       int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
 #ifndef NMAD_SAMPLING
@@ -312,13 +312,15 @@ int nm_ns_multiple_split_ratio(nm_len_t len, struct nm_core *p_core,
     int i;
     for(i = 0; i < *nb_chunks; i++)
       {
-	const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, chunks[i].p_drv);
+	struct nm_trk_s*p_trk = &p_gate->trks[chunks[i].trk_id];
+	const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, p_trk->p_drv);
 	sum_bw += p_set->bw;
       }
     int pending_len = len;
     for(i = 0; i < *nb_chunks - 1; i++)
       {
-	const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, chunks[i].p_drv);
+	struct nm_trk_s*p_trk = &p_gate->trks[chunks[i].trk_id];
+	const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, p_trk->p_drv);
 	const int drv_bw = p_set->bw;
 	chunks[i].len = tbx_aligned((pending_len / sum_bw) * drv_bw, sizeof(nm_len_t));
 	pending_len -= chunks[i].len;

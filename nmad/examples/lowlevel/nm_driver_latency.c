@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2011 (see AUTHORS file)
+ * Copyright (C) 2011-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,49 @@
 
 const int roundtrips = 100000;
 
+static inline void minidriver_send(struct puk_receptacle_NewMad_minidriver_s*r, char*buf, size_t len)
+{
+  int rc = -1;
+  struct iovec v = { .iov_base = buf, .iov_len = len };
+  struct nm_data_s data;
+  if(r->driver->send_post)
+    {
+      (*r->driver->send_post)(r->_status, &v, 1);
+    }
+  else
+    {
+      nm_data_contiguous_build(&data, buf, len);
+      (*r->driver->send_data)(r->_status, &data, 0, len);
+    }
+  do
+    {
+      rc = (*r->driver->send_poll)(r->_status);
+    }
+  while(rc != 0);
+}
+
+static inline void minidriver_recv(struct puk_receptacle_NewMad_minidriver_s*r, char*buf, size_t len)
+{
+  int rc = -1;
+  struct iovec v = { .iov_base = buf, .iov_len = len };
+  struct nm_data_s data;
+  if(r->driver->recv_init)
+    {
+      (*r->driver->recv_init)(r->_status, &v, 1);
+    }
+  else
+    {
+      nm_data_contiguous_build(&data, buf, len);
+      (*r->driver->recv_data)(r->_status, &data, 0, len);
+    }
+  do
+    {
+      rc = (*r->driver->poll_one)(r->_status);
+    }
+  while(rc != 0);
+}
+
+
 int main(int argc, char **argv)
 {
   /* launch nmad session, get gate and driver */
@@ -38,12 +81,10 @@ int main(int argc, char **argv)
   nm_gate_t p_gate = NULL;
   nm_launcher_get_gate(peer, &p_gate);
   assert(p_gate != NULL);
-  nm_drv_t p_drv = nm_drv_default(p_gate);
-  assert(p_drv != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 
   /* take over the driver */
-  nm_core_schedopt_disable(p_drv->p_core);
+  nm_core_schedopt_disable(p_gate->p_core);
 
   /* hack here-
    * make sure the peer node has flushed its pending recv requests,
@@ -52,16 +93,11 @@ int main(int argc, char **argv)
   usleep(500 * 1000);
 
   /* benchmark */
-  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  char buffer = 42;
-  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
-  nm_pw_add_raw(p_pw, &buffer, sizeof(buffer), 0);
-  nm_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
-  
-  p_pw->v[0].iov_base = &buffer;
-  p_pw->v[0].iov_len  = sizeof(buffer);
-  p_pw->length = 1;
+  struct nm_trk_s*p_trk_small = nm_trk_get_by_index(p_gate, NM_TRK_SMALL);
+  struct puk_receptacle_NewMad_minidriver_s*r = &p_trk_small->receptacle;
+  char value = 42;
+  void*buffer = &value;
+  const nm_len_t len = sizeof(value);
 
   if(is_server)
     {
@@ -71,20 +107,8 @@ int main(int argc, char **argv)
 	{
 	  tbx_tick_t t1, t2;
 	  TBX_GET_TICK(t1);
-	  int err = r->driver->post_send_iov(r->_status, p_pw);
-	  while(err == -NM_EAGAIN)
-	    {
-	      err = r->driver->poll_send_iov(r->_status, p_pw);
-	    } 
-	  if(err != NM_ESUCCESS)
-	    abort();
-	  err = r->driver->post_recv_iov(r->_status, p_pw);
-	  while(err == -NM_EAGAIN)
-	    {
-	      err = r->driver->poll_recv_iov(r->_status, p_pw);
-	    }
-	  if(err != NM_ESUCCESS)
-	    abort();
+	  minidriver_send(r, buffer, len);
+	  minidriver_recv(r, buffer, len);
 	  TBX_GET_TICK(t2);
 	  const double delay = TBX_TIMING_DELAY(t1, t2);
 	  const double t = delay / 2;
@@ -98,20 +122,8 @@ int main(int argc, char **argv)
       int i;
       for(i = 0; i < roundtrips; i++)
 	{
-	  int err = r->driver->post_recv_iov(r->_status, p_pw);
-	  while(err == -NM_EAGAIN)
-	    {
-	      err = r->driver->poll_recv_iov(r->_status, p_pw);
-	    }
-	  if(err != NM_ESUCCESS)
-	    abort();
-	  err = r->driver->post_send_iov(r->_status, p_pw);
-	  while(err == -NM_EAGAIN)
-	    {
-	      err = r->driver->poll_send_iov(r->_status, p_pw);
-	    }  
-	  if(err != NM_ESUCCESS)
-	    abort();
+	  minidriver_recv(r, buffer, len);
+	  minidriver_send(r, buffer, len);
 	}
     }
 

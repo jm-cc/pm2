@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2016 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,16 +91,14 @@ static void strat_aggreg_destroy(void*_status)
 static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 {
   struct nm_strat_aggreg_s*p_status = _status;
-  struct nm_core*p_core = p_gate->p_core;
-  nm_gdrv_vect_itor_t i = nm_gdrv_vect_begin(&p_gate->gdrv_array);
-  struct nm_gate_drv*p_gdrv = *i;
-  nm_drv_t p_drv = p_gdrv->p_drv;
-  if((p_gdrv->p_pw_send[NM_TRK_SMALL] == NULL) &&
+  struct nm_trk_s*p_trk_small = &p_gate->trks[NM_TRK_SMALL];
+  struct nm_drv_s*p_drv = p_trk_small->p_drv;
+  if((p_trk_small->p_pw_send == NULL) &&
      !(nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list) &&
        nm_req_chunk_list_empty(&p_gate->req_chunk_list)))
     {
       /* no active send && pending chunks */
-      const nm_len_t max_small = nm_drv_max_small(p_drv);
+      const nm_len_t max_small = nm_drv_max_small(p_trk_small->p_drv);
       struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
       int opt_window = 8;
       /* ** control */
@@ -172,7 +170,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	    }
 	}
     post_send:
-      nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
+      nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
     }
 }
 
@@ -183,16 +181,29 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
   struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_gate->pending_large_recv);
   if(p_pw != NULL)
     {
-      nm_gdrv_vect_itor_t i = nm_gdrv_vect_begin(&p_gate->gdrv_array);
-      struct nm_gate_drv*p_gdrv = *i;
-      nm_drv_t p_drv = p_gdrv->p_drv;
+      struct nm_trk_s*p_trk_large = &p_gate->trks[NM_TRK_LARGE];
+#if 0
+      const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_unpack->data);
+      const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : p_props->size; /* average block size */
+      if(p_trk_large->p_drv->props.capabilities.supports_data || density < NM_LARGE_MIN_DENSITY)
+	{
+	  /* iterator-based data & driver supports data natively || low-density -> send all & copy */
+	}
+      else
+	{
+	  /* one rdv per chunk */
+	  struct nm_large_chunk_context_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
+	  nm_data_chunk_extractor_traversal(&p_unpack->data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
+	}
+#endif
+      
       if(p_pw->length > NM_LARGE_MIN_DENSITY)
 	{
-	  if(p_gdrv->p_pw_recv[NM_TRK_LARGE] == NULL)
+	  if(p_trk_large->p_pw_recv == NULL)
 	    {
 	      /* The large-packet track is available- post recv and RTR */
 	      struct nm_rdv_chunk chunk = 
-		{ .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_LARGE };
+		{ .len = p_pw->length, .trk_id = NM_TRK_LARGE };
 	      nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
 	      nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	    }
@@ -201,7 +212,7 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
 	{
 	  /* small chunk in a large packet- send on trk#0 */
 	  struct nm_rdv_chunk chunk = 
-	    { .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_SMALL };
+	    { .len = p_pw->length, .trk_id = NM_TRK_SMALL };
 	  nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	}

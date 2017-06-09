@@ -27,13 +27,14 @@ PADICO_MODULE_HOOK(NewMad_Core);
  * out parameters:
  * p_id - id of the gate
  */
-int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
+void nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate, nm_drv_vect_t*p_drvs)
 {
   nm_gate_t p_gate = nm_gate_new();
 
   p_gate->status = NM_GATE_STATUS_INIT;
   p_gate->p_core = p_core;
-  nm_gdrv_vect_init(&p_gate->gdrv_array);
+  p_gate->trks = NULL;
+  p_gate->n_trks = 0;
   nm_gtag_table_init(&p_gate->tags);
 
   nm_pkt_wrap_list_init(&p_gate->pending_large_recv);
@@ -52,54 +53,64 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   p_gate->trace_connections_id = nm_trace_gate_count++;
 #endif /* NMAD_TRACE */
 
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  if(r->driver->connect)
+    {
+      nm_drv_vect_t v = (*r->driver->connect)(r->_status, p_gate, *p_drvs);
+      nm_drv_vect_delete(*p_drvs);
+      *p_drvs = v;
+    }
+  p_gate->n_trks = nm_drv_vect_size(*p_drvs);
+  p_gate->trks = malloc(p_gate->n_trks * sizeof(struct nm_trk_s));
+  assert(p_gate->n_trks > 0);
+  int i;
+  for(i = 0; i < p_gate->n_trks; i++)
+    {
+      struct nm_trk_s*p_trk = &p_gate->trks[i];
+      struct nm_drv_s*p_drv = nm_drv_vect_at(*p_drvs, i);
+      /* instantiate driver */
+      p_trk->p_drv = p_drv;
+      p_trk->instance = puk_component_instantiate(p_drv->assembly);
+      puk_instance_indirect_NewMad_minidriver(p_trk->instance, NULL, &p_trk->receptacle);
+      p_trk->p_pw_send = NULL;
+      p_trk->p_pw_recv = NULL;
+      nm_data_null_build(&p_trk->sdata);
+      nm_data_null_build(&p_trk->rdata);
+      p_trk->kind = nm_trk_undefined;
+      if(p_drv->props.capabilities.trk_rdv)
+	p_trk->kind = nm_trk_large;
+      else if(i == 0)
+	p_trk->kind = nm_trk_small;
+      else
+	p_trk->kind = nm_trk_large;
+    }
+
   *pp_gate = p_gate;
-  
-  return NM_ESUCCESS;
 }
 
 /** Connect the process through a gate using a specified driver.
  */
-int nm_core_gate_connect(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_drv, const char*url)
+void nm_core_gate_connect(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_id_t trk_id, const char*url)
 {
   assert(url != NULL);
   nm_core_lock(p_core);
-  struct nm_gate_drv *p_gdrv = TBX_MALLOC(sizeof(struct nm_gate_drv));
-
-  int err;
-
+  struct nm_trk_s*p_trk = nm_trk_get_by_index(p_gate, trk_id);
+  assert(p_trk != NULL);
+  assert(p_trk->p_drv == p_drv);
   p_gate->status = NM_GATE_STATUS_CONNECTING;
-
-  /* instantiate driver */
-  p_gdrv->instance = puk_component_instantiate(p_drv->assembly);
-  puk_instance_indirect_NewMad_Driver(p_gdrv->instance, NULL, &p_gdrv->receptacle);
-
-  /* init gate/driver fields */
-  p_gdrv->p_drv	= p_drv;
-  nm_gdrv_vect_push_back(&p_gate->gdrv_array, p_gdrv);
-
-  /* connect/accept connections */
-  nm_trk_id_t trk_id;
-  for(trk_id = 0; trk_id < p_drv->nb_tracks; trk_id++)
-    {
-      p_gdrv->p_pw_send[trk_id] = NULL;
-      p_gdrv->p_pw_recv[trk_id] = NULL;
-      err = p_gdrv->receptacle.driver->connect(p_gdrv->receptacle._status, p_gate, p_drv, trk_id, url);
-      if(err != NM_ESUCCESS)
-	{
-	  NM_WARN("drv.ops.connect returned %d", err);
-	  goto out;
-	}
-    }
-  err = NM_ESUCCESS;
+  int url_size = strlen(url);
+  void*binary_url = puk_hex_decode(url, &url_size, NULL);
+  const size_t binary_url_size = url_size;
+  struct puk_receptacle_NewMad_minidriver_s*r = &p_trk->receptacle;
+  (*r->driver->connect)(r->_status, binary_url, binary_url_size);
   p_gate->status = NM_GATE_STATUS_CONNECTED;
   /* pre-fill recv on trk #0 */
-  nm_drv_refill_recv(p_drv, p_gate);
+  if(p_trk->kind == nm_trk_small)
+    nm_drv_refill_recv(p_drv, p_gate);
 #ifdef NMAD_TRACE
   nm_trace_container(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_NEW_CONNECTION, p_gate->trace_connections_id);
 #endif /* NMAD_TRACE */
 
- out:
   nm_core_unlock(p_core);
-  return err;
 }
 

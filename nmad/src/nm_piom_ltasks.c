@@ -1,7 +1,7 @@
 /* -*- Mode: C; c-basic-offset:2 ; -*- */
 /*
  * NewMadeleine
- * Copyright (C) 2006-2015 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ static piom_topo_obj_t nm_piom_driver_binding(nm_drv_t p_drv)
 {
   piom_topo_obj_t binding = NULL;
 #if defined(PIOMAN_TOPOLOGY_HWLOC)
-  hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
+  hwloc_cpuset_t cpuset = p_drv->props.profile.cpuset;
   if(cpuset != NULL)
     {
       char s_binding[64];
@@ -132,6 +132,7 @@ static int nm_ltask_pw_recv(void*_pw)
 static int nm_task_block_recv(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
+  /*
   struct nm_core*p_core = p_pw->p_gate->p_core;
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err = r->driver->wait_recv_iov(r->_status, p_pw);
@@ -156,6 +157,8 @@ static int nm_task_block_recv(void*_pw)
     {
       NM_WARN("wait_recv returned err = %d\n", err);
     }
+  */
+  NM_FATAL("blocking recv not supported with minidriver.\n");
   return NM_ESUCCESS;
 }
 
@@ -173,6 +176,7 @@ static int nm_ltask_pw_send(void*_pw)
 static int nm_task_block_send(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
+  /*
   struct nm_core*p_core = p_pw->p_gate->p_core;
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err;
@@ -193,6 +197,8 @@ static int nm_task_block_send(void*_pw)
       NM_WARN("wait_send returned %d", err);
     }
   nm_core_unlock(p_core);
+  */
+  NM_FATAL("blocking send not supported with minidriver.\n");
   return NM_ESUCCESS;
 }
 
@@ -234,9 +240,9 @@ void nm_ltask_submit_pw_recv(struct nm_pkt_wrap_s*p_pw)
   piom_ltask_set_name(&p_pw->ltask, "nmad: poll_recv");
   piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
   nm_pw_ref_inc(p_pw);
-  if(p_pw->p_drv->trk_caps[p_pw->trk_id].is_exportable)
+  if(p_pw->p_drv->props.capabilities.is_exportable)
     {
-      piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_recv, 2 * p_pw->p_drv->profile.latency);
+      piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_recv, 2 * p_pw->p_drv->props.profile.latency);
     }
   piom_ltask_submit(&p_pw->ltask);	
 }
@@ -250,10 +256,10 @@ void nm_ltask_submit_pw_send(struct nm_pkt_wrap_s*p_pw)
   piom_ltask_set_name(&p_pw->ltask, "nmad: pw_send");
   piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
   nm_pw_ref_inc(p_pw);
-  assert(p_pw->p_gdrv);
-  if(p_pw->p_drv->trk_caps[p_pw->trk_id].is_exportable)
+  assert(p_pw->p_trk);
+  if(p_pw->p_drv->props.capabilities.is_exportable)
     {
-      piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_send, 2 * p_pw->p_drv->profile.latency);
+      piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_send, 2 * p_pw->p_drv->props.profile.latency);
     }
   piom_ltask_submit(&p_pw->ltask);
 }

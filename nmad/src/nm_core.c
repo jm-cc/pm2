@@ -156,9 +156,9 @@ int nm_schedule(struct nm_core*p_core)
 	  nm_pw_poll_send(p_pw);
 	}
     }
-
+  /*
   nm_out_prefetch(p_core);
-  
+  */
 #ifdef DEBUG
   scheduling_in_progress = 0;
 #endif /* DEBUG */
@@ -398,179 +398,12 @@ void nm_core_status_event(nm_core_t p_core, const struct nm_core_event_s*const p
 puk_component_t nm_core_component_load(const char*entity, const char*name)
 {
   puk_component_t component = NULL;
-  if((strcmp(entity, "Driver") == 0) && (strcmp(name, "self") == 0))
+  char component_name[1024];
+  snprintf(component_name, 1024, "NewMad_%s_%s", entity, name);
+  component = puk_component_resolve(component_name);
+  if(component == NULL)
     {
-      static const char minidriver_self[] =
-	"<puk:composite id=\"nm:miniself\">"
-	"  <puk:component id=\"0\" name=\"Minidriver_self\"/>"
-	"  <puk:component id=\"1\" name=\"Minidriver_self\"/>"
-	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
-	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
-	"</puk:composite>";
-      component = puk_component_parse(minidriver_self);
-      if(component == NULL)
-	{
-	  padico_fatal("nmad: failed to load component '%s'\n", minidriver_self);
-	}
-    }
-  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "local") == 0))
-    {
-      static const char minidriver_local[] =
-	"<puk:composite id=\"nm:minilocal\">"
-	"  <puk:component id=\"0\" name=\"Minidriver_local\"/>"
-	"  <puk:component id=\"1\" name=\"Minidriver_local\"/>"
-	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
-	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
-	"</puk:composite>";
-      component = puk_component_parse(minidriver_local);
-      if(component == NULL)
-	{
-	  padico_fatal("nmad: failed to load component '%s'\n", minidriver_local);
-	}
-    }
-  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "tcp") == 0))
-    {
-      static const char minidriver_tcp[] =
-	"<puk:composite id=\"nm:nmminitcp\">"
-	"  <puk:component id=\"0\" name=\"Minidriver_tcp\"/>"
-	"  <puk:component id=\"1\" name=\"Minidriver_tcp\"/>"
-	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
-	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
-	"</puk:composite>";
-      component = puk_component_parse(minidriver_tcp);
-      if(component == NULL)
-	{
-	  padico_fatal("nmad: failed to load component '%s'\n", minidriver_tcp);
-	}
-    }
-  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "dcfa") == 0))
-    {
-      static const char dcfa[] = 
-	"<puk:composite id=\"nm:dcfa\">"
-	"  <puk:component id=\"0\" name=\"NewMad_dcfa_bycopy\"/>"
-	"  <puk:component id=\"1\" name=\"NewMad_dcfa_lr2\"/>"
-	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
-	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
-	"</puk:composite>";
-      component = puk_component_parse(dcfa);
-      if(component == NULL)
-	{
-	  padico_fatal("nmad: failed to load component '%s'\n", dcfa);
-	}
-    }
-  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "shm") == 0))
-    {
-      static const char minidriver_shm[] = 
-	"<puk:composite id=\"nm:shm-pipe\">"
-	"  <puk:component id=\"0\" name=\"Minidriver_shm\"/>"
-	"  <puk:component id=\"1\" name=\"Minidriver_largeshm\"/>"
-	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
-	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
-	"</puk:composite>";
-      component = puk_component_parse(minidriver_shm);
-      if(component == NULL)
-	{
-	  padico_fatal("nmad: failed to load component '%s'\n", minidriver_shm);
-	}
-    }
-  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "cma") == 0))
-    {
-      static const char minidriver_cma[] = 
-	"<puk:composite id=\"nm:shm-cma\">"
-	"  <puk:component id=\"0\" name=\"Minidriver_shm\"/>"
-	"  <puk:component id=\"1\" name=\"Minidriver_CMA\"/>"
-	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
-	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
-	"</puk:composite>";
-      component = puk_component_parse(minidriver_cma);
-      if(component == NULL)
-	{
-	  padico_fatal("nmad: failed to load component '%s'\n", minidriver_cma);
-	}
-    }
-  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "ibverbs") == 0))
-    {
-      static const char ib_lr2[] = 
-	"<puk:composite id=\"nm:ib-lr2\">"
-	"  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
-	"  <puk:component id=\"1\" name=\"NewMad_ibverbs_lr2\"/>"
-	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
-	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
-	"</puk:composite>";
-      static const char ib_lz4[] = 
-	"<puk:composite id=\"nm:ib-lz4\">"
-	"  <puk:component id=\"0\" name=\"NewMad_ibverbs_lz4\"/>"
-	"  <puk:component id=\"1\" name=\"NewMad_ibverbs_lz4\"/>"
-	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
-	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
-	"</puk:composite>";
-      static const char ib_rcache[] = 
-	"<puk:composite id=\"nm:ib-rcache\">"
-	"  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
-	"  <puk:component id=\"1\" name=\"NewMad_ibverbs_rcache\"/>"
-	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
-	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
-	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
-	"</puk:composite>";
-      static const char*ib_drv = NULL;
-      if(ib_drv == NULL)
-	{
-	  if(getenv("NMAD_IBVERBS_RCACHE") != NULL)
-	    {
-	      ib_drv = ib_rcache;
-	      NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
-	    }
-	  else if(getenv("NMAD_IBVERBS_LZ4") != NULL)
-	    {
-	      ib_drv = ib_lz4;
-	      NM_DISPF("# nmad ibverbs: LZ4 forced by environment.\n");
-	    }
-	  else
-	    {
-	      ib_drv = ib_lr2;
-	    }
-	}
-      component = puk_component_parse(ib_drv);
-      if(component == NULL)
-	{
-	  padico_fatal("nmad: failed to load component '%s'\n", ib_drv);
-	}
-    }
-  else
-    {
-      char component_name[1024];
-      snprintf(component_name, 1024, "NewMad_%s_%s", entity, name);
-      component = puk_component_resolve(component_name);
-      if(component == NULL)
-	{
-	  padico_fatal("nmad: failed to load component '%s'\n", component_name);
-	}
+      padico_fatal("nmad: failed to load component '%s'\n", component_name);
     }
   return component;
 }

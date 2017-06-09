@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2016 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,22 +91,22 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 {
   struct nm_strat_split_balance*p_status = _status;
   struct nm_core*p_core = p_gate->p_core;
-  int nb_drivers = p_gate->p_core->nb_drivers;
   int n = 0;
   nm_drv_t const*p_drvs = NULL;
+  int nb_drivers = p_gate->n_trks;
   nm_ns_inc_lats(p_gate->p_core, &p_drvs, &nb_drivers);
-  assert(nb_drivers > 0);
   for(n = 0; n < nb_drivers; n++)
     {
+      struct nm_trk_s*p_trk = &p_gate->trks[n];
+      if(p_trk->kind != nm_trk_small)
+	continue;
+      struct nm_drv_s*p_drv = p_trk->p_drv;
       if(nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list) &&
 	 nm_req_chunk_list_empty(&p_gate->req_chunk_list))
 	break;
-      nm_drv_t p_drv = p_drvs[n];
-      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
       /* find a driver with no active message on any track */
-      if((p_gdrv != NULL) &&
-	 (p_gdrv->p_pw_send[NM_TRK_SMALL] == NULL) &&
-	 (p_gdrv->p_pw_send[NM_TRK_LARGE] == NULL))
+      /* TODO- */
+      if(p_trk->p_pw_send == NULL)
 	{
 	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
 	  /* ** control */
@@ -198,7 +198,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 		}
 	    }
 	post_send:
-	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
+	  nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
 	}
     }
 }
@@ -210,21 +210,19 @@ static void strat_split_balance_rdv_accept(void*_status, nm_gate_t p_gate)
   struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_gate->pending_large_recv);
   if(p_pw != NULL)
     {
-      int nb_drivers = p_gate->p_core->nb_drivers;
+      int nb_drivers = p_gate->n_trks;
       int chunk_index = 0;
       struct nm_rdv_chunk chunks[nb_drivers];
-      const nm_trk_id_t trk_id = NM_TRK_LARGE;
       nm_drv_t const*ordered_drv_id_by_bw = NULL;
       nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw, &nb_drivers);
       int i;
       for(i = 0; i < nb_drivers; i++)
 	{
 	  nm_drv_t p_drv = ordered_drv_id_by_bw[i];
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	  if(p_gdrv != NULL && p_gdrv->p_pw_recv[trk_id] == NULL)
+	  struct nm_trk_s*p_trk = nm_gate_trk_get(p_gate, p_drv);
+	  if(p_trk != NULL && p_trk->p_pw_recv == NULL)
 	    {
-	      chunks[chunk_index].p_drv = p_drv;
-	      chunks[chunk_index].trk_id = NM_TRK_LARGE;
+	      chunks[chunk_index].trk_id = i;
 	      chunk_index++;
 	    }
 	}
@@ -235,7 +233,7 @@ static void strat_split_balance_rdv_accept(void*_status, nm_gate_t p_gate)
 	}
       else if(nb_chunks > 1)
 	{
-	  nm_ns_multiple_split_ratio(p_pw->length, p_gate->p_core, &nb_chunks, chunks);
+	  nm_ns_multiple_split_ratio(p_pw->length, p_gate->p_core, p_gate, &nb_chunks, chunks);
 	}      
       if(nb_chunks > 0)
 	{

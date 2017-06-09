@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_MOD = NewMad_Driver_minidriver
+TARGET_MOD = 
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 

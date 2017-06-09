@@ -37,18 +37,22 @@ static inline void nm_gtag_dtor(struct nm_gtag_s*p_so_tag)
 
 NM_TAG_TABLE_TYPE(nm_gtag, struct nm_gtag_s);
 
-
-/** Per driver gate related data. */
-struct nm_gate_drv
+/** a track on a given gate */
+struct nm_trk_s
 {
-  nm_drv_t p_drv;                                   /**< driver reference */
-  struct puk_receptacle_NewMad_Driver_s receptacle; /**< receptacle for the driver */
+  struct nm_drv_s*p_drv;                            /**< driver attached to the track */
+  struct puk_receptacle_NewMad_minidriver_s receptacle; /**< receptacle for the driver */
   puk_instance_t instance;                          /**< driver instance */
-  struct nm_pkt_wrap_s*p_pw_recv[NM_SO_MAX_TRACKS]; /**< the active pw for recv on the given trk */
-  struct nm_pkt_wrap_s*p_pw_send[NM_SO_MAX_TRACKS]; /**< the active pw for send on the given trk */
+  struct nm_pkt_wrap_s*p_pw_recv;                   /**< the active pw for recv on the given trk */
+  struct nm_pkt_wrap_s*p_pw_send;                   /**< the active pw for send on the given trk */
+  struct nm_data_s sdata, rdata;                    /**< nm_data for above pw, in case in needs to be flatten on the fly */
+  enum nm_trk_kind_e
+    {
+      nm_trk_undefined,
+      nm_trk_small, /**< small packets with headers & parsing */
+      nm_trk_large  /**< large packets with rdv, no header */
+    } kind;
 };
-
-PUK_VECT_TYPE(nm_gdrv, struct nm_gate_drv*);
 
 /** status of a gate, used for dynamic connections */
 enum nm_gate_status_e
@@ -72,6 +76,12 @@ struct nm_gate_s
   /** current status of the gate (connected / not connected) */
   nm_gate_status_t status;
 
+  /** Number of tracks opened on this driver. */
+  int n_trks;
+
+  /** Tracks opened for each driver. */
+  struct nm_trk_s*trks;
+
   /** table of tag status */
   struct nm_gtag_table_s tags;
 
@@ -89,9 +99,6 @@ struct nm_gate_s
 
   /** control chunks posted to the gate */
   struct nm_ctrl_chunk_list_s ctrl_chunk_list;
-  
-  /** Gate data for each driver. */
-  struct nm_gdrv_vect_s gdrv_array;
 
   /** NM core object. */
   struct nm_core *p_core;

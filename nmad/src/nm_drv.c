@@ -30,32 +30,33 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
   assert(driver_component != NULL);
   p_drv->p_core    = p_core;
   p_drv->assembly  = driver_component;
-  p_drv->driver    = puk_component_get_driver_NewMad_Driver(p_drv->assembly, NULL);
+  p_drv->driver    = puk_component_get_driver_NewMad_minidriver(p_drv->assembly, NULL);
+  p_drv->minidriver_context = puk_component_get_context(driver_component, puk_iface_NewMad_minidriver(), NULL);
   p_drv->p_in_rq   = NULL;
-  p_drv->max_small = NM_LEN_UNDEFINED;
-  p_drv->priv = NULL;
+  p_drv->props.capabilities = (struct nm_minidriver_capabilities_s){ 0 };
 #ifdef PM2_TOPOLOGY
-  p_drv->profile.cpuset = NULL;
+  p_drv->props.profile.cpuset = NULL;
 #endif /* PM2_TOPOLOGY */
   nm_drv_list_push_back(&p_core->driver_list, p_drv);
   p_core->nb_drivers++;
+  if(!p_drv->minidriver_context)
+    {
+      NM_FATAL("nmad: FATAL- cannot find context in minidriver component %s. Bad assembly.\n",
+	       driver_component->name);
+    }
 
   /* ** driver pre-init */
-  if(!p_drv->driver->query)
+  if(!p_drv->driver->getprops)
     {
-      NM_FATAL("nmad: FATAL- driver %s has no 'query' method.\n", p_drv->driver->name);
+      NM_FATAL("nmad: FATAL- driver %s has no 'getprops' method.\n", driver_component->name);
     }
-  int err = (*p_drv->driver->query)(p_drv, param, 1);
-  if(err != NM_ESUCCESS)
-    {
-      NM_FATAL("nmad: FATAL- error %d while querying driver %s\n", err, p_drv->driver->name);
-    }
+  (*p_drv->driver->getprops)(p_drv->minidriver_context, &p_drv->props);
 
 #ifdef PM2_TOPOLOGY
   /* ** NUIOA */
   if(!getenv("NMAD_NUIOA_DISABLE"))
     {
-      hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
+      hwloc_cpuset_t cpuset = p_drv->props.profile.cpuset;
       if(cpuset != NULL 
 	 && !hwloc_bitmap_isequal(cpuset, hwloc_topology_get_complete_cpuset(topology)))
 	{
@@ -65,7 +66,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
 	  char*s_current = NULL;
 	  hwloc_bitmap_asprintf(&s_current, current);
 	  char*s_drv_cpuset = NULL;
-	  hwloc_bitmap_asprintf(&s_drv_cpuset, p_drv->profile.cpuset);
+	  hwloc_bitmap_asprintf(&s_drv_cpuset, p_drv->props.profile.cpuset);
 	  if((rc == 0) && !hwloc_bitmap_isequal(current, hwloc_topology_get_complete_cpuset(topology)))
 	    {
 	      NM_DISPF("# nmad: nuioa- thread already bound to %s. Not binding to %s.\n", s_current, s_drv_cpuset);
@@ -74,7 +75,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
 	    {
 	      NM_DISPF("# nmad: nuioa- driver '%s' has a preferred location. Binding to %s.\n",
 		       p_drv->assembly->name, s_drv_cpuset);
-	      rc = hwloc_set_cpubind(topology, p_drv->profile.cpuset, HWLOC_CPUBIND_THREAD);
+	      rc = hwloc_set_cpubind(topology, p_drv->props.profile.cpuset, HWLOC_CPUBIND_THREAD);
 	      if(rc)
 		{
 		  fprintf(stderr, "nmad: WARNING- hwloc_set_cpubind failed.\n");
@@ -100,23 +101,14 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
   /* ** driver init*/
   if(!p_drv->driver->init)
     {
-      NM_FATAL("nmad: FATAL- driver %s has no 'init' method.\n", p_drv->driver->name);
+      NM_FATAL("nmad: FATAL- driver %s has no 'init' method.\n", p_drv->assembly->name);
     }
-  /* open tracks */
-  const int nb_trks = NM_SO_MAX_TRACKS;
-  /* Track 0- for unexpected packets */
-  p_drv->trk_caps[NM_TRK_SMALL] = (struct nm_minidriver_capabilities_s) { 0 };
-  /* Track 1- for long packets with rendezvous */
-  p_drv->trk_caps[NM_TRK_LARGE] = (struct nm_minidriver_capabilities_s) { 0 };
-
-  err = (*p_drv->driver->init)(p_drv, p_drv->trk_caps, nb_trks);
-  if(err != NM_ESUCCESS)
-    {
-      NM_FATAL("drv.init returned %d", err);
-    }
-  p_drv->nb_tracks = nb_trks;
-
-  const char*drv_url = (*p_drv->driver->get_driver_url)(p_drv);
+  /* init driver & get url */
+  const void*url = NULL;
+  size_t url_size = 0;
+  (*p_drv->driver->init)(p_drv->minidriver_context, &url, &url_size);
+  int iurl_size = url_size;
+  const char*drv_url = puk_hex_encode(url, &iurl_size, NULL);
   *p_url = drv_url;
 
 #ifdef PIOMAN
@@ -125,18 +117,13 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
 
   nm_ns_update(p_core, p_drv);
 
-  const nm_len_t max_small = p_drv->trk_caps[NM_TRK_SMALL].max_msg_size;
-  if(max_small > 0)
+  if(p_drv->props.capabilities.max_msg_size == 0)
     {
-      p_drv->max_small = max_small;
-    }
-  else
-    {
-      p_drv->max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER);
+      p_drv->props.capabilities.max_msg_size = NM_LEN_MAX;
     }
 
-  NM_DISPF("# nmad: driver name = %s; url = %s; max_small = %d\n", driver_component->name, *p_url, (int)p_drv->max_small);
-
+  NM_DISPF("# nmad: driver name = %s; url = %s; max_msg_size = %llu\n",
+	   driver_component->name, *p_url, (unsigned long long)p_drv->props.capabilities.max_msg_size);
   *pp_drv = p_drv;
   return NM_ESUCCESS;
 }
@@ -155,38 +142,40 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	{
 	  struct nm_pkt_wrap_s*p_pw = p_drv->p_in_rq;
 	  p_drv->p_in_rq = NULL;
-	  if(p_drv->driver->cancel_recv_iov)
-	    p_drv->driver->cancel_recv_iov(NULL, p_pw);
+	  if(p_drv->driver->cancel_recv)
+	    p_drv->driver->cancel_recv(NULL);
 #ifndef PIOMAN
 	  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #endif /* PIOMAN */
 	  nm_pkt_wrap_list_push_back(pending_pw, p_pw);
 	}
-      
-      /* cancel pre-posted pw on trk #0 for each gate */
-      nm_gate_t p_gate = NULL;
-      NM_FOR_EACH_GATE(p_gate, p_core)
+    }
+  
+  /* cancel pre-posted pw on trk #0 for each gate */
+  nm_gate_t p_gate = NULL;
+  NM_FOR_EACH_GATE(p_gate, p_core)
+    {
+      int i;
+      for(i = 0; i < p_gate->n_trks; i++)
 	{
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	  if(p_gdrv != NULL)
+	  struct nm_trk_s*p_trk = &p_gate->trks[i];
+	  struct nm_pkt_wrap_s*p_pw = p_trk->p_pw_recv;
+	  if(p_pw)
 	    {
-	      struct nm_pkt_wrap_s*p_pw = p_gdrv->p_pw_recv[NM_TRK_SMALL];
-	      if(p_pw)
-		{
-		  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-		  if(r->driver->cancel_recv_iov)
-		    r->driver->cancel_recv_iov(r->_status, p_pw);
-		  p_gdrv->p_pw_recv[NM_TRK_SMALL] = NULL;
-
+	      struct puk_receptacle_NewMad_minidriver_s*r = &p_trk->receptacle;
+	      if(r->driver->cancel_recv)
+		r->driver->cancel_recv(r->_status);
+	      p_trk->p_pw_recv = NULL;
+	      
 #ifndef PIOMAN
-		  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
+	      nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
 #endif
-		  nm_pkt_wrap_list_push_back(pending_pw, p_pw);
-		}
-	      p_gdrv->p_pw_recv[NM_TRK_SMALL] = NULL;
+	      nm_pkt_wrap_list_push_back(pending_pw, p_pw);
 	    }
+	  p_trk->p_pw_recv= NULL;
 	}
     }
+    
   /* cancel ltasks with core unlocked */
   nm_core_unlock(p_core);
   struct nm_pkt_wrap_s*p_pw = NULL;
@@ -216,41 +205,23 @@ void nm_core_driver_exit(struct nm_core*p_core)
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       p_gate->status = NM_GATE_STATUS_DISCONNECTED;
-      NM_FOR_EACH_DRIVER(p_drv, p_core)
+      int i;
+      for(i = 0; i < p_gate->n_trks; i++)
 	{
-	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	  if(p_gdrv != NULL)
+	  struct nm_trk_s*p_trk = &p_gate->trks[i];
+	  if(p_trk->instance != NULL)
 	    {
-	      nm_trk_id_t trk_id;
-	      for(trk_id = 0 ; trk_id < p_drv->nb_tracks; trk_id++)
-		{
-		  p_gdrv->receptacle.driver->disconnect(p_gdrv->receptacle._status, p_gate, p_drv, trk_id);
-		  p_gdrv->p_pw_recv[trk_id] = NULL;
-		}
+	      puk_instance_destroy(p_trk->instance);
+	      p_trk->instance = NULL;
 	    }
 	}
     }
-  /* deinstantiate all drivers */
-  NM_FOR_EACH_GATE(p_gate, p_core)
-    {
-      nm_gdrv_vect_itor_t i;
-      puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
-	{
-	  struct nm_gate_drv*p_gdrv = *i;
-	  *i = NULL;
-	  if(p_gdrv->instance != NULL)
-	    {
-	      puk_instance_destroy(p_gdrv->instance);
-	      p_gdrv->instance = NULL;
-	    }
-	  TBX_FREE(p_gdrv);
-	}
-    }
+  /* close all drivers */
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
       if(p_drv->driver->close)
 	{
-	  (*p_drv->driver->close)(p_drv);
+	  (*p_drv->driver->close)(p_drv->minidriver_context);
 	}
     }
   /* close all gates */
@@ -258,7 +229,6 @@ void nm_core_driver_exit(struct nm_core*p_core)
     {
       nm_gtag_table_destroy(&p_gate->tags);
       puk_instance_destroy(p_gate->strategy_instance);
-      nm_gdrv_vect_destroy(&p_gate->gdrv_array);
     }
   do
     {

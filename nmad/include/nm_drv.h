@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,29 +28,18 @@ struct nm_drv_s
   /** link to insert this driver into the driver_list in core */
   PUK_LIST_LINK(nm_drv);
   
-  /** Assembly associated to the driver */
+  /** Component assembly associated to the driver */
   puk_component_t assembly;
-  
+  /** driver contexts for given component */
+  puk_context_t minidriver_context;
   /** Driver interface, for use when no instance is needed */
-  const struct nm_drv_iface_s*driver;
+  const struct nm_minidriver_iface_s*driver;
     
-  /** recv request for trk#0 if driver supports recv_any */
+  /** global recv request if driver supports recv_any */
   struct nm_pkt_wrap_s*p_in_rq;
 
-  /** Private structure of the driver. */
-  void *priv;
-
-  /** Number of tracks opened on this driver. */
-  int nb_tracks;
-
-  /** track capabilities */
-  struct nm_minidriver_capabilities_s trk_caps[NM_SO_MAX_TRACKS];
-  
-  /** size of largest packet on trk#0 */
-  nm_len_t max_small;
-  
-  /** Performance information */
-  struct nm_drv_profile_s profile;
+  /** driver properties (profile & capabilities) */
+  struct nm_minidriver_properties_s props;
 
 #ifdef PIOMAN
   /** binding for the pioman ltask */

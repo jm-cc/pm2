@@ -88,8 +88,7 @@ struct nm_pkt_wrap_s
   nm_drv_t p_drv;            /**< assignated driver.  */
   nm_trk_id_t trk_id;        /**< assignated track ID.  */
   nm_gate_t p_gate;          /**< assignated gate, if relevant. */
-  struct nm_gate_drv*p_gdrv; /**< assignated gate driver, if relevant. */
-  void*drv_priv;             /**< driver implementation data.  */
+  struct nm_trk_s*p_trk;     /**< assignated track, if relevant. */
     
   /* ** packet / data description fields. */
 
@@ -161,11 +160,9 @@ int nm_pw_add_control(struct nm_pkt_wrap_s*p_pw, const union nm_header_ctrl_gene
 
 int nm_pw_finalize(struct nm_pkt_wrap_s *p_pw);
 
-void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw,
-		       nm_trk_id_t trk_id, nm_drv_t p_drv);
+void nm_core_post_send( struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate, nm_trk_id_t trk_id);
 
-void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate, 
-		       nm_trk_id_t trk_id, nm_drv_t p_drv);
+void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate, nm_trk_id_t trk_id, nm_drv_t p_drv);
 
 
 #endif /* NM_PKT_WRAP_H */

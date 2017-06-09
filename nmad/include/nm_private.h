@@ -68,8 +68,6 @@ PUK_LFQUEUE_TYPE(nm_pkt_wrap, struct nm_pkt_wrap_s*, NULL, 512);
 
 /* ** Tracks *********************************************** */
 
-typedef int8_t nm_trk_id_t;
-
 #define NM_TRK_SMALL ((nm_trk_id_t)0)
 #define NM_TRK_LARGE ((nm_trk_id_t)1)
 #define NM_TRK_NONE  ((nm_trk_id_t)-1)

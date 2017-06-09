@@ -77,21 +77,20 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
 /** Places a packet in the send request list.
  * to be called from a strategy
  */
-void nm_core_post_send(nm_gate_t p_gate, struct nm_pkt_wrap_s*p_pw,
-		       nm_trk_id_t trk_id, nm_drv_t p_drv)
+void nm_core_post_send(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate, nm_trk_id_t trk_id)
 {
-  nm_core_lock_assert(p_drv->p_core);
+  nm_core_lock_assert(p_gate->p_core);
   /* Packet is assigned to given track, driver, and gate */
-  nm_pw_assign(p_pw, trk_id, p_drv, p_gate);
+  nm_pw_assign(p_pw, trk_id, NULL, p_gate);
   p_pw->flags |= NM_PW_SEND;
   if(trk_id == NM_TRK_SMALL)
     {
       assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
     }
   /* append pkt to scheduler post list */
-  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
-  assert(p_gdrv->p_pw_send[trk_id] == NULL);
-  p_gdrv->p_pw_send[trk_id] = p_pw;
+  struct nm_trk_s*p_trk = p_pw->p_trk;
+  assert(p_trk->p_pw_send == NULL);
+  p_trk->p_pw_send = p_pw;
 #ifdef PIOMAN
   nm_ltask_submit_pw_send(p_pw);
 #else
@@ -106,10 +105,9 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
   nm_gate_t const p_gate = p_pw->p_gate;
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_pw_out);
-  NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
-	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
-  assert(p_pw->p_gdrv->p_pw_send[p_pw->trk_id] == p_pw);
-  p_pw->p_gdrv->p_pw_send[p_pw->trk_id] = NULL;
+  NM_TRACEF("send request complete: gate %p, drv %p, trk %d", p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
+  assert(p_pw->p_trk->p_pw_send == p_pw);
+  p_pw->p_trk->p_pw_send = NULL;
   while(!nm_req_chunk_list_empty(&p_pw->req_chunks))
     {
       struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_pop_front(&p_pw->req_chunks);
@@ -151,8 +149,16 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
   struct nm_core*p_core = p_pw->p_gate->p_core;
   nm_core_nolock_assert(p_core);
   assert(p_pw->flags & NM_PW_FINALIZED || p_pw->flags & NM_PW_NOHEADER);
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = (*r->driver->poll_send_iov)(r->_status, p_pw);
+  struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
+  int err = (*r->driver->send_poll)(r->_status);
+#ifdef DEBUG
+  if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && (r->driver->send_post == NULL))
+    {
+      struct nm_data_s*p_data = &p_pw->p_trk->sdata;
+      assert(!nm_data_isnull(p_data));
+      nm_data_null_build(p_data);
+    }
+#endif /* DEBUG */
   if(err == NM_ESUCCESS)
     {
 #ifndef PIOMAN
@@ -172,6 +178,7 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_core*p_core = p_pw->p_drv->p_core;
+  struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
   /* no lock needed; only this ltask is allowed to touch the pw */
   nm_core_nolock_assert(p_core);
 
@@ -182,55 +189,67 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   if(p_pw->flags & NM_PW_GLOBAL_HEADER)
     nm_pw_finalize(p_pw);
 
-  /* flatten data if needed */
-  if((p_pw->p_data != NULL) &&
-     ((p_pw->flags & NM_PW_DATA_COPY) || !p_pw->p_drv->trk_caps[p_pw->trk_id].supports_data))
+  if(p_pw->p_data)
     {
-      const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pw->p_data);
-      void*buf = NULL;
-      if(p_props->is_contig)
+      /* ** pw contains nm_data; flatten if needed */
+      if((p_pw->flags & NM_PW_DATA_COPY) || !p_pw->p_trk->p_drv->props.capabilities.supports_data)
 	{
-	  buf = nm_data_baseptr_get(p_pw->p_data) + p_pw->chunk_offset;
+	  const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pw->p_data);
+	  void*buf = NULL;
+	  if(p_props->is_contig)
+	    {
+	      buf = nm_data_baseptr_get(p_pw->p_data) + p_pw->chunk_offset;
+	    }
+	  else
+	    {
+	      buf = malloc(p_pw->length);
+	      if(buf == NULL)
+		{
+		  NM_FATAL("out of memory.\n");
+		}
+	      nm_data_copy_from(p_pw->p_data, p_pw->chunk_offset, p_pw->length, buf);
+	      p_pw->flags |= NM_PW_DYNAMIC_V0;
+	    }
+	  struct iovec*vec = nm_pw_grow_iovec(p_pw);
+	  vec->iov_base = (void*)buf;
+	  vec->iov_len = p_pw->length;
+	  p_pw->p_data = NULL;
+	  (*r->driver->send_post)(r->_status, p_pw->v, p_pw->v_nb);
 	}
       else
 	{
-	  buf = malloc(p_pw->length);
-	  if(buf == NULL)
-	    {
-	      NM_FATAL("out of memory.\n");
-	    }
-	  nm_data_copy_from(p_pw->p_data, p_pw->chunk_offset, p_pw->length, buf);
-	  p_pw->flags |= NM_PW_DYNAMIC_V0;
+	  /* native nm_data support */
+	  (*r->driver->send_data)(r->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
 	}
-      struct iovec*vec = nm_pw_grow_iovec(p_pw);
-      vec->iov_base = (void*)buf;
-      vec->iov_len = p_pw->length;
-      p_pw->p_data = NULL;
-    }
-  /* post request on driver */
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = (*r->driver->post_send_iov)(r->_status, p_pw);
-  
-  if (err == -NM_EAGAIN)
-    {
-      p_pw->flags |= NM_PW_POSTED;
-#ifndef PIOMAN
-      /* put the request in the list of pending requests; no lock needed since no thread without pioman */
-      nm_pkt_wrap_list_push_back(&p_core->pending_send_list, p_pw);
-#endif /* PIOMAN */
-    } 
-  else if(err == NM_ESUCCESS)
-    {
-      /* immediate succes, process request completion */
-      nm_pw_completed_enqueue(p_core, p_pw);
     }
   else
     {
-      NM_FATAL("post_send failed- err = %d", err);
+      /* ** pw contains iovec */
+      if(r->driver->send_post)
+	{
+	  (*r->driver->send_post)(r->_status, &p_pw->v[0], p_pw->v_nb);
+	}
+      else
+	{
+	  assert(r->driver->send_data);
+	  struct nm_data_s*p_data = &p_pw->p_trk->sdata;
+	  assert(nm_data_isnull(p_data));
+	  nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
+	  (*r->driver->send_data)(r->_status, p_data, 0 /* chunk_offset */, p_pw->length);
+	}
     }
+  p_pw->flags |= NM_PW_POSTED;
+#ifndef PIOMAN
+  /* put the request in the list of pending requests; no lock needed since no thread without pioman */
+  nm_pkt_wrap_list_push_back(&p_core->pending_send_list, p_pw);
+#endif /* PIOMAN */
+  
+  nm_pw_poll_send(p_pw);
+  
 }
 
-#ifndef PIOMAN
+#if 0 /* #ifndef PIOMAN */
+/* prefetch disabled for now */
 void nm_out_prefetch(struct nm_core*p_core)
 {
   /* check whether all drivers are idle */

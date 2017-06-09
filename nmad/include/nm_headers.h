@@ -118,8 +118,7 @@ struct nm_header_ctrl_rtr_s
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_RTR */
   nm_core_tag_t tag_id; /**< tag of the acknowledged data */
   nm_seq_t seq;
-  nm_trk_id_t trk_id;
-  uint16_t drv_index;   /**< index of the driver relative to the gate */
+  nm_trk_id_t trk_id;   /**< index of the track relative to the gate */
   nm_len_t chunk_offset;
   nm_len_t chunk_len;
 } __attribute__((packed));
@@ -238,15 +237,14 @@ static inline void nm_header_init_rdv(union nm_header_ctrl_generic_s*p_ctrl, str
 }
 
 static inline void nm_header_init_rtr(union nm_header_ctrl_generic_s*p_ctrl, nm_core_tag_t tag, nm_seq_t seq,
-				      uint16_t drv_index, nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
+				      nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
 { 
-  p_ctrl->rtr.proto_id = NM_PROTO_RTR;
-  p_ctrl->rtr.tag_id   = tag;
-  p_ctrl->rtr.seq      = seq;
-  p_ctrl->rtr.trk_id   = trk_id;
-  p_ctrl->rtr.drv_index = drv_index;
+  p_ctrl->rtr.proto_id     = NM_PROTO_RTR;
+  p_ctrl->rtr.tag_id       = tag;
+  p_ctrl->rtr.seq          = seq;
+  p_ctrl->rtr.trk_id       = trk_id;
   p_ctrl->rtr.chunk_offset = chunk_offset;
-  p_ctrl->rtr.chunk_len = chunk_len;
+  p_ctrl->rtr.chunk_len    = chunk_len;
 }
 
 static inline void nm_header_init_ack(union nm_header_ctrl_generic_s*p_ctrl, nm_core_tag_t tag, nm_seq_t seq)

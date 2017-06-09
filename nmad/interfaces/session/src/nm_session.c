@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,8 @@ static struct
   int ref_count;              /**< ref. counter for core = number of active sessions */
   nm_session_selector_t selector;
   void*selector_arg;
-  nm_drv_t p_drv_self;        /**< driver to connect to self */
+  nm_drv_t p_drv_self_small;   /**< driver to connect to self */
+  nm_drv_t p_drv_self_large;   /**< driver to connect to self */
 } nm_session =
   {
     .p_core    = NULL,
@@ -44,7 +45,8 @@ static struct
     .sessions  = NULL,
     .ref_count = 0,
     .selector  = NULL,
-    .p_drv_self = NULL
+    .p_drv_self_small = NULL,
+    .p_drv_self_large = NULL
   };
 
 
@@ -119,7 +121,8 @@ static void nm_session_init_drivers(void)
   char*token = strtok(driver_string, "+");
   while(token)
     {
-      char*driver_name = strdup(token); /* take a copy so as our writes don't confuse strtok */
+      const char*driver_trk_small = NULL, *driver_trk_large = NULL;
+      const char*driver_name = token;
       char*index_string = strchr(driver_name, ':');
       int index = -1;
       if(index_string)
@@ -128,26 +131,121 @@ static void nm_session_init_drivers(void)
 	  index_string++;
 	  index = atoi(index_string);
 	}
-      if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0))
+      if(strcmp(driver_name, "tcp") == 0)
 	{
-	  free(driver_name);
-	  driver_name = strdup("ibverbs");
+	  driver_trk_small =
+	    "<puk:composite id=\"nm:minidriver_tcp\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_tcp\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  driver_trk_large =
+	    "<puk:composite id=\"nm:minidriver_tcp-large\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_tcp\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	}
+      else if(strcmp(driver_name, "local") == 0)
+	{
+	  driver_trk_small =
+	    "<puk:composite id=\"nm:minidriver_local-small\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_local\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  driver_trk_large =
+	    "<puk:composite id=\"nm:minidriver_local-large\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_local\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	}
+      else if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0) || (strcmp(driver_name, "ibverbs") == 0))
+	{
+	  driver_trk_small =
+	    "<puk:composite id=\"nm:minidriver_ibverbs_bycopy\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  driver_trk_large =
+	    "<puk:composite id=\"nm:minidriver_ibverbs_lr2\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_lr2\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  if(getenv("NMAD_IBVERBS_RCACHE") != NULL)
+	    {
+	      driver_trk_large =
+		"<puk:composite id=\"nm:minidriver_ibverbs_rcache\">"
+		"  <puk:component id=\"0\" name=\"NewMad_ibverbs_rcache\"/>"
+		"  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+		"</puk:composite>";
+	      NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
+	    }
+	}
+      else if(strcmp(driver_name, "shm") == 0)
+	{
+	  driver_trk_small = 
+	    "<puk:composite id=\"nm:minidriver_shm\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_shm\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  driver_trk_large =
+	    "<puk:composite id=\"nm:minidriver_largeshm\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_largeshm\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	}
+      else if(strcmp(driver_name, "cma") == 0)
+	{
+	  driver_trk_small = 
+	    "<puk:composite id=\"nm:minidriver_shm\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_shm\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  driver_trk_large =
+	    "<puk:composite id=\"nm:minidriver_cma\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_CMA\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
 	}
       else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0))
 	{
-	  free(driver_name);
-	  driver_name = strdup("mx");
+	  NM_FATAL("nmad: FATAL- no support for mx driver.\n");
 	}
-      puk_component_t driver_assembly = nm_core_component_load("Driver", driver_name);
-      nm_session_add_driver(driver_assembly);
-      free(driver_name);
+      if(driver_trk_small)
+	{
+	  puk_component_t component_trk_small = puk_component_parse(driver_trk_small);
+	  if(component_trk_small == NULL)
+	    {
+	      NM_FATAL("nmad: failed to load component '%s'\n", driver_trk_small);
+	    }
+	  nm_session_add_driver(component_trk_small);
+	}
+      if(driver_trk_large)
+	{
+	  puk_component_t component_trk_large = puk_component_parse(driver_trk_large);
+	  if(component_trk_large == NULL)
+	    {
+	      NM_FATAL("nmad: failed to load component '%s'\n", driver_trk_large);
+	    }
+	  nm_session_add_driver(component_trk_large);
+	}
       token = strtok(NULL, "+");
     }
   free(driver_string);
 
   /* load default driver */
-  puk_component_t driver_self = nm_core_component_load("Driver", "self");
-  nm_session.p_drv_self = nm_session_add_driver(driver_self);
+  const char*driver_self_small =
+    "<puk:composite id=\"nm:minidriver_self-small\">"
+    "  <puk:component id=\"0\" name=\"Minidriver_self\"/>"
+    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+    "</puk:composite>";
+  const char*driver_self_large =
+    "<puk:composite id=\"nm:minidriver_self-large\">"
+    "  <puk:component id=\"0\" name=\"Minidriver_self\"/>"
+    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+    "</puk:composite>";
+  puk_component_t component_self_small = puk_component_parse(driver_self_small);
+  puk_component_t component_self_large = puk_component_parse(driver_self_large);
+  nm_session.p_drv_self_small = nm_session_add_driver(component_self_small);
+  nm_session.p_drv_self_large = nm_session_add_driver(component_self_large);
 }
 
 
@@ -265,8 +363,8 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
   if(strcmp(peer_url, nm_session.local_url) == 0)
     {
       /* ** loopback connect- use driver 'self' (hardwired) */
-      nm_drv_t p_drv = nm_session.p_drv_self;
-      nm_drv_vect_push_back(v, p_drv);
+      nm_drv_vect_push_back(v, nm_session.p_drv_self_small);
+      nm_drv_vect_push_back(v, nm_session.p_drv_self_large);
     }
   else
     {
@@ -276,7 +374,7 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
 	{
 	  char driver_name[256];
 	  snprintf(driver_name, 256, "%s", p_drv->assembly->name);
-	  if(p_drv == nm_session.p_drv_self)
+	  if(p_drv == nm_session.p_drv_self_small || p_drv == nm_session.p_drv_self_large)
 	    {
 	      continue;
 	    }
@@ -297,20 +395,20 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
 
 int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url)
 {
+  assert(nm_session.p_core != NULL);
   assert(p_session != NULL);
+  nm_drv_vect_t v = NULL;
   if(nm_session.selector == NULL)
-    nm_session.selector = &nm_session_default_selector;
-  nm_drv_vect_t v = (*nm_session.selector)(url, nm_session.selector_arg);
+    {
+      nm_session.selector = &nm_session_default_selector;
+    }
+  
+  v = (*nm_session.selector)(url, nm_session.selector_arg);
   if(nm_drv_vect_empty(v))
     {
       NM_FATAL("# session: no common driver found for local (%s) and peer (%s) node. Abort.\n",
 	       nm_session.local_url, url);
    }
-  assert(nm_session.p_core != NULL);
-  /* create gate */
-  nm_gate_t p_gate = NULL;
-  int err = nm_core_gate_init(nm_session.p_core, &p_gate);
-  assert(err == NM_ESUCCESS);
   
   /* parse remote url, store in hashtable (driver_name -> driver_url) */
   puk_hashtable_t url_table = puk_hashtable_new_string();
@@ -331,14 +429,11 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       token = strtok(NULL, "+");
     }
   free(parse_string);
+  /* create gate */
+  nm_gate_t p_gate = NULL;
+  nm_core_gate_init(nm_session.p_core, &p_gate, &v);
   /* connect all drivers */
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  if(r->driver->connect)
-    {
-      nm_drv_vect_t v2 = (*r->driver->connect)(r->_status, p_gate, v);
-      nm_drv_vect_delete(v);
-      v = v2;
-    }
+  int trk_id = 0;
   nm_drv_vect_itor_t i;
   puk_vect_foreach(i, nm_drv, v)
     {
@@ -347,11 +442,8 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       snprintf(driver_name, 256, "%s", p_drv->assembly->name);
       const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
       assert(driver_url != NULL);
-      err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
-      if(err != NM_ESUCCESS)
-	{
-	  NM_FATAL("# session: error %d while connecting driver '%s'.\n", err, driver_name);
-	}
+      nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, trk_id, driver_url);
+      trk_id++;
     }
   /* destroy the url hashtable */
   puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(url_table);
@@ -365,7 +457,6 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
   puk_hashtable_enumerator_delete(e);
   puk_hashtable_delete(url_table);
   url_table = NULL;
-
   nm_drv_vect_delete(v);
   *pp_gate = p_gate;
   return NM_ESUCCESS;

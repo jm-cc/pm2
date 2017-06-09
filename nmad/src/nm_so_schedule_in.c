@@ -142,26 +142,6 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
 }
 
 
-/** register a large pending pw for each chunk in the rdv
- */
-struct nm_large_chunk_context_s
-{
-  struct nm_req_s*p_unpack;
-  nm_gate_t p_gate;
-  nm_len_t chunk_offset;
-};
-static void nm_large_chunk_store(void*ptr, nm_len_t len, void*_context)
-{
-  struct nm_large_chunk_context_s*p_large_chunk = _context;
-  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_noheader();
-  p_pw->p_unpack = p_large_chunk->p_unpack;
-  nm_pw_add_raw(p_pw, ptr, len, p_large_chunk->chunk_offset);
-  assert(p_pw->p_drv == NULL);
-  p_pw->p_gate = p_large_chunk->p_gate;
-  nm_pkt_wrap_list_push_back(&p_large_chunk->p_gate->pending_large_recv, p_pw);
-  p_large_chunk->chunk_offset += len;
-}
-
 /** mark 'chunk_len' data as received in the given unpack, and check for unpack completion, sets pp_unpack to NULL if finalized */
 static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw, struct nm_req_s**pp_unpack, nm_len_t chunk_len)
 {
@@ -665,27 +645,14 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
     {
       assert(p_unpack->p_gate != NULL);
       assert(!nm_data_isnull(&p_unpack->data));
-      nm_drv_t p_drv = nm_drv_default(p_gate);
-      const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_unpack->data);
-      const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : p_props->size; /* average block size */
       nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-      if(p_drv->trk_caps[NM_TRK_LARGE].supports_data || density < NM_LARGE_MIN_DENSITY)
-	{
-	  /* iterator-based data & driver supports data natively || low-density -> send all & copy */
-	  struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
-	  p_large_pw->p_unpack     = p_unpack;
-	  p_large_pw->length       = chunk_len;
-	  p_large_pw->chunk_offset = chunk_offset;
-	  p_large_pw->p_data       = &p_unpack->data;
-	  p_large_pw->p_gate       = p_gate;
-	  nm_pkt_wrap_list_push_back(&p_gate->pending_large_recv, p_large_pw);
-	}
-      else
-	{
-	  /* one rdv per chunk */
-	  struct nm_large_chunk_context_s large_chunk = { .p_unpack = p_unpack, .p_gate = p_unpack->p_gate, .chunk_offset = chunk_offset };
-	  nm_data_chunk_extractor_traversal(&p_unpack->data, chunk_offset, chunk_len, &nm_large_chunk_store, &large_chunk);
-	}
+      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
+      p_large_pw->p_unpack     = p_unpack;
+      p_large_pw->length       = chunk_len;
+      p_large_pw->chunk_offset = chunk_offset;
+      p_large_pw->p_data       = &p_unpack->data;
+      p_large_pw->p_gate       = p_gate;
+      nm_pkt_wrap_list_push_back(&p_gate->pending_large_recv, p_large_pw);
     }
   else
     {
@@ -726,7 +693,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	      p_pw2->p_drv    = p_large_pw->p_drv;
 	      p_pw2->trk_id   = p_large_pw->trk_id;
 	      p_pw2->p_gate   = p_gate;
-	      p_pw2->p_gdrv   = p_large_pw->p_gdrv;
+	      p_pw2->p_trk    = p_large_pw->p_trk;
 	      p_pw2->p_unpack = NULL;
 	      struct nm_req_chunk_s*p_req_chunk2 = nm_req_chunk_alloc(p_core);
 	      nm_req_chunk_init(p_req_chunk2, p_req_chunk->p_req, NM_LEN_UNDEFINED, p_req_chunk->chunk_len - chunk_len);
@@ -737,10 +704,10 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	      nm_pkt_wrap_list_push_front(&p_gate->pending_large_send, p_pw2);
 	    }
 	  /* send the data */
-	  nm_drv_t p_drv = nm_drv_get_by_index(p_gate, header->drv_index);
-	  if(header->trk_id == NM_TRK_LARGE)
+	  struct nm_trk_s*p_trk = nm_trk_get_by_index(p_gate, header->trk_id);
+	  if(p_trk->kind == nm_trk_large)
 	    {
-	      nm_core_post_send(p_gate, p_large_pw, header->trk_id, p_drv);
+	      nm_core_post_send(p_large_pw, p_gate, header->trk_id);
 	    }
 	  else
 	    {
@@ -890,20 +857,16 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_pw_in);
   /* clear the input request field */
-  if(p_pw->p_gdrv && p_pw->p_gdrv->p_pw_recv[p_pw->trk_id] == p_pw)
+  if(p_pw->p_trk && p_pw->p_trk->p_pw_recv == p_pw)
     {
       /* request was posted on a given gate */
-      p_pw->p_gdrv->p_pw_recv[p_pw->trk_id] = NULL;
+      p_pw->p_trk->p_pw_recv = NULL;
     }
-  else if((!p_pw->p_gdrv) && p_drv->p_in_rq == p_pw)
+  else if((!p_pw->p_trk) && p_drv->p_in_rq == p_pw)
     {
       /* request was posted on a driver, for any gate */
       p_drv->p_in_rq = NULL;
     }
-
-#ifndef PIOMAN
-  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
-#endif /* !PIOMAN */
 
   if(p_pw->trk_id == NM_TRK_SMALL)
     {

@@ -189,6 +189,8 @@ typedef uint64_t nm_len_t;
 
 /** length is undefined */
 #define NM_LEN_UNDEFINED  ((nm_len_t)-1)
+/** maximum length usable in nmad */
+#define NM_LEN_MAX        ((nm_len_t)-2)
 
 
 /* ** data iterators *************************************** */

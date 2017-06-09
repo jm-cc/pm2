@@ -20,65 +20,57 @@
 
 /* ** Driver management ************************************ */
 
-/** Get the driver-specific per-gate data */
-static inline struct nm_gate_drv*nm_gate_drv_get(nm_gate_t p_gate, nm_drv_t p_drv)
+/** Get the track per-gate data */
+static inline struct nm_trk_s*nm_gate_trk_get(nm_gate_t p_gate, nm_drv_t p_drv)
 {
-  nm_gdrv_vect_itor_t i;
   assert(p_drv != NULL);
-  puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
+  int i;
+  for(i = 0; i < p_gate->n_trks; i++)
     {
-      if((*i)->p_drv == p_drv)
-	return *i;
+      if(p_gate->trks[i].p_drv == p_drv)
+	return &p_gate->trks[i];
     }
   return NULL;
 }
 
-/** The default network to use when several networks are
- *  available, but the strategy does not support multi-rail.
- *  Currently: the first available network
- */
-static inline nm_drv_t nm_drv_default(nm_gate_t p_gate)
-{
-  assert(!nm_gdrv_vect_empty(&p_gate->gdrv_array));
-  nm_gdrv_vect_itor_t i = nm_gdrv_vect_begin(&p_gate->gdrv_array);
-  return (*i)->p_drv;
-}
-
 /** Get a driver given its id.
  */
-static inline nm_drv_t nm_drv_get_by_index(nm_gate_t p_gate, int index)
+static inline struct nm_trk_s*nm_trk_get_by_index(nm_gate_t p_gate, int index)
 {
-  assert(!nm_gdrv_vect_empty(&p_gate->gdrv_array));
-  assert(index < nm_gdrv_vect_size(&p_gate->gdrv_array));
+  assert(p_gate->n_trks > 0);
+  assert(index < p_gate->n_trks);
   assert(index >= 0);
-  struct nm_gate_drv*p_gdrv = nm_gdrv_vect_at(&p_gate->gdrv_array, index);
-  return p_gdrv->p_drv;
+  return &p_gate->trks[index];
 }
 
 /** get maximum size for small messages for the given driver */
 static inline nm_len_t nm_drv_max_small(nm_drv_t p_drv)
 {
-  return p_drv->max_small;
+  const nm_len_t max_small = (NM_SO_MAX_UNEXPECTED - NM_HEADER_DATA_SIZE - NM_ALIGN_FRONTIER);
+  return (p_drv->props.capabilities.max_msg_size > max_small) ? max_small : p_drv->props.capabilities.max_msg_size;
 }
 
 
 /* ** Packet wrapper management **************************** */
 
 /** assign packet to given driver, gate, and track */
-static inline void nm_pw_assign(struct nm_pkt_wrap_s*p_pw, nm_trk_id_t trk_id, nm_drv_t p_drv, nm_gate_t p_gate)
+static inline void nm_pw_assign(struct nm_pkt_wrap_s*p_pw, nm_trk_id_t trk_id, struct nm_drv_s*p_drv, nm_gate_t p_gate)
 {
-  p_pw->p_drv = p_drv;
   p_pw->trk_id = trk_id;
   if(p_gate == NM_GATE_NONE)
     {
       assert(p_drv->p_in_rq == NULL);
       p_drv->p_in_rq = p_pw;
-      p_pw->p_gdrv = NULL;
+      p_pw->p_trk = NULL;
+      p_pw->p_drv = p_drv;
     }
   else
     {
+      assert(trk_id >= 0);
+      assert(trk_id < p_gate->n_trks);
       p_pw->p_gate = p_gate;
-      p_pw->p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+      p_pw->p_trk = &p_gate->trks[trk_id];
+      p_pw->p_drv = p_pw->p_trk->p_drv;
     }
 }
 
@@ -223,25 +215,13 @@ static inline void nm_req_chunk_init(struct nm_req_chunk_s*p_req_chunk, struct n
   p_req_chunk->chunk_len    = chunk_len;
 }
 
-/** Post a ready-to-receive
+/** Post a ready-to-receive to accept chunk on given trk_id
  */
 static inline void nm_core_post_rtr(nm_gate_t p_gate,  nm_core_tag_t tag, nm_seq_t seq,
-				    nm_drv_t p_drv, nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
+				    nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   nm_header_ctrl_generic_t h;
-  int gdrv_index = -1, k = 0;
-  nm_gdrv_vect_itor_t i;
-  puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
-    {
-      if((*i)->p_drv == p_drv)
-	{
-	  gdrv_index = k;
-	  break;
-	}
-      k++;
-    }
-  assert(gdrv_index >= 0);
-  nm_header_init_rtr(&h, tag, seq, gdrv_index, trk_id, chunk_offset, chunk_len);
+  nm_header_init_rtr(&h, tag, seq, trk_id, chunk_offset, chunk_len);
   nm_strat_pack_ctrl(p_gate, &h);
 }
 

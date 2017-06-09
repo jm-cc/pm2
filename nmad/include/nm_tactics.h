@@ -70,6 +70,7 @@ static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
       union nm_header_ctrl_generic_s rdv;
       nm_header_init_rdv(&rdv, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset, is_lastchunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
       nm_pw_add_control(p_pw, &rdv);
+      return NM_ESUCCESS;
     }
   else
     {
@@ -106,9 +107,8 @@ static inline struct nm_pkt_wrap_s*nm_tactic_try_to_aggregate(struct nm_pkt_wrap
  */
 struct nm_rdv_chunk
 {
-  nm_drv_t p_drv;
-  nm_trk_id_t trk_id;
-  nm_len_t len;
+  nm_trk_id_t trk_id; /**< trk_id of track to send data on */
+  nm_len_t len;       /**< length of data chunk */
 };
 
 /** Packs a series of RTR for multiple chunks of a pw, and post corresponding recv
@@ -130,7 +130,7 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap_s*p_pw, int nb_chunks, 
 	  p_pw2->p_drv    = p_pw->p_drv;
 	  p_pw2->trk_id   = p_pw->trk_id;
 	  p_pw2->p_gate   = p_pw->p_gate;
-	  p_pw2->p_gdrv   = p_pw->p_gdrv;
+	  p_pw2->p_trk    = p_pw->p_trk;
 	  p_pw2->p_unpack = p_pw->p_unpack;
 	  /* populate p_pw2 iovec */
 	  nm_pw_split_data(p_pw, p_pw2, chunks[i].len);
@@ -138,7 +138,8 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap_s*p_pw, int nb_chunks, 
 	}
       if(chunks[i].trk_id == NM_TRK_LARGE)
 	{
-	  if(p_pw->p_data != NULL && !chunks[i].p_drv->trk_caps[NM_TRK_LARGE].supports_data)
+	  struct nm_trk_s*p_trk = &p_gate->trks[chunks[i].trk_id];
+	  if(p_pw->p_data != NULL && !p_trk->p_drv->props.capabilities.supports_data)
 	    {
 	      const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pw->p_data);
 	      struct iovec*vec = nm_pw_grow_iovec(p_pw);
@@ -154,13 +155,13 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap_s*p_pw, int nb_chunks, 
 		}
 	      vec->iov_len = p_pw->length;
 	    }
-	  nm_core_post_recv(p_pw, p_pw->p_gate, chunks[i].trk_id, chunks[i].p_drv);
+	  nm_core_post_recv(p_pw, p_pw->p_gate, chunks[i].trk_id, NULL);
 	}
       else
 	{
 	  nm_pw_free(p_pw);
 	}
-      nm_core_post_rtr(p_gate, tag, seq, chunks[i].p_drv, chunks[i].trk_id, chunk_offset, chunks[i].len);
+      nm_core_post_rtr(p_gate, tag, seq, chunks[i].trk_id, chunk_offset, chunks[i].len);
       chunk_offset += chunks[i].len;
       p_pw = p_pw2;
       p_pw2 = NULL;

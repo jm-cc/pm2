@@ -152,8 +152,7 @@ static inline void nm_pw_init(struct nm_pkt_wrap_s *p_pw)
   p_pw->p_drv  = NULL;
   p_pw->trk_id = NM_TRK_NONE;
   p_pw->p_gate = NULL;
-  p_pw->p_gdrv = NULL;
-  p_pw->drv_priv = NULL;
+  p_pw->p_trk  = NULL;
 
   p_pw->flags = 0;
   p_pw->length = 0;

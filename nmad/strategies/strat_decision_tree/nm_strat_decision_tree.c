@@ -136,8 +136,7 @@ static void strat_decision_tree_destroy(void*_status)
 static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 {
   struct nm_strat_decision_tree*p_status = _status;
-  nm_drv_t p_drv = nm_drv_default(p_gate);
-  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+  struct nm_trk_s*p_trk_small = &p_gate->trks[NM_TRK_SMALL];
   struct nm_core*p_core = p_gate->p_core;
 
   /* ******************************************************* */
@@ -184,7 +183,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 #endif
   /* ******************************************************* */
 
-  if(p_gdrv->p_pw_send[NM_TRK_SMALL] == NULL)
+  if(p_trk_small->p_pw_send == NULL)
     {
       if(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	{
@@ -192,7 +191,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_pop_front(&p_gate->ctrl_chunk_list);
 	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
 	  nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
-	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
+	  nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
 	  nm_ctrl_chunk_free(p_core->ctrl_chunk_allocator, p_ctrl_chunk);
 	}
       else if(!nm_req_chunk_list_empty(&p_gate->req_chunk_list))
@@ -207,7 +206,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 	      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
 	      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_NONE);
 	      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
-	      nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
+	      nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
 	    }
 	  else
 	    {
@@ -221,7 +220,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 				 is_lastchunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
 	      struct nm_pkt_wrap_s*p_rdv_pw = nm_pw_alloc_global_header();
 	      nm_pw_add_control(p_rdv_pw, &rdv);
-	      nm_core_post_send(p_gate, p_rdv_pw, NM_TRK_SMALL, p_drv);
+	      nm_core_post_send(p_rdv_pw, p_gate, NM_TRK_SMALL);
 	    }
 	}
     }
@@ -234,13 +233,12 @@ static void strat_decision_tree_rdv_accept(void*_status, nm_gate_t p_gate)
   struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_begin(&p_gate->pending_large_recv);
   if(p_pw != NULL)
     {
-      nm_drv_t p_drv = nm_drv_default(p_gate);
-      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-      if(p_gdrv->p_pw_recv[NM_TRK_LARGE] == NULL)
+      struct nm_trk_s*p_trk_large = &p_gate->trks[NM_TRK_LARGE];
+      if(p_trk_large->p_pw_recv == NULL)
 	{
 	  /* The large-packet track is available- post recv and RTR */
 	  struct nm_rdv_chunk chunk = 
-	    { .len = p_pw->length, .p_drv = p_drv, .trk_id = NM_TRK_LARGE };
+	    { .len = p_pw->length, .trk_id = NM_TRK_LARGE };
 	  nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	}

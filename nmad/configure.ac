@@ -246,9 +246,9 @@ if test "x$MX_DIR" = "x" ; then
     fi
 fi
 HAVE_MX=no
-with_mx=check
+with_mx=no
 AC_ARG_WITH([mx],
-	    [AS_HELP_STRING([--with-mx], [use Myrinet MX @<:@default=check@:>@] )])
+	    [AS_HELP_STRING([--with-mx], [use Myrinet MX @<:@default=no@:>@] )])
 if test "x${with_mx}" != "xno" ; then
     save_CPPFLAGS="${CPPFLAGS}"
     CPPFLAGS="${CPPFLAGS} -I${MX_DIR}/include"

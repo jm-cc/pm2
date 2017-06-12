@@ -49,6 +49,7 @@
 
 #include "nm_ibverbs.h"
 #include <Padico/Module.h>
+#include <tbx.h>
 #ifdef PM2_TOPOLOGY
 #include <tbx_topology.h>
 #include <hwloc/openfabrics-verbs.h>

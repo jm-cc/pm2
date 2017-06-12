@@ -203,6 +203,7 @@ struct nm_pkt_wrap_s*nm_pw_alloc_buffer(void)
   p_pw->v[0].iov_base = p_pw->buf;
   p_pw->v[0].iov_len = NM_SO_MAX_UNEXPECTED;
   p_pw->length = NM_SO_MAX_UNEXPECTED;
+  p_pw->max_len = NM_LEN_UNDEFINED;
   return p_pw;
 }
 
@@ -214,6 +215,7 @@ struct nm_pkt_wrap_s*nm_pw_alloc_noheader(void)
   p_pw->flags = NM_PW_NOHEADER;
   /* pkt is empty for now */
   p_pw->length = 0;
+  p_pw->max_len = NM_LEN_UNDEFINED;
   return p_pw;
 }
 
@@ -229,6 +231,7 @@ struct nm_pkt_wrap_s*nm_pw_alloc_global_header(void)
   p_pw->v[0].iov_base = p_pw->buf;
   p_pw->v[0].iov_len = 0;
   p_pw->length = 0;
+  p_pw->max_len = NM_SO_MAX_UNEXPECTED;
   /* reserve bits for v0 skip offset */
   const nm_len_t hlen = sizeof(struct nm_header_global_s);
   p_pw->v[0].iov_len += hlen;
@@ -243,7 +246,7 @@ struct nm_pkt_wrap_s*nm_pw_alloc_driver_header(struct nm_trk_s*p_trk)
   struct nm_pkt_wrap_s*p_pw = nm_pw_nohd_malloc(nm_pw_nohd_allocator);
   nm_pw_init(p_pw);
   p_pw->flags = NM_PW_BUF_SEND;
-  assert(r->driver->buf_send_get && r->driver->buf_send_post && r->driver->buf_send_poll);
+  assert(r->driver->buf_send_get && r->driver->buf_send_post);
   /* first entry: global header */
   void*p_buffer = NULL;
   nm_len_t len = NM_LEN_UNDEFINED;

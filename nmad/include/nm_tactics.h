@@ -20,7 +20,8 @@
 static inline nm_len_t nm_pw_remaining_buf(struct nm_pkt_wrap_s*p_pw)
 {
   assert(((p_pw->v[0].iov_base + p_pw->v[0].iov_len) - (void*)p_pw->buf) <= p_pw->length);
-  return NM_SO_MAX_UNEXPECTED - p_pw->length;
+  assert(p_pw->max_len != NM_LEN_UNDEFINED);
+  return p_pw->max_len - p_pw->length;
 }
 
 /** Try to pack a control chunk in a pw.
@@ -31,7 +32,7 @@ static inline int nm_tactic_pack_ctrl(nm_gate_t p_gate, nm_drv_t p_drv,
 				      struct nm_ctrl_chunk_s*p_ctrl_chunk,
 				      struct nm_pkt_wrap_s*p_pw)
 {
-  if(NM_HEADER_CTRL_SIZE + p_pw->length < nm_drv_max_small(p_drv))
+  if(NM_HEADER_CTRL_SIZE < nm_pw_remaining_buf(p_pw))
     {
       nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
       nm_ctrl_chunk_list_erase(&p_gate->ctrl_chunk_list, p_ctrl_chunk);
@@ -48,7 +49,7 @@ static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
 				     struct nm_req_chunk_s*p_req_chunk,
 				     struct nm_pkt_wrap_s*p_pw)
 {
-  if(NM_HEADER_CTRL_SIZE + p_pw->length < nm_drv_max_small(p_drv))
+  if(NM_HEADER_CTRL_SIZE < nm_pw_remaining_buf(p_pw))
     {
       nm_req_chunk_list_erase(&p_gate->req_chunk_list, p_req_chunk);
       struct nm_req_s*p_pack = p_req_chunk->p_req;

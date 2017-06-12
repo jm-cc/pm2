@@ -92,14 +92,26 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 {
   struct nm_strat_aggreg_s*p_status = _status;
   struct nm_trk_s*p_trk_small = &p_gate->trks[NM_TRK_SMALL];
-  struct nm_drv_s*p_drv = p_trk_small->p_drv;
+  const struct nm_drv_s*p_drv = p_trk_small->p_drv;
   if((p_trk_small->p_pw_send == NULL) &&
      !(nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list) &&
        nm_req_chunk_list_empty(&p_gate->req_chunk_list)))
     {
       /* no active send && pending chunks */
-      const nm_len_t max_small = nm_drv_max_small(p_trk_small->p_drv);
-      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
+      struct nm_pkt_wrap_s*p_pw = NULL;
+      const nm_len_t drv_max = ((p_drv->props.capabilities.max_msg_size == 0) ||
+				(p_drv->props.capabilities.max_msg_size > NM_SO_MAX_UNEXPECTED)) ?
+	NM_SO_MAX_UNEXPECTED : p_drv->props.capabilities.max_msg_size;
+      const nm_len_t max_small =  drv_max - NM_ALIGN_FRONTIER - sizeof(struct nm_header_global_s);
+      if(p_drv->props.capabilities.supports_buf_send)
+	{
+	  p_pw = nm_pw_alloc_driver_header(p_trk_small);
+	}
+      else
+	{
+	  p_pw = nm_pw_alloc_global_header();
+	  p_pw->max_len = max_small;
+	}
       int opt_window = 8;
       /* ** control */
       while(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
@@ -145,7 +157,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	      if(chunk_len + max_header_len < max_small)
 		{
 		  /* ** small send */
-		  if(max_header_len + chunk_len + p_pw->length <= max_small)
+		  if(max_header_len + chunk_len < nm_pw_remaining_buf(p_pw))
 		    {
 #warning TODO- select pack strategy depending on data sparsity
 		      nm_req_chunk_list_erase(&p_gate->req_chunk_list, p_req_chunk);

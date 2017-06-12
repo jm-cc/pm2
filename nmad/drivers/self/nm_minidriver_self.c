@@ -152,7 +152,7 @@ static void nm_self_send_post(void*_status, const struct iovec*v, int n)
   p_status->send.consumed = 0;
   p_status->send.v = v;
   p_status->send.n = n;
-  __sync_synchronize();
+  nm_mem_fence();
   p_status->send.posted = 1;
 }
 
@@ -204,7 +204,7 @@ static int nm_self_poll_one(void*_status)
 	  done += p_status->send.v[i].iov_len;
 	}
       p_status->send.posted = 0;
-      __sync_synchronize();
+      nm_mem_fence();
       p_status->send.consumed = 1;
       return NM_ESUCCESS;
     }

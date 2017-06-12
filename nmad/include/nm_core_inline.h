@@ -16,7 +16,7 @@
 #ifndef NM_CORE_INLINE_H
 #define NM_CORE_INLINE_H
 
-
+#include <nm_private.h>
 
 /* ** Driver management ************************************ */
 
@@ -74,13 +74,13 @@ static inline void nm_pw_assign(struct nm_pkt_wrap_s*p_pw, nm_trk_id_t trk_id, s
     }
 }
 
-static inline void nm_pw_ref_inc(struct nm_pkt_wrap_s *p_pw)
+static inline void nm_pw_ref_inc(struct nm_pkt_wrap_s*p_pw)
 {
-  __sync_fetch_and_add(&p_pw->ref_count, 1);
+  nm_atomic_inc(&p_pw->ref_count);
 }
 static inline void nm_pw_ref_dec(struct nm_pkt_wrap_s *p_pw)
 {
-  const int count = __sync_sub_and_fetch(&p_pw->ref_count, 1);
+  const int count = nm_atomic_dec(&p_pw->ref_count);
   assert(count >= 0);
   if(count == 0)
     {

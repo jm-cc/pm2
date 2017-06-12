@@ -21,6 +21,8 @@
 #ifndef NM_LOCK_H
 #define NM_LOCK_H
 
+#include <nm_private.h>
+
 /** acquire the nm core lock */
 static inline void nm_core_lock(struct nm_core*p_core);
 
@@ -104,5 +106,33 @@ static inline void nm_core_nolock_assert(struct nm_core*p_core)
 #endif
 }
 
+/** memory fence only when multithread */
+static inline void nm_mem_fence(void)
+{
+#if defined(PIOMAN_MULTITHREAD)
+  __sync_synchronize();
+#endif /* PIOMAN_MULTITHREAD */
+}
+
+/** increment int, atomic only when multithread */
+static inline int nm_atomic_inc(int*v)
+{
+#if defined(PIOMAN_MULTITHREAD)
+  return __sync_fetch_and_add(v, 1);
+#else
+  return (*v)++;
+#endif /* PIOMAN_MULTITHREAD */
+}
+
+/** decrement int, atomic only when multithread */
+static inline int nm_atomic_dec(int*v)
+{
+#if defined(PIOMAN_MULTITHREAD)
+  return __sync_sub_and_fetch(v, 1);
+#else
+  return --(*v);
+#endif /* PIOMAN_MULTITHREAD */
+
+}
 
 #endif	/* NM_LOCK_H */

@@ -175,7 +175,11 @@ static inline void nm_req_chunk_submit(struct nm_core*p_core, struct nm_req_chun
   int rc;
   do
     {
+#ifdef PIOMAN_MULTITHREAD
       rc = nm_req_chunk_lfqueue_enqueue(&p_core->pack_submissions, p_req_chunk);
+#else
+      rc = nm_req_chunk_lfqueue_enqueue_single_writer(&p_core->pack_submissions, p_req_chunk);
+#endif /* PIOMAN_MULTITHREAD */
       if(rc)
 	nm_core_flush(p_core);
     }

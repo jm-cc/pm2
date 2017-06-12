@@ -332,7 +332,11 @@ void piom_ltask_submit(struct piom_ltask*task)
     int rc = -1;
     do
 	{
+#if defined(PIOMAN_MULTITHREAD)
 	    rc = piom_ltask_lfqueue_enqueue(&queue->submit_queue, task);
+#else
+	    rc = piom_ltask_lfqueue_enqueue_single_writer(&queue->submit_queue, task);
+#endif
 	    if(rc != 0)
 		{
 		    PIOM_WARN("ltask queue full\n");

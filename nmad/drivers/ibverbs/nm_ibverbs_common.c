@@ -147,7 +147,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
     }
   const int autodetect = (strcmp(device, "auto") == 0);
   
-  p_hca = TBX_MALLOC(sizeof(struct nm_ibverbs_hca_s));
+  p_hca = malloc(sizeof(struct nm_ibverbs_hca_s));
 
   /* find IB device */
   int dev_amount = -1;

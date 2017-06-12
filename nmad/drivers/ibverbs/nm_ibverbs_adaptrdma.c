@@ -117,7 +117,7 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_adaptrdma,
 
 static void* nm_ibverbs_adaptrdma_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_ibverbs_adaptrdma*adaptrdma = TBX_MALLOC(sizeof(struct nm_ibverbs_adaptrdma));
+  struct nm_ibverbs_adaptrdma*adaptrdma = malloc(sizeof(struct nm_ibverbs_adaptrdma));
   memset(&adaptrdma->buffer, 0, sizeof(adaptrdma->buffer));
   adaptrdma->mr = NULL;
   adaptrdma->context = context;

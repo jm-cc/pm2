@@ -153,7 +153,7 @@ static void* nm_ibverbs_lr2_instantiate(puk_instance_t instance, puk_context_t c
   if(nm_ibverbs_memalign > 0)
     posix_memalign((void**)&lr2, nm_ibverbs_memalign, sizeof(struct nm_ibverbs_lr2));
   else
-    lr2 = TBX_MALLOC(sizeof(struct nm_ibverbs_lr2));
+    lr2 = malloc(sizeof(struct nm_ibverbs_lr2));
   memset(&lr2->buffer, 0, sizeof(lr2->buffer));
   lr2->buffer.rack = 0;
   lr2->mr = NULL;

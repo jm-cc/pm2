@@ -217,6 +217,16 @@ static inline void nm_req_chunk_init(struct nm_req_chunk_s*p_req_chunk, struct n
   p_req_chunk->p_req        = p_req;
   p_req_chunk->chunk_offset = chunk_offset;
   p_req_chunk->chunk_len    = chunk_len;
+  p_req_chunk->proto_flags  = 0;
+  assert(chunk_offset + chunk_len <= p_req->pack.len);
+  if(chunk_offset + chunk_len == p_req->pack.len)
+    {
+      p_req_chunk->proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
+    }
+  if(p_req->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS)
+    {
+      p_req_chunk->proto_flags |= NM_PROTO_FLAG_ACKREQ;
+    }
 }
 
 /** Post a ready-to-receive to accept chunk on given trk_id

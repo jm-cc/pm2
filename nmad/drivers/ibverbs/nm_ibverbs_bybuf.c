@@ -102,7 +102,7 @@ static void nm_ibverbs_bybuf_close(puk_context_t context);
 static void nm_ibverbs_bybuf_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_bybuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_ibverbs_bybuf_buf_send_post(void*_status, nm_len_t len);
-static int  nm_ibverbs_bybuf_buf_send_poll(void*_status);
+static int  nm_ibverbs_bybuf_send_poll(void*_status);
 static void nm_ibverbs_bybuf_recv_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_ibverbs_bybuf_poll_one(void*_status);
 static int  nm_ibverbs_bybuf_cancel_recv(void*_status);
@@ -115,10 +115,9 @@ static const struct nm_minidriver_iface_s nm_ibverbs_bybuf_minidriver =
     .connect       = &nm_ibverbs_bybuf_connect,
     .send_post     = NULL,
     .send_data     = NULL,
-    .send_poll     = NULL,
+    .send_poll     = &nm_ibverbs_bybuf_send_poll,
     .buf_send_get  = &nm_ibverbs_bybuf_buf_send_get,
     .buf_send_post = &nm_ibverbs_bybuf_buf_send_post,
-    .buf_send_poll = &nm_ibverbs_bybuf_buf_send_poll,
     .recv_init     = NULL,
     .recv_data     = &nm_ibverbs_bybuf_recv_data,
     .poll_one      = &nm_ibverbs_bybuf_poll_one,
@@ -263,7 +262,7 @@ static void nm_ibverbs_bybuf_buf_send_post(void*_status, nm_len_t len)
   struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
   bybuf->send.chunk_len = len;
 }
-static int nm_ibverbs_bybuf_buf_send_poll(void*_status)
+static int nm_ibverbs_bybuf_send_poll(void*_status)
 {
   struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
 

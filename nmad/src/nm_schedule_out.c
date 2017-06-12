@@ -152,10 +152,9 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
   struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
   int err = (*r->driver->send_poll)(r->_status);
 #ifdef DEBUG
-  if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && (r->driver->send_post == NULL))
+  if(err == NM_ESUCCESS)
     {
       struct nm_data_s*p_data = &p_pw->p_trk->sdata;
-      assert(!nm_data_isnull(p_data));
       nm_data_null_build(p_data);
     }
 #endif /* DEBUG */
@@ -179,6 +178,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_core*p_core = p_pw->p_drv->p_core;
   struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
+  const struct nm_minidriver_capabilities_s*p_capabilities = &p_pw->p_trk->p_drv->props.capabilities;
   /* no lock needed; only this ltask is allowed to touch the pw */
   nm_core_nolock_assert(p_core);
 
@@ -186,13 +186,13 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   nm_pw_offloaded_finalize(p_pw);
 #endif
 
-  if(p_pw->flags & NM_PW_GLOBAL_HEADER)
+  if(p_pw->p_trk->kind == nm_trk_small)
     nm_pw_finalize(p_pw);
 
   if(p_pw->p_data)
     {
       /* ** pw contains nm_data; flatten if needed */
-      if((p_pw->flags & NM_PW_DATA_COPY) || !p_pw->p_trk->p_drv->props.capabilities.supports_data)
+      if((p_pw->flags & NM_PW_DATA_COPY) || !p_capabilities->supports_data)
 	{
 	  const struct nm_data_properties_s*p_props = nm_data_properties_get(p_pw->p_data);
 	  void*buf = NULL;
@@ -225,7 +225,12 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   else
     {
       /* ** pw contains iovec */
-      if(r->driver->send_post)
+      if(p_pw->flags & NM_PW_BUF_SEND)
+	{
+	  assert(p_pw->length <= p_pw->max_len);
+	  (*r->driver->buf_send_post)(r->_status, p_pw->length);
+	}
+      else if(r->driver->send_post)
 	{
 	  (*r->driver->send_post)(r->_status, &p_pw->v[0], p_pw->v_nb);
 	}

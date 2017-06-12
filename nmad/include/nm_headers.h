@@ -33,12 +33,10 @@ static inline void nm_header_global_finalize(struct nm_pkt_wrap_s*p_pw)
 
 static inline uint16_t nm_header_global_v0len(const struct nm_pkt_wrap_s*p_pw)
 {
-  assert(p_pw->flags & (NM_PW_GLOBAL_HEADER | NM_PW_BUFFER));
+  assert(p_pw->flags & (NM_PW_GLOBAL_HEADER | NM_PW_BUFFER | NM_PW_BUF_SEND));
   const struct nm_header_global_s*h = p_pw->v[0].iov_base;
   return h->v0len;
 }
-
-typedef uint8_t nm_proto_t;
 
 /** mask for proto ID part */
 #define NM_PROTO_ID_MASK        0x0F

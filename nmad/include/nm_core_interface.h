@@ -106,6 +106,10 @@ typedef nm_status_t nm_cond_status_t;
 /** pack/unpack flags */
 typedef uint32_t nm_req_flag_t;
 
+/** protocol flags- not part of the public API, bu needed for inline */
+typedef uint8_t nm_proto_t;
+
+
 /* ** status and flags, used in pack/unpack requests and events */
 
 /** empty request */
@@ -147,8 +151,8 @@ typedef uint32_t nm_req_flag_t;
 
 /** flag req_chunk as short */
 #define NM_REQ_FLAG_SHORT_CHUNK            ((nm_req_flag_t)0x00010000)
-/** flag req_chunk as last in req */
-#define NM_REQ_FLAG_LAST_CHUNK             ((nm_req_flag_t)0x00020000)
+/** use buf_send to send this request */
+#define NM_REQ_FLAG_BUF_SEND               ((nm_req_flag_t)0x00020000)
 /** flatten data as contiguous block before send */
 #define NM_REQ_FLAG_USE_COPY               ((nm_req_flag_t)0x00040000)
 /* use iterator-based data description in pw */
@@ -270,9 +274,10 @@ void nm_core_req_monitor(struct nm_core*p_core, struct nm_req_s*p_req, struct nm
 struct nm_req_chunk_s
 {
   PUK_LIST_LINK(nm_req_chunk);
-  struct nm_req_s*p_req; /**< the request this chunk belongs to */
-  nm_len_t chunk_len;    /**< length of the chunk */
-  nm_len_t chunk_offset; /**< offset of the chunk relative to the full data in the req */
+  struct nm_req_s*p_req;  /**< the request this chunk belongs to */
+  nm_len_t chunk_len;     /**< length of the chunk */
+  nm_len_t chunk_offset;  /**< offset of the chunk relative to the full data in the req */
+  nm_proto_t proto_flags; /**< pre-computed proto flags */
 };
 
 /** a generic pack/unpack request */

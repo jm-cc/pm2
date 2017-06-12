@@ -94,6 +94,7 @@ struct nm_pkt_wrap_s
 
   nm_pw_flag_t flags;        /**< packet flags. */
   nm_len_t length;           /**< cumulated amount of data (everything included) referenced by this wrap. */
+  nm_len_t max_len;          /**< maximum usable length */
   const struct nm_data_s*p_data; /**< data represented as datatype (if non-NULL, v must be empty) */
   struct iovec*v;            /**< IO vector. */
   int v_size;                /**< number of allocated entries in the iovec. */
@@ -137,6 +138,8 @@ struct nm_pkt_wrap_s*nm_pw_alloc_buffer(void);
 struct nm_pkt_wrap_s*nm_pw_alloc_noheader(void);
 
 struct nm_pkt_wrap_s*nm_pw_alloc_global_header(void);
+
+struct nm_pkt_wrap_s*nm_pw_alloc_driver_header(struct nm_trk_s*p_trk);
 
 int nm_pw_free(struct nm_pkt_wrap_s*p_pw);
 

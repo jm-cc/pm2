@@ -81,7 +81,6 @@ struct nm_minidriver_iface_s
   /* buffer-based sending */
   void (*buf_send_get)(void*_status, void**p_buffer, nm_len_t*p_len);
   void (*buf_send_post)(void*_status, nm_len_t len);
-  int  (*buf_send_poll)(void*_status);
 };
 PUK_IFACE_TYPE(NewMad_minidriver, struct nm_minidriver_iface_s);
 

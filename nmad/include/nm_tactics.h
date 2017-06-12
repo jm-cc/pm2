@@ -60,10 +60,6 @@ static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
 	{
 	  flags |= NM_REQ_FLAG_USE_COPY;
 	}
-      if(is_lastchunk)
-	{
-	  flags |= NM_REQ_FLAG_LAST_CHUNK;
-	}
       struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
       nm_pw_add_req_chunk(p_large_pw, p_req_chunk, flags);
       nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_large_pw);

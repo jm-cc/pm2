@@ -179,6 +179,19 @@ static void nm_session_init_drivers(void)
 	      NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
 	    }
 	}
+      else if(strcmp(driver_name, "ibbuf") == 0)
+	{
+	  driver_trk_small =
+	    "<puk:composite id=\"nm:minidriver_ibverbs_bybuf\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bybuf\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  driver_trk_large =
+	    "<puk:composite id=\"nm:minidriver_ibverbs_lr2\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_lr2\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	}
       else if(strcmp(driver_name, "shm") == 0)
 	{
 	  driver_trk_small = 

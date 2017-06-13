@@ -24,7 +24,7 @@
 
 /* *** method: 'bybuf' ************************************ */
 
-#define NM_IBVERBS_BYBUF_BLOCKSIZE 8192
+#define NM_IBVERBS_BYBUF_BLOCKSIZE 16384
 #define NM_IBVERBS_BYBUF_RBUF_NUM  8
 
 #define NM_IBVERBS_BYBUF_BUFSIZE     (NM_IBVERBS_BYBUF_BLOCKSIZE - sizeof(struct nm_ibverbs_bybuf_header_s))
@@ -194,6 +194,7 @@ static void nm_ibverbs_bybuf_getprops(puk_context_t context, struct nm_minidrive
   nm_ibverbs_hca_get_profile(p_bybuf_context->p_hca, &props->profile);
   props->capabilities.supports_data = 1;
   props->capabilities.supports_buf_send = 1;
+  props->capabilities.max_msg_size = NM_IBVERBS_BYBUF_DATA_SIZE;
 }
 
 static void nm_ibverbs_bybuf_init(puk_context_t context, const void**drv_url, size_t*url_size)
@@ -303,12 +304,11 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
   assert(bybuf->cnx->pending.wrids[NM_IBVERBS_WRID_RDMA] == 0);
 
   /* 3- prepare and send packet */
-  const nm_len_t offset = NM_IBVERBS_BYBUF_DATA_SIZE - bybuf->send.chunk_len;
-  const nm_len_t size = sizeof(struct nm_ibverbs_bybuf_packet_s) - offset;
-  const nm_len_t padding = 0;
+  const nm_len_t padding = (nm_ibverbs_alignment > 0 &&  bybuf->send.chunk_len >= 1024) ?
+    (nm_ibverbs_alignment - ((bybuf->send.chunk_len + sizeof(struct nm_ibverbs_bybuf_header_s)) % nm_ibverbs_alignment)) : 0 ;
+  const nm_len_t offset = NM_IBVERBS_BYBUF_DATA_SIZE - bybuf->send.chunk_len - padding;
   void*p_packet = &bybuf->buffer.sbuf;
-  /* TODO- padding */
-  struct nm_ibverbs_bybuf_header_s*p_header = p_packet + bybuf->send.chunk_len;
+  struct nm_ibverbs_bybuf_header_s*p_header = p_packet + bybuf->send.chunk_len + padding;
   assert(bybuf->send.chunk_len <= NM_IBVERBS_BYBUF_DATA_SIZE);
   p_header->offset = offset;
   p_header->ack    = bybuf->window.to_ack;
@@ -316,9 +316,9 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
   bybuf->window.to_ack = 0;
   bybuf->send.done = bybuf->send.chunk_len;
   nm_ibverbs_rdma_send(bybuf->cnx,
-		       sizeof(struct nm_ibverbs_bybuf_packet_s) - offset + padding,
+		       sizeof(struct nm_ibverbs_bybuf_header_s) + bybuf->send.chunk_len + padding,
 		       p_packet,
-		       &bybuf->buffer.rbuf[bybuf->window.next_out].data[offset - padding],
+		       &bybuf->buffer.rbuf[bybuf->window.next_out].data[offset],
 		       &bybuf->buffer,
 		       &bybuf->seg,
 		       bybuf->mr,

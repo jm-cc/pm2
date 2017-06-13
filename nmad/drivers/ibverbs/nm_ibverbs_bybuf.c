@@ -79,7 +79,7 @@ struct nm_ibverbs_bybuf
   
   struct
   {
-    nm_data_slicer_t slicer;  /**< data slicer for data to recv */
+    void*buf;                 /**< buffer to store recevived data */
     nm_len_t chunk_len;       /**< length of chunk to send */
     nm_len_t done;            /**< size of data received so far */
   } recv;
@@ -103,7 +103,7 @@ static void nm_ibverbs_bybuf_connect(void*_status, const void*remote_url, size_t
 static void nm_ibverbs_bybuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_ibverbs_bybuf_buf_send_post(void*_status, nm_len_t len);
 static int  nm_ibverbs_bybuf_send_poll(void*_status);
-static void nm_ibverbs_bybuf_recv_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
+static void nm_ibverbs_bybuf_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_bybuf_poll_one(void*_status);
 static int  nm_ibverbs_bybuf_cancel_recv(void*_status);
 
@@ -118,8 +118,8 @@ static const struct nm_minidriver_iface_s nm_ibverbs_bybuf_minidriver =
     .send_poll     = &nm_ibverbs_bybuf_send_poll,
     .buf_send_get  = &nm_ibverbs_bybuf_buf_send_get,
     .buf_send_post = &nm_ibverbs_bybuf_buf_send_post,
-    .recv_init     = NULL,
-    .recv_data     = &nm_ibverbs_bybuf_recv_data,
+    .recv_init     = &nm_ibverbs_bybuf_recv_init,
+    .recv_data     = NULL,
     .poll_one      = &nm_ibverbs_bybuf_poll_one,
     .cancel_recv   = &nm_ibverbs_bybuf_cancel_recv
   };
@@ -162,7 +162,7 @@ static void* nm_ibverbs_bybuf_instantiate(puk_instance_t instance, puk_context_t
   bybuf->window.credits  = NM_IBVERBS_BYBUF_RBUF_NUM;
   bybuf->window.to_ack   = 0;
   bybuf->mr              = NULL;
-  bybuf->recv.slicer     = NM_DATA_SLICER_NULL;
+  bybuf->recv.buf        = NULL;
   bybuf->send.done       = NM_LEN_UNDEFINED;
   bybuf->send.chunk_len  = NM_LEN_UNDEFINED;
   bybuf->context         = context;
@@ -192,7 +192,7 @@ static void nm_ibverbs_bybuf_getprops(puk_context_t context, struct nm_minidrive
   p_bybuf_context->p_hca = nm_ibverbs_hca_from_context(context);
   puk_context_set_status(context, p_bybuf_context);
   nm_ibverbs_hca_get_profile(p_bybuf_context->p_hca, &props->profile);
-  props->capabilities.supports_data = 1;
+  props->capabilities.supports_data = 0;
   props->capabilities.supports_buf_send = 1;
   props->capabilities.max_msg_size = NM_IBVERBS_BYBUF_DATA_SIZE;
 }
@@ -340,14 +340,13 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
 }
 
 
-static void nm_ibverbs_bybuf_recv_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
+static void nm_ibverbs_bybuf_recv_init(void*_status, struct iovec*v, int n)
 {
   struct nm_ibverbs_bybuf*bybuf = _status;
-  assert(nm_data_slicer_isnull(&bybuf->recv.slicer));
-  nm_data_slicer_generator_init(&bybuf->recv.slicer, p_data);
-  if(chunk_offset > 0)
-    nm_data_slicer_generator_forward(&bybuf->recv.slicer, chunk_offset);
-  bybuf->recv.chunk_len = chunk_len;
+  assert(bybuf->recv.buf == NULL);
+  assert(n == 1);
+  bybuf->recv.buf       = v[0].iov_base;
+  bybuf->recv.chunk_len = v[0].iov_len;
   bybuf->recv.done      = 0;
 }
 
@@ -367,7 +366,7 @@ static int nm_ibverbs_bybuf_poll_one(void*_status)
       complete = (packet->header.status & NM_IBVERBS_BYBUF_STATUS_LAST);
       const int offset = packet->header.offset;
       const int packet_size = NM_IBVERBS_BYBUF_DATA_SIZE - offset;
-      nm_data_slicer_generator_copy_to(&bybuf->recv.slicer, &packet->data[offset], packet_size);
+      memcpy(bybuf->recv.buf, &packet->data[offset], packet_size);
       bybuf->recv.done += packet_size;
       bybuf->window.credits += packet->header.ack;
       packet->header.ack = 0;
@@ -393,8 +392,7 @@ static int nm_ibverbs_bybuf_poll_one(void*_status)
   nm_ibverbs_rdma_poll(bybuf->cnx);
   if(complete)
     {
-      nm_data_slicer_generator_destroy(&bybuf->recv.slicer);
-      bybuf->recv.slicer = NM_DATA_SLICER_NULL;
+      bybuf->recv.buf = NULL;
       nm_ibverbs_send_flush(bybuf->cnx, NM_IBVERBS_WRID_ACK);
       err = NM_ESUCCESS;
     }
@@ -411,9 +409,7 @@ static int nm_ibverbs_bybuf_cancel_recv(void*_status)
   struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
   if(bybuf->recv.done == 0)
     {
-      if(!nm_data_slicer_isnull(&bybuf->recv.slicer))
-	nm_data_slicer_generator_destroy(&bybuf->recv.slicer);
-      bybuf->recv.slicer = NM_DATA_SLICER_NULL;
+      bybuf->recv.buf = NULL;
       err = NM_ESUCCESS;
     }
   return err;

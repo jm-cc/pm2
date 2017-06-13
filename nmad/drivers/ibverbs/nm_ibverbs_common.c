@@ -124,9 +124,12 @@ static void nm_ibverbs_common_init(void)
 
 struct nm_ibverbs_hca_s*nm_ibverbs_hca_from_context(puk_context_t context)
 {
-  assert(context != NULL);
+  if(context == NULL)
+    NM_FATAL("nmad: ibverbs- no context for component.\n");
   const char*device = puk_context_getattr(context, "ibv_device");
   const char*s_port = puk_context_getattr(context, "ibv_port");
+  if(device == NULL || s_port == NULL)
+    NM_FATAL("nmad: ibverbs- cannot find ibv_device/ibv_port attributes.\n");
   const int port = (strcmp(s_port, "auto") == 0) ? 1 : atoi(s_port);
   struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(device, port);
   return p_hca;

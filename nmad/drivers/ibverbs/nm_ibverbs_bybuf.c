@@ -136,7 +136,9 @@ static const struct puk_component_driver_s nm_ibverbs_bybuf_component =
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_bybuf,
   puk_component_declare("NewMad_ibverbs_bybuf",
 			puk_component_provides("PadicoComponent", "component", &nm_ibverbs_bybuf_component),
-			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_bybuf_minidriver)));
+			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_bybuf_minidriver),
+			puk_component_attr("ibv_device", "auto"),
+			puk_component_attr("ibv_port", "auto")));
 
 
 static void* nm_ibverbs_bybuf_instantiate(puk_instance_t instance, puk_context_t context)

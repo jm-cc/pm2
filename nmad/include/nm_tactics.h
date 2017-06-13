@@ -19,8 +19,8 @@
 /** remaining space in pw buffer */
 static inline nm_len_t nm_pw_remaining_buf(struct nm_pkt_wrap_s*p_pw)
 {
-  assert(((p_pw->v[0].iov_base + p_pw->v[0].iov_len) - (void*)p_pw->buf) <= p_pw->length);
   assert(p_pw->max_len != NM_LEN_UNDEFINED);
+  assert(p_pw->length <= p_pw->max_len);
   return p_pw->max_len - p_pw->length;
 }
 

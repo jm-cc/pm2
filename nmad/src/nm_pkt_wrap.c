@@ -108,7 +108,7 @@ void nm_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t
 void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 			      struct nm_data_s*p_data, nm_len_t chunk_len, nm_len_t chunk_offset, uint8_t flags)
 {
-  assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
+  assert((p_pw->flags & NM_PW_GLOBAL_HEADER) || (p_pw->flags & NM_PW_BUF_SEND));
   assert(chunk_len <= nm_pw_remaining_buf(p_pw));
   assert(seq != NM_SEQ_NONE);
   struct iovec*hvec = &p_pw->v[0];
@@ -451,7 +451,7 @@ void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
 int nm_pw_finalize(struct nm_pkt_wrap_s *p_pw)
 {
   assert(p_pw->p_unpack == NULL);
-  assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
+  assert((p_pw->flags & NM_PW_GLOBAL_HEADER) || (p_pw->flags & NM_PW_BUF_SEND));
   assert(!(p_pw->flags & NM_PW_FINALIZED));
   nm_header_global_finalize(p_pw);
   p_pw->flags |= NM_PW_FINALIZED;

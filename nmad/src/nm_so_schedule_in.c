@@ -872,16 +872,16 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
     {
       /* ** Small packets - track #0 *********************** */
       struct iovec*const v0 = p_pw->v;
+      const nm_len_t v0len = nm_header_global_v0len(p_pw);
       const void*ptr = v0->iov_base + sizeof(struct nm_header_global_s);
-      nm_len_t done = 0;
       do
 	{
 	  /* Iterate over header chunks */
 	  assert(ptr < v0->iov_base + v0->iov_len);
-	  done = nm_decode_header_chunk(p_core, ptr, p_pw, p_gate);
+	  nm_len_t done = nm_decode_header_chunk(p_core, ptr, p_pw, p_gate);
 	  ptr += done;
 	}
-      while(ptr < v0->iov_base + nm_header_global_v0len(p_pw));
+      while(ptr < v0->iov_base + v0len);
       /* refill recv on trk #0 */
       nm_drv_refill_recv(p_drv, p_gate);
     }

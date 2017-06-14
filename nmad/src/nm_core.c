@@ -70,22 +70,6 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
     }
 }
 
-static inline void nm_core_pw_completions_flush(struct nm_core*p_core)
-{
-  nm_core_lock_assert(p_core);
-  while(!nm_pkt_wrap_lfqueue_empty(&p_core->completed_pws))
-    {
-      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_lfqueue_dequeue_single_reader(&p_core->completed_pws);
-      assert(p_pw->flags & NM_PW_COMPLETED);
-      if(p_pw->flags & NM_PW_SEND)
-	nm_pw_process_complete_send(p_core, p_pw);
-      else if(p_pw->flags & NM_PW_RECV)
-	nm_pw_process_complete_recv(p_core, p_pw);
-      else
-	NM_FATAL("wrong state for completed pw.");
-    }      
-}
-
 /** make progress on core pending operations.
  * all operations that need lock when multithreaded.
  */

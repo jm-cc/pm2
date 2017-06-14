@@ -129,6 +129,22 @@ static inline void nm_strat_pack_ctrl(nm_gate_t p_gate, nm_header_ctrl_generic_t
     }
 }
 
+static inline void nm_core_pw_completions_flush(struct nm_core*p_core)
+{
+  nm_core_lock_assert(p_core);
+  while(!nm_pkt_wrap_lfqueue_empty(&p_core->completed_pws))
+    {
+      struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_lfqueue_dequeue_single_reader(&p_core->completed_pws);
+      assert(p_pw->flags & NM_PW_COMPLETED);
+      if(p_pw->flags & NM_PW_SEND)
+	nm_pw_process_complete_send(p_core, p_pw);
+      else if(p_pw->flags & NM_PW_RECV)
+	nm_pw_process_complete_recv(p_core, p_pw);
+      else
+	NM_FATAL("wrong state for completed pw.");
+    }      
+}
+
 /** enqueue a pw completion, or process immediately if possible */
 static inline void nm_pw_completed_enqueue(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
@@ -140,7 +156,8 @@ static inline void nm_pw_completed_enqueue(struct nm_core*p_core, struct nm_pkt_
 #endif
   if(nm_core_trylock(p_core))
     {
-      /* got lock- immediate completion */
+      /* got lock- flush pending completions & immediate completion */
+      nm_core_pw_completions_flush(p_core);
       if(p_pw->flags & NM_PW_SEND)
 	nm_pw_process_complete_send(p_core, p_pw);
       else if(p_pw->flags & NM_PW_RECV)
@@ -151,7 +168,7 @@ static inline void nm_pw_completed_enqueue(struct nm_core*p_core, struct nm_pkt_
     }
   else
     {
-      /* busy lock- don't wait, enqueue for ltask */
+      /* busy lock- don't wait, enqueue to process later */
       int rc;
       do
 	{

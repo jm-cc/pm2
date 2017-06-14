@@ -132,7 +132,17 @@ static inline int nm_atomic_dec(int*v)
 #else
   return --(*v);
 #endif /* PIOMAN_MULTITHREAD */
-
 }
+
+/** int add, atomic only when multithread */
+static inline void nm_atomic_add(int*v, int v2)
+{
+#if defined(PIOMAN_MULTITHREAD)
+  __sync_fetch_and_add(v, v2);
+#else
+  (*v) += v2;
+#endif /* PIOMAN_MULTITHREAD */
+}
+
 
 #endif	/* NM_LOCK_H */

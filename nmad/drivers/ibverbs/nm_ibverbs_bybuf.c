@@ -20,12 +20,13 @@
 #include <errno.h>
 
 #include <Padico/Module.h>
+#include <nm_private.h>
 
 
 /* *** method: 'bybuf' ************************************ */
 
 #define NM_IBVERBS_BYBUF_BLOCKSIZE (24 * 1024)
-#define NM_IBVERBS_BYBUF_RBUF_NUM  6
+#define NM_IBVERBS_BYBUF_RBUF_NUM  8
 
 #define NM_IBVERBS_BYBUF_BUFSIZE     (NM_IBVERBS_BYBUF_BLOCKSIZE - sizeof(struct nm_ibverbs_bybuf_header_s))
 #define NM_IBVERBS_BYBUF_DATA_SIZE    NM_IBVERBS_BYBUF_BUFSIZE
@@ -71,7 +72,7 @@ struct nm_ibverbs_bybuf
   struct
   {
     uint32_t next_out;  /**< next sequence number for outgoing packet */
-    uint32_t credits;   /**< remaining credits for sending */
+    int credits;        /**< remaining credits for sending */
     uint32_t next_in;   /**< cell number of next expected packet */
     uint32_t to_ack;    /**< credits not acked yet by the receiver */
   } window;
@@ -282,21 +283,8 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
   const int rack = bybuf->buffer.rack;
   if(rack)
     {
-      bybuf->window.credits += rack;
+      nm_atomic_add(&bybuf->window.credits, rack);
       bybuf->buffer.rack = 0;
-    }
-  if(bybuf->window.credits <= 1)
-    {
-      int j;
-      for(j = 0; j < NM_IBVERBS_BYBUF_RBUF_NUM; j++)
-	{
-	  if(bybuf->buffer.rbuf[j].header.status)
-	    {
-	      bybuf->window.credits += bybuf->buffer.rbuf[j].header.ack;
-	      bybuf->buffer.rbuf[j].header.ack = 0;
-	      bybuf->buffer.rbuf[j].header.status &= ~NM_IBVERBS_BYBUF_STATUS_CREDITS;
-	    }
-	}
     }
   if(bybuf->window.credits <= 1) 
     {
@@ -327,7 +315,7 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
 		       bybuf->mr,
 		       NM_IBVERBS_WRID_RDMA);
   bybuf->window.next_out = (bybuf->window.next_out + 1) % NM_IBVERBS_BYBUF_RBUF_NUM;
-  bybuf->window.credits--;
+  nm_atomic_dec(&bybuf->window.credits);
  fastpoll:
   nm_ibverbs_rdma_poll(bybuf->cnx);
   if(bybuf->cnx->pending.wrids[NM_IBVERBS_WRID_RDMA]) 
@@ -355,6 +343,9 @@ static int nm_ibverbs_bybuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t
       const int packet_size = NM_IBVERBS_BYBUF_DATA_SIZE - offset;
       *p_buffer = &packet->data[offset];
       *p_len = packet_size;
+      const int credits = packet->header.ack;
+      if(credits)
+	nm_atomic_add(&bybuf->window.credits, credits);
       err = NM_ESUCCESS;
     }
   else
@@ -369,7 +360,6 @@ static void nm_ibverbs_bybuf_buf_recv_release(void*_status)
   struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
   struct nm_ibverbs_bybuf_packet_s*__restrict__ packet = &bybuf->buffer.rbuf[bybuf->window.next_in];
   assert((packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
-  bybuf->window.credits += packet->header.ack;
   packet->header.ack = 0;
   packet->header.status = 0;
   bybuf->window.to_ack++;

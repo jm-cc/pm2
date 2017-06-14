@@ -254,29 +254,34 @@ static inline int nm_ibverbs_rdma_send(struct nm_ibverbs_cnx*p_ibverbs_cnx, int 
 
 static inline int nm_ibverbs_rdma_poll(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
 {
-  struct ibv_wc wc;
   int ne = 0, done = 0;
-  do {
-    ne = ibv_poll_cq(p_ibverbs_cnx->of_cq, 1, &wc);
-    if(ne > 0 && wc.status == IBV_WC_SUCCESS)
-      {
-	assert(wc.wr_id < _NM_IBVERBS_WRID_MAX);
-	p_ibverbs_cnx->pending.wrids[wc.wr_id]--;
-	p_ibverbs_cnx->pending.total--;
-	done += ne;
-      }
-    else if(ne > 0)
-      {
-	fprintf(stderr, "nmad: FATAL- ibverbs: WC send failed- status=%d (%s)\n", 
-		wc.status, nm_ibverbs_status_strings[wc.status]);
-	abort();
-      }
-    else if(ne < 0)
-      {
-	fprintf(stderr, "nmad: FATAL- ibverbs: WC polling failed.\n");
-	abort();
-      }
-  } while(ne > 0);
+  if(p_ibverbs_cnx->pending.total > 0)
+    {
+      do
+	{
+	  struct ibv_wc wc;
+	  ne = ibv_poll_cq(p_ibverbs_cnx->of_cq, 1, &wc);
+	  if(ne > 0 && wc.status == IBV_WC_SUCCESS)
+	    {
+	      assert(wc.wr_id < _NM_IBVERBS_WRID_MAX);
+	      p_ibverbs_cnx->pending.wrids[wc.wr_id]--;
+	      p_ibverbs_cnx->pending.total--;
+	      done += ne;
+	    }
+	  else if(ne > 0)
+	    {
+	      fprintf(stderr, "nmad: FATAL- ibverbs: WC send failed- status=%d (%s)\n", 
+		      wc.status, nm_ibverbs_status_strings[wc.status]);
+	      abort();
+	    }
+	  else if(ne < 0)
+	    {
+	      fprintf(stderr, "nmad: FATAL- ibverbs: WC polling failed.\n");
+	      abort();
+	    }
+	}
+      while(ne > 0);
+    }
   return (done > 0) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 

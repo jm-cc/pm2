@@ -34,7 +34,6 @@
 
 #define NM_IBVERBS_BYBUF_STATUS_EMPTY   0x00  /**< no message in buffer */
 #define NM_IBVERBS_BYBUF_STATUS_DATA    0x01  /**< data in buffer (sent by copy) */
-#define NM_IBVERBS_BYBUF_STATUS_LAST    0x02  /**< last data block */
 #define NM_IBVERBS_BYBUF_STATUS_CREDITS 0x04  /**< message contains credits */
 
 struct nm_ibverbs_bybuf_header_s
@@ -312,7 +311,7 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
   assert(bybuf->send.chunk_len <= NM_IBVERBS_BYBUF_DATA_SIZE);
   p_header->offset = offset;
   p_header->ack    = bybuf->window.to_ack;
-  p_header->status = NM_IBVERBS_BYBUF_STATUS_DATA | NM_IBVERBS_BYBUF_STATUS_LAST;
+  p_header->status = NM_IBVERBS_BYBUF_STATUS_DATA;
   bybuf->window.to_ack = 0;
   bybuf->send.done = bybuf->send.chunk_len;
   nm_ibverbs_rdma_send(bybuf->cnx,
@@ -353,17 +352,12 @@ static void nm_ibverbs_bybuf_recv_init(void*_status, struct iovec*v, int n)
 static int nm_ibverbs_bybuf_poll_one(void*_status)
 {
   int err = -NM_EUNKNOWN;
-  int complete = 0;
   struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
   struct nm_ibverbs_bybuf_packet_s*__restrict__ packet = &bybuf->buffer.rbuf[bybuf->window.next_in];
-  while( (!complete) && (packet->header.status != 0) ) 
+  if(packet->header.status != 0)
     {
-      assert(bybuf->recv.done <= bybuf->recv.chunk_len);
-      if(bybuf->recv.done == 0)
-	{
-	  assert((packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
-	}
-      complete = (packet->header.status & NM_IBVERBS_BYBUF_STATUS_LAST);
+      assert((packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
+      assert(bybuf->recv.done == 0);
       const int offset = packet->header.offset;
       const int packet_size = NM_IBVERBS_BYBUF_DATA_SIZE - offset;
       memcpy(bybuf->recv.buf, &packet->data[offset], packet_size);
@@ -387,11 +381,7 @@ static int nm_ibverbs_bybuf_poll_one(void*_status)
 	}
       nm_ibverbs_rdma_poll(bybuf->cnx);
       bybuf->window.next_in = (bybuf->window.next_in + 1) % NM_IBVERBS_BYBUF_RBUF_NUM;
-      packet = &bybuf->buffer.rbuf[bybuf->window.next_in];
-    }
-  nm_ibverbs_rdma_poll(bybuf->cnx);
-  if(complete)
-    {
+      nm_ibverbs_rdma_poll(bybuf->cnx);
       bybuf->recv.buf = NULL;
       nm_ibverbs_send_flush(bybuf->cnx, NM_IBVERBS_WRID_ACK);
       err = NM_ESUCCESS;

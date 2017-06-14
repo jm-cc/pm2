@@ -896,6 +896,17 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 	{
 	  const struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
 	  (*r->driver->buf_recv_release)(r->_status);
+	  if(p_pw->flags & NM_PW_BUF_MIRROR)
+	    {
+	      p_pw->v[0].iov_base = p_pw->buf;
+	    }
+	  else
+	    {
+#ifdef DEBUG
+	      p_pw->v[0].iov_base = NULL;
+	      p_pw->v[0].iov_len = 0;
+#endif /* DEBUG*/
+	    }
 	}
       /* refill recv on trk #0 */
       nm_drv_refill_recv(p_drv, p_gate);

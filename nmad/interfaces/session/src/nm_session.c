@@ -157,11 +157,12 @@ static void nm_session_init_drivers(void)
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
 	}
-      else if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0) || (strcmp(driver_name, "ibverbs") == 0))
+      else if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0) ||
+	      (strcmp(driver_name, "ibverbs") == 0) || (strcmp(driver_name, "ibbuf") == 0))
 	{
 	  driver_trk_small =
-	    "<puk:composite id=\"nm:minidriver_ibverbs_bycopy\">"
-	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
+	    "<puk:composite id=\"nm:minidriver_ibverbs_bybuf\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bybuf\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
 	  driver_trk_large =
@@ -179,11 +180,11 @@ static void nm_session_init_drivers(void)
 	      NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
 	    }
 	}
-      else if(strcmp(driver_name, "ibbuf") == 0)
+      else if(strcmp(driver_name, "ibcopy") == 0)
 	{
 	  driver_trk_small =
-	    "<puk:composite id=\"nm:minidriver_ibverbs_bybuf\">"
-	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bybuf\"/>"
+	    "<puk:composite id=\"nm:minidriver_ibverbs_bycopy\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
 	  driver_trk_large =

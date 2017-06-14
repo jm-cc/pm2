@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2013 (see AUTHORS file)
+ * Copyright (C) 2013-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,14 +41,14 @@ struct nm_drv_profile_s
  */
 struct nm_minidriver_capabilities_s
 {
+  nm_len_t max_msg_size; /**< maximum message size for the track */
   int supports_data;     /**< driver can send/recv direct nm_data_s */
+  int supports_buf_send; /**< driver supported buffer-based send */
+  int supports_buf_recv; /**< driver supported buffer-based recv */
   int has_recv_any;      /**< driver accepts receive from NM_GATE_ANY */
   int min_period;        /**< minimum delay between poll (in microseconds) */
   int is_exportable;     /**< blocking calls may be exported by PIOMan */
-  nm_len_t max_msg_size; /**< maximum message size for the track */
-  int supports_buf_send;
   int trk_rdv;           /**< trk needs a rdv for matched send/recv size; if 0, trk preserves boudaries */
-  int rdv_threshold;     /**< preferred length for switching to rendez-vous. */
 };
 
 struct nm_minidriver_properties_s
@@ -81,6 +81,9 @@ struct nm_minidriver_iface_s
   /* buffer-based sending */
   void (*buf_send_get)(void*_status, void**p_buffer, nm_len_t*p_len);
   void (*buf_send_post)(void*_status, nm_len_t len);
+  /* buffer-based recv */
+  int  (*buf_recv_poll)(void*_status, void**p_buffer, nm_len_t*p_len);
+  void (*buf_recv_release)(void*_status);
 };
 PUK_IFACE_TYPE(NewMad_minidriver, struct nm_minidriver_iface_s);
 

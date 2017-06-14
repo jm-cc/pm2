@@ -80,7 +80,6 @@ struct nm_ibverbs_bybuf
   {
     void*buf;                 /**< buffer to store recevived data */
     nm_len_t chunk_len;       /**< length of chunk to send */
-    nm_len_t done;            /**< size of data received so far */
   } recv;
   
   struct
@@ -105,22 +104,26 @@ static int  nm_ibverbs_bybuf_send_poll(void*_status);
 static void nm_ibverbs_bybuf_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_bybuf_poll_one(void*_status);
 static int  nm_ibverbs_bybuf_cancel_recv(void*_status);
+static int  nm_ibverbs_bybuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len);
+static void nm_ibverbs_bybuf_buf_recv_release(void*_status);
 
 static const struct nm_minidriver_iface_s nm_ibverbs_bybuf_minidriver =
   {
-    .getprops      = &nm_ibverbs_bybuf_getprops,
-    .init          = &nm_ibverbs_bybuf_init,
-    .close         = &nm_ibverbs_bybuf_close,
-    .connect       = &nm_ibverbs_bybuf_connect,
-    .send_post     = NULL,
-    .send_data     = NULL,
-    .send_poll     = &nm_ibverbs_bybuf_send_poll,
-    .buf_send_get  = &nm_ibverbs_bybuf_buf_send_get,
-    .buf_send_post = &nm_ibverbs_bybuf_buf_send_post,
-    .recv_init     = &nm_ibverbs_bybuf_recv_init,
-    .recv_data     = NULL,
-    .poll_one      = &nm_ibverbs_bybuf_poll_one,
-    .cancel_recv   = &nm_ibverbs_bybuf_cancel_recv
+    .getprops         = &nm_ibverbs_bybuf_getprops,
+    .init             = &nm_ibverbs_bybuf_init,
+    .close            = &nm_ibverbs_bybuf_close,
+    .connect          = &nm_ibverbs_bybuf_connect,
+    .send_post        = NULL,
+    .send_data        = NULL,
+    .send_poll        = &nm_ibverbs_bybuf_send_poll,
+    .buf_send_get     = &nm_ibverbs_bybuf_buf_send_get,
+    .buf_send_post    = &nm_ibverbs_bybuf_buf_send_post,
+    .recv_init        = &nm_ibverbs_bybuf_recv_init,
+    .recv_data        = NULL,
+    .poll_one         = &nm_ibverbs_bybuf_poll_one,
+    .cancel_recv      = &nm_ibverbs_bybuf_cancel_recv,
+    .buf_recv_poll    = &nm_ibverbs_bybuf_buf_recv_poll,
+    .buf_recv_release = &nm_ibverbs_bybuf_buf_recv_release
   };
 
 static void*nm_ibverbs_bybuf_instantiate(puk_instance_t instance, puk_context_t context);
@@ -193,6 +196,7 @@ static void nm_ibverbs_bybuf_getprops(puk_context_t context, struct nm_minidrive
   nm_ibverbs_hca_get_profile(p_bybuf_context->p_hca, &props->profile);
   props->capabilities.supports_data = 0;
   props->capabilities.supports_buf_send = 1;
+  props->capabilities.supports_buf_recv = 1;
   props->capabilities.max_msg_size = NM_IBVERBS_BYBUF_DATA_SIZE;
 }
 
@@ -338,15 +342,64 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
 
 }
 
+static int nm_ibverbs_bybuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len)
+{
+  int err = -NM_EUNKNOWN;
+  struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
+  struct nm_ibverbs_bybuf_packet_s*__restrict__ packet = &bybuf->buffer.rbuf[bybuf->window.next_in];
+  if(packet->header.status != 0)
+    {
+      assert((packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
+      assert(bybuf->recv.buf == NULL);
+      const int offset = packet->header.offset;
+      const int packet_size = NM_IBVERBS_BYBUF_DATA_SIZE - offset;
+      *p_buffer = &packet->data[offset];
+      *p_len = packet_size;
+      err = NM_ESUCCESS;
+    }
+  else
+    {
+      err = -NM_EAGAIN;
+    }
+  return err;
+}
+
+static void nm_ibverbs_bybuf_buf_recv_release(void*_status)
+{
+  struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
+  struct nm_ibverbs_bybuf_packet_s*__restrict__ packet = &bybuf->buffer.rbuf[bybuf->window.next_in];
+  assert((packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
+  bybuf->window.credits += packet->header.ack;
+  packet->header.ack = 0;
+  packet->header.status = 0;
+  bybuf->window.to_ack++;
+  if(bybuf->window.to_ack > NM_IBVERBS_BYBUF_CREDITS_THR) 
+    {
+      bybuf->buffer.sack = bybuf->window.to_ack;
+      nm_ibverbs_rdma_send(bybuf->cnx,
+			   sizeof(uint16_t),
+			   (void*)&bybuf->buffer.sack,
+			   (void*)&bybuf->buffer.rack,
+			   &bybuf->buffer,
+			   &bybuf->seg,
+			   bybuf->mr,
+			   NM_IBVERBS_WRID_ACK);
+      bybuf->window.to_ack = 0;
+    }
+  nm_ibverbs_rdma_poll(bybuf->cnx);
+  bybuf->window.next_in = (bybuf->window.next_in + 1) % NM_IBVERBS_BYBUF_RBUF_NUM;
+  nm_ibverbs_rdma_poll(bybuf->cnx);
+  bybuf->recv.buf = NULL;
+  nm_ibverbs_send_flush(bybuf->cnx, NM_IBVERBS_WRID_ACK);
+}
 
 static void nm_ibverbs_bybuf_recv_init(void*_status, struct iovec*v, int n)
 {
-  struct nm_ibverbs_bybuf*bybuf = _status;
+  struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
   assert(bybuf->recv.buf == NULL);
   assert(n == 1);
   bybuf->recv.buf       = v[0].iov_base;
   bybuf->recv.chunk_len = v[0].iov_len;
-  bybuf->recv.done      = 0;
 }
 
 static int nm_ibverbs_bybuf_poll_one(void*_status)
@@ -357,11 +410,10 @@ static int nm_ibverbs_bybuf_poll_one(void*_status)
   if(packet->header.status != 0)
     {
       assert((packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
-      assert(bybuf->recv.done == 0);
+      assert(bybuf->recv.buf != NULL);
       const int offset = packet->header.offset;
       const int packet_size = NM_IBVERBS_BYBUF_DATA_SIZE - offset;
       memcpy(bybuf->recv.buf, &packet->data[offset], packet_size);
-      bybuf->recv.done += packet_size;
       bybuf->window.credits += packet->header.ack;
       packet->header.ack = 0;
       packet->header.status = 0;
@@ -397,7 +449,7 @@ static int nm_ibverbs_bybuf_cancel_recv(void*_status)
 {
   int err = -NM_EAGAIN;
   struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
-  if(bybuf->recv.done == 0)
+  if(bybuf->recv.buf != NULL)
     {
       bybuf->recv.buf = NULL;
       err = NM_ESUCCESS;

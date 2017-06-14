@@ -24,8 +24,8 @@
 
 /* *** method: 'bybuf' ************************************ */
 
-#define NM_IBVERBS_BYBUF_BLOCKSIZE 16384
-#define NM_IBVERBS_BYBUF_RBUF_NUM  8
+#define NM_IBVERBS_BYBUF_BLOCKSIZE (24 * 1024)
+#define NM_IBVERBS_BYBUF_RBUF_NUM  6
 
 #define NM_IBVERBS_BYBUF_BUFSIZE     (NM_IBVERBS_BYBUF_BLOCKSIZE - sizeof(struct nm_ibverbs_bybuf_header_s))
 #define NM_IBVERBS_BYBUF_DATA_SIZE    NM_IBVERBS_BYBUF_BUFSIZE

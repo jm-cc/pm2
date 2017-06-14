@@ -202,8 +202,18 @@ static inline void nm_so_data_flags_decode(struct nm_req_s*p_unpack, uint8_t fla
 /** store an unexpected chunk of data (data/short_data/rdv) */
 static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, const struct nm_header_generic_s*p_header,
 				       nm_len_t chunk_offset, nm_len_t chunk_len, nm_core_tag_t tag, nm_seq_t seq,
-				       struct nm_pkt_wrap_s *p_pw)
+				       struct nm_pkt_wrap_s*p_pw)
 {
+  if(p_pw->flags & NM_PW_BUF_RECV)
+    {
+      if(!(p_pw->flags & NM_PW_BUF_MIRROR))
+	{
+	  memcpy(p_pw->buf, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
+	  p_pw->flags |= NM_PW_BUF_MIRROR;
+	}
+	const nm_len_t header_offset = ((void*)p_header) - p_pw->v[0].iov_base;
+	p_header = ((void*)p_pw->buf) + header_offset;
+    }
   struct nm_unexpected_s*p_chunk = nm_unexpected_alloc();
   p_chunk->p_header = p_header;
   p_chunk->p_pw   = p_pw;
@@ -882,6 +892,11 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 	  ptr += done;
 	}
       while(ptr < v0->iov_base + v0len);
+      if(p_pw->flags & NM_PW_BUF_RECV)
+	{
+	  const struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
+	  (*r->driver->buf_recv_release)(r->_status);
+	}
       /* refill recv on trk #0 */
       nm_drv_refill_recv(p_drv, p_gate);
     }

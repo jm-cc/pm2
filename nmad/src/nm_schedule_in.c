@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,7 +83,21 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
     {
       assert(p_pw->p_trk == &p_pw->p_gate->trks[p_pw->trk_id]);
       const struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
-      err = (*r->driver->poll_one)(r->_status);
+      if(p_pw->flags & NM_PW_BUF_RECV)
+	{
+	  void*buf = NULL;
+	  nm_len_t len = NM_LEN_UNDEFINED;
+	  err = (*r->driver->buf_recv_poll)(r->_status, &buf, &len);
+	  if(err == NM_ESUCCESS)
+	    {
+	      p_pw->v[0].iov_base = buf;
+	      p_pw->v[0].iov_len = len;
+	    }
+	}
+      else
+	{
+	  err = (*r->driver->poll_one)(r->_status);
+	}
     }
   else
     {
@@ -153,7 +167,11 @@ int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
       else
 	{
 	  /* no p_data, or data has been flattened */
-	  if(r->driver->recv_init)
+	  if(r->driver->buf_recv_poll)
+	    {
+	      p_pw->flags |= NM_PW_BUF_RECV;
+	    }
+	  else if(r->driver->recv_init)
 	    {
 	      (*r->driver->recv_init)(r->_status, &p_pw->v[0], p_pw->v_nb);
 	    }

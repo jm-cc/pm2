@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_MOD = Minidriver_self
+TARGET_MOD = Minidriver_self Minidriver_self_buf
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
@@ -18,3 +18,5 @@ CFLAGS   += @NMAD_CORE_CFLAGS@
 include @abs_top_builddir@/common_rules.mk
 
 Minidriver_self: nm_minidriver_self.pic.o
+
+Minidriver_self_buf: nm_minidriver_self_buf.pic.o

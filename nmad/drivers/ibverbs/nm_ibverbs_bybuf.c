@@ -35,7 +35,6 @@
 
 #define NM_IBVERBS_BYBUF_STATUS_EMPTY   0x00  /**< no message in buffer */
 #define NM_IBVERBS_BYBUF_STATUS_DATA    0x01  /**< data in buffer (sent by copy) */
-#define NM_IBVERBS_BYBUF_STATUS_CREDITS 0x04  /**< message contains credits */
 
 struct nm_ibverbs_bybuf_header_s
 {
@@ -72,9 +71,9 @@ struct nm_ibverbs_bybuf
   struct
   {
     uint32_t next_out;  /**< next sequence number for outgoing packet */
-    int credits;        /**< remaining credits for sending */
     uint32_t next_in;   /**< cell number of next expected packet */
-    uint32_t to_ack;    /**< credits not acked yet by the receiver */
+    int credits;        /**< remaining credits for sending */
+    int to_ack;         /**< credits not acked yet by the receiver */
   } window;
   
   struct
@@ -142,6 +141,20 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_bybuf,
 			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_bybuf_minidriver),
 			puk_component_attr("ibv_device", "auto"),
 			puk_component_attr("ibv_port", "auto")));
+
+/** atomically get the number of credits to ACK and reset it to 0 */
+static inline int nm_ibverbs_bybuf_to_ack(struct nm_ibverbs_bybuf*__restrict__ bybuf)
+{
+  const int to_ack = bybuf->window.to_ack;
+  if(to_ack > 0)
+    {
+      return nm_atomic_compare_and_swap(&bybuf->window.to_ack, to_ack, 0) ? to_ack : 0;
+    }
+  else
+    {
+      return 0;
+    }
+}
 
 
 static void* nm_ibverbs_bybuf_instantiate(puk_instance_t instance, puk_context_t context)
@@ -286,7 +299,7 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
       nm_atomic_add(&bybuf->window.credits, rack);
       bybuf->buffer.rack = 0;
     }
-  if(bybuf->window.credits <= 1) 
+  if(bybuf->window.credits <= 1)
     {
       goto wouldblock;
     }
@@ -302,9 +315,8 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
   struct nm_ibverbs_bybuf_header_s*p_header = p_packet + bybuf->send.chunk_len + padding;
   assert(bybuf->send.chunk_len <= NM_IBVERBS_BYBUF_DATA_SIZE);
   p_header->offset = offset;
-  p_header->ack    = bybuf->window.to_ack;
+  p_header->ack    = nm_ibverbs_bybuf_to_ack(bybuf);
   p_header->status = NM_IBVERBS_BYBUF_STATUS_DATA;
-  bybuf->window.to_ack = 0;
   bybuf->send.done = bybuf->send.chunk_len;
   nm_ibverbs_rdma_send(bybuf->cnx,
 		       sizeof(struct nm_ibverbs_bybuf_header_s) + bybuf->send.chunk_len + padding,
@@ -362,19 +374,21 @@ static void nm_ibverbs_bybuf_buf_recv_release(void*_status)
   assert((packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
   packet->header.ack = 0;
   packet->header.status = 0;
-  bybuf->window.to_ack++;
-  if(bybuf->window.to_ack > NM_IBVERBS_BYBUF_CREDITS_THR) 
+  const int to_ack = nm_atomic_inc(&bybuf->window.to_ack);
+  if(to_ack > NM_IBVERBS_BYBUF_CREDITS_THR) 
     {
-      bybuf->buffer.sack = bybuf->window.to_ack;
-      nm_ibverbs_rdma_send(bybuf->cnx,
-			   sizeof(uint16_t),
-			   (void*)&bybuf->buffer.sack,
-			   (void*)&bybuf->buffer.rack,
-			   &bybuf->buffer,
-			   &bybuf->seg,
-			   bybuf->mr,
-			   NM_IBVERBS_WRID_ACK);
-      bybuf->window.to_ack = 0;
+      bybuf->buffer.sack = nm_ibverbs_bybuf_to_ack(bybuf);
+      if(bybuf->buffer.sack > 0)
+	{
+	  nm_ibverbs_rdma_send(bybuf->cnx,
+			       sizeof(uint16_t),
+			       (void*)&bybuf->buffer.sack,
+			       (void*)&bybuf->buffer.rack,
+			       &bybuf->buffer,
+			       &bybuf->seg,
+			       bybuf->mr,
+			       NM_IBVERBS_WRID_ACK);
+	}
     }
   nm_ibverbs_rdma_poll(bybuf->cnx);
   bybuf->window.next_in = (bybuf->window.next_in + 1) % NM_IBVERBS_BYBUF_RBUF_NUM;
@@ -407,19 +421,21 @@ static int nm_ibverbs_bybuf_poll_one(void*_status)
       bybuf->window.credits += packet->header.ack;
       packet->header.ack = 0;
       packet->header.status = 0;
-      bybuf->window.to_ack++;
-      if(bybuf->window.to_ack > NM_IBVERBS_BYBUF_CREDITS_THR) 
+      const int to_ack = nm_atomic_inc(&bybuf->window.to_ack);
+      if(to_ack > NM_IBVERBS_BYBUF_CREDITS_THR) 
 	{
-	  bybuf->buffer.sack = bybuf->window.to_ack;
-	  nm_ibverbs_rdma_send(bybuf->cnx,
-			       sizeof(uint16_t),
-			       (void*)&bybuf->buffer.sack,
-			       (void*)&bybuf->buffer.rack,
-			       &bybuf->buffer,
-			       &bybuf->seg,
-			       bybuf->mr,
-			       NM_IBVERBS_WRID_ACK);
-	  bybuf->window.to_ack = 0;
+	  bybuf->buffer.sack = nm_ibverbs_bybuf_to_ack(bybuf);
+	  if(bybuf->buffer.sack > 0)
+	    {
+	      nm_ibverbs_rdma_send(bybuf->cnx,
+				   sizeof(uint16_t),
+				   (void*)&bybuf->buffer.sack,
+				   (void*)&bybuf->buffer.rack,
+				   &bybuf->buffer,
+				   &bybuf->seg,
+				   bybuf->mr,
+				   NM_IBVERBS_WRID_ACK);
+	    }
 	}
       nm_ibverbs_rdma_poll(bybuf->cnx);
       bybuf->window.next_in = (bybuf->window.next_in + 1) % NM_IBVERBS_BYBUF_RBUF_NUM;

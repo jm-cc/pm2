@@ -144,5 +144,22 @@ static inline void nm_atomic_add(int*v, int v2)
 #endif /* PIOMAN_MULTITHREAD */
 }
 
+/** boolean int compare and swap */
+static inline int nm_atomic_compare_and_swap(int*v, int oldval, int newval)
+{
+#if defined(PIOMAN_MULTITHREAD)
+  return __sync_bool_compare_and_swap(v, oldval, newval);
+#else
+  if(*v == oldval)
+    {
+      *v = newval;
+      return 1;
+    }
+  else
+    {
+      return 0;
+    }
+#endif /* PIOMAN_MULTITHREAD */
+}
 
 #endif	/* NM_LOCK_H */

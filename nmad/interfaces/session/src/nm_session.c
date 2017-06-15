@@ -247,8 +247,8 @@ static void nm_session_init_drivers(void)
 
   /* load default driver */
   const char*driver_self_small =
-    "<puk:composite id=\"nm:minidriver_self-small\">"
-    "  <puk:component id=\"0\" name=\"Minidriver_self\"/>"
+    "<puk:composite id=\"nm:minidriver_self_buf-small\">"
+    "  <puk:component id=\"0\" name=\"Minidriver_self_buf\"/>"
     "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
     "</puk:composite>";
   const char*driver_self_large =

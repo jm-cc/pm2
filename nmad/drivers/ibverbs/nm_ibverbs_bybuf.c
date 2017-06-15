@@ -390,7 +390,6 @@ static void nm_ibverbs_bybuf_buf_recv_release(void*_status)
 			       NM_IBVERBS_WRID_ACK);
 	}
     }
-  nm_ibverbs_rdma_poll(bybuf->cnx);
   bybuf->window.next_in = (bybuf->window.next_in + 1) % NM_IBVERBS_BYBUF_RBUF_NUM;
   nm_ibverbs_rdma_poll(bybuf->cnx);
   bybuf->recv.buf = NULL;
@@ -437,7 +436,6 @@ static int nm_ibverbs_bybuf_poll_one(void*_status)
 				   NM_IBVERBS_WRID_ACK);
 	    }
 	}
-      nm_ibverbs_rdma_poll(bybuf->cnx);
       bybuf->window.next_in = (bybuf->window.next_in + 1) % NM_IBVERBS_BYBUF_RBUF_NUM;
       nm_ibverbs_rdma_poll(bybuf->cnx);
       bybuf->recv.buf = NULL;

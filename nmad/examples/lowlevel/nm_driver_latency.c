@@ -27,12 +27,20 @@
 
 const int roundtrips = 100000;
 
-static inline void minidriver_send(struct puk_receptacle_NewMad_minidriver_s*r, char*buf, size_t len)
+static inline void minidriver_send(struct puk_receptacle_NewMad_minidriver_s*r, void*buf, nm_len_t len)
 {
   int rc = -1;
   struct iovec v = { .iov_base = buf, .iov_len = len };
   struct nm_data_s data;
-  if(r->driver->send_post)
+  if(r->driver->buf_send_get)
+    {
+      void*p_driver_buf = NULL;
+      nm_len_t driver_len = NM_LEN_UNDEFINED;
+      (*r->driver->buf_send_get)(r->_status, &p_driver_buf, &driver_len);
+      memcpy(p_driver_buf, buf, len);
+      (*r->driver->buf_send_post)(r->_status, len);
+    }
+  else if(r->driver->send_post)
     {
       (*r->driver->send_post)(r->_status, &v, 1);
     }
@@ -53,20 +61,35 @@ static inline void minidriver_recv(struct puk_receptacle_NewMad_minidriver_s*r, 
   int rc = -1;
   struct iovec v = { .iov_base = buf, .iov_len = len };
   struct nm_data_s data;
-  if(r->driver->recv_init)
+  if(r->driver->buf_recv_poll)
     {
-      (*r->driver->recv_init)(r->_status, &v, 1);
+      void*p_driver_buf = NULL;
+      nm_len_t driver_len = NM_LEN_UNDEFINED;
+      do
+	{
+	  rc = (*r->driver->buf_recv_poll)(r->_status, &p_driver_buf, &driver_len);
+	}
+      while(rc != 0);
+      memcpy(buf, p_driver_buf, len);
+      (*r->driver->buf_recv_release)(r->_status);
     }
   else
     {
-      nm_data_contiguous_build(&data, buf, len);
-      (*r->driver->recv_data)(r->_status, &data, 0, len);
+      if(r->driver->recv_init)
+	{
+	  (*r->driver->recv_init)(r->_status, &v, 1);
+	}
+      else
+	{
+	  nm_data_contiguous_build(&data, buf, len);
+	  (*r->driver->recv_data)(r->_status, &data, 0, len);
+	}
+      do
+	{
+	  rc = (*r->driver->poll_one)(r->_status);
+	}
+      while(rc != 0);
     }
-  do
-    {
-      rc = (*r->driver->poll_one)(r->_status);
-    }
-  while(rc != 0);
 }
 
 

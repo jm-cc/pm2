@@ -104,7 +104,10 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
       NM_FATAL("nmad: FATAL- recv_any not implemented yet.\n");
     }
 #ifdef DEBUG
-  if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && (p_pw->p_drv->driver->recv_init == NULL))
+  if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && 
+     (p_pw->p_drv->driver->recv_init == NULL) &&
+     (p_pw->p_drv->driver->buf_recv_poll == NULL) &&
+     (p_pw->p_drv->props.capabilities.supports_data))
     {
       struct nm_data_s*p_data = &p_pw->p_trk->rdata;
       assert(!nm_data_isnull(p_data));

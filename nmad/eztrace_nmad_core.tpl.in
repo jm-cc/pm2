@@ -14,13 +14,13 @@ BEGIN_CFLAGS
 END_CFLAGS
 
 
-void nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s *p_pw)
+void nm_pw_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap_s*p_pw)
 BEGIN
   EVENT("nm_pw_process_complete_send")
   CALL_FUNC
 END
 
-void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s *p_pw)
+void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 BEGIN
   EVENT("nm_pw_process_complete_recv")
   CALL_FUNC
@@ -46,13 +46,15 @@ END
 
 void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 BEGIN
+  EVENT("nm_pw_post_send")
   PUSH_STATE("nm_pw_post_send")
   CALL_FUNC
   POP_STATE()
 END
 
-void nm_pw_poll_send(struct nm_pkt_wrap_s *p_pw)
+void nm_pw_poll_send(struct nm_pkt_wrap_s*p_pw)
 BEGIN
+  EVENT("nm_pw_poll_send")
   PUSH_STATE("nm_pw_poll_send")
   CALL_FUNC
   POP_STATE()
@@ -60,6 +62,7 @@ END
 
 int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 BEGIN
+  EVENT("nm_pw_poll_recv")
   PUSH_STATE("nm_pw_poll_recv")
   CALL_FUNC
   POP_STATE()

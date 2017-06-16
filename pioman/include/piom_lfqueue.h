@@ -10,6 +10,16 @@
  * @{
  */
 
+#if defined(PIOMAN_MULTITHREAD)
+#  define piom_bool_compare_and_swap(V, OLD, NEW) \
+  __sync_bool_compare_and_swap(V, OLD, NEW)
+#elif defined(PIOMAN_NOTHREAD)
+#  define piom_bool_compare_and_swap(V, OLD, NEW) \
+  ( assert((*V) == OLD), (*V) = NEW, 1 )
+#else
+#error missing define PIOMAN_{NOTHREAD|MULTITHREAD}
+#endif
+
 /** builds a lock-free FIFO type and functions.
  *  ENAME is base name for symbols
  *  TYPE is the type of elements in queue- must be atomic (1, 2, 4, or 8 bytes long)
@@ -66,7 +76,7 @@
 	queue->_head = next;						\
       }									\
     else								\
-      if(!__sync_bool_compare_and_swap(&queue->_head, head, next))	\
+      if(!piom_bool_compare_and_swap(&queue->_head, head, next))	\
 	goto retry;							\
     /* slot is still NULL for concurrent readers, already reserved if concurrent writers */ \
     while(queue->_queue[head] != (LFQUEUE_NULL))			\
@@ -100,7 +110,7 @@
 	queue->_tail = next;						\
       }									\
     else								\
-      if(!__sync_bool_compare_and_swap(&queue->_tail, tail, next))	\
+      if(!piom_bool_compare_and_swap(&queue->_tail, tail, next))	\
 	goto retry;							\
     e = queue->_queue[tail];						\
     while(e == (LFQUEUE_NULL)) 						\

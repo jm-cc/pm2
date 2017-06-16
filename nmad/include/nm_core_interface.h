@@ -330,7 +330,7 @@ void nm_core_unpack_match_recv(struct nm_core*p_core, struct nm_req_s*p_unpack, 
 void nm_core_unpack_match_event(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_core_event_s*p_event);
 
 /** submit an unpack request */
-int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_req_flag_t flags);
+void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_req_flag_t flags);
 
 /** peeks unexpected data without consumming it */
 int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data);

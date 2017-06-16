@@ -1409,7 +1409,7 @@ int mpi_win_start(MPI_Group group, int assert, MPI_Win win)
       tag        = nm_mpi_rma_create_tag(p_win->win_ids[targets[i]], 0, NM_MPI_TAG_PRIVATE_RMA_START);
       nm_sr_recv_init(p_session, &p_reqs[i]);
       nm_sr_recv_unpack_contiguous(p_session, &p_reqs[i], NULL, 0);
-      err = nm_sr_recv_irecv(p_session, &p_reqs[i], gate, tag, tag_mask);
+      nm_sr_recv_irecv(p_session, &p_reqs[i], gate, tag, tag_mask);
     }
   for(i = 0; i < comm_size; ++i)
     {
@@ -1632,8 +1632,8 @@ int mpi_win_lock(int lock_type, int rank, int assert, MPI_Win win)
   p_win->end_reqs[rank] = nm_mpi_request_alloc();
   nm_sr_recv_init(p_session, &p_win->end_reqs[rank]->request_nmad);
   nm_sr_recv_unpack_contiguous(p_session, &p_win->end_reqs[rank]->request_nmad, NULL, 0);
-  err = nm_sr_recv_irecv(p_session, &p_win->end_reqs[rank]->request_nmad, gate, tag_unlock_ack,
-			 NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+  nm_sr_recv_irecv(p_session, &p_win->end_reqs[rank]->request_nmad, gate, tag_unlock_ack,
+		   NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
   /* Send request */
   nm_tag_t tag = nm_mpi_rma_create_tag(p_win->win_ids[rank], lock_type, NM_MPI_TAG_PRIVATE_RMA_LOCK);
   nm_sr_send_init(p_session, &req);
@@ -1701,8 +1701,8 @@ int mpi_win_lock_all(int assert, MPI_Win win)
       p_win->end_reqs[i] = nm_mpi_request_alloc();
       nm_sr_recv_init(p_session, &p_win->end_reqs[i]->request_nmad);
       nm_sr_recv_unpack_contiguous(p_session, &p_win->end_reqs[i]->request_nmad, NULL, 0);
-      err = nm_sr_recv_irecv(p_session, &p_win->end_reqs[i]->request_nmad, gate, tag_unlock_ack,
-			     NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+      nm_sr_recv_irecv(p_session, &p_win->end_reqs[i]->request_nmad, gate, tag_unlock_ack,
+		       NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
       /* Send request */
       tag = nm_mpi_rma_create_tag(p_win->win_ids[i], NM_MPI_LOCK_SHARED, NM_MPI_TAG_PRIVATE_RMA_LOCK);
       nm_sr_send_init(p_session, &reqs_out[i]);
@@ -1969,8 +1969,8 @@ static int nm_mpi_win_lock_shm(int lock_type, int rank, int assert, nm_mpi_windo
   p_win->end_reqs[rank] = nm_mpi_request_alloc();
   nm_sr_recv_init(p_session, &p_win->end_reqs[rank]->request_nmad);
   nm_sr_recv_unpack_contiguous(p_session, &p_win->end_reqs[rank]->request_nmad, NULL, 0);
-  err = nm_sr_recv_irecv(p_session, &p_win->end_reqs[rank]->request_nmad, gate, tag_unlock_ack,
-			 NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+  nm_sr_recv_irecv(p_session, &p_win->end_reqs[rank]->request_nmad, gate, tag_unlock_ack,
+		   NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
   /* Send request */
   nm_tag_t tag = nm_mpi_rma_create_tag(p_win->win_ids[rank], lock_type, NM_MPI_TAG_PRIVATE_RMA_LOCK);
   nm_sr_send_init(p_session, &req);
@@ -2050,8 +2050,8 @@ static int nm_mpi_win_lock_all_shm(int assert, nm_mpi_window_t*p_win)
       p_win->end_reqs[i] = nm_mpi_request_alloc();
       nm_sr_recv_init(p_session, &p_win->end_reqs[i]->request_nmad);
       nm_sr_recv_unpack_contiguous(p_session, &p_win->end_reqs[i]->request_nmad, NULL, 0);
-      err = nm_sr_recv_irecv(p_session, &p_win->end_reqs[i]->request_nmad, gate, tag_unlock_ack,
-			     NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
+      nm_sr_recv_irecv(p_session, &p_win->end_reqs[i]->request_nmad, gate, tag_unlock_ack,
+		       NM_MPI_TAG_PRIVATE_RMA_MASK_SYNC);
       /* Send requests */
       tag  = nm_mpi_rma_create_tag(p_win->win_ids[i], NM_MPI_LOCK_SHARED, NM_MPI_TAG_PRIVATE_RMA_LOCK);
       nm_sr_send_init(p_session, &reqs_out[i]);

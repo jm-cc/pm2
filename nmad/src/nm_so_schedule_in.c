@@ -404,7 +404,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
     return -NM_EAGAIN;
 }
 
-int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_req_flag_t flags)
+void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_req_flag_t flags)
 {
   /* store the unpack request */
   nm_status_add(p_unpack, NM_STATUS_UNPACK_POSTED);
@@ -453,7 +453,6 @@ int nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_re
       p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
     }
   nm_core_unlock(p_core);
-  return NM_ESUCCESS;
 }
 
 int nm_core_iprobe(struct nm_core*p_core,

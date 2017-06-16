@@ -532,8 +532,8 @@ int nm_mpi_datatype_send(nm_gate_t gate, nm_mpi_datatype_t*p_datatype)
   nm_tag += 1; /* Keeps the sequence number */
   nm_sr_recv_init(p_session, &req);
   nm_sr_recv_unpack_contiguous(p_session, &req, NULL, 0);
-  err = nm_sr_recv_irecv(p_session, &req, gate, nm_tag, NM_MPI_TAG_PRIVATE_BASE | 0xFFFF0F);
-  nm_sr_rwait(p_session, &req);
+  nm_sr_recv_irecv(p_session, &req, gate, nm_tag, NM_MPI_TAG_PRIVATE_BASE | 0xFFFF0F);
+  err = nm_sr_rwait(p_session, &req);
   /* Insert into exchanged hashtable */
   nm_mpi_datatype_exchange_insert(gate, p_datatype->id, p_datatype->hash);
   return err;

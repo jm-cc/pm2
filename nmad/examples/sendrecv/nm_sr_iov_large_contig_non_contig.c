@@ -69,11 +69,7 @@ int main(int argc, char ** argv)
       
       fprintf(stderr, "### Irecv %d x %d bytes ###\n", NB_IOV, SIZE);
 
-      if(nm_sr_irecv_iov(p_session, p_gate, 42, iov, NB_IOV, &rreq) != NM_ESUCCESS)
-	{
-	  fprintf(stderr, "NM Irecv failed \n");
-	  abort();
-	}
+      nm_sr_irecv_iov(p_session, p_gate, 42, iov, NB_IOV, &rreq);
       nm_sr_rwait(p_session, &rreq);
       
       int cumulated_len = 0;
@@ -110,11 +106,7 @@ int main(int argc, char ** argv)
       nm_sr_swait(p_session, &sreq);
       
       fprintf(stderr, "### Irecv %d bytes ###\n", NB_IOV * SIZE);
-      if(nm_sr_irecv(p_session, p_gate, 42, rbuf, NB_IOV * SIZE, &rreq) != NM_ESUCCESS) 
-	{
-	  fprintf(stderr, "NM Irecv failed \n");
-	  abort();
-	}
+      nm_sr_irecv(p_session, p_gate, 42, rbuf, NB_IOV * SIZE, &rreq);
       nm_sr_rwait(p_session, &rreq);
       
       if(check_buffer(rbuf, NB_IOV * SIZE, 0))

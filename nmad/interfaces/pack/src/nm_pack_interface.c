@@ -67,7 +67,8 @@ int nm_unpack(nm_pack_cnx_t *cnx, void *data, nm_len_t len)
     {
       if(tbx_unlikely(cnx->nb_packets >= NM_PACK_MAX_PENDING - 1))
 	nm_flush_unpacks(cnx);
-      return nm_sr_irecv(cnx->p_session, cnx->gate, cnx->tag, data, len, &cnx->reqs[cnx->nb_packets++]);
+      nm_sr_irecv(cnx->p_session, cnx->gate, cnx->tag, data, len, &cnx->reqs[cnx->nb_packets++]);
+      return NM_ESUCCESS;
     }
   else 
     {
@@ -76,11 +77,9 @@ int nm_unpack(nm_pack_cnx_t *cnx, void *data, nm_len_t len)
 	 unpack. So we have to perform a synchronous recv in order to wait
 	 for the real gate to be known before next unpacks... */
       
-      int err = nm_sr_irecv(cnx->p_session, NM_ANY_GATE, cnx->tag, data, len, &cnx->reqs[0]);
-      if(err != NM_ESUCCESS)
-	return err;
+      nm_sr_irecv(cnx->p_session, NM_ANY_GATE, cnx->tag, data, len, &cnx->reqs[0]);
       
-      err = nm_sr_rwait(cnx->p_session, &cnx->reqs[0]);
+      int err = nm_sr_rwait(cnx->p_session, &cnx->reqs[0]);
       if(err != NM_ESUCCESS)
 	return err;
       

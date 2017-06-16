@@ -159,7 +159,7 @@ static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t
 					 const struct iovec*iov, int num_entry);
 static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
 					  const struct nm_data_s*p_data);
-static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
+static inline void nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
 				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask);
 /** match the request with given gate/tag/mask */
 static inline void nm_sr_recv_match(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -173,7 +173,7 @@ static inline int  nm_sr_recv_peek(nm_session_t p_session, nm_sr_request_t*p_req
 /** probes whether an incoming packet matched this request */
 static inline int  nm_sr_recv_iprobe(nm_session_t p_session, nm_sr_request_t*p_request);
 /** posts the receive request to the scheduler */
-static inline int  nm_sr_recv_post(nm_session_t p_session, nm_sr_request_t*p_request);
+static inline void nm_sr_recv_post(nm_session_t p_session, nm_sr_request_t*p_request);
 
 /* ** High level / legacy send ***************************** */
 
@@ -328,15 +328,14 @@ extern int nm_sr_scancel(nm_session_t p_session,
  *  @param p_request a pointer to a sendrecv request to be filled.
  *  @return The NM status.
  */
-static inline int nm_sr_irecv(nm_session_t p_session,
-			      nm_gate_t p_gate, nm_tag_t tag,
-			      void *data, nm_len_t len,
-			      nm_sr_request_t *p_request)
+static inline void nm_sr_irecv(nm_session_t p_session,
+			       nm_gate_t p_gate, nm_tag_t tag,
+			       void *data, nm_len_t len,
+			       nm_sr_request_t *p_request)
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_recv_unpack_contiguous(p_session, p_request, data, len);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
-  return err;
+  nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
 }
 
 /** Test for the completion of a non blocking receive request.
@@ -349,52 +348,48 @@ static inline int nm_sr_irecv(nm_session_t p_session,
  *  @param ref
  *  @return The NM status.
  */
-static inline int nm_sr_irecv_with_ref(nm_session_t p_session,
-				       nm_gate_t p_gate, nm_tag_t tag,
-				       void *data, nm_len_t len,
-				       nm_sr_request_t *p_request,
-				       void *ref)
+static inline void nm_sr_irecv_with_ref(nm_session_t p_session,
+					nm_gate_t p_gate, nm_tag_t tag,
+					void *data, nm_len_t len,
+					nm_sr_request_t *p_request,
+					void *ref)
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_request, ref);
   nm_sr_recv_unpack_contiguous(p_session, p_request, data, len);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
-  return err;
+  nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
 }
 
-static inline int nm_sr_irecv_iov(nm_session_t p_session,
-				  nm_gate_t p_gate, nm_tag_t tag,
-				  struct iovec *iov, int num_entries,
-				  nm_sr_request_t *p_request)
+static inline void nm_sr_irecv_iov(nm_session_t p_session,
+				   nm_gate_t p_gate, nm_tag_t tag,
+				   struct iovec *iov, int num_entries,
+				   nm_sr_request_t *p_request)
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
-  return err;
+  nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
 }
 
-static inline int nm_sr_irecv_iov_with_ref(nm_session_t p_session,
-					   nm_gate_t p_gate, nm_tag_t tag,
-					   struct iovec *iov, int num_entries,
-					   nm_sr_request_t *p_request, void *ref)
+static inline void nm_sr_irecv_iov_with_ref(nm_session_t p_session,
+					    nm_gate_t p_gate, nm_tag_t tag,
+					    struct iovec *iov, int num_entries,
+					    nm_sr_request_t *p_request, void *ref)
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_request, ref);
   nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
-  return err;
+  nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
 }
 
-static inline int nm_sr_irecv_data(nm_session_t p_session,
-				   nm_gate_t p_gate, nm_tag_t tag,
-				   struct nm_data_s*filter,
-				   nm_sr_request_t *p_request, void*ref)
+static inline void nm_sr_irecv_data(nm_session_t p_session,
+				    nm_gate_t p_gate, nm_tag_t tag,
+				    struct nm_data_s*filter,
+				    nm_sr_request_t *p_request, void*ref)
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_request, ref);
   nm_sr_recv_unpack_data(p_session, p_request, filter);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
-  return err;
+  nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
 }
 
 
@@ -489,11 +484,8 @@ static inline int nm_sr_recv(nm_session_t p_session,
 			     void *data, nm_len_t len)
 {
   nm_sr_request_t request;
-  int rc = nm_sr_irecv(p_session, p_gate, tag, data, len, &request);
-  if(rc == NM_ESUCCESS)
-    {
-      rc = nm_sr_rwait(p_session, &request);
-    }
+  nm_sr_irecv(p_session, p_gate, tag, data, len, &request);
+  int rc = nm_sr_rwait(p_session, &request);
   return rc;
 }
 

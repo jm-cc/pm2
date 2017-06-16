@@ -246,12 +246,11 @@ static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t
   nm_sr_recv_unpack_data(p_session, p_request, &data);
 }
 
-static inline int nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
-				   nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask)
+static inline void nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
+				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask)
 {
   nm_sr_recv_match(p_session, p_request, p_gate, tag, mask);
-  int err = nm_sr_recv_post(p_session, p_request);
-  return err;
+  nm_sr_recv_post(p_session, p_request);
 }
 
 static inline void nm_sr_recv_match(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -270,11 +269,10 @@ static inline void nm_sr_recv_match_event(nm_session_t p_session, nm_sr_request_
   nm_core_unpack_match_event(p_core, &p_request->req, p_event->recv_unexpected.p_core_event);
 }
 
-static inline int nm_sr_recv_post(nm_session_t p_session, nm_sr_request_t*p_request)
+static inline void nm_sr_recv_post(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  const int err = nm_core_unpack_submit(p_core, &p_request->req, NM_REQ_FLAG_NONE);
-  return err;
+  nm_core_unpack_submit(p_core, &p_request->req, NM_REQ_FLAG_NONE);
 }
 
 static inline int nm_sr_recv_peek(nm_session_t p_session, nm_sr_request_t*p_request,

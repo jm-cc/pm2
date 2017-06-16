@@ -804,7 +804,7 @@ static int nm_mpi_get(void *origin_addr, int origin_count, nm_mpi_datatype_t*p_o
   nm_sr_recv_init(p_session, &p_req_in->request_nmad);
   nm_sr_recv_unpack_data(p_session, &p_req_in->request_nmad, &data);
   nm_sr_request_set_ref(&p_req_in->request_nmad, p_req_in);
-  err = nm_sr_recv_irecv(p_session, &p_req_in->request_nmad, p_req_in->gate, nm_tag, tag_mask);
+  nm_sr_recv_irecv(p_session, &p_req_in->request_nmad, p_req_in->gate, nm_tag, tag_mask);
   p_req_in->request_error = err;
   /* Send request */
   nm_mpi_datatype_ref_inc(p_target_datatype);
@@ -951,7 +951,7 @@ static int nm_mpi_get_accumulate(const void *origin_addr, int origin_count,
   nm_sr_recv_init(p_session, &p_req_in->request_nmad);
   nm_sr_recv_unpack_data(p_session, &p_req_in->request_nmad, &data);
   nm_sr_request_set_ref(&p_req_in->request_nmad, p_req_in);
-  err = nm_sr_recv_irecv(p_session, &p_req_in->request_nmad, gate, nm_tag, tag_mask);
+  nm_sr_recv_irecv(p_session, &p_req_in->request_nmad, gate, nm_tag, tag_mask);
   p_req_in->request_error = err;
   /* Send request */
   nm_mpi_datatype_ref_inc(p_target_datatype);
@@ -1040,7 +1040,7 @@ static int nm_mpi_fetch_and_op(const void *origin_addr, void *result_addr,
   nm_sr_recv_init(p_session, &p_req_in->request_nmad);
   nm_sr_recv_unpack_data(p_session, &p_req_in->request_nmad, &data);
   nm_sr_request_set_ref(&p_req_in->request_nmad, p_req_in);
-  err = nm_sr_recv_irecv(p_session, &p_req_in->request_nmad, p_req_in->gate, nm_tag, tag_mask);
+  nm_sr_recv_irecv(p_session, &p_req_in->request_nmad, p_req_in->gate, nm_tag, tag_mask);
   p_req_in->request_error = err;
   /* Send request */
   nm_mpi_request_t*p_req_out = nm_mpi_request_alloc();
@@ -1111,7 +1111,7 @@ static int nm_mpi_compare_and_swap(const void *origin_addr, const void *compare_
   nm_sr_recv_init(p_session, &p_req->request_nmad);
   nm_sr_recv_unpack_data(p_session, &p_req->request_nmad, &data);
   nm_sr_request_set_ref(&p_req->request_nmad, p_req);
-  err = nm_sr_recv_irecv(p_session, &p_req->request_nmad, p_req->gate, nm_tag, tag_mask);
+  nm_sr_recv_irecv(p_session, &p_req->request_nmad, p_req->gate, nm_tag, tag_mask);
   p_req->request_error = err;
   /* Send request */
   nm_mpi_request_t*p_req_out = nm_mpi_request_alloc();

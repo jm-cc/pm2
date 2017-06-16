@@ -170,8 +170,8 @@ int nm_mpi_irecv_start(nm_mpi_request_t *p_req)
   nm_mpi_data_build(&data, p_req->rbuf, p_req->p_datatype, p_req->count);
   nm_sr_recv_init(p_session, &(p_req->request_nmad));
   nm_sr_recv_unpack_data(p_session, &(p_req->request_nmad), &data);
-  const int err = nm_sr_recv_irecv(p_session, &(p_req->request_nmad), p_req->gate, nm_tag, tag_mask);
-  p_req->request_error = err;
+  nm_sr_recv_irecv(p_session, &(p_req->request_nmad), p_req->gate, nm_tag, tag_mask);
+  p_req->request_error = NM_ESUCCESS;
   if(p_req->request_type != NM_MPI_REQUEST_ZERO) 
     p_req->request_type = NM_MPI_REQUEST_RECV;
   return p_req->request_error;

@@ -23,7 +23,7 @@
 
 #include "../common/nm_examples_helper.h"
 
-#define LOOPS   50000
+#define LOOPS   200000
 
 int main(int argc, char**argv)
 {

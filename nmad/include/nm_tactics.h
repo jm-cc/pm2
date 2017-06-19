@@ -35,7 +35,7 @@ static inline int nm_tactic_pack_ctrl(nm_gate_t p_gate, nm_drv_t p_drv,
   if(NM_HEADER_CTRL_SIZE < nm_pw_remaining_buf(p_pw))
     {
       nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
-      nm_ctrl_chunk_list_erase(&p_gate->ctrl_chunk_list, p_ctrl_chunk);
+      nm_ctrl_chunk_list_remove(&p_gate->ctrl_chunk_list, p_ctrl_chunk);
       nm_ctrl_chunk_free(p_gate->p_core->ctrl_chunk_allocator, p_ctrl_chunk);
       return NM_ESUCCESS;
     }
@@ -51,7 +51,7 @@ static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
 {
   if(NM_HEADER_CTRL_SIZE < nm_pw_remaining_buf(p_pw))
     {
-      nm_req_chunk_list_erase(&p_gate->req_chunk_list, p_req_chunk);
+      nm_req_chunk_list_remove(&p_gate->req_chunk_list, p_req_chunk);
       struct nm_req_s*p_pack = p_req_chunk->p_req;
       const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
       const nm_len_t density = p_props->size / p_props->blocks;

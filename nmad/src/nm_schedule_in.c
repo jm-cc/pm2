@@ -118,7 +118,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
   if(err == NM_ESUCCESS)
     {
 #ifndef PIOMAN
-      nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
+      nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
 #endif /* !PIOMAN */
       nm_pw_completed_enqueue(p_core, p_pw);
     }
@@ -137,7 +137,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 #ifdef PIOMAN
       piom_ltask_completed(&p_pw->ltask);
 #else
-      nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
+      nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
 #endif /* PIOMAN */
       nm_pw_ref_dec(p_pw);
       nm_core_unlock(p_core);

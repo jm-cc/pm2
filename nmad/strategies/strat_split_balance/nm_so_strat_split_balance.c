@@ -237,7 +237,7 @@ static void strat_split_balance_rdv_accept(void*_status, nm_gate_t p_gate)
 	}      
       if(nb_chunks > 0)
 	{
-	  nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
+	  nm_pkt_wrap_list_remove(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_pw, nb_chunks, chunks);
 	}
     }

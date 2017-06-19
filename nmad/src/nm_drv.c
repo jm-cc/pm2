@@ -145,7 +145,7 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	  if(p_drv->driver->cancel_recv)
 	    p_drv->driver->cancel_recv(NULL);
 #ifndef PIOMAN
-	  nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
+	  nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
 #endif /* PIOMAN */
 	  nm_pkt_wrap_list_push_back(pending_pw, p_pw);
 	}
@@ -168,7 +168,7 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	      p_trk->p_pw_recv = NULL;
 	      
 #ifndef PIOMAN
-	      nm_pkt_wrap_list_erase(&p_core->pending_recv_list, p_pw);
+	      nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
 #endif
 	      nm_pkt_wrap_list_push_back(pending_pw, p_pw);
 	    }

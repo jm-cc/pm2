@@ -150,7 +150,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
   if(p_unpack->unpack.cumulated_len == p_unpack->unpack.expected_len)
     {
       nm_core_lock_assert(p_core);
-      nm_req_list_erase(&p_core->unpacks, p_unpack);
+      nm_req_list_remove(&p_core->unpacks, p_unpack);
       nm_core_polling_level(p_core);
       if((p_pw != NULL) && (p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
 	{
@@ -448,7 +448,7 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
       /* Decrement the packet wrapper reference counter. If no other
 	 chunks are still in use, the pw will be destroyed. */
       nm_pw_ref_dec(p_unexpected->p_pw);
-      nm_unexpected_list_erase(&p_core->unexpected, p_unexpected);
+      nm_unexpected_list_remove(&p_core->unexpected, p_unexpected);
       nm_unexpected_free(nm_unexpected_allocator, p_unexpected);
       p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
     }
@@ -550,7 +550,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
     }
   else if(p_unpack->seq == NM_SEQ_NONE)
     {
-      nm_req_list_erase(&p_core->unpacks, p_unpack);
+      nm_req_list_remove(&p_core->unpacks, p_unpack);
       nm_core_polling_level(p_core);
       const struct nm_core_event_s event =
 	{
@@ -691,7 +691,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 		p_pack->seq, p_large_pw->chunk_offset);
       if((p_pack->seq == seq) && nm_core_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
 	{
-	  nm_pkt_wrap_list_erase(&p_gate->pending_large_send, p_large_pw);
+	  nm_pkt_wrap_list_remove(&p_gate->pending_large_send, p_large_pw);
 	  if(chunk_len < p_large_pw->length)
 	    {
 	      /* ** partial RTR- split the packet  */
@@ -755,7 +755,7 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
 	    };
 	  if(event.status & NM_STATUS_FINALIZED)
 	    {
-	      nm_req_list_erase(&p_core->pending_packs, p_pack);
+	      nm_req_list_remove(&p_core->pending_packs, p_pack);
 	    }
 	  nm_core_status_event(p_core, &event, p_pack);
 	  return;

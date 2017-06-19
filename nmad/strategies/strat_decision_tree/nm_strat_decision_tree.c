@@ -239,7 +239,7 @@ static void strat_decision_tree_rdv_accept(void*_status, nm_gate_t p_gate)
 	  /* The large-packet track is available- post recv and RTR */
 	  struct nm_rdv_chunk chunk = 
 	    { .len = p_pw->length, .trk_id = NM_TRK_LARGE };
-	  nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
+	  nm_pkt_wrap_list_remove(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	}
     }

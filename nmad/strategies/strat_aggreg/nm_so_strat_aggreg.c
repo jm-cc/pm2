@@ -137,7 +137,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	      /* ** short send */
 	      if(NM_HEADER_SHORT_DATA_SIZE + chunk_len + p_pw->length <= max_small)
 		{
-		  nm_req_chunk_list_erase(&p_gate->req_chunk_list, p_req_chunk);
+		  nm_req_chunk_list_remove(&p_gate->req_chunk_list, p_req_chunk);
 		  nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_SHORT_CHUNK);
 		  assert(p_pw->length <= max_small);
 		}
@@ -160,7 +160,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 		  if(max_header_len + chunk_len < nm_pw_remaining_buf(p_pw))
 		    {
 #warning TODO- select pack strategy depending on data sparsity
-		      nm_req_chunk_list_erase(&p_gate->req_chunk_list, p_req_chunk);
+		      nm_req_chunk_list_remove(&p_gate->req_chunk_list, p_req_chunk);
 		      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_NONE);
 		      assert(p_pw->length <= max_small);
 		    }
@@ -216,7 +216,7 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
 	      /* The large-packet track is available- post recv and RTR */
 	      struct nm_rdv_chunk chunk = 
 		{ .len = p_pw->length, .trk_id = NM_TRK_LARGE };
-	      nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
+	      nm_pkt_wrap_list_remove(&p_gate->pending_large_recv, p_pw);
 	      nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	    }
 	}
@@ -225,7 +225,7 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
 	  /* small chunk in a large packet- send on trk#0 */
 	  struct nm_rdv_chunk chunk = 
 	    { .len = p_pw->length, .trk_id = NM_TRK_SMALL };
-	  nm_pkt_wrap_list_erase(&p_gate->pending_large_recv, p_pw);
+	  nm_pkt_wrap_list_remove(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
 	}
     }

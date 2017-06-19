@@ -1062,7 +1062,7 @@ int mpi_win_detach(MPI_Win win, const void *base)
   PUK_LIST_FIND(it, &p_list->head, (base == it->begin));
   if(it)
     {
-      nm_mpi_win_addr_list_erase(&p_list->head, it);
+      nm_mpi_win_addr_list_remove(&p_list->head, it);
       nm_mpi_win_addr_free(nm_mpi_win_addr_allocator, it);
     }
   else

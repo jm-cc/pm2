@@ -23,6 +23,8 @@ include @abs_top_builddir@/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
+TESTS += nm_launcher_sessions
+
 include @nmad_srcdir@/nmad-tests.mk
 
 test-nm_launcher_mini: NMAD_NODES = 4

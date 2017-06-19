@@ -1,0 +1,29 @@
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @abs_top_builddir@/common_vars.mk
+
+TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/*.c))
+TARGET_LIB =
+SUBDIRS =
+
+INSTALL_BIN     = $(TARGET_BIN)
+INSTALL_LIB     = $(TARGET_LIB)
+INSTALL_INCLUDE = 
+
+INSTALL_PREFIX := @nmad_root@
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
+
+PKG_CONFIG_PATH := @nmad_root@/lib/pkgconfig:$(PKG_CONFIG_PATH)
+CFLAGS  := $(shell env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags nmad)
+LIBS    := $(shell env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs nmad)
+
+include @abs_top_builddir@/common_rules.mk
+
+$(TARGET_BIN): %: %.pic.o
+
+include @nmad_srcdir@/nmad-tests.mk
+
+test-nm_launcher_mini: NMAD_NODES = 4
+test-nm_launcher_mini: TEST_FILTER = sort -i

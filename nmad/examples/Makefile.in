@@ -15,7 +15,7 @@ INSTALL_PREFIX := @nmad_root@
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
-EXAMPLE_DIRS = pack sendrecv rpc benchmarks lowlevel session
+EXAMPLE_DIRS = pack sendrecv rpc benchmarks lowlevel session launcher
 ifeq (@with_pioman@,yes)
   EXAMPLE_DIRS += piom
   ifeq (@nmad_enable_mpi@,yes)

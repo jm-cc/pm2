@@ -38,10 +38,11 @@ static struct
   puk_hashtable_t reverse; /**< reverse table: p_gate -> rank */
   puk_mod_t boot_mod;      /**< the mod that was used for init */
   int puk_init;            /**< whether we initialized Puk ourself */
+  int init_level;          /**< number of stacked init */
 } launcher =
   {
     .instance = NULL, .gates = NULL, .size = -1, .reverse = NULL,
-    .boot_mod = NULL, .puk_init = 0
+    .boot_mod = NULL, .puk_init = 0, .init_level = 0
   };
 
 int nm_launcher_get_rank(int *rank)
@@ -106,10 +107,9 @@ void nm_launcher_abort(void)
 int nm_launcher_init_checked(int *argc, char**argv, const struct nm_abi_config_s*p_nm_abi_config)
 {
   nm_abi_config_check(p_nm_abi_config);
-  static int init_done = 0;
-  if(init_done)
+  launcher.init_level++;
+  if(launcher.init_level > 1)
     return NM_ESUCCESS;
-  init_done = 1;
 
   if(!tbx_initialized())
     {
@@ -166,10 +166,11 @@ int nm_launcher_init_checked(int *argc, char**argv, const struct nm_abi_config_s
 
 int nm_launcher_exit(void)
 {
-  static int exit_done = 0;
-  if(exit_done)
+  launcher.init_level--;
+  if(launcher.init_level > 0)
     return NM_ESUCCESS;
-  exit_done = 1;
+  if(launcher.init_level < 0)
+    return -NM_EALREADY;
 
 #ifdef PIOMAN_TRACE
   piom_trace_flush();

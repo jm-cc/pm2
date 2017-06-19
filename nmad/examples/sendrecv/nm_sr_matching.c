@@ -60,9 +60,9 @@ int main(int argc, char**argv)
 	      TBX_GET_TICK(t1);
 	      for(r = 0; r < burst; r++)
 		{
-		  int tag = r;
-		  nm_sr_isend(p_session, p_gate, tag, &small, 1, &sreqs[r]);
-		  nm_sr_irecv(p_session, p_gate, tag, &small, 1, &rreqs[r]);
+		  nm_tag_t tag = r;
+		  nm_sr_isend(p_session, p_gate, tag, &small, sizeof(small), &sreqs[r]);
+		  nm_sr_irecv(p_session, p_gate, tag, &small, sizeof(small), &rreqs[r]);
 		}
 	      for(r = 0; r < burst; r++)
 		{

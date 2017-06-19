@@ -23,7 +23,7 @@ include @abs_top_builddir@/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
-TESTS += nm_launcher_sessions
+TESTS += nm_launcher_sessions nm_launcher_multi
 
 include @nmad_srcdir@/nmad-tests.mk
 

@@ -157,8 +157,9 @@ typedef uint8_t nm_proto_t;
 #define NM_REQ_FLAG_USE_COPY               ((nm_req_flag_t)0x00040000)
 /* use iterator-based data description in pw */
 #define NM_REQ_FLAG_DATA_ITERATOR          ((nm_req_flag_t)0x00080000)
+/** request submited in wildcard queue */
+#define NM_REQ_FLAG_WILDCARD               ((nm_req_flag_t)0x00100000)
 
-  
 /** Sequence number */
 typedef uint32_t nm_seq_t;
 
@@ -290,7 +291,8 @@ struct nm_req_s
   nm_req_flag_t flags;          /**< flags given by user */
   nm_gate_t p_gate;             /**< dest/src gate; NULL if recv from any source */
   nm_core_tag_t tag;            /**< tag to send to/from (works in combination with tag_mask for recv) */
-  nm_seq_t seq;                 /**< sequence number on the given tag */
+  nm_seq_t seq;                 /**< packet sequence number on the given tag */
+  uint64_t req_seq;             /**< request sequence number used to interleave wildcard/non-wildcard requests */
   union
   {
     struct

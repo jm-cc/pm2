@@ -47,7 +47,8 @@ struct nm_core
   struct nm_req_chunk_lfqueue_s pack_submissions;  /**< list of new pack reqs (lock-free submission list) */
   nm_req_chunk_allocator_t req_chunk_allocator;    /**< allocator for req_chunk elements */
   nm_ctrl_chunk_allocator_t ctrl_chunk_allocator;  /**< allocator for control chunks */
-  struct nm_req_list_s unpacks;                    /**< list of posted unpacks */
+  uint64_t unpack_seq;                             /**< next sequence number for unpacks */
+  struct nm_req_list_s unpacks;                    /**< list of wildcards unpacks; non-wildcard unpacks are in nm_gtag_s */
   struct nm_unexpected_list_s unexpected;          /**< list of unexpected chunks */
   struct nm_req_list_s pending_packs;              /**< list of pack reqs in progress (or waiting for ACK) */
   struct nm_pkt_wrap_lfqueue_s completed_pws;      /**< queue of completed pw waiting for event dispatch */

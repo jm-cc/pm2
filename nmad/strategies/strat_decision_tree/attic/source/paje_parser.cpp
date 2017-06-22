@@ -23,7 +23,7 @@ extern "C"
 {
 #include <tbx_fast_list.h>
 #include <nm_public.h>
-#include <nm_launcher.h>
+#include <nm_launcher_interface.h>
 #include <nm_core.h>
 #include <nm_core_interface.h>
 #include <nm_session_private.h>

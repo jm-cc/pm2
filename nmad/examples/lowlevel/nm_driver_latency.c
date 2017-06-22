@@ -23,7 +23,7 @@
 #include <values.h>
 
 #include <nm_private.h>
-#include <nm_launcher.h>
+#include <nm_launcher_interface.h>
 
 const int roundtrips = 100000;
 

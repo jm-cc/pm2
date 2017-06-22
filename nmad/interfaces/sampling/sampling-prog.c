@@ -25,7 +25,7 @@
 #include <nm_private.h>
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
-#include <nm_launcher.h>
+#include <nm_launcher_interface.h>
 #include <tbx.h>
 
 /* Maximum size of a small message for a faked strategy */

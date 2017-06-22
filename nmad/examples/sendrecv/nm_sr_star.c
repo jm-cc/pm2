@@ -21,7 +21,7 @@
 #include <unistd.h>
 
 #include "../common/nm_examples_helper.h"
-#include <nm_launcher.h>
+#include <nm_launcher_interface.h>
 
 //#define STAR_DEBUG
 #define PRINT(str, ...)		printf("[%d] " str "\n", rank, ## __VA_ARGS__)

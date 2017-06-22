@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <nm_launcher.h>
+#include <nm_launcher_interface.h>
 #include <nm_coll_interface.h>
 #include <nm_rpc_interface.h>
 

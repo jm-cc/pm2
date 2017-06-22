@@ -22,7 +22,7 @@
 #include <values.h>
 
 #include <nm_sendrecv_interface.h>
-#include <nm_launcher.h>
+#include <nm_launcher_interface.h>
 #include <tbx.h>
 
 #define LOOPS   50000

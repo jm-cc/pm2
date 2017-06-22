@@ -15,7 +15,7 @@
 
 #include "nm_bench_generic.h"
 #include <nm_sendrecv_interface.h>
-#include <nm_launcher.h>
+#include <nm_launcher_interface.h>
 
 static const nm_tag_t data_tag = 0x01;
 static nm_gate_t p_self = NULL;

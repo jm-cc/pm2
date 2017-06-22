@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include <nm_launcher.h>
+#include <nm_launcher_interface.h>
 #include <nm_sendrecv_interface.h>
 
 const char *msg	= "hello, world!";

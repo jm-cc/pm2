@@ -114,6 +114,6 @@ PUK_LIST_DECLARE_TYPE(nm_gate);
 PUK_LIST_CREATE_FUNCS(nm_gate);
 
 #define NM_FOR_EACH_GATE(P_GATE, P_CORE) \
-  puk_list_foreach(P_GATE, &(P_CORE)->gate_list)
+  puk_list_foreach(nm_gate, P_GATE, &(P_CORE)->gate_list)
 
 #endif /* NM_GATE_H */

@@ -85,7 +85,7 @@ static inline struct nm_pkt_wrap_s*nm_tactic_try_to_aggregate(struct nm_pkt_wrap
 {
   int i = 0;
   struct nm_pkt_wrap_s*p_pw = NULL;
-  puk_list_foreach(p_pw, p_out_list)
+  puk_list_foreach(nm_pkt_wrap, p_pw, p_out_list)
     {
       const nm_len_t rlen = nm_pw_remaining_buf(p_pw);
       if(message_len + NM_ALIGN_FRONTIER < rlen)

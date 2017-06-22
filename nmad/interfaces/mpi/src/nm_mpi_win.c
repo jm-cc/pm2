@@ -158,7 +158,7 @@ int nm_mpi_win_addr_is_valid(void*base, MPI_Aint size, nm_mpi_window_t*p_win)
   struct nm_mpi_win_addr_s*it;
   nm_mpi_win_addrlist_t*p_list = p_win->p_base;
   nm_mpi_spin_lock(&p_list->lock);
-  puk_list_foreach(it, &p_list->head)
+  puk_list_foreach(nm_mpi_win_addr, it, &p_list->head)
     {
       is_valid |= it->begin <= base && it->size >= (size + NM_MPI_WIN_ABS(it->begin - base));
       if(is_valid)
@@ -1026,7 +1026,7 @@ int mpi_win_attach(MPI_Win win, void *base, MPI_Aint size)
 #ifdef DEBUG
   /* Check if memory is not already attached */
   struct nm_mpi_win_addr_s*it;
-  puk_list_foreach(it, &p_list->head)
+  puk_list_foreach(nm_mpi_win_addr, it, &p_list->head)
     {
       if(it->begin <= base && it->size >= (size + NM_MPI_WIN_ABS(it->begin - base)))
 	{
@@ -1059,7 +1059,7 @@ int mpi_win_detach(MPI_Win win, const void *base)
   nm_mpi_win_addrlist_t*p_list = p_win->p_base;
   nm_mpi_spin_lock(&p_list->lock);
   struct nm_mpi_win_addr_s*it;
-  PUK_LIST_FIND(it, &p_list->head, (base == it->begin));
+  PUK_LIST_FIND(nm_mpi_win_addr, it, &p_list->head, (base == it->begin));
   if(it)
     {
       nm_mpi_win_addr_list_remove(&p_list->head, it);

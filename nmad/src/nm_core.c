@@ -125,7 +125,7 @@ int nm_schedule(struct nm_core*p_core)
     {
       NM_TRACEF("polling inbound requests");
       struct nm_pkt_wrap_s*p_pw, *p_pw2;
-      puk_list_foreach_safe(p_pw, p_pw2, &p_core->pending_recv_list)
+      puk_list_foreach_safe(nm_pkt_wrap, p_pw, p_pw2, &p_core->pending_recv_list)
 	{
 	  nm_pw_poll_recv(p_pw);
 	}
@@ -135,7 +135,7 @@ int nm_schedule(struct nm_core*p_core)
     {
       NM_TRACEF("polling outbound requests");
       struct nm_pkt_wrap_s*p_pw, *p_pw2;
-      puk_list_foreach_safe(p_pw, p_pw2, &p_core->pending_send_list)
+      puk_list_foreach_safe(nm_pkt_wrap, p_pw, p_pw2, &p_core->pending_send_list)
 	{
 	  nm_pw_poll_send(p_pw);
 	}
@@ -293,7 +293,7 @@ void nm_core_monitor_add(nm_core_t p_core, struct nm_core_monitor_s*p_core_monit
   if(p_core_monitor->monitor.event_mask == NM_STATUS_UNEXPECTED)
     {
       struct nm_unexpected_s*p_chunk = NULL, *p_tmp;
-      puk_list_foreach_safe(p_chunk, p_tmp, &p_core->unexpected) /* use 'safe' iterator since notifier is likely to post a recv */
+      puk_list_foreach_safe(nm_unexpected, p_chunk, p_tmp, &p_core->unexpected) /* use 'safe' iterator since notifier is likely to post a recv */
 	{
 	  if(p_chunk->msg_len != NM_LEN_UNDEFINED)
 	    {
@@ -556,7 +556,7 @@ int nm_core_exit(nm_core_t p_core)
 #ifndef PIOMAN
   /* Sanity check- everything is supposed to be empty here */
   struct nm_pkt_wrap_s*p_pw, *p_pw2;
-  puk_list_foreach_safe(p_pw, p_pw2, &p_core->pending_recv_list)
+  puk_list_foreach_safe(nm_pkt_wrap, p_pw, p_pw2, &p_core->pending_recv_list)
     {
       NM_WARN("purging pw from pending_recv_list\n");
       nm_pw_ref_dec(p_pw);

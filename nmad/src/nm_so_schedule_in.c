@@ -88,7 +88,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
   assert(nm_status_test(p_unpack, NM_STATUS_UNPACK_POSTED));
   assert(!nm_status_test(p_unpack, NM_STATUS_FINALIZED));
   nm_core_lock_assert(p_core);
-  puk_list_foreach(p_chunk, &p_core->unexpected)
+  puk_list_foreach(nm_unexpected, p_chunk, &p_core->unexpected)
     {
       struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_chunk->p_gate->tags, p_chunk->tag);
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
@@ -129,7 +129,7 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
   nm_core_lock_assert(p_core);
   struct nm_req_s*p_unpack_gtag = nm_req_list_begin(&p_so_tag->unpacks);
   struct nm_req_s*p_unpack = (p_unpack_gtag && nm_req_is_matching(p_unpack_gtag, p_gate, seq, tag, next_seq)) ? p_unpack_gtag : NULL;
-  puk_list_foreach(p_unpack, &p_core->unpacks)
+  puk_list_foreach(nm_req, p_unpack, &p_core->unpacks)
     {
       if(p_unpack_gtag && (p_unpack->req_seq > p_unpack_gtag->req_seq))
 	{
@@ -340,7 +340,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
   nm_len_t done = 0;
   nm_core_lock(p_core);
   struct nm_unexpected_s*p_chunk;
-  puk_list_foreach(p_chunk, &p_core->unexpected)
+  puk_list_foreach(nm_unexpected, p_chunk, &p_core->unexpected)
     {
       if((p_unpack->p_gate == p_chunk->p_gate) && /* gate matches */
 	 nm_core_tag_match(p_chunk->tag, p_unpack->tag, p_unpack->unpack.tag_mask) && /* tag matches */
@@ -498,7 +498,7 @@ int nm_core_iprobe(struct nm_core*p_core,
   int rc = -NM_EAGAIN;
   struct nm_unexpected_s*p_chunk;
   nm_core_lock(p_core);
-  puk_list_foreach(p_chunk, &p_core->unexpected)
+  puk_list_foreach(nm_unexpected, p_chunk, &p_core->unexpected)
     {
       struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_chunk->p_gate->tags, p_chunk->tag);
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
@@ -725,7 +725,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
   struct nm_core*p_core = p_gate->p_core;
   struct nm_pkt_wrap_s*p_large_pw = NULL, *p_pw_save;
   nm_core_lock_assert(p_core);
-  puk_list_foreach_safe(p_large_pw, p_pw_save, &p_gate->pending_large_send)
+  puk_list_foreach_safe(nm_pkt_wrap, p_large_pw, p_pw_save, &p_gate->pending_large_send)
     {
       /* this is a large pw with rdv- it must contain a single req chunk */
       assert(nm_req_chunk_list_size(&p_large_pw->req_chunks) == 1);
@@ -786,7 +786,7 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
   const nm_seq_t seq = header->seq;
   struct nm_req_s*p_pack = NULL;
   
-  puk_list_foreach(p_pack, &p_core->pending_packs)
+  puk_list_foreach(nm_req, p_pack, &p_core->pending_packs)
     {
       if(nm_core_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
 	{

@@ -53,7 +53,7 @@ PUK_LIST_DECLARE_TYPE(nm_drv);
 PUK_LIST_CREATE_FUNCS(nm_drv);
 
 #define NM_FOR_EACH_DRIVER(p_drv, p_core)		\
-  puk_list_foreach(p_drv, &(p_core)->driver_list)
+  puk_list_foreach(nm_drv, p_drv, &(p_core)->driver_list)
 
 
 /** Driver for 'NewMad_Driver' component interface.

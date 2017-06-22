@@ -14,7 +14,7 @@
  */
 
 #ifndef NM_LAUNCHER_INTERFACE_H
-#define NM_LAUNCHER_INTERFACE__H
+#define NM_LAUNCHER_INTERFACE_H
 
 #include <nm_public.h>
 #include <nm_session_interface.h>
@@ -63,5 +63,5 @@ static inline int nm_launcher_init(int*argc, char**argv)
   return nm_launcher_init_checked(argc, argv, &nm_abi_config);
 }
 
-#endif /* NM_LAUNCHER__INTERFACE_H */
+#endif /* NM_LAUNCHER_INTERFACE_H */
 

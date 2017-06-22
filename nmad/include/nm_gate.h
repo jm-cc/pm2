@@ -68,6 +68,8 @@ enum nm_gate_status_e
 typedef enum nm_gate_status_e nm_gate_status_t;
 
 
+PUK_LIST_DECLARE_TYPE(nm_gate);
+
 /** Connection to another process.
  */
 struct nm_gate_s
@@ -110,7 +112,6 @@ struct nm_gate_s
 #endif /* NMAD_TRACE */
 };
 
-PUK_LIST_DECLARE_TYPE(nm_gate);
 PUK_LIST_CREATE_FUNCS(nm_gate);
 
 #define NM_FOR_EACH_GATE(P_GATE, P_CORE) \

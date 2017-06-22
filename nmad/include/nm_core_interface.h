@@ -271,6 +271,8 @@ void nm_core_req_monitor(struct nm_core*p_core, struct nm_req_s*p_req, struct nm
 
 /* ** Packs/unpacks **************************************** */
 
+PUK_LIST_DECLARE_TYPE(nm_req_chunk);
+
 /** a chunk of request */
 struct nm_req_chunk_s
 {
@@ -280,6 +282,8 @@ struct nm_req_chunk_s
   nm_len_t chunk_offset;  /**< offset of the chunk relative to the full data in the req */
   nm_proto_t proto_flags; /**< pre-computed proto flags */
 };
+
+PUK_LIST_DECLARE_TYPE(nm_req);
 
 /** a generic pack/unpack request */
 struct nm_req_s

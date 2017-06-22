@@ -243,6 +243,9 @@ typedef int8_t nm_mpi_communication_mode_t;
 
 #define _NM_MPI_MAX_DATATYPE_SIZE 64
 
+
+PUK_LIST_DECLARE_TYPE(nm_mpi_request);
+
 /** Internal communication request */
 typedef struct nm_mpi_request_s
 {
@@ -285,7 +288,6 @@ typedef struct nm_mpi_request_s
   nm_mpi_window_t*p_win;
 } __attribute__((__may_alias__)) nm_mpi_request_t;
 
-PUK_LIST_DECLARE_TYPE(nm_mpi_request);
 PUK_LIST_CREATE_FUNCS(nm_mpi_request);
 
 /* @} */

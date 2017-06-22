@@ -75,6 +75,8 @@ typedef uint32_t nm_pw_flag_t;
 /*@}*/
 
 
+PUK_LIST_DECLARE_TYPE(nm_pkt_wrap);
+
 /** Internal packet wrapper.
  */
 struct nm_pkt_wrap_s
@@ -132,7 +134,6 @@ struct nm_pkt_wrap_s
   NM_ALIGN_TYPE buf[1];
 };
 
-PUK_LIST_DECLARE_TYPE(nm_pkt_wrap);
 PUK_LIST_CREATE_FUNCS(nm_pkt_wrap);
 
 int nm_pw_alloc_init(struct nm_core*p_core);

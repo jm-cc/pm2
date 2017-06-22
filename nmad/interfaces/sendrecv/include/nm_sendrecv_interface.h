@@ -18,7 +18,7 @@
 
 /** @defgroup sr_interface SendRecv interface
  * This is the nmad SendRecv interface, the main interface to send and receive packets.
- * @example sr_hello.c
+ * @example nm_sr_hello.c
  */
 
 /** @ingroup sr_interface

@@ -28,7 +28,7 @@
 
 /* ** Front-end functions for easier component indirections */
 
-/** Initializes everything. */
+/** Initializes nmad. */
 static inline int nm_launcher_init(int*argc, char**argv);
 
 /** Cleans session. Returns NM_ESUCCESS or EXIT_FAILURE. */
@@ -55,8 +55,10 @@ int nm_launcher_get_dest(nm_gate_t p_gate, int*dest);
 /** Abort all processes */
 void nm_launcher_abort(void);
 
+/* @} */
 
-/** Component interface definition: 'NewMad_Launcher' */
+
+/** @internal Component interface definition: 'NewMad_Launcher' */
 struct newmad_launcher_driver_s
 {
   /** initialize nmad, establishes connections */
@@ -71,6 +73,7 @@ struct newmad_launcher_driver_s
   void         (*abort)(void*_status);
 };
 
+/** @internal */
 PUK_IFACE_TYPE(NewMad_Launcher, struct newmad_launcher_driver_s);
 
 /** @internal init launcher with ABI check */
@@ -83,8 +86,6 @@ static inline int nm_launcher_init(int*argc, char**argv)
   return nm_launcher_init_checked(argc, argv, &nm_abi_config);
 }
 
-
-/* @} */
 
 #endif /* NM_LAUNCHER_H */
 

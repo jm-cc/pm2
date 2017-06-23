@@ -258,7 +258,7 @@ static inline void nm_sr_recv_match(nm_session_t p_session, nm_sr_request_t*p_re
 {
   nm_core_t p_core = p_session->p_core;
   const nm_core_tag_t core_tag = nm_core_tag_build(p_session->hash_code, tag);
-  const nm_core_tag_t core_mask = nm_core_tag_build(p_session->hash_code, mask);
+  const nm_core_tag_t core_mask = nm_core_tag_build(NM_CORE_TAG_HASH_FULL, mask);
   nm_core_unpack_match_recv(p_core, &p_request->req, p_gate, core_tag, core_mask);
 }
 

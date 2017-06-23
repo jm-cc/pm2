@@ -60,7 +60,7 @@ int main(int argc, char**argv)
 	      TBX_GET_TICK(t1);
 	      for(r = 0; r < burst; r++)
 		{
-		  nm_tag_t tag = r;
+		  nm_tag_t tag = burst - 1 - r;
 		  nm_sr_isend(p_session, p_gate, tag, &small, sizeof(small), &sreqs[r]);
 		  nm_sr_irecv(p_session, p_gate, tag, &small, sizeof(small), &rreqs[r]);
 		}
@@ -98,8 +98,11 @@ int main(int argc, char**argv)
 		}
 	      for(r = 0; r < burst; r++)
 		{
-		  int tag = r;
 		  nm_sr_rwait(p_session, &rreqs[r]);
+		}
+	      for(r = 0; r < burst; r++)
+		{
+		  int tag = r;
 		  nm_sr_isend(p_session, p_gate, tag, &small, 1, &sreqs[r]);
 		}
 	      for(r = 0; r < burst; r++)

@@ -141,13 +141,13 @@ PUK_ALLOCATOR_TYPE(nm_core_dispatching_event, struct nm_core_dispatching_event_s
 
 /* ** Unexpected chunks ************************************ */
 
-PUK_LIST_DECLARE_TYPE(nm_unexpected);
+PUK_LIST_DECLARE_TYPE2(nm_unexpected_core, struct nm_unexpected_s);
 PUK_LIST_DECLARE_TYPE2(nm_unexpected_tag, struct nm_unexpected_s);
 
 /** a chunk of unexpected message to be stored */
 struct nm_unexpected_s
 {
-  PUK_LIST_LINK(nm_unexpected);
+  PUK_LIST_LINK(nm_unexpected_core);
   PUK_LIST_LINK(nm_unexpected_tag);           /**< list of unexpected per-tag */
   const struct nm_header_generic_s*p_header;
   struct nm_pkt_wrap_s*p_pw;
@@ -157,7 +157,7 @@ struct nm_unexpected_s
   nm_len_t msg_len; /**< length of full message on last chunk, NM_LEN_UNDEFINED if not last chunk */
 };
 
-PUK_LIST_CREATE_FUNCS(nm_unexpected);
+PUK_LIST_CREATE_FUNCS(nm_unexpected_core);
 PUK_LIST_CREATE_FUNCS(nm_unexpected_tag);
 
 #include "nm_tags.h"

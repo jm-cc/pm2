@@ -293,7 +293,7 @@ void nm_core_monitor_add(nm_core_t p_core, struct nm_core_monitor_s*p_core_monit
   if(p_core_monitor->monitor.event_mask == NM_STATUS_UNEXPECTED)
     {
       struct nm_unexpected_s*p_chunk = NULL, *p_tmp;
-      puk_list_foreach_safe(nm_unexpected, p_chunk, p_tmp, &p_core->unexpected) /* use 'safe' iterator since notifier is likely to post a recv */
+      puk_list_foreach_safe(nm_unexpected_core, p_chunk, p_tmp, &p_core->unexpected) /* use 'safe' iterator since notifier is likely to post a recv */
 	{
 	  if(p_chunk->msg_len != NM_LEN_UNDEFINED)
 	    {
@@ -438,7 +438,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 
   nm_req_list_init(&p_core->unpacks);
   nm_req_list_init(&p_core->pending_packs);
-  nm_unexpected_list_init(&p_core->unexpected);
+  nm_unexpected_core_list_init(&p_core->unexpected);
 
   nm_req_chunk_lfqueue_init(&p_core->pack_submissions);
   p_core->req_chunk_allocator = nm_req_chunk_allocator_new(NM_REQ_CHUNK_QUEUE_SIZE);

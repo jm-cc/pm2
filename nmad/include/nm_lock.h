@@ -56,6 +56,9 @@ static inline void nm_core_lock(struct nm_core*p_core)
 #ifdef PIOMAN
   piom_spin_lock(&p_core->lock);
   nm_profile_inc(p_core->profiling.n_locks);
+#else
+  assert(p_core->lock == 0);
+  p_core->lock++;
 #endif
 }
 
@@ -67,7 +70,15 @@ static inline int nm_core_trylock(struct nm_core*p_core)
     nm_profile_inc(p_core->profiling.n_locks);
   return rc;
 #else
-  return 1;
+  if(p_core->lock == 0)
+    {
+      p_core->lock++;
+      return 1;
+    }
+  else
+    {
+      return 0;
+    }
 #endif
 }
 
@@ -75,6 +86,9 @@ static inline void nm_core_unlock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_unlock(&p_core->lock);
+#else
+  p_core->lock--;
+  assert(p_core->lock == 0);
 #endif
 }
 
@@ -82,6 +96,8 @@ static inline void nm_core_lock_init(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_init(&p_core->lock);
+#else
+  p_core->lock = 0;
 #endif
 }
 

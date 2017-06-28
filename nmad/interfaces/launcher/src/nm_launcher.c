@@ -175,6 +175,34 @@ int nm_launcher_exit(void)
 #ifdef PIOMAN_TRACE
   piom_trace_flush();
 #endif /* PIOMAN_TRACE */
+
+  /* barrier before shutdown */
+  struct nm_core*p_core = launcher.gates[0]->p_core;
+  struct nm_data_s data;
+  nm_data_contiguous_build(&data, NULL, 0);
+  const nm_core_tag_t core_tag = nm_core_tag_build(0 /* session */, 1);
+  const nm_core_tag_t core_mask = nm_core_tag_build(NM_CORE_TAG_HASH_FULL, NM_TAG_MASK_FULL);
+  struct nm_req_s*rreqs = malloc(sizeof(struct nm_req_s) * launcher.size);
+  struct nm_req_s*sreqs = malloc(sizeof(struct nm_req_s) * launcher.size);
+  int i;
+  for(i = 0; i < launcher.size; i++)
+    {
+      nm_core_unpack_init(p_core, &rreqs[i]);
+      nm_core_unpack_data(p_core, &rreqs[i], &data);
+      nm_core_unpack_match_recv(p_core, &rreqs[i], launcher.gates[i], core_tag, core_mask);
+      nm_core_unpack_submit(p_core, &rreqs[i], NM_REQ_FLAG_NONE);
+    }
+  for(i = 0; i < launcher.size; i++)
+    {
+      nm_core_pack_data(p_core, &sreqs[i], &data);
+      nm_core_pack_send(p_core, &sreqs[i], core_tag, launcher.gates[i], NM_REQ_FLAG_NONE);
+      nm_core_pack_submit(p_core, &sreqs[i], 0);
+    }
+  for(i = 0; i < launcher.size; i++)
+    {
+      nm_status_wait(&rreqs[i], NM_STATUS_FINALIZED, p_core);
+      nm_status_wait(&sreqs[i], NM_STATUS_FINALIZED, p_core);
+    }
   
   free(launcher.gates);
   launcher.gates = NULL;

@@ -257,9 +257,9 @@ void nm_mpi_datatype_exit(void)
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(MPI_COMM_WORLD);
   nm_session_t       p_session = nm_mpi_communicator_get_session(p_comm);
   nm_sr_session_monitor_remove(p_session, &nm_mpi_datatype_requests_monitor);
+  nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes, &nm_mpi_datatype_free);
   nm_mpi_datatype_hashtable_destroy();
   nm_mpi_datatype_exchange_hashtable_destroy();
-  nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes, &nm_mpi_datatype_free);
 }
 
 /* ********************************************************* */

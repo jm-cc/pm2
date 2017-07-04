@@ -72,6 +72,9 @@ typedef uint32_t nm_pw_flag_t;
 /** data received in driver buffer has been mirrored in pw buffer */
 #define NM_PW_BUF_MIRROR    (nm_pw_flag_t)0x00002000
 
+/** driver reported gate as closed */
+#define NM_PW_CLOSED        (nm_pw_flag_t)0x00004000
+
 /*@}*/
 
 

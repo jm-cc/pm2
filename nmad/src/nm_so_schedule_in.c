@@ -960,7 +960,14 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
       /* request was posted on a driver, for any gate */
       p_drv->p_in_rq = NULL;
     }
-
+  /* check error status */
+  if(p_pw->flags & NM_PW_CLOSED)
+    {
+      nm_pw_ref_dec(p_pw);
+      p_gate->status = NM_GATE_STATUS_DISCONNECTING;
+      return;
+    }
+  
   if(p_pw->trk_id == NM_TRK_SMALL)
     {
       /* ** Small packets - track #0 *********************** */

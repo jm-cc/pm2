@@ -124,23 +124,11 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
     }
   else if(err == -NM_ECLOSED)
     {
-      nm_gate_t p_gate = p_pw->p_gate;
-      nm_core_lock(p_core);
-      p_gate->status = NM_GATE_STATUS_DISCONNECTING;
-      if(p_pw->p_trk)
-	{
-	  if(p_pw->p_trk->p_pw_recv == p_pw)
-	    {
-	      p_pw->p_trk->p_pw_recv = NULL;
-	    }
-	}
-#ifdef PIOMAN
-      piom_ltask_completed(&p_pw->ltask);
-#else
+      p_pw->flags |= NM_PW_CLOSED;
+#ifndef PIOMAN
       nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
-#endif /* PIOMAN */
-      nm_pw_ref_dec(p_pw);
-      nm_core_unlock(p_core);
+#endif /* !PIOMAN */
+      nm_pw_completed_enqueue(p_core, p_pw);
     }
   else if (err != -NM_EAGAIN)
     {

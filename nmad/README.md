@@ -10,19 +10,16 @@ for any question, mailto: Alexandre.Denis@inria.fr
 Installation
 ------------
 
-module nmad requires other pm2 modules: tbx, Puk, PukABI (optionnal),
-pioman (optionnal). PadicoTM is the prefered launcher, and should be
-built *after* nmad.
-
 Requirements:
   - autoconf (v 2.50 or later)
   - pkg-config
   - hwloc (optional, recommended)
+  - libexpat XML parser
   - ibverbs/OFED for IB support (set $IBHOME if not installed in /usr)
   - MX for Myrinet support (set $MX_DIR if not installed in /usr)
 
-**Automated build** (recommended):
-To build multiple pm2 modules at once, we recommend to use the build
+**Automated build (recommended)**:
+To build all modules required by nmad, we recommend to use the build
 script located in pm2/scripts/pm2-build-packages using a given or a
 custom configuration file, e.g.:
 
@@ -30,7 +27,13 @@ custom configuration file, e.g.:
      % ./pm2-build-packages ./madmpi.conf --prefix=$HOME/soft/x86_64
 
 
-Manual build (not recommended). For each module:
+**Manual build (not recommended, advanced users only)**.
+
+Module nmad requires other pm2 modules: tbx, Puk, PukABI (optionnal),
+pioman (optionnal). PadicoTM is the prefered launcher, and should be
+built *after* nmad.
+
+For each module:
 
     ./autogen.sh
     mkdir build ; cd build
@@ -47,7 +50,7 @@ Usefull configure flags (see ./configure --help)
     --enable-tagarray       Enable 8 bit tags in flat array
     --enable-sampling       Enable network sampling
     --enable-nuioa          Enable NUMA control on I/O
-    --enable-mpi            Enable builtin MPI implementation Mad-MPI
+    --enable-mpi            Enable builtin MPI implementation MadMPI
     --with-pioman           use pioman I/O manager [default=no]
     --with-ibverbs          use Infiniband ibverbs [default=check]
     --with-mx               use Myrinet MX [default=check]
@@ -73,7 +76,8 @@ Launcher
 --------
 
 For MadMPI use the standard `mpirun` as launcher. Please see `mpirun --help`
-for up-to-date documentation.
+for up-to-date documentation. Please note that MadMPI `mpirun` is a
+frontend to `padico-launch` so it accepts all options described below.
 
 For native NewMadeleine applications, it is recommended to use
 `padico-launch` as a launcher for nmad. It accepts parameters similar
@@ -92,9 +96,10 @@ Environment variables may be set using -D parameters, e.g.:
 starts program 'nm_bench_sendrecv' on hosts jack0 and jack1, using multi-rail
 over Infiniband and Myrinet, using one console per process.
 
+Advanced Tuning
+---------------
 
-Strategy
---------
+### Strategy
 
 The strategy used by nmad is selected using the following rules:
 
@@ -109,9 +114,9 @@ Valid strategies are:
 The following are deprecated/unmatained:
   split_all, qos
 
+The default choice should fit most cases.
 
-Drivers
--------
+### Drivers
 
 The drivers used by nmad are selected using the following rules:
 
@@ -151,8 +156,7 @@ purpose and manages only 2 nodes.
 inter-process.
 
 
-Infiniband tuning
------------------
+### Infiniband tuning
 
 Infiniband may be tuned at run time through environment variables:
 - NMAD_IBVERBS_RCACHE=1 enables the registration cache (requires PukABI)
@@ -174,8 +178,7 @@ subnet GID on all nodes of the subnet.
       % /etc/init.d/infiniband restart
 
 
-Tags
-----
+### Tags
 
 The tag width may be configured as follows:
 - tag_as_flat_array: tags are 8 bits, stored in flat arrays.
@@ -185,7 +188,7 @@ The tag width may be configured as follows:
   nmad core, stored in hashtables with indirect hashing. Performance
   penalty is ~250ns compared to flat_array.
 
-*Note*: only 'tag_huge' supports multiple sessions, and is mandatory for Mad-MPI.
+*Note*: only 'tag_huge' supports multiple sessions, and is mandatory for MadMPI.
 
 Configure with --enable-taghuge for tag_huge, --enable-tagarray for
 tag_array. Default is tag_as_hashtable.

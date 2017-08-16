@@ -224,7 +224,7 @@ void piom_pthread_init_ltasks(void)
     /* ** timer-based polling */
     if(piom_parameters.timer_period > 0)
 	{
-	    PIOM_DISP(" starting timer worker (period=%d)\n", piom_parameters.timer_period);
+	    PIOM_DISP("starting timer worker (period = %d usec.)\n", piom_parameters.timer_period);
 	    __piom_pthread_create(NULL, &__piom_ltask_timer_worker, NULL);
 	}
     /* ** idle polling */
@@ -253,7 +253,7 @@ void piom_pthread_init_ltasks(void)
 			{
 			    char string[128];
 			    hwloc_obj_snprintf(string, sizeof(string), topo, o, "#", 0);
-			    PIOM_DISP("idle #%d on %s\n", i, string);
+			    PIOM_DISP("idle worker #%d on %s (granularity = %d usec.)\n", i, string, piom_parameters.idle_granularity);
 			    piom_ltask_queue_t*queue = piom_topo_get_queue(o);
 			    pthread_attr_t attr;
 			    pthread_attr_init(&attr);

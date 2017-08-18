@@ -40,6 +40,19 @@
 #define piom_spin_unlock(lock) 	       marcel_spin_unlock_tasklet_enable(lock)
 #define piom_spin_trylock(lock)	       marcel_spin_trylock_tasklet_disable(lock)
 
+static inline void piom_spin_assert_locked(piom_spinlock_t*lock)
+{
+#ifdef PIOMAN_DEBUG
+  /* not implemented */
+#endif
+}
+
+static inline void piom_spin_assert_notlocked(piom_spinlock_t*lock)
+{
+#ifdef PIOMAN_DEBUG
+  /* not implemented */
+#endif
+}
 /* ** semaphores ******************************************* */
 
 typedef marcel_sem_t piom_sem_t;

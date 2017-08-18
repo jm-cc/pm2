@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008-2015 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008-2017 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,9 @@
 /* ** base marcel types ************************************ */
 
 #define piom_thread_t                  marcel_t
+#define piom_thread_attr_t             marcel_attr_t
 #define PIOM_THREAD_NULL               NULL
-#define PIOM_THREAD_SELF                      marcel_self()
+#define PIOM_THREAD_SELF               marcel_self()
 
 /* ** locks for Marcel ************************************* */
 
@@ -58,5 +59,22 @@ static inline void piom_sem_init(piom_sem_t *sem, int initial)
 {
   marcel_sem_init(sem, initial);
 }
+
+static inline void piom_sem_destroy(piom_sem_t*sem)
+{
+  marcel_sem_destroy(sem);
+}
+
+static inline int piom_thread_create(piom_thread_t*thread, piom_thread_attr_t*attr,
+				     void*(*thread_func)(void*), void*arg)
+{
+  return marcel_create((marcel_t*)thread, (marcel_attr_t*)attr, thread_func, arg);
+}
+
+static inline int piom_thread_join(piom_thread_t thread)
+{
+  return marcel_join((marcel_t)thread, NULL);
+}
+
 
 #endif /* PIOM_MARCEL_H */

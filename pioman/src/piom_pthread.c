@@ -125,7 +125,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 	    tbx_tick_t s1, s2;
 	    const int poll_level = piom_ltask_poll_level_get();
 	    const int granularity = (poll_level && !piom_ltask_lfqueue_empty(&queue->ltask_queue)) ?
-		granularity0 : 10 * (granularity0 + 1);
+		granularity0 : 2 * (granularity0 + 1);
 	    TBX_GET_TICK(s1);
 	    piom_trace_local_event(PIOM_TRACE_EVENT_IDLE_POLL, NULL);
 	    if(prio_enable)
@@ -133,7 +133,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 	    piom_ltask_schedule(PIOM_POLL_POINT_IDLE);
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), min_prio);
-	    if(granularity > 0 && granularity < 10)
+	    if(granularity > 0 && granularity < 55)
 		{
 		    double d = 0.0;
 		    do

@@ -1,7 +1,7 @@
 # sample makefile for PIOMan examples
 
 
-EXAMPLES := piom_bench ltask_mini test_cond
+EXAMPLES := piom_bench ltask_mini test_cond test_yield
 
 CC      = gcc
 LD      = $(CC)

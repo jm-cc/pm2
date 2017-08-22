@@ -132,7 +132,15 @@
   static inline int ENAME ## _lfqueue_empty(struct ENAME ## _lfqueue_s*queue) \
   {									\
     return(queue->_tail == queue->_head);				\
-  }
+  }									\
+  /** hint about the queue size.					\
+   * Do not rely on it: state may have changed before function return.	\
+   */									\
+  static inline int ENAME ## _lfqueue_size(struct ENAME ## _lfqueue_s*queue) \
+  {									\
+    return((LFQUEUE_SIZE + queue->_head - queue->_tail) % LFQUEUE_SIZE); \
+  }									\
+  
 
 /** @} */
 

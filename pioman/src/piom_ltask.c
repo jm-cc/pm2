@@ -111,8 +111,8 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 {
     if(piom_mask_acquire(&queue->mask))
 	return;
-    const int hint1 = (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK;
-    const int hint2 = (PIOM_MAX_LTASK + queue->submit_queue._head - queue->submit_queue._tail) % PIOM_MAX_LTASK;
+    const int hint1 = piom_ltask_lfqueue_size(&queue->ltask_queue);
+    const int hint2 = piom_ltask_lfqueue_size(&queue->submit_queue);
     const int hint = ((hint1 > 0)?hint1:1) + ((hint2 > 0)?hint2:1);
     const int count = (full != 0) ? hint : 1;
     int success = 0;
@@ -359,6 +359,7 @@ void piom_ltask_schedule(int point)
 		    for(i = 0; i < __piom_ltask.n_queues; i++)
 			{
 			    piom_ltask_queue_t*queue = __piom_ltask.all_queues[i];
+			    assert(queue != NULL);
 			    if(queue == local_queue)
 				{
 				    piom_ltask_queue_schedule(queue, 1);
@@ -376,6 +377,7 @@ void piom_ltask_schedule(int point)
 		    for(i = 0; i < __piom_ltask.n_queues; i++)
 			{
 			    piom_ltask_queue_t*queue = __piom_ltask.all_queues[i];
+			    assert(queue != NULL);
 			    piom_ltask_queue_schedule(queue, 1);
 			}
 		}
@@ -383,6 +385,7 @@ void piom_ltask_schedule(int point)
 		{
 		    /* other points (idle, forced)- poll local queue */
 		    piom_ltask_queue_t*queue = piom_topo_get_queue(piom_topo_current_obj());
+		    assert(queue != NULL);
 		    piom_ltask_queue_schedule(queue, 1);
 		}
 	}

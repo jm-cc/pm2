@@ -67,6 +67,12 @@ piom_ltask_queue_t*piom_topo_get_queue(piom_topo_obj_t obj)
     return local->queue;
 #elif defined(PIOMAN_TOPOLOGY_MARCEL)
     const struct piom_ltask_locality_s*local = obj->ltask_data;
+    while((obj != NULL) && (local->queue == NULL))
+	{
+	    obj = obj->father;
+	    local = obj->ltask_data;
+	}
+    assert(local->queue != NULL);
     return local->queue;
 #elif defined(PIOMAN_TOPOLOGY_NONE)
     return &__piom_topology.global_queue;

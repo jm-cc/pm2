@@ -16,6 +16,8 @@
 #include "nm_bench_generic.h"
 #include <nm_sendrecv_interface.h>
 
+#undef BG_PROG_FLUSH
+
 #define DATA_TAG 0x05
 static const nm_tag_t data_tag = DATA_TAG;
 
@@ -32,6 +34,9 @@ static void bg_prog_send(void*buf, nm_len_t len)
   nm_sr_isend(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, buf, len, &sreq);
   nm_sr_request_set_ref(&sreq, &done);
   nm_sr_request_monitor(nm_bench_common.p_session, &sreq, NM_SR_EVENT_FINALIZED, &bg_prog_completed_req);
+#ifdef BG_PROG_FLUSH
+     nm_sr_flush(nm_bench_common.p_session);
+#endif
   while(!done)
     {
       sched_yield();

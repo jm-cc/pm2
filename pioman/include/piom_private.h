@@ -105,6 +105,7 @@ TBX_INTERNAL struct piom_parameters_s
     int enable_progression;    /**< whether to enable background progression (idle thread and sighandler); default 1 */
     enum piom_topo_level_e binding_level; /**< hierarchy level where to bind queues; default: socket */
     int idle_granularity;      /**< time granularity for polling on idle, in usec. */
+    int idle_coef;             /**< multiplicative coefficient applied to idle granularity when no requests are active */
     enum piom_bind_distrib_e
 	{
 	    PIOM_BIND_DISTRIB_NONE = 0, /**< no value given */

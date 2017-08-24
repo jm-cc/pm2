@@ -25,6 +25,7 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 	.enable_progression = 1,
 	.binding_level      = PIOM_TOPO_SOCKET,
 	.idle_granularity   = 5,
+	.idle_coef          = 10,
 	.idle_distrib       = PIOM_BIND_DISTRIB_ALL,
 	.timer_period       = 4000,
 	.spare_lwp          = 0,
@@ -77,6 +78,7 @@ void pioman_init(int*argc, char**argv)
     const char*s_enable_progression    = getenv("PIOM_ENABLE_PROGRESSION");
     const char*s_binding_level         = getenv("PIOM_BINDING_LEVEL");
     const char*s_idle_granularity      = getenv("PIOM_IDLE_GRANULARITY");
+    const char*s_idle_coef             = getenv("PIOM_IDLE_COEF");
     const char*s_idle_distrib          = getenv("PIOM_IDLE_DISTRIB");
     const char*s_timer_period          = getenv("PIOM_TIMER_PERIOD");
     const char*s_spare_lwp             = getenv("PIOM_SPARE_LWP");
@@ -99,6 +101,11 @@ void pioman_init(int*argc, char**argv)
 	{
 	    piom_parameters.idle_granularity = atoi(s_idle_granularity);
 	    PIOM_DISP("custom PIOM_IDLE_GRANULARITY = %d\n", piom_parameters.idle_granularity);
+	}
+    if(s_idle_coef)
+	{
+	    piom_parameters.idle_coef = atoi(s_idle_coef);
+	    PIOM_DISP("custom PIOM_IDLE_COEF = %d\n", piom_parameters.idle_coef);
 	}
     if(s_binding_level)
 	{

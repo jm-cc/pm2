@@ -116,6 +116,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
     int rc = pthread_setschedprio(pthread_self(), min_prio);
     const int prio_enable = ((rc == 0) && (min_prio != old_prio));
     const int granularity0 = piom_parameters.idle_granularity;
+    const int coef = (piom_parameters.idle_coef > 0) ? piom_parameters.idle_coef : 1;
     if(rc != 0)
 	{
 	    PIOM_WARN("idle thread could not get priority %d (err=%d, %s).\n", min_prio, rc, strerror(rc));
@@ -125,7 +126,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 	    tbx_tick_t s1, s2;
 	    const int poll_level = piom_ltask_poll_level_get();
 	    const int granularity = (poll_level && !piom_ltask_lfqueue_empty(&queue->ltask_queue)) ?
-		granularity0 : 10 * (granularity0 + 1);
+		granularity0 : coef * (granularity0 + 1);
 	    TBX_GET_TICK(s1);
 	    piom_trace_local_event(PIOM_TRACE_EVENT_IDLE_POLL, NULL);
 	    if(prio_enable)
@@ -137,7 +138,10 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 		{
 		    double d = 0.0;
 		    do
-			{
+			{			    
+			    const int poll_level2 = piom_ltask_poll_level_get();
+			    if(poll_level2 > poll_level)
+				break;
 			    sched_yield();
 			    TBX_GET_TICK(s2);
 			    d = TBX_TIMING_DELAY(s1, s2);

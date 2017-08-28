@@ -1,7 +1,7 @@
 /* -*- Mode: C; c-basic-offset:4 ; -*- */
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001-2016 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001-2017 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -121,6 +121,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 	{
 	    PIOM_WARN("idle thread could not get priority %d (err=%d, %s).\n", min_prio, rc, strerror(rc));
 	}
+    usleep(1000); /* give an opportunity to Linux scheduler to move this thread away */
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    tbx_tick_t s1, s2;
@@ -138,11 +139,21 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 		{
 		    double d = 0.0;
 		    do
-			{			    
+			{
+			    sched_yield();
+#ifdef PIOMAN_X86INTRIN
+			    /* TODO: we should check for 'contant_tsc' cpuid flag before using tsc */
+			    uint64_t tsc0 = __rdtsc();
+			    uint64_t tsc1 = 0;
+			    do
+				{
+				    tsc1 = __rdtsc();
+				}
+			    while(tsc1 - tsc0 < 100 * granularity);
+#endif /* PIOMAN_X86INTRIN */
 			    const int poll_level2 = piom_ltask_poll_level_get();
 			    if(poll_level2 > poll_level)
 				break;
-			    sched_yield();
 			    TBX_GET_TICK(s2);
 			    d = TBX_TIMING_DELAY(s1, s2);
 			}
@@ -150,7 +161,8 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 		}
 	    else if(granularity > 0)
 		{
-		    usleep(granularity);
+		    struct timespec t = { .tv_sec = 0, .tv_nsec = granularity * 1000 };
+		    clock_nanosleep(CLOCK_MONOTONIC, 0, &t, NULL);
 		}
 	    else
 		{

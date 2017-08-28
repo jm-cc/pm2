@@ -14,3 +14,4 @@
 
 #undef PIOMAN_TRACE
 
+#undef PIOMAN_X86INTRIN

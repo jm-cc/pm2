@@ -49,6 +49,15 @@ if test "x${ENABLE_DEBUG_FLAG}" = "xyes"; then
   AC_DEFINE([PIOMAN_DEBUG], [1], [whether PIOMan is built in DEBUG])
 fi
 
+AC_CHECK_HEADER(x86intrin.h,
+  [
+    PIOMAN_X86INTRIN="yes"
+    AC_DEFINE(PIOMAN_X86INTRIN, 1, [Define if you have the <x86intrin.h> header file.])
+  ],
+  [
+    PIOMAN_X86INTRIN="no"
+  ])
+AC_SUBST(PIOMAN_X86INTRIN)
 
 dnl -- external packages
 dnl --------------------------------------------------------

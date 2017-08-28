@@ -29,6 +29,10 @@
 #include "piom_lfqueue.h"
 #include "piom_log.h"
 
+#ifdef PIOMAN_X86INTRIN
+#include <x86intrin.h>
+#endif /* PIOMAN_X86INTRIN */
+
 /** Maximum number of ltasks in a queue. 
  * Should be large enough to avoid overflow, but small enough to fit the cache.
  */

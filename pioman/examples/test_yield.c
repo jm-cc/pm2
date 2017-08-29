@@ -8,6 +8,8 @@
 #include <sched.h>
 #include <cpuid.h>
 
+#include <x86intrin.h>
+
 #include <tbx.h>
 
 #define DEFAULT_LOOPS 10000
@@ -42,9 +44,12 @@ static inline int supports_rdtscp(void)
 
 static inline uint64_t rdtscp(uint32_t*aux)
 {
+  /*
     uint64_t rax,rdx;
     asm volatile ( "rdtscp\n" : "=a" (rax), "=d" (rdx), "=c" (*aux) : : );
     return (rdx << 32) + rax;
+  */
+  return __rdtscp(aux);
 }
 
 int main(int argc, char**argv)

@@ -16,6 +16,15 @@
 
 static unsigned loops = DEFAULT_LOOPS;
 
+static inline int supports_invariant_tsc(void)
+{
+  unsigned a, b, c, d;
+  if (__get_cpuid(0x80000007, &a, &b, &c, &d))
+    return (d&(1<<8) ? 1 : 0);
+ else
+   return 0;
+}
+
 static inline int supports_getcpu(void)
 {
   int rc = sched_getcpu();
@@ -26,7 +35,7 @@ static inline int supports_rdtscp(void)
 {
   unsigned a, b, c, d;
   if (__get_cpuid(0x80000001, &a, &b, &c, &d))
-    return (d&1<<27 ? 2 : 0);
+    return (d&(1<<27) ? 1 : 0);
  else
    return 0;
 }
@@ -42,6 +51,7 @@ int main(int argc, char**argv)
 {
   tbx_init(&argc, &argv);
 
+  fprintf(stderr, "support invarient tsc: %d\n", supports_invariant_tsc());
   fprintf(stderr, "support rdtscp: %d\n", supports_rdtscp());
   if(supports_rdtscp())
     {

@@ -115,6 +115,12 @@ static void*__piom_ltask_idle_worker(void*_dummy)
     __piom_pthread_setname("_pioman_idle");
     int rc = pthread_setschedprio(pthread_self(), min_prio);
     const int prio_enable = ((rc == 0) && (min_prio != old_prio));
+#ifdef SCHED_IDLE
+    rc = pthread_setschedparam(pthread_self(), SCHED_IDLE, &old_param);
+#else /* SCHED_IDLE */
+    rc = -1;
+#endif /* SCHED_IDLE */
+    const int sched_idle_enable = (rc == 0);
     const int granularity0 = piom_parameters.idle_granularity;
     const int coef = (piom_parameters.idle_coef > 0) ? piom_parameters.idle_coef : 1;
     if(rc != 0)
@@ -132,7 +138,13 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 	    piom_trace_local_event(PIOM_TRACE_EVENT_IDLE_POLL, NULL);
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), old_prio);
+	    if(sched_idle_enable)
+		pthread_setschedparam(pthread_self(), SCHED_OTHER, &old_param);
+
 	    piom_ltask_schedule(PIOM_POLL_POINT_IDLE);
+
+	    if(sched_idle_enable)
+		pthread_setschedparam(pthread_self(), SCHED_IDLE, &old_param);
 	    if(prio_enable)
 		pthread_setschedprio(pthread_self(), min_prio);
 	    if(granularity > 0 && granularity < 55)
@@ -141,6 +153,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 		    do
 			{
 			    sched_yield();
+#if 0
 #ifdef PIOMAN_X86INTRIN
 			    /* TODO: we should check for 'contant_tsc' cpuid flag before using tsc */
 			    uint64_t tsc0 = __rdtsc();
@@ -151,6 +164,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 				}
 			    while(tsc1 - tsc0 < 100 * granularity);
 #endif /* PIOMAN_X86INTRIN */
+#endif
 			    const int poll_level2 = piom_ltask_poll_level_get();
 			    if(poll_level2 > poll_level)
 				break;

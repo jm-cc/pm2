@@ -35,6 +35,7 @@ struct nm_core
   
   puk_component_t strategy_component;           /**< selected strategy */
   int enable_schedopt;                          /**< whether schedopt is enabled atop drivers */
+  int enable_auto_flush;                        /**< automatic flush after each pack_submit */
 
   struct nm_gate_list_s gate_list;              /**< list of gates. */
   struct nm_drv_list_s driver_list;             /**< list of drivers. */

@@ -72,6 +72,11 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t
       nm_req_chunk_init(&p_pack->req_chunk, p_pack, 0, size);
       nm_req_chunk_submit(p_core, &p_pack->req_chunk);
     }
+  if(p_core->enable_auto_flush)
+    {
+      nm_core_flush(p_core);
+      nm_schedule(p_core);
+    }
 }
 
 /** Places a packet in the send request list.

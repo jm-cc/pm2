@@ -451,6 +451,15 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   
   p_core->enable_schedopt = 1;
   p_core->strategy_component = NULL;
+  if(getenv("NMAD_AUTO_FLUSH"))
+    {
+      p_core->enable_auto_flush = 1;
+      NM_DISPF("# nmad: auto-flush on send enabled.\n");
+    }
+  else
+    {
+      p_core->enable_auto_flush = 0;
+    }
 
 #ifdef NMAD_PROFILE
   p_core->profiling.n_locks      = 0;

@@ -85,7 +85,9 @@ static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, stru
 
 uint32_t nm_ibverbs_hca_hash(const void*_key)
 {
-  return puk_hash_oneatatime(_key, sizeof(struct nm_ibverbs_hca_key_s));
+  struct nm_ibverbs_hca_key_s*p_key = _key;
+  const uint32_t hash = p_key->port + puk_hash_string(p_key->device);
+  return hash;
 }
 
 int nm_ibverbs_hca_eq(const void*_key1, const void*_key2)
@@ -323,9 +325,11 @@ void nm_ibverbs_hca_get_profile(struct nm_ibverbs_hca_s*p_hca, struct nm_drv_pro
 
 void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca)
 {
+  assert(p_hca->refcount > 0);
   p_hca->refcount--;
-  if(p_hca->refcount <= 0)
+  if(p_hca->refcount == 0)
     {
+      assert(puk_hashtable_probe(nm_ibverbs_common.hca_table, &p_hca->key));
       puk_hashtable_remove(nm_ibverbs_common.hca_table, &p_hca->key);
       ibv_dealloc_pd(p_hca->pd);
       ibv_close_device(p_hca->context);

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2011-2013 (see AUTHORS file)
+ * Copyright (C) 2011-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ static struct
 struct nm_connector_s*nm_connector_create(int addr_len, const char**url)
 {
   /* allocate connector */
-  struct nm_connector_s*c = TBX_MALLOC(sizeof(struct nm_connector_s));
+  struct nm_connector_s*c = malloc(sizeof(struct nm_connector_s));
   c->sock = -1;
   c->addrs = puk_hashtable_new(&nm_connector_entry_hash, &nm_connector_entry_eq);
   c->addr_len = addr_len;
@@ -157,7 +157,8 @@ static void nm_connector_send(struct nm_connector_s*p_connector, const char*remo
       .sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
     };
   /* send address */
-  struct nm_connector_entry_s*local_entry = TBX_MALLOC(sizeof(struct nm_connector_entry_s) + p_connector->addr_len);
+  struct nm_connector_entry_s*local_entry = malloc(sizeof(struct nm_connector_entry_s) + p_connector->addr_len);
+  memset(local_entry, 0, sizeof(struct nm_connector_entry_s));
   assert(strlen(p_connector->url) == NM_CONNECTOR_URL_SIZE);
   memcpy(local_entry->url, p_connector->url, NM_CONNECTOR_URL_SIZE);
   memcpy(&local_entry->_addr, local_addr, p_connector->addr_len);
@@ -205,7 +206,8 @@ static int nm_connector_poll(struct nm_connector_s*p_connector)
     {
       return -1;
     }
-  struct nm_connector_entry_s*remote_entry = TBX_MALLOC(sizeof(struct nm_connector_entry_s) + p_connector->addr_len);
+  struct nm_connector_entry_s*remote_entry = malloc(sizeof(struct nm_connector_entry_s) + p_connector->addr_len);
+  memset(remote_entry, 0, sizeof(struct nm_connector_entry_s));
  retry_recv:
   rc = NM_SYS(recv)(p_connector->sock, remote_entry, sizeof(struct nm_connector_entry_s) + p_connector->addr_len, 0);
   if(rc == -1)
@@ -223,7 +225,7 @@ static int nm_connector_poll(struct nm_connector_s*p_connector)
   if(prev)
     {
       puk_hashtable_remove(p_connector->addrs, prev);
-      TBX_FREE(prev);
+      free(prev);
     }
   puk_hashtable_insert(p_connector->addrs, remote_entry, remote_entry);
   return 0;

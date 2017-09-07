@@ -300,8 +300,9 @@ struct nm_req_s
   {
     struct
     {
-      nm_len_t len;       /**< cumulated data length */
-      nm_len_t done;      /**< cumulated length of data sent so far */
+      nm_len_t len;             /**< cumulated data length */
+      nm_len_t done;            /**< cumulated length of data sent so far */
+      int priority;             /**< request priority level */
     } pack;
     struct
     {

@@ -166,7 +166,7 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
     }
   puk_list_foreach(nm_req, p_unpack_core, &p_core->unpacks)
     {
-      if(p_unpack_gtag && (p_unpack_core->req_seq > p_unpack_gtag->req_seq))
+      if(p_unpack_gtag && (p_unpack_core->unpack.req_seq > p_unpack_gtag->unpack.req_seq))
 	{
 	  p_unpack = p_unpack_gtag;
 	  break;
@@ -470,7 +470,7 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
   /* store the unpack request */
   nm_status_add(p_unpack, NM_STATUS_UNPACK_POSTED);
   nm_core_lock(p_core);
-  p_unpack->req_seq = p_core->unpack_seq;
+  p_unpack->unpack.req_seq = p_core->unpack_seq;
   p_core->unpack_seq++;
   if((p_unpack->p_gate == NM_GATE_NONE) ||
      (p_unpack->unpack.tag_mask.tag != NM_TAG_MASK_FULL) ||

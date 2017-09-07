@@ -296,7 +296,6 @@ struct nm_req_s
   nm_gate_t p_gate;             /**< dest/src gate; NULL if recv from any source */
   nm_core_tag_t tag;            /**< tag to send to/from (works in combination with tag_mask for recv) */
   nm_seq_t seq;                 /**< packet sequence number on the given tag */
-  uint64_t req_seq;             /**< request sequence number used to interleave wildcard/non-wildcard requests */
   union
   {
     struct
@@ -308,6 +307,7 @@ struct nm_req_s
     {
       nm_len_t expected_len;  /**< length of posted recv (may be updated if matched packet is shorter) */
       nm_len_t cumulated_len; /**< amount of data unpacked so far */
+      uint64_t req_seq;       /**< request sequence number used to interleave wildcard/non-wildcard requests */
       nm_core_tag_t tag_mask; /**< mask applied to tag for matching (only bits in mask need to match) */
     } unpack;
   };

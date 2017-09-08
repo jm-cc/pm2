@@ -324,6 +324,12 @@ void nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_ta
 /** post a pack request */
 void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen);
 
+/** set a priority for the given pack request */
+static inline void nm_core_pack_set_priority(struct nm_core*p_core, struct nm_req_s*p_pack, int priority)
+{
+  p_pack->pack.priority = priority;
+}
+
 /** initializes an empty unpack request */
 void nm_core_unpack_init(struct nm_core*p_core, struct nm_req_s*p_unpack);
 

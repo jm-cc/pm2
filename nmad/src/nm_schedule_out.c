@@ -31,6 +31,7 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
   p_pack->data      = *p_data;
   p_pack->pack.len  = nm_data_size(&p_pack->data);
   p_pack->pack.done = 0;
+  p_pack->pack.priority = 0;
   p_pack->monitor   = NM_MONITOR_NULL;
 }
 

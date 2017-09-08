@@ -172,6 +172,12 @@ static inline int nm_sr_send_dest(nm_session_t p_session, nm_sr_request_t*p_requ
   nm_core_pack_send(p_core, &p_request->req, core_tag, p_gate, 0);
   return NM_ESUCCESS;
 }
+
+static inline void nm_sr_send_set_priority(nm_session_t p_session, nm_sr_request_t*p_request, int priority)
+{
+  nm_core_pack_set_priority(p_session->p_core, &p_request->req, priority);
+}
+
 static inline int nm_sr_send_header(nm_session_t p_session, nm_sr_request_t*p_request, nm_len_t hlen)
 {
   p_request->hlen = hlen;

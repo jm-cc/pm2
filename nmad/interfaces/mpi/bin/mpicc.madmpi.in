@@ -22,20 +22,20 @@ if [ "x${NMAD_BUILD}" != "x" ]; then
 fi
 
 case "$1" in
-    "-showme")
+    "-showme"|"--showme")
 	shift
 	echo "${CC} ${CFLAGS} ${@} ${LIBS}"
 	;;
-    "-showme:compile")
+    "-showme:compile"|"--showme:compile")
 	echo "${CFLAGS}"
 	;;
-    "-showme:link")
+    "-showme:link"|"--showme:link")
 	echo "${LIBS}"
 	;;
     "-compile_info")
 	echo "${CC} ${CFLAGS}"
 	;;
-    "-link_info")
+    "-link_info"|"--link_info")
 	echo "${CC} ${LIBS}"
 	;;
     *)

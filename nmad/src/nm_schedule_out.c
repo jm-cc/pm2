@@ -31,6 +31,7 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
   p_pack->data      = *p_data;
   p_pack->pack.len  = nm_data_size(&p_pack->data);
   p_pack->pack.done = 0;
+  p_pack->pack.hlen = 0;
   p_pack->pack.priority = 0;
   p_pack->monitor   = NM_MONITOR_NULL;
 }
@@ -48,17 +49,17 @@ void nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_ta
   p_pack->req_chunk.p_req = NULL;
 }
 
-void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen)
+void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
 {
   const nm_len_t size = nm_data_size(&p_pack->data);
-  if(hlen > 0)
+  if(p_pack->pack.hlen > 0)
     {
-      assert(hlen <= size);
+      assert(p_pack->pack.hlen <= size);
       if(size > NM_DATA_IOV_THRESHOLD)
 	{
 	  struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_alloc(p_core);
-	  nm_req_chunk_init(p_req_chunk, p_pack, 0, hlen);
-	  nm_req_chunk_init(&p_pack->req_chunk, p_pack, hlen, size - hlen);
+	  nm_req_chunk_init(p_req_chunk, p_pack, 0, p_pack->pack.hlen);
+	  nm_req_chunk_init(&p_pack->req_chunk, p_pack, p_pack->pack.hlen, size - p_pack->pack.hlen);
 	  nm_req_chunk_submit(p_core, p_req_chunk);
 	  nm_req_chunk_submit(p_core, &p_pack->req_chunk);
 	}

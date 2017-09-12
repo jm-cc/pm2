@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 	  nm_data_contiguous_build(&data, &buffer, sizeof(buffer));
 	  nm_core_pack_data(p_core, &pack, &data);
 	  nm_core_pack_send(p_core, &pack, tag, p_gate, 0);
-	  nm_core_pack_submit(p_core, &pack, 0);
+	  nm_core_pack_submit(p_core, &pack);
 	  while(nm_status_test(&pack, NM_STATUS_PACK_COMPLETED) == 0)
 	    nm_schedule(p_core);
 	  struct nm_req_s unpack;
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	  nm_data_contiguous_build(&data, &buffer, sizeof(buffer));
 	  nm_core_pack_data(p_core, &pack, &data);
 	  nm_core_pack_send(p_core, &pack, tag, p_gate, 0);
-	  nm_core_pack_submit(p_core, &pack, 0);
+	  nm_core_pack_submit(p_core, &pack);
 	  while(nm_status_test(&pack, NM_STATUS_PACK_COMPLETED) == 0)
 	    nm_schedule(p_core);
 	}

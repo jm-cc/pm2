@@ -302,6 +302,7 @@ struct nm_req_s
     {
       nm_len_t len;             /**< cumulated data length */
       nm_len_t done;            /**< cumulated length of data sent so far */
+      nm_len_t hlen;            /**< length of header to send eagerly */
       int priority;             /**< request priority level */
     } pack;
     struct
@@ -322,12 +323,18 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
 void nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_req_flag_t flags);
 
 /** post a pack request */
-void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen);
+void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack);
 
 /** set a priority for the given pack request */
 static inline void nm_core_pack_set_priority(struct nm_core*p_core, struct nm_req_s*p_pack, int priority)
 {
   p_pack->pack.priority = priority;
+}
+
+/** set a header length for the given pack request */
+static inline void nm_core_pack_set_hlen(struct nm_core*p_core, struct nm_req_s*p_pack, nm_len_t hlen)
+{
+  p_pack->pack.hlen = hlen;
 }
 
 /** initializes an empty unpack request */

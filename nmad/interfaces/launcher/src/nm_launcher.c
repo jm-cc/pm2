@@ -196,7 +196,7 @@ int nm_launcher_exit(void)
     {
       nm_core_pack_data(p_core, &sreqs[i], &data);
       nm_core_pack_send(p_core, &sreqs[i], core_tag, launcher.gates[i], NM_REQ_FLAG_NONE);
-      nm_core_pack_submit(p_core, &sreqs[i], 0);
+      nm_core_pack_submit(p_core, &sreqs[i]);
     }
   for(i = 0; i < launcher.size; i++)
     {

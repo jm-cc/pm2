@@ -219,43 +219,46 @@ struct nm_pkt_wrap_s*nm_pw_alloc_noheader(void)
   return p_pw;
 }
 
-/** allocate a new pw with global header preallocated as v[0]- used for short sends */
-struct nm_pkt_wrap_s*nm_pw_alloc_global_header(void)
+/** allocate a new pw with global header for given trk as v[0]- used for short sends */
+struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_trk_s*p_trk)
 {
-  struct nm_pw_buf_s*p_pw_buf = nm_pw_buf_malloc(nm_pw_buf_allocator);
-  struct nm_pkt_wrap_s*p_pw = &p_pw_buf->pw;
-  nm_pw_init(p_pw);
-  p_pw->flags = NM_PW_GLOBAL_HEADER;
-  /* first entry: global header */
-  p_pw->v_nb = 1;
-  p_pw->v[0].iov_base = p_pw->buf;
-  p_pw->v[0].iov_len = 0;
-  p_pw->length = 0;
-  p_pw->max_len = NM_SO_MAX_UNEXPECTED;
-  /* reserve bits for v0 skip offset */
-  const nm_len_t hlen = sizeof(struct nm_header_global_s);
-  p_pw->v[0].iov_len += hlen;
-  p_pw->length += hlen;
-  return p_pw;
-}
-
-/** allocate a new pw with global header allocated in network memory as v[0]- used for short sends */
-struct nm_pkt_wrap_s*nm_pw_alloc_driver_header(struct nm_trk_s*p_trk)
-{
-  struct puk_receptacle_NewMad_minidriver_s*r = &p_trk->receptacle;
-  struct nm_pkt_wrap_s*p_pw = nm_pw_nohd_malloc(nm_pw_nohd_allocator);
-  nm_pw_init(p_pw);
-  p_pw->flags = NM_PW_BUF_SEND;
-  assert(r->driver->buf_send_get && r->driver->buf_send_post);
-  /* first entry: global header */
-  void*p_buffer = NULL;
-  nm_len_t len = NM_LEN_UNDEFINED;
-  (*r->driver->buf_send_get)(r->_status, &p_buffer, &len);
-  p_pw->v_nb = 1;
-  p_pw->v[0].iov_base = p_buffer;
-  p_pw->v[0].iov_len = 0;
-  p_pw->length = 0;
-  p_pw->max_len = len;
+  struct nm_pkt_wrap_s*p_pw = NULL;
+  if(p_trk->p_drv->props.capabilities.supports_buf_send)
+    {
+      /* buffer allocated in network memory */
+      struct puk_receptacle_NewMad_minidriver_s*r = &p_trk->receptacle;
+      p_pw = nm_pw_nohd_malloc(nm_pw_nohd_allocator);
+      nm_pw_init(p_pw);
+      p_pw->flags = NM_PW_BUF_SEND;
+      assert(r->driver->buf_send_get && r->driver->buf_send_post);
+      /* first entry: global header */
+      void*p_buffer = NULL;
+      nm_len_t len = NM_LEN_UNDEFINED;
+      (*r->driver->buf_send_get)(r->_status, &p_buffer, &len);
+      p_pw->v_nb = 1;
+      p_pw->v[0].iov_base = p_buffer;
+      p_pw->v[0].iov_len = 0;
+      p_pw->length = 0;
+      p_pw->max_len = len;
+    }
+  else
+    {
+      /* buffer allocated with pw */
+      struct nm_pw_buf_s*p_pw_buf = nm_pw_buf_malloc(nm_pw_buf_allocator);
+      p_pw = &p_pw_buf->pw;
+      nm_pw_init(p_pw);
+      p_pw->flags = NM_PW_GLOBAL_HEADER;
+      /* first entry: global header */
+      p_pw->v_nb = 1;
+      p_pw->v[0].iov_base = p_pw->buf;
+      p_pw->v[0].iov_len = 0;
+      p_pw->length = 0;
+      const nm_len_t drv_max = ((p_trk->p_drv->props.capabilities.max_msg_size == 0) ||
+				(p_trk->p_drv->props.capabilities.max_msg_size > NM_SO_MAX_UNEXPECTED)) ?
+	NM_SO_MAX_UNEXPECTED : p_trk->p_drv->props.capabilities.max_msg_size;
+      const nm_len_t max_small =  drv_max - NM_ALIGN_FRONTIER - sizeof(struct nm_header_global_s);
+      p_pw->max_len = max_small;
+    }
   /* reserve bits for v0 skip offset */
   const nm_len_t hlen = sizeof(struct nm_header_global_s);
   p_pw->v[0].iov_len += hlen;

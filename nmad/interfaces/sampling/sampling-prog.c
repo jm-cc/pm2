@@ -221,7 +221,7 @@ static void nm_ns_eager_send_copy(struct nm_trk_s*p_trk_small, struct nm_trk_s*p
   nm_data_contiguous_build(&data, buf, len);
   if(len <= max_small)
     {
-      p_pw = nm_pw_alloc_global_header();
+      p_pw = nm_pw_alloc_global_header(p_trk_small);
       nm_pw_add_data_in_header(p_pw, tag, seq, &data, len, 0, 0);
       p_pw->trk_id = NM_TRK_SMALL;
       nm_pw_finalize(p_pw);
@@ -246,7 +246,7 @@ static void nm_ns_eager_send_iov(struct nm_trk_s*p_trk_small, struct nm_trk_s*p_
   nm_data_contiguous_build(&data, buf, len);
   if(len <= max_small)
     {
-      p_pw = nm_pw_alloc_global_header();
+      p_pw = nm_pw_alloc_global_header(p_trk_small);
       nm_data_pkt_pack(p_pw, tag, seq, &data, 0 /* chunk_offset = 0 */, len, 0);
       p_pw->trk_id = NM_TRK_SMALL;
       nm_pw_finalize(p_pw);
@@ -340,7 +340,7 @@ static void nm_ns_eager_send_aggreg(struct nm_trk_s*p_trk_small, struct nm_trk_s
       nm_data_contiguous_build(&data1, buf, len1);
       struct nm_data_s data2;
       nm_data_contiguous_build(&data2, buf + len1, len2);
-      p_pw = nm_pw_alloc_global_header();
+      p_pw = nm_pw_alloc_global_header(p_trk_small);
       nm_pw_add_data_in_header(p_pw, tag, seq, &data1, len1, 0, 0);
       nm_pw_add_data_in_header(p_pw, tag, seq, &data2, len2, len1, 0);
       p_pw->trk_id = NM_TRK_SMALL;

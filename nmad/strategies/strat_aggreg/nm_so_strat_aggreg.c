@@ -98,20 +98,8 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
        nm_req_chunk_list_empty(&p_gate->req_chunk_list)))
     {
       /* no active send && pending chunks */
-      struct nm_pkt_wrap_s*p_pw = NULL;
-      const nm_len_t drv_max = ((p_drv->props.capabilities.max_msg_size == 0) ||
-				(p_drv->props.capabilities.max_msg_size > NM_SO_MAX_UNEXPECTED)) ?
-	NM_SO_MAX_UNEXPECTED : p_drv->props.capabilities.max_msg_size;
-      const nm_len_t max_small =  drv_max - NM_ALIGN_FRONTIER - sizeof(struct nm_header_global_s);
-      if(p_drv->props.capabilities.supports_buf_send)
-	{
-	  p_pw = nm_pw_alloc_driver_header(p_trk_small);
-	}
-      else
-	{
-	  p_pw = nm_pw_alloc_global_header();
-	  p_pw->max_len = max_small;
-	}
+      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_trk_small);
+      const nm_len_t max_small = p_pw->max_len;
       int opt_window = 8;
       /* ** control */
       while(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))

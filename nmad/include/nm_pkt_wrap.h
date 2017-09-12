@@ -147,9 +147,7 @@ struct nm_pkt_wrap_s*nm_pw_alloc_buffer(void);
 
 struct nm_pkt_wrap_s*nm_pw_alloc_noheader(void);
 
-struct nm_pkt_wrap_s*nm_pw_alloc_global_header(void);
-
-struct nm_pkt_wrap_s*nm_pw_alloc_driver_header(struct nm_trk_s*p_trk);
+struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_trk_s*p_trk);
 
 int nm_pw_free(struct nm_pkt_wrap_s*p_pw);
 

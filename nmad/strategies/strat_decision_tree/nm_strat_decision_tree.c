@@ -189,7 +189,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 	{
 	  /* post ctrl on trk #0 */
 	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_pop_front(&p_gate->ctrl_chunk_list);
-	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
+	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_trk_small);
 	  nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
 	  nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
 	  nm_ctrl_chunk_free(p_core->ctrl_chunk_allocator, p_ctrl_chunk);
@@ -203,7 +203,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 	  if(p_req_chunk->chunk_len + max_header_len <= p_status->nm_max_small)
 	    {
 	      /* post short data on trk #0 */
-	      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
+	      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_trk_small);
 	      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_NONE);
 	      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 	      nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
@@ -218,7 +218,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 	      union nm_header_ctrl_generic_s rdv;
 	      nm_header_init_rdv(&rdv, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset,
 				 is_lastchunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
-	      struct nm_pkt_wrap_s*p_rdv_pw = nm_pw_alloc_global_header();
+	      struct nm_pkt_wrap_s*p_rdv_pw = nm_pw_alloc_global_header(p_trk_small);
 	      nm_pw_add_control(p_rdv_pw, &rdv);
 	      nm_core_post_send(p_rdv_pw, p_gate, NM_TRK_SMALL);
 	    }

@@ -97,20 +97,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
      !(nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list) &&
        nm_req_chunk_list_empty(&p_gate->req_chunk_list)))
     {
-      struct nm_pkt_wrap_s*p_pw = NULL;
-      const nm_len_t drv_max = ((p_drv->props.capabilities.max_msg_size == 0) ||
-				(p_drv->props.capabilities.max_msg_size > NM_SO_MAX_UNEXPECTED)) ?
-	NM_SO_MAX_UNEXPECTED : p_drv->props.capabilities.max_msg_size;
-      const nm_len_t max_small =  drv_max - NM_ALIGN_FRONTIER - sizeof(struct nm_header_global_s);
-      if(p_drv->props.capabilities.supports_buf_send)
-	{
-	  p_pw = nm_pw_alloc_driver_header(p_trk_small);
-	}
-      else
-	{
-	  p_pw = nm_pw_alloc_global_header();
-	  p_pw->max_len = max_small;
-	}
+      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_trk_small);
       if(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	{
 	  /* post ctrl on trk #0 */

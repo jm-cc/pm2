@@ -108,7 +108,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
       /* TODO- */
       if(p_trk->p_pw_send == NULL)
 	{
-	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header();
+	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_trk);
 	  /* ** control */
 	  while(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	    {

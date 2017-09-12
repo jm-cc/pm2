@@ -141,7 +141,6 @@ static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_req
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_request->ref = NULL;
   p_request->p_session = p_session;
-  p_request->hlen = 0;
 }
 static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)
 {
@@ -227,7 +226,6 @@ static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_req
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_request->ref = NULL;
   p_request->p_session = p_session;
-  p_request->hlen = 0;
 }
 
 static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, const struct nm_data_s*p_data)

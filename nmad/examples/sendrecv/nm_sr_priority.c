@@ -25,7 +25,7 @@
 #define MAXMSG 5
 static int values[MAXMSG];
 static nm_sr_request_t requests[MAXMSG];
-
+static const int tag = 0;
 int main(int argc, char**argv)
 { 
   nm_examples_init(&argc, argv);
@@ -36,12 +36,15 @@ int main(int argc, char**argv)
       if(is_server)
 	{
 	  values[i] = -1;
-	  nm_sr_irecv(p_session, NM_ANY_GATE, 0, &values[i], sizeof(int), &requests[i]);
+	  nm_sr_irecv(p_session, NM_ANY_GATE, tag, &values[i], sizeof(int), &requests[i]);
 	}
       else
 	{
 	  values[i] = i;
-	  nm_sr_isend(p_session, p_gate, 0, &values[i], sizeof(int), &requests[i]);
+	  nm_sr_send_init(p_session, &requests[i]);
+	  nm_sr_send_pack_contiguous(p_session, &requests[i], &values[i], sizeof(int));
+	  nm_sr_send_set_priority(p_session, &requests[i], i);
+	  nm_sr_send_isend(p_session, &requests[i], p_gate, tag);
 	}
     }
   for(i = 0; i < MAXMSG; i++)

@@ -74,30 +74,6 @@ static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
       return -NM_EBUSY;
     }
 }
-				     
-
-/** Find in the given outlist a packet wrapper with
- * at least 'message_len' available, with a visibility window of length 'window'
- * return NULL if none found.
- */
-static inline struct nm_pkt_wrap_s*nm_tactic_try_to_aggregate(struct nm_pkt_wrap_list_s*p_out_list,
-							      nm_len_t message_len, int window)
-{
-  int i = 0;
-  struct nm_pkt_wrap_s*p_pw = NULL;
-  puk_list_foreach(nm_pkt_wrap, p_pw, p_out_list)
-    {
-      const nm_len_t rlen = nm_pw_remaining_buf(p_pw);
-      if(message_len + NM_ALIGN_FRONTIER < rlen)
-	{
-	  return p_pw;
-	}
-      i++;
-      if(i > window)
-	return NULL;
-    }
-  return NULL;
-}
 
 /** a chunk of rdv data. 
  * Use one for regular rendezvous; use nb_driver chunks for multi-rail.

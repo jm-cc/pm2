@@ -22,10 +22,12 @@
 
 #include "../common/nm_examples_helper.h"
 
-#define MAXMSG 5
+#define MAXMSG 10
+
 static int values[MAXMSG];
 static nm_sr_request_t requests[MAXMSG];
 static const int tag = 0;
+
 int main(int argc, char**argv)
 { 
   nm_examples_init(&argc, argv);
@@ -36,7 +38,7 @@ int main(int argc, char**argv)
       if(is_server)
 	{
 	  values[i] = -1;
-	  nm_sr_irecv(p_session, NM_ANY_GATE, tag, &values[i], sizeof(int), &requests[i]);
+	  nm_sr_irecv(p_session, p_gate /* NM_ANY_GATE */, tag, &values[i], sizeof(int), &requests[i]);
 	}
       else
 	{

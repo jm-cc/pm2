@@ -31,6 +31,8 @@ static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
 static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s*p_unpack,
 			   const struct nm_header_ctrl_rdv_s*h, struct nm_pkt_wrap_s *p_pw);
 
+static void nm_core_unpack_unexpected(struct nm_core*p_core, struct nm_req_s**pp_unpack, struct nm_unexpected_s*p_unexpected);
+
 /* ********************************************************* */
 /* ** unexpected/matching */
 
@@ -194,8 +196,9 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
 }
 
 
-/** mark 'chunk_len' data as received in the given unpack, and check for unpack completion, sets pp_unpack to NULL if finalized */
-static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw, struct nm_req_s**pp_unpack, nm_len_t chunk_len)
+/** mark 'chunk_len' data as received in the given unpack, and check for unpack completion
+ * sets pp_unpack to NULL if finalized (req may have been destroyed by user handler) */
+static inline void nm_core_unpack_check_completion(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw, struct nm_req_s**pp_unpack, nm_len_t chunk_len)
 {
   struct nm_req_s*p_unpack = *pp_unpack;
   p_unpack->unpack.cumulated_len += chunk_len;
@@ -223,17 +226,17 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
 	};
       nm_core_status_event(p_core, &event, p_unpack);
       *pp_unpack = NULL;
-      if(!nm_unexpected_tag_list_empty(&p_so_tag->unexpected))
+      while(!nm_unexpected_tag_list_empty(&p_so_tag->unexpected))
 	{
 	  struct nm_unexpected_s*p_unexpected = nm_unexpected_tag_list_begin(&p_so_tag->unexpected);
-	  if(p_unexpected)
+	  assert(p_unexpected != NULL);
+	  struct nm_req_s*p_unpack = nm_unpack_find_matching(p_core, p_unexpected->p_gate, p_unexpected->seq, p_unexpected->tag);
+	  if(p_unpack)
 	    {
-	      struct nm_req_s*p_unpack = nm_unpack_find_matching(p_core, p_unexpected->p_gate, p_unexpected->seq, p_unexpected->tag);
-	      if(p_unpack)
-		{
-		  padico_fatal("TODO- out of order packet.\n");
-		}
+	      nm_core_unpack_unexpected(p_core, &p_unpack, p_unexpected);
 	    }
+	  else
+	    break;
 	}
     }
   else if(p_unpack->unpack.cumulated_len > p_unpack->unpack.expected_len)
@@ -244,8 +247,8 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
     }
 }
 
-/** decode and manage data flags found in data/short_data/rdv packets */
-static inline void nm_so_data_flags_decode(struct nm_req_s*p_unpack, uint8_t flags, nm_len_t chunk_offset, nm_len_t chunk_len)
+/** decode and manage data flags found in a matched data/short_data/rdv chunk */
+static inline void nm_core_unpack_flags_decode(struct nm_req_s*p_unpack, uint8_t flags, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   const nm_len_t chunk_end = chunk_offset + chunk_len;
   assert(p_unpack->unpack.expected_len != NM_LEN_UNDEFINED);
@@ -491,6 +494,48 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
     return -NM_EAGAIN;
 }
 
+/** unpack an unexpected chunk to a matches req */
+static void nm_core_unpack_unexpected(struct nm_core*p_core, struct nm_req_s**pp_unpack, struct nm_unexpected_s*p_unexpected)
+{
+  struct nm_req_s*p_unpack = *pp_unpack;
+  const void*p_header = p_unexpected->p_header;
+  const nm_proto_t proto_id = p_unexpected->p_header->proto_id & NM_PROTO_ID_MASK;
+  switch(proto_id)
+    {
+    case NM_PROTO_PKT_DATA:
+      {
+	const struct nm_header_pkt_data_s*h = p_header;
+	nm_pkt_data_handler(p_core, p_unpack->p_gate, pp_unpack, h, p_unexpected->p_pw);
+      }
+      break;
+    case NM_PROTO_SHORT_DATA:
+      {
+	const struct nm_header_short_data_s*h = p_header;
+	nm_short_data_handler(p_core, p_unpack->p_gate, pp_unpack, h, p_unexpected->p_pw);
+      }
+      break;
+    case NM_PROTO_DATA:
+      {
+	const struct nm_header_data_s*h = p_header;
+	nm_small_data_handler(p_core, p_unpack->p_gate, pp_unpack, h, p_unexpected->p_pw);
+      }
+      break;
+    case NM_PROTO_RDV:
+      {
+	const struct nm_header_ctrl_rdv_s*h = p_header;
+	nm_rdv_handler(p_core, p_unpack->p_gate, p_unpack, h, p_unexpected->p_pw);
+      }
+      break;
+    }
+  /* Decrement the packet wrapper reference counter. If no other
+     chunks are still in use, the pw will be destroyed. */
+  nm_pw_ref_dec(p_unexpected->p_pw);
+  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_unexpected->p_gate->tags, p_unexpected->tag);
+  nm_unexpected_core_list_remove(&p_core->unexpected, p_unexpected);
+  nm_unexpected_tag_list_remove(&p_so_tag->unexpected, p_unexpected);
+  nm_unexpected_free(nm_unexpected_allocator, p_unexpected);
+}
+
 void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_req_flag_t flags)
 {
   /* store the unpack request */
@@ -515,42 +560,7 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
   while(p_unexpected)
     {
       /* data is already here (at least one chunk)- process all matching chunks */
-      const void*p_header = p_unexpected->p_header;
-      const nm_proto_t proto_id = p_unexpected->p_header->proto_id & NM_PROTO_ID_MASK;
-      switch(proto_id)
-	{
-	case NM_PROTO_PKT_DATA:
-	  {
-	    const struct nm_header_pkt_data_s*h = p_header;
-	    nm_pkt_data_handler(p_core, p_unpack->p_gate, &p_unpack, h, p_unexpected->p_pw);
-	  }
-	  break;
-	case NM_PROTO_SHORT_DATA:
-	  {
-	    const struct nm_header_short_data_s*h = p_header;
-	    nm_short_data_handler(p_core, p_unpack->p_gate, &p_unpack, h, p_unexpected->p_pw);
-	  }
-	  break;
-	case NM_PROTO_DATA:
-	  {
-	    const struct nm_header_data_s*h = p_header;
-	    nm_small_data_handler(p_core, p_unpack->p_gate, &p_unpack, h, p_unexpected->p_pw);
-	  }
-	  break;
-	case NM_PROTO_RDV:
-	  {
-	    const struct nm_header_ctrl_rdv_s*h = p_header;
-	    nm_rdv_handler(p_core, p_unpack->p_gate, p_unpack, h, p_unexpected->p_pw);
-	  }
-	  break;
-	}
-      /* Decrement the packet wrapper reference counter. If no other
-	 chunks are still in use, the pw will be destroyed. */
-      nm_pw_ref_dec(p_unexpected->p_pw);
-      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_unexpected->p_gate->tags, p_unexpected->tag);
-      nm_unexpected_core_list_remove(&p_core->unexpected, p_unexpected);
-      nm_unexpected_tag_list_remove(&p_so_tag->unexpected, p_unexpected);
-      nm_unexpected_free(nm_unexpected_allocator, p_unexpected);
+      nm_core_unpack_unexpected(p_core, &p_unpack, p_unexpected);
       p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
     }
   nm_core_polling_level(p_core);
@@ -691,9 +701,9 @@ static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct 
       if(!(nm_status_test(*pp_unpack, NM_STATUS_UNPACK_CANCELLED)))
 	{
 	  assert(nm_status_test(*pp_unpack, NM_STATUS_UNPACK_POSTED));
-	  nm_so_data_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
+	  nm_core_unpack_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
 	  nm_data_pkt_unpack(&(*pp_unpack)->data, h, p_pw, chunk_offset, chunk_len);
-	  nm_so_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
+	  nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
 	}
     }
   else
@@ -715,9 +725,9 @@ static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
 	{
 	  const uint8_t flags = NM_PROTO_FLAG_LASTCHUNK;
 	  const void*ptr = ((void*)h) + NM_HEADER_SHORT_DATA_SIZE;
-	  nm_so_data_flags_decode(*pp_unpack, flags, chunk_offset, chunk_len);
+	  nm_core_unpack_flags_decode(*pp_unpack, flags, chunk_offset, chunk_len);
 	  nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
-	  nm_so_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
+	  nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
 	}
     }
   else
@@ -741,9 +751,9 @@ static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
     {
       if(!nm_status_test(*pp_unpack, NM_STATUS_UNPACK_CANCELLED))
 	{
-	  nm_so_data_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
+	  nm_core_unpack_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
 	  nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
-	  nm_so_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
+	  nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
 	}
     }
   else
@@ -764,7 +774,7 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
     {
       assert(p_unpack->p_gate != NULL);
       assert(!nm_data_isnull(&p_unpack->data));
-      nm_so_data_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
+      nm_core_unpack_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
       struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
       p_large_pw->p_unpack     = p_unpack;
       p_large_pw->length       = chunk_len;
@@ -1033,7 +1043,7 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
       struct nm_req_s*p_unpack = p_pw->p_unpack;
       const nm_len_t len = p_pw->length;
       /* ** Large packet, data received directly in its final destination */
-      nm_so_unpack_check_completion(p_core, p_pw, &p_unpack, len);
+      nm_core_unpack_check_completion(p_core, p_pw, &p_unpack, len);
     }
   nm_pw_ref_dec(p_pw);
   nm_strat_rdv_accept(p_gate);

@@ -202,13 +202,13 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
   if(p_unpack->unpack.cumulated_len == p_unpack->unpack.expected_len)
     {
       nm_core_lock_assert(p_core);
+      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_unpack->p_gate->tags, p_unpack->tag);
       if(p_unpack->flags & NM_REQ_FLAG_WILDCARD)
 	{
 	  nm_req_list_remove(&p_core->unpacks, p_unpack);
 	}
       else
 	{
-	  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_unpack->p_gate->tags, p_unpack->tag);
 	  nm_req_list_remove(&p_so_tag->unpacks, p_unpack);
 	}
       nm_core_polling_level(p_core);
@@ -223,6 +223,18 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
 	};
       nm_core_status_event(p_core, &event, p_unpack);
       *pp_unpack = NULL;
+      if(!nm_unexpected_tag_list_empty(&p_so_tag->unexpected))
+	{
+	  struct nm_unexpected_s*p_unexpected = nm_unexpected_tag_list_begin(&p_so_tag->unexpected);
+	  if(p_unexpected)
+	    {
+	      struct nm_req_s*p_unpack = nm_unpack_find_matching(p_core, p_unexpected->p_gate, p_unexpected->seq, p_unexpected->tag);
+	      if(p_unpack)
+		{
+		  padico_fatal("TODO- out of order packet.\n");
+		}
+	    }
+	}
     }
   else if(p_unpack->unpack.cumulated_len > p_unpack->unpack.expected_len)
     {

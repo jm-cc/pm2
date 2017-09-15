@@ -22,7 +22,7 @@
 
 #include "../common/nm_examples_helper.h"
 
-#define MAXMSG 10
+#define MAXMSG 100
 
 static int values[MAXMSG];
 static nm_sr_request_t requests[MAXMSG];

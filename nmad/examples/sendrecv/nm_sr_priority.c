@@ -22,45 +22,46 @@
 
 #include "../common/nm_examples_helper.h"
 
-#define MAXMSG 100
-
-static int values[MAXMSG];
-static nm_sr_request_t requests[MAXMSG];
-static const int tag = 0;
+#define MAXMSG 1000
 
 int main(int argc, char**argv)
 { 
   nm_examples_init(&argc, argv);
 
   int i;
-  for(i = 0; i < MAXMSG; i++)
+  if(is_server)
     {
-      if(is_server)
+      for(i = 0; i < MAXMSG; i++)
 	{
-	  values[i] = -1;
-	  nm_sr_irecv(p_session, p_gate /* NM_ANY_GATE */, tag, &values[i], sizeof(int), &requests[i]);
+	  int value = -1;
+	  nm_sr_request_t request;
+	  nm_sr_recv_init(p_session, &request);
+	  nm_sr_recv_unpack_contiguous(p_session, &request, &value, sizeof(int));
+	  nm_sr_recv_irecv(p_session, &request, p_gate, 0, NM_TAG_MASK_NONE); /* any tag */
+	  nm_sr_rwait(p_session, &request);
+	  printf("# %d: %d\n", i, value);
 	}
-      else
+    }
+  else
+    {
+      int*values = malloc(MAXMSG * sizeof(int));
+      nm_sr_request_t*requests = malloc(MAXMSG * sizeof(nm_sr_request_t));
+      for(i = 0; i < MAXMSG; i++)
 	{
+	  const int tag = i;
 	  values[i] = i;
 	  nm_sr_send_init(p_session, &requests[i]);
 	  nm_sr_send_pack_contiguous(p_session, &requests[i], &values[i], sizeof(int));
 	  nm_sr_send_set_priority(p_session, &requests[i], i);
 	  nm_sr_send_isend(p_session, &requests[i], p_gate, tag);
 	}
-    }
-  for(i = 0; i < MAXMSG; i++)
-    {
-      if(is_server)
-	{
-	  nm_sr_rwait(p_session, &requests[i]);
-	  printf("# %d: %d\n", i, values[i]);
-	}
-      else
+      for(i = 0; i < MAXMSG; i++)
 	{
 	  nm_sr_swait(p_session, &requests[i]);
 	}
-      }
+      free(values);
+      free(requests);
+    }
   
   nm_examples_exit();
   exit(0);

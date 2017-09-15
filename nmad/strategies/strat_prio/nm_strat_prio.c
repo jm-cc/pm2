@@ -96,20 +96,14 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
       struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_pop_front(&p_gate->req_chunk_list);
       const int prio = p_req_chunk->p_req->pack.priority;
       nm_req_chunk_itor_t i = nm_req_chunk_list_rend(&p_status->req_chunk_list);
-      while(i)
+      while((i != NULL) && (prio > i->p_req->pack.priority))
 	{
-	  if(prio > i->p_req->pack.priority)
-	    {
-	      i = nm_req_chunk_list_rnext(i);
-	    }
-	  else
-	    break;
+	  i = nm_req_chunk_list_rnext(i);
 	}
       if(i)
 	nm_req_chunk_list_insert_after(&p_status->req_chunk_list, i, p_req_chunk);
       else
 	nm_req_chunk_list_push_front(&p_status->req_chunk_list, p_req_chunk);
-      fprintf(stderr, "insert req; size = %d\n", nm_req_chunk_list_size(&p_status->req_chunk_list));
     }
   if((p_trk_small->p_pw_send == NULL) &&
      !(nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list) &&
@@ -146,9 +140,6 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 	      
 	    }
 	}
-      fprintf(stderr, "nm_core_post_send(); status size = %d; gate size = %d\n",
-	      nm_req_chunk_list_size(&p_status->req_chunk_list),
-	      nm_req_chunk_list_size(&p_gate->req_chunk_list));
       nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
     }
 }

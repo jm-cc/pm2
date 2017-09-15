@@ -113,7 +113,8 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
       /* tag-specific list */
       p_so_tag = nm_gtag_get(&p_unpack->p_gate->tags, p_unpack->tag);
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
-      puk_list_foreach(nm_unexpected_tag, p_chunk, &p_so_tag->unexpected)
+      p_chunk = nm_unexpected_tag_list_begin(&p_so_tag->unexpected);
+      if(p_chunk)
 	{
 	  if((p_unpack->p_gate == p_chunk->p_gate) &&
 	     nm_core_tag_match(p_chunk->tag, p_unpack->tag, p_unpack->unpack.tag_mask) && /* tag matches */
@@ -282,9 +283,22 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
   nm_pw_ref_inc(p_pw);
   nm_profile_inc(p_core->profiling.n_unexpected);
   nm_core_lock_assert(p_core);
-  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
   nm_unexpected_core_list_push_back(&p_core->unexpected, p_chunk);
-  nm_unexpected_tag_list_push_back(&p_so_tag->unexpected, p_chunk);
+  /* insert unexpected chunk in the sorted list */
+  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
+  nm_unexpected_tag_itor_t i = nm_unexpected_tag_list_rbegin(&p_so_tag->unexpected);
+  while((i != NULL) && (seq < i->seq))
+    {
+      i = nm_unexpected_tag_list_rnext(i);
+    }
+  if(i)
+    {
+      nm_unexpected_tag_list_insert_after(&p_so_tag->unexpected, i, p_chunk);
+    }
+  else
+    {
+      nm_unexpected_tag_list_push_front(&p_so_tag->unexpected, p_chunk);
+    }
   const nm_proto_t proto_id = p_header->proto_id;
   if(proto_id & NM_PROTO_FLAG_LASTCHUNK)
     {

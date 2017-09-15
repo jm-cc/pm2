@@ -94,12 +94,8 @@ static inline void nm_strat_try_and_commit(nm_gate_t p_gate)
 {
   nm_core_lock_assert(p_gate->p_core);
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  if((!nm_req_chunk_list_empty(&p_gate->req_chunk_list)) ||
-     (!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list)))
-    {
-      nm_profile_inc(p_gate->p_core->profiling.n_try_and_commit);
-      (*r->driver->try_and_commit)(r->_status, p_gate);
-    }
+  nm_profile_inc(p_gate->p_core->profiling.n_try_and_commit);
+  (*r->driver->try_and_commit)(r->_status, p_gate);
 }
 /** Schedule and post new large incoming buffers */
 static inline void nm_strat_rdv_accept(nm_gate_t p_gate)

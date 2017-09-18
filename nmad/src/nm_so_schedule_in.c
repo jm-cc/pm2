@@ -93,9 +93,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
   assert(!nm_status_test(p_unpack, NM_STATUS_FINALIZED));
   nm_core_lock_assert(p_core);
 
-  if( (p_unpack->p_gate == NM_GATE_NONE) ||
-      (p_unpack->unpack.tag_mask.tag != NM_TAG_MASK_FULL) ||
-      (p_unpack->unpack.tag_mask.hashcode != NM_CORE_TAG_HASH_FULL) )
+  if(p_unpack->p_gtag == NULL)
     {
       /* full list */
       puk_list_foreach(nm_unexpected_core, p_chunk, &p_core->unexpected)
@@ -113,7 +111,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
   else
     {
       /* tag-specific list */
-      p_so_tag = nm_gtag_get(&p_unpack->p_gate->tags, p_unpack->tag);
+      p_so_tag = p_unpack->p_gtag;
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
       p_chunk = nm_unexpected_tag_list_begin(&p_so_tag->unexpected);
       if(p_chunk)
@@ -138,6 +136,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
   p_unpack->unpack.tag_mask = NM_CORE_TAG_MASK_FULL;
   p_unpack->p_gate   = p_chunk->p_gate;
   p_unpack->seq      = p_chunk->seq;
+  p_unpack->p_gtag   = p_so_tag;
   return p_chunk;
 }
 
@@ -190,6 +189,7 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
       p_unpack->unpack.tag_mask = NM_CORE_TAG_MASK_FULL;
       p_unpack->p_gate   = p_gate;
       p_unpack->seq      = seq;
+      p_unpack->p_gtag   = p_so_tag;
       return p_unpack;
     }
   return NULL;
@@ -205,7 +205,7 @@ static inline void nm_core_unpack_check_completion(struct nm_core*p_core, struct
   if(p_unpack->unpack.cumulated_len == p_unpack->unpack.expected_len)
     {
       nm_core_lock_assert(p_core);
-      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_unpack->p_gate->tags, p_unpack->tag);
+      struct nm_gtag_s*p_so_tag = p_unpack->p_gtag;
       if(p_unpack->flags & NM_REQ_FLAG_WILDCARD)
 	{
 	  nm_req_list_remove(&p_core->unpacks, p_unpack);
@@ -549,11 +549,12 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
     {
       nm_req_list_push_back(&p_core->unpacks, p_unpack);
       p_unpack->flags |= NM_REQ_FLAG_WILDCARD;
+      p_unpack->p_gtag = NULL;
     }
   else
     {
-      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_unpack->p_gate->tags, p_unpack->tag);
-      nm_req_list_push_back(&p_so_tag->unpacks, p_unpack);
+      p_unpack->p_gtag = nm_gtag_get(&p_unpack->p_gate->tags, p_unpack->tag);
+      nm_req_list_push_back(&p_unpack->p_gtag->unpacks, p_unpack);
     }
   nm_profile_inc(p_core->profiling.n_unpacks);
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
@@ -668,8 +669,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
 	}
       else
 	{
-	  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_unpack->p_gate->tags, p_unpack->tag);
-	  nm_req_list_remove(&p_so_tag->unpacks, p_unpack);
+	  nm_req_list_remove(&p_unpack->p_gtag->unpacks, p_unpack);
 	}
       nm_core_polling_level(p_core);
       const struct nm_core_event_s event =

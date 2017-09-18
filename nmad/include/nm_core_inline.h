@@ -265,7 +265,7 @@ static inline void nm_core_post_ack(nm_gate_t p_gate, nm_core_tag_t tag, nm_seq_
 static inline void nm_core_polling_level(struct nm_core*p_core)
 {
 #ifdef PIOMAN
-  const int high = (!nm_req_list_empty(&p_core->unpacks)) || (!nm_req_list_empty(&p_core->pending_packs));
+  const int high = (!nm_req_list_empty(&p_core->wildcard_unpacks)) || (!nm_req_list_empty(&p_core->pending_packs));
   piom_ltask_poll_level_set(high);
 #endif /* PIOMAN */
 }

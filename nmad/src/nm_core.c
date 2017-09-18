@@ -435,7 +435,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 
   nm_core_monitor_vect_init(&p_core->monitors);
 
-  nm_req_list_init(&p_core->unpacks);
+  nm_req_list_init(&p_core->wildcard_unpacks);
   nm_req_list_init(&p_core->pending_packs);
   nm_unexpected_core_list_init(&p_core->unexpected);
 

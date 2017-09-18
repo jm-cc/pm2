@@ -166,7 +166,7 @@ static struct nm_req_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t 
 	  break;
 	}
     }
-  puk_list_foreach(nm_req, p_unpack_core, &p_core->unpacks)
+  puk_list_foreach(nm_req, p_unpack_core, &p_core->wildcard_unpacks)
     {
       if(p_unpack_gtag && (p_unpack_core->unpack.req_seq > p_unpack_gtag->unpack.req_seq))
 	{
@@ -208,7 +208,7 @@ static inline void nm_core_unpack_check_completion(struct nm_core*p_core, struct
       struct nm_gtag_s*p_so_tag = p_unpack->p_gtag;
       if(p_unpack->flags & NM_REQ_FLAG_WILDCARD)
 	{
-	  nm_req_list_remove(&p_core->unpacks, p_unpack);
+	  nm_req_list_remove(&p_core->wildcard_unpacks, p_unpack);
 	}
       else
 	{
@@ -547,7 +547,7 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
      (p_unpack->unpack.tag_mask.tag != NM_TAG_MASK_FULL) ||
      (p_unpack->unpack.tag_mask.hashcode != NM_CORE_TAG_HASH_FULL))
     {
-      nm_req_list_push_back(&p_core->unpacks, p_unpack);
+      nm_req_list_push_back(&p_core->wildcard_unpacks, p_unpack);
       p_unpack->flags |= NM_REQ_FLAG_WILDCARD;
       p_unpack->p_gtag = NULL;
     }
@@ -665,7 +665,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
     {
       if(p_unpack->flags & NM_REQ_FLAG_WILDCARD)
 	{
-	  nm_req_list_remove(&p_core->unpacks, p_unpack);
+	  nm_req_list_remove(&p_core->wildcard_unpacks, p_unpack);
 	}
       else
 	{

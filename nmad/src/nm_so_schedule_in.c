@@ -100,7 +100,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
       /* full list */
       puk_list_foreach(nm_unexpected_core, p_chunk, &p_core->unexpected)
 	{
-	  p_so_tag = nm_gtag_get(&p_chunk->p_gate->tags, p_chunk->tag);
+	  p_so_tag = p_chunk->p_gtag;
 	  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
 	  if(((p_unpack->p_gate == p_chunk->p_gate) || (p_unpack->p_gate == NM_ANY_GATE)) && /* gate matches */
 	     nm_core_tag_match(p_chunk->tag, p_unpack->tag, p_unpack->unpack.tag_mask) && /* tag matches */
@@ -290,17 +290,18 @@ static inline void nm_unexpected_store(struct nm_core*p_core, nm_gate_t p_gate, 
 	p_header = ((void*)p_pw->buf) + header_offset;
     }
   struct nm_unexpected_s*p_chunk = nm_unexpected_alloc();
+  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
   p_chunk->p_header = p_header;
   p_chunk->p_pw   = p_pw;
   p_chunk->p_gate = p_gate;
   p_chunk->seq    = seq;
   p_chunk->tag    = tag;
+  p_chunk->p_gtag = p_so_tag;
   nm_pw_ref_inc(p_pw);
   nm_profile_inc(p_core->profiling.n_unexpected);
   nm_core_lock_assert(p_core);
   nm_unexpected_core_list_push_back(&p_core->unexpected, p_chunk);
   /* insert unexpected chunk in the sorted list */
-  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_gate->tags, tag);
   nm_unexpected_tag_itor_t i = nm_unexpected_tag_list_rbegin(&p_so_tag->unexpected);
   while((i != NULL) && (seq < i->seq))
     {
@@ -530,9 +531,8 @@ static void nm_core_unpack_unexpected(struct nm_core*p_core, struct nm_req_s**pp
   /* Decrement the packet wrapper reference counter. If no other
      chunks are still in use, the pw will be destroyed. */
   nm_pw_ref_dec(p_unexpected->p_pw);
-  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_unexpected->p_gate->tags, p_unexpected->tag);
   nm_unexpected_core_list_remove(&p_core->unexpected, p_unexpected);
-  nm_unexpected_tag_list_remove(&p_so_tag->unexpected, p_unexpected);
+  nm_unexpected_tag_list_remove(&p_unexpected->p_gtag->unexpected, p_unexpected);
   nm_unexpected_free(nm_unexpected_allocator, p_unexpected);
 }
 
@@ -576,7 +576,7 @@ int nm_core_iprobe(struct nm_core*p_core,
   nm_core_lock(p_core);
   puk_list_foreach(nm_unexpected_core, p_chunk, &p_core->unexpected)
     {
-      struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_chunk->p_gate->tags, p_chunk->tag);
+      struct nm_gtag_s*p_so_tag = p_chunk->p_gtag;
       const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
       if(((p_gate == p_chunk->p_gate) || (p_gate == NM_ANY_GATE)) && /* gate matches */
 	 nm_core_tag_match(p_chunk->tag, tag, tag_mask) && /* tag matches */

@@ -149,11 +149,12 @@ struct nm_unexpected_s
 {
   PUK_LIST_LINK(nm_unexpected_core);
   PUK_LIST_LINK(nm_unexpected_tag);           /**< list of unexpected per-tag */
-  const struct nm_header_generic_s*p_header;
-  struct nm_pkt_wrap_s*p_pw;
+  const struct nm_header_generic_s*p_header;  /**< raw header in pw buffer */
+  struct nm_pkt_wrap_s*p_pw;                  /**< pw this chunk arrived from */
   nm_gate_t p_gate;
   nm_seq_t seq;
   nm_core_tag_t tag;
+  struct nm_gtag_s*p_gtag;                    /**< cache of gtag */
   nm_len_t msg_len; /**< length of full message on last chunk, NM_LEN_UNDEFINED if not last chunk */
 };
 

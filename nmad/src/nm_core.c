@@ -47,9 +47,8 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
       assert(p_pack != NULL);
       if(p_pack->seq == NM_SEQ_NONE)
 	{
-	  struct nm_gtag_s*p_so_tag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);
-	  const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
-	  p_so_tag->send_seq_number = seq;
+	  const nm_seq_t seq = nm_seq_next(p_pack->p_gtag->send_seq_number);
+	  p_pack->p_gtag->send_seq_number = seq;
 	  p_pack->seq = seq;
 	}
       nm_req_list_push_back(&p_core->pending_packs, p_pack);

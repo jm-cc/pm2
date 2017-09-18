@@ -296,6 +296,7 @@ struct nm_req_s
   nm_gate_t p_gate;             /**< dest/src gate; NULL if recv from any source */
   nm_core_tag_t tag;            /**< tag to send to/from (works in combination with tag_mask for recv) */
   nm_seq_t seq;                 /**< packet sequence number on the given tag */
+  struct nm_gtag_s*p_gtag;      /**< cache for tag status on gate; NULL if tag or gate is unspecified yet */
   union
   {
     struct

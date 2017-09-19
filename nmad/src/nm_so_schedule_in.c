@@ -843,7 +843,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	      /* rdv eventually accepted on trk#0- rollback and repack */
 	      assert(p_large_pw->p_data != NULL);
 	      nm_pw_free(p_core, p_large_pw);
-	      struct nm_req_chunk_s*p_req_chunk0 = nm_req_chunk_malloc(p_core->req_chunk_allocator);
+	      struct nm_req_chunk_s*p_req_chunk0 = nm_req_chunk_malloc(&p_core->req_chunk_allocator);
 	      nm_req_chunk_init(p_req_chunk0, p_pack, chunk_offset, chunk_len);
 	      nm_req_chunk_list_push_back(&p_gate->req_chunk_list, p_req_chunk0);
 	    }

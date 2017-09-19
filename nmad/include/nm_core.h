@@ -48,8 +48,8 @@ struct nm_core
 #endif /* !PIOMAN */
  
   struct nm_req_chunk_lfqueue_s pack_submissions;  /**< list of new pack reqs (lock-free submission list) */
-  nm_req_chunk_allocator_t req_chunk_allocator;    /**< allocator for req_chunk elements */
-  nm_ctrl_chunk_allocator_t ctrl_chunk_allocator;  /**< allocator for control chunks */
+  struct nm_req_chunk_allocator_s req_chunk_allocator;   /**< allocator for req_chunk elements */
+  struct nm_ctrl_chunk_allocator_s ctrl_chunk_allocator; /**< allocator for control chunks */
   struct nm_pw_nohd_allocator_s pw_nohd_allocator; /**< allocator for header-less pw*/
   struct nm_pw_buf_allocator_s pw_buf_allocator;   /**< allocator for pw with contiguous buffer */
   uint64_t unpack_seq;                             /**< next sequence number for unpacks */
@@ -59,7 +59,7 @@ struct nm_core
   struct nm_pkt_wrap_lfqueue_s completed_pws;      /**< queue of completed pw waiting for event dispatch */
   struct nm_core_monitor_vect_s monitors;          /**< monitors for upper layers to track events in nmad core */
   
-  nm_core_dispatching_event_allocator_t dispatching_event_allocator;
+  struct nm_core_dispatching_event_allocator_s dispatching_event_allocator;
   struct nm_core_dispatching_event_lfqueue_s dispatching_events;
   
 #ifdef NMAD_PROFILE

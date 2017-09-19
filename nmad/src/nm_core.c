@@ -181,7 +181,7 @@ void nm_core_events_dispatch(struct nm_core*p_core)
       while(p_dispatching_event != NULL)
 	{
 	  (*p_dispatching_event->p_monitor->p_notifier)(&p_dispatching_event->event, p_dispatching_event->p_monitor->ref);
-	  nm_core_dispatching_event_free(p_core->dispatching_event_allocator, p_dispatching_event);
+	  nm_core_dispatching_event_free(&p_core->dispatching_event_allocator, p_dispatching_event);
 	  p_dispatching_event =
 	    nm_core_dispatching_event_lfqueue_dequeue(&p_core->dispatching_events);
 	}
@@ -202,7 +202,7 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 	  /* next packet in sequence; commit matching and enqueue for dispatch */
 	  p_so_tag->recv_seq_number = next_seq;
 	  struct nm_core_dispatching_event_s*p_dispatching_event =
-	    nm_core_dispatching_event_malloc(p_core->dispatching_event_allocator);
+	    nm_core_dispatching_event_malloc(&p_core->dispatching_event_allocator);
 	  p_dispatching_event->event = *p_event;
 	  p_dispatching_event->p_monitor = &p_core_monitor->monitor;
 	  int rc = 0;
@@ -231,7 +231,7 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 		  p_so_tag->recv_seq_number = next_seq;
 		  nm_core_pending_event_list_pop_front(&p_so_tag->pending_events);
 		  struct nm_core_dispatching_event_s*p_dispatching_event =
-		    nm_core_dispatching_event_malloc(p_core->dispatching_event_allocator);
+		    nm_core_dispatching_event_malloc(&p_core->dispatching_event_allocator);
 		  p_dispatching_event->event = p_pending_event->event;
 		  p_dispatching_event->p_monitor = &p_pending_event->p_core_monitor->monitor;
 		  int rc = 0;
@@ -441,12 +441,12 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_unexpected_core_list_init(&p_core->unexpected);
 
   nm_req_chunk_lfqueue_init(&p_core->pack_submissions);
-  p_core->req_chunk_allocator = nm_req_chunk_allocator_new(NM_REQ_CHUNK_QUEUE_SIZE);
-  p_core->ctrl_chunk_allocator = nm_ctrl_chunk_allocator_new(NM_REQ_CHUNK_QUEUE_SIZE);
+  nm_req_chunk_allocator_init(&p_core->req_chunk_allocator, NM_REQ_CHUNK_QUEUE_SIZE);
+  nm_ctrl_chunk_allocator_init(&p_core->ctrl_chunk_allocator, NM_REQ_CHUNK_QUEUE_SIZE);
 
   nm_pkt_wrap_lfqueue_init(&p_core->completed_pws);
   
-  p_core->dispatching_event_allocator = nm_core_dispatching_event_allocator_new(16);
+  nm_core_dispatching_event_allocator_init(&p_core->dispatching_event_allocator, 16);
   nm_core_dispatching_event_lfqueue_init(&p_core->dispatching_events);
   
   p_core->enable_schedopt = 1;
@@ -578,7 +578,9 @@ int nm_core_exit(nm_core_t p_core)
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */
   nm_pw_nohd_allocator_destroy(&p_core->pw_nohd_allocator);
   nm_pw_buf_allocator_destroy(&p_core->pw_buf_allocator);
-
+  nm_req_chunk_allocator_destroy(&p_core->req_chunk_allocator);
+  nm_ctrl_chunk_allocator_destroy(&p_core->ctrl_chunk_allocator);
+  nm_core_dispatching_event_allocator_destroy(&p_core->dispatching_event_allocator);
   nm_core_monitor_vect_destroy(&p_core->monitors);
 
   nm_core_unlock(p_core);

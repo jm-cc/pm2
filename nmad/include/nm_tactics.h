@@ -36,7 +36,7 @@ static inline int nm_tactic_pack_ctrl(nm_gate_t p_gate, nm_drv_t p_drv,
     {
       nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
       nm_ctrl_chunk_list_remove(&p_gate->ctrl_chunk_list, p_ctrl_chunk);
-      nm_ctrl_chunk_free(p_gate->p_core->ctrl_chunk_allocator, p_ctrl_chunk);
+      nm_ctrl_chunk_free(&p_gate->p_core->ctrl_chunk_allocator, p_ctrl_chunk);
       return NM_ESUCCESS;
     }
   else

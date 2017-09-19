@@ -192,7 +192,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_core, p_trk_small);
 	  nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
 	  nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
-	  nm_ctrl_chunk_free(p_core->ctrl_chunk_allocator, p_ctrl_chunk);
+	  nm_ctrl_chunk_free(&p_core->ctrl_chunk_allocator, p_ctrl_chunk);
 	}
       else if(!nm_req_chunk_list_empty(&p_gate->req_chunk_list))
 	{

@@ -119,7 +119,7 @@ static inline void nm_strat_pack_ctrl(nm_gate_t p_gate, nm_header_ctrl_generic_t
     }
   else
     {
-      struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_malloc(p_core->ctrl_chunk_allocator);
+      struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_malloc(&p_core->ctrl_chunk_allocator);
       p_ctrl_chunk->ctrl = *p_header;
       nm_ctrl_chunk_list_push_back(&p_gate->ctrl_chunk_list, p_ctrl_chunk);
     }
@@ -208,7 +208,7 @@ static inline void nm_req_chunk_destroy(struct nm_core*p_core, struct nm_req_chu
 #endif
   if(p_req_chunk != &p_pack->req_chunk)
     {
-      nm_req_chunk_free(p_core->req_chunk_allocator, p_req_chunk);
+      nm_req_chunk_free(&p_core->req_chunk_allocator, p_req_chunk);
     }
   else
     {
@@ -218,7 +218,7 @@ static inline void nm_req_chunk_destroy(struct nm_core*p_core, struct nm_req_chu
 
 static inline struct nm_req_chunk_s*nm_req_chunk_alloc(struct nm_core*p_core)
 {
-  struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_malloc(p_core->req_chunk_allocator);
+  struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_malloc(&p_core->req_chunk_allocator);
   nm_req_chunk_list_cell_init(p_req_chunk);
   return p_req_chunk;
 }

@@ -117,7 +117,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 	      if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_CTRL_SIZE)
 		{
 		  nm_pw_add_control(p_pw, &p_ctrl_chunk->ctrl);
-		  nm_ctrl_chunk_free(p_core->ctrl_chunk_allocator, p_ctrl_chunk);
+		  nm_ctrl_chunk_free(&p_core->ctrl_chunk_allocator, p_ctrl_chunk);
 		}
 	      else
 		{

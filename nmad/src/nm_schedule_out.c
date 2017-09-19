@@ -46,7 +46,7 @@ void nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_ta
   p_pack->seq    = NM_SEQ_NONE;
   p_pack->tag    = tag;
   p_pack->p_gate = p_gate;
-  p_pack->p_gtag = nm_gtag_get(&p_gate->tags, tag);
+  p_pack->p_gtag = NULL;
   p_pack->req_chunk.p_req = NULL;
 }
 

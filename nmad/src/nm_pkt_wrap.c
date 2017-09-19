@@ -23,48 +23,6 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
-/** Fast packet allocator constant for initial number of entries. */
-#define INITIAL_PKT_NUM  8
-
-/** Allocator for headerless pkt wrapper.
- */
-PUK_ALLOCATOR_TYPE(nm_pw_nohd, struct nm_pkt_wrap_s);
-static nm_pw_nohd_allocator_t nm_pw_nohd_allocator = NULL;
-
-struct nm_pw_buf_s
-{
-  struct nm_pkt_wrap_s pw;
-  char buf[NM_SO_MAX_UNEXPECTED];
-};
-/** Allocator for pkt wrapper with contiguous data block.
- */
-PUK_ALLOCATOR_TYPE(nm_pw_buf, struct nm_pw_buf_s);
-static nm_pw_buf_allocator_t nm_pw_buf_allocator = NULL;
-
-
-/** Initialize the fast allocator structs for pkt wrapper.
- *
- *  @param p_core a pointer to the NM core object.
- *  @return The NM status.
- */
-int nm_pw_alloc_init(struct nm_core *p_core TBX_UNUSED)
-{
-  nm_pw_nohd_allocator = nm_pw_nohd_allocator_new(INITIAL_PKT_NUM);
-  nm_pw_buf_allocator = nm_pw_buf_allocator_new(INITIAL_PKT_NUM);
-  return NM_ESUCCESS;
-}
-
-/** Cleanup the fast allocator structs for pkt wrapper.
- *
- *  @return The NM status.
- */
-int nm_pw_alloc_exit(void)
-{
-  nm_pw_nohd_allocator_delete(nm_pw_nohd_allocator);
-  nm_pw_buf_allocator_delete(nm_pw_buf_allocator);
-  return NM_ESUCCESS;
-}
-
 /* ********************************************************* */
 
 struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap_s*p_pw)
@@ -192,9 +150,9 @@ static inline void nm_pw_init(struct nm_pkt_wrap_s *p_pw)
 }
 
 /** allocate a new pw with full buffer as v[0]- used for short receive */
-struct nm_pkt_wrap_s*nm_pw_alloc_buffer(void)
+struct nm_pkt_wrap_s*nm_pw_alloc_buffer(struct nm_core*p_core)
 {
-  struct nm_pw_buf_s*p_pw_buf = nm_pw_buf_malloc(nm_pw_buf_allocator);
+  struct nm_pw_buf_s*p_pw_buf = nm_pw_buf_malloc(&p_core->pw_buf_allocator);
   struct nm_pkt_wrap_s*p_pw = &p_pw_buf->pw;
   nm_pw_init(p_pw);
   p_pw->flags = NM_PW_BUFFER;
@@ -208,9 +166,9 @@ struct nm_pkt_wrap_s*nm_pw_alloc_buffer(void)
 }
 
 /** allocated a new pw with no header preallocated- used for large send/recv */
-struct nm_pkt_wrap_s*nm_pw_alloc_noheader(void)
+struct nm_pkt_wrap_s*nm_pw_alloc_noheader(struct nm_core*p_core)
 {
-  struct nm_pkt_wrap_s*p_pw = nm_pw_nohd_malloc(nm_pw_nohd_allocator);
+  struct nm_pkt_wrap_s*p_pw = nm_pw_nohd_malloc(&p_core->pw_nohd_allocator);
   nm_pw_init(p_pw);
   p_pw->flags = NM_PW_NOHEADER;
   /* pkt is empty for now */
@@ -220,14 +178,14 @@ struct nm_pkt_wrap_s*nm_pw_alloc_noheader(void)
 }
 
 /** allocate a new pw with global header for given trk as v[0]- used for short sends */
-struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_trk_s*p_trk)
+struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_core*p_core, struct nm_trk_s*p_trk)
 {
   struct nm_pkt_wrap_s*p_pw = NULL;
   if(p_trk->p_drv->props.capabilities.supports_buf_send)
     {
       /* buffer allocated in network memory */
       struct puk_receptacle_NewMad_minidriver_s*r = &p_trk->receptacle;
-      p_pw = nm_pw_nohd_malloc(nm_pw_nohd_allocator);
+      p_pw = nm_pw_nohd_malloc(&p_core->pw_nohd_allocator);
       nm_pw_init(p_pw);
       p_pw->flags = NM_PW_BUF_SEND;
       assert(r->driver->buf_send_get && r->driver->buf_send_post);
@@ -244,7 +202,7 @@ struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_trk_s*p_trk)
   else
     {
       /* buffer allocated with pw */
-      struct nm_pw_buf_s*p_pw_buf = nm_pw_buf_malloc(nm_pw_buf_allocator);
+      struct nm_pw_buf_s*p_pw_buf = nm_pw_buf_malloc(&p_core->pw_buf_allocator);
       p_pw = &p_pw_buf->pw;
       nm_pw_init(p_pw);
       p_pw->flags = NM_PW_GLOBAL_HEADER;
@@ -271,7 +229,7 @@ struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_trk_s*p_trk)
  *  @param p_pw the pkt wrapper pointer.
  *  @return The NM status.
  */
-int nm_pw_free(struct nm_pkt_wrap_s*p_pw)
+void nm_pw_free(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
   int err;
   int flags = p_pw->flags;
@@ -300,15 +258,12 @@ int nm_pw_free(struct nm_pkt_wrap_s*p_pw)
   /* Finally clean packet wrapper itself */
   if((flags & NM_PW_BUFFER) || (flags & NM_PW_GLOBAL_HEADER))
     {
-      nm_pw_buf_free(nm_pw_buf_allocator, (struct nm_pw_buf_s*)p_pw);
+      nm_pw_buf_free(&p_core->pw_buf_allocator, (struct nm_pw_buf_s*)p_pw);
     }
   else if((flags & NM_PW_NOHEADER) || (flags & NM_PW_BUF_SEND))
     {
-      nm_pw_nohd_free(nm_pw_nohd_allocator, p_pw);
+      nm_pw_nohd_free(&p_core->pw_nohd_allocator, p_pw);
     }
-
-  err = NM_ESUCCESS;
-  return err;
 }
 
 

@@ -37,6 +37,8 @@ static const int param_max_size = (32*1024*1024);
 static unsigned char*p_buffer_send = NULL;
 static unsigned char*p_buffer_recv = NULL;
 
+static struct nm_core*p_core = NULL;
+
 struct nm_sample_bench_s
 {
   const char*name;
@@ -221,7 +223,7 @@ static void nm_ns_eager_send_copy(struct nm_trk_s*p_trk_small, struct nm_trk_s*p
   nm_data_contiguous_build(&data, buf, len);
   if(len <= max_small)
     {
-      p_pw = nm_pw_alloc_global_header(p_trk_small);
+      p_pw = nm_pw_alloc_global_header(p_core, p_trk_small);
       nm_pw_add_data_in_header(p_pw, tag, seq, &data, len, 0, 0);
       p_pw->trk_id = NM_TRK_SMALL;
       nm_pw_finalize(p_pw);
@@ -229,11 +231,11 @@ static void nm_ns_eager_send_copy(struct nm_trk_s*p_trk_small, struct nm_trk_s*p
     }
   else
     {
-      p_pw = nm_pw_alloc_noheader();
+      p_pw = nm_pw_alloc_noheader(p_core);
       nm_pw_set_data_raw(p_pw, &data, len, 0);
       minidriver_send_data(&p_trk_large->receptacle, p_pw->p_data);
     }
-  nm_pw_free(p_pw);
+  nm_pw_free(p_core, p_pw);
 }
 
 static void nm_ns_eager_send_iov(struct nm_trk_s*p_trk_small, struct nm_trk_s*p_trk_large, void*buf, nm_len_t len)
@@ -246,7 +248,7 @@ static void nm_ns_eager_send_iov(struct nm_trk_s*p_trk_small, struct nm_trk_s*p_
   nm_data_contiguous_build(&data, buf, len);
   if(len <= max_small)
     {
-      p_pw = nm_pw_alloc_global_header(p_trk_small);
+      p_pw = nm_pw_alloc_global_header(p_core, p_trk_small);
       nm_data_pkt_pack(p_pw, tag, seq, &data, 0 /* chunk_offset = 0 */, len, 0);
       p_pw->trk_id = NM_TRK_SMALL;
       nm_pw_finalize(p_pw);
@@ -254,11 +256,11 @@ static void nm_ns_eager_send_iov(struct nm_trk_s*p_trk_small, struct nm_trk_s*p_
     }
   else
     {
-      p_pw = nm_pw_alloc_noheader();
+      p_pw = nm_pw_alloc_noheader(p_core);
       nm_pw_set_data_raw(p_pw, &data, len, 0);
       minidriver_send_data(&p_trk_large->receptacle, p_pw->p_data);
     }
-  nm_pw_free(p_pw);
+  nm_pw_free(p_core, p_pw);
 }
 
 
@@ -269,7 +271,7 @@ static void nm_ns_eager_recv(struct nm_trk_s*p_trk_small, struct nm_trk_s*p_trk_
   char*buf2 = NULL;
   if(len <= max_small)
     {
-      p_pw = nm_pw_alloc_buffer();
+      p_pw = nm_pw_alloc_buffer(p_core);
       minidriver_recv(&p_trk_small->receptacle, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
     }
   else
@@ -277,7 +279,7 @@ static void nm_ns_eager_recv(struct nm_trk_s*p_trk_small, struct nm_trk_s*p_trk_
       struct nm_data_s data;
       nm_data_contiguous_build(&data, buf2, len);
       buf2 = malloc(len);
-      p_pw = nm_pw_alloc_noheader();
+      p_pw = nm_pw_alloc_noheader(p_core);
       nm_pw_set_data_raw(p_pw, &data, len, 0);
       minidriver_recv_data(&p_trk_large->receptacle, &data);
     }
@@ -321,7 +323,7 @@ static void nm_ns_eager_recv(struct nm_trk_s*p_trk_small, struct nm_trk_s*p_trk_
       memcpy(buf, buf2, len);
       free(buf2);
     }
-  nm_pw_free(p_pw);
+  nm_pw_free(p_core, p_pw);
 }
 
 /* *** eager, aggregation ********************************** */
@@ -340,13 +342,13 @@ static void nm_ns_eager_send_aggreg(struct nm_trk_s*p_trk_small, struct nm_trk_s
       nm_data_contiguous_build(&data1, buf, len1);
       struct nm_data_s data2;
       nm_data_contiguous_build(&data2, buf + len1, len2);
-      p_pw = nm_pw_alloc_global_header(p_trk_small);
+      p_pw = nm_pw_alloc_global_header(p_core, p_trk_small);
       nm_pw_add_data_in_header(p_pw, tag, seq, &data1, len1, 0, 0);
       nm_pw_add_data_in_header(p_pw, tag, seq, &data2, len2, len1, 0);
       p_pw->trk_id = NM_TRK_SMALL;
       nm_pw_finalize(p_pw);
       minidriver_send_iov(&p_trk_small->receptacle, p_pw->v, p_pw->v_nb);
-      nm_pw_free(p_pw);
+      nm_pw_free(p_core, p_pw);
     }
 }
 
@@ -357,7 +359,7 @@ static void nm_ns_eager_recv_aggreg(struct nm_trk_s*p_trk_small, struct nm_trk_s
   nm_len_t done = 0;
   if(len <= max_small)
     {
-      p_pw = nm_pw_alloc_buffer();
+      p_pw = nm_pw_alloc_buffer(p_core);
       minidriver_recv(&p_trk_small->receptacle, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
       /* very rough header decoder... should be sufficient for our basic use here. */
       struct nm_header_global_s*p_global_header = p_pw->v[0].iov_base;
@@ -403,7 +405,7 @@ static void nm_ns_eager_recv_aggreg(struct nm_trk_s*p_trk_small, struct nm_trk_s
 	    }
 	}
       while(done < len);
-      nm_pw_free(p_pw);
+      nm_pw_free(p_core, p_pw);
     }
 }
 
@@ -686,7 +688,8 @@ int main(int argc, char **argv)
   assert(p_gate != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 
-  nm_core_schedopt_disable(p_gate->p_core);
+  p_core = p_gate->p_core;
+  nm_core_schedopt_disable(p_core);
   struct nm_trk_s*p_trk_small = nm_trk_get_by_index(p_gate, NM_TRK_SMALL);
   struct nm_trk_s*p_trk_large = nm_trk_get_by_index(p_gate, NM_TRK_LARGE);
 

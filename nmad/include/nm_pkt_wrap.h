@@ -139,17 +139,30 @@ struct nm_pkt_wrap_s
 
 PUK_LIST_CREATE_FUNCS(nm_pkt_wrap);
 
-int nm_pw_alloc_init(struct nm_core*p_core);
+/** Allocator for headerless pkt wrapper.
+ */
+PUK_ALLOCATOR_TYPE(nm_pw_nohd, struct nm_pkt_wrap_s);
 
-int nm_pw_alloc_exit(void);
+/** a pw and its associated buffer, allocated together */
+struct nm_pw_buf_s
+{
+  struct nm_pkt_wrap_s pw;
+  char buf[NM_SO_MAX_UNEXPECTED];
+};
+/** Allocator for pkt wrapper with contiguous data block.
+ */
+PUK_ALLOCATOR_TYPE(nm_pw_buf, struct nm_pw_buf_s);
 
-struct nm_pkt_wrap_s*nm_pw_alloc_buffer(void);
+/** Fast packet allocator constant for initial number of entries. */
+#define INITIAL_PKT_NUM 16
 
-struct nm_pkt_wrap_s*nm_pw_alloc_noheader(void);
+struct nm_pkt_wrap_s*nm_pw_alloc_buffer(struct nm_core*p_core);
 
-struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_trk_s*p_trk);
+struct nm_pkt_wrap_s*nm_pw_alloc_noheader(struct nm_core*p_core);
 
-int nm_pw_free(struct nm_pkt_wrap_s*p_pw);
+struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_core*p_core, struct nm_trk_s*p_trk);
+
+void nm_pw_free(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw);
 
 int nm_pw_split_data(struct nm_pkt_wrap_s*p_pw, struct nm_pkt_wrap_s*pp_pw2, nm_len_t offset);
 

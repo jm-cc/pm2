@@ -93,12 +93,13 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
   struct nm_strat_aggreg_s*p_status = _status;
   struct nm_trk_s*p_trk_small = &p_gate->trks[NM_TRK_SMALL];
   const struct nm_drv_s*p_drv = p_trk_small->p_drv;
+  struct nm_core*p_core = p_drv->p_core;
   if((p_trk_small->p_pw_send == NULL) &&
      !(nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list) &&
        nm_req_chunk_list_empty(&p_gate->req_chunk_list)))
     {
       /* no active send && pending chunks */
-      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_trk_small);
+      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_core, p_trk_small);
       const nm_len_t max_small = p_pw->max_len;
       int opt_window = 8;
       /* ** control */
@@ -208,7 +209,7 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
 	      struct nm_rdv_chunk chunk = 
 		{ .len = p_pw->length, .trk_id = NM_TRK_LARGE };
 	      nm_pkt_wrap_list_remove(&p_gate->pending_large_recv, p_pw);
-	      nm_tactic_rtr_pack(p_pw, 1, &chunk);
+	      nm_tactic_rtr_pack(p_gate->p_core, p_pw, 1, &chunk);
 	    }
 	}
       else
@@ -217,7 +218,7 @@ static void strat_aggreg_rdv_accept(void*_status, nm_gate_t p_gate)
 	  struct nm_rdv_chunk chunk = 
 	    { .len = p_pw->length, .trk_id = NM_TRK_SMALL };
 	  nm_pkt_wrap_list_remove(&p_gate->pending_large_recv, p_pw);
-	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
+	  nm_tactic_rtr_pack(p_gate->p_core, p_pw, 1, &chunk);
 	}
     }
 }

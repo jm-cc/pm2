@@ -98,13 +98,14 @@ static void strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
   struct nm_strat_default_s*p_status = _status;
   struct nm_trk_s*p_trk_small = &p_gate->trks[NM_TRK_SMALL];
   struct nm_drv_s*p_drv = p_trk_small->p_drv;
+  struct nm_core*p_core = p_drv->p_core;
   if(p_trk_small->p_pw_send == NULL)
     {
       if(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	{
 	  /* post ctrl on trk #0 */
 	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_begin(&p_gate->ctrl_chunk_list);
-	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_trk_small);
+	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_core, p_trk_small);
 	  int rc __attribute__((unused));
 	  rc = nm_tactic_pack_ctrl(p_gate, p_drv, p_ctrl_chunk, p_pw);
 	  assert(rc == NM_ESUCCESS);
@@ -119,7 +120,7 @@ static void strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
 	  if(p_req_chunk->chunk_len + max_header_len <= p_status->nm_max_small)
 	    {
 	      /* post short data on trk #0 */
-	      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_trk_small);
+	      struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_core, p_trk_small);
 	      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_USE_COPY);
 	      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 	      nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
@@ -131,10 +132,10 @@ static void strat_default_try_and_commit(void*_status, nm_gate_t p_gate)
 	      union nm_header_ctrl_generic_s rdv;
 	      nm_header_init_rdv(&rdv, p_pack, p_req_chunk->chunk_len, p_req_chunk->chunk_offset,
 				 is_lastchunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
-	      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
+	      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader(p_core);
 	      nm_pw_add_req_chunk(p_large_pw, p_req_chunk, NM_REQ_FLAG_NONE);
 	      nm_pkt_wrap_list_push_back(&p_gate->pending_large_send, p_large_pw);
-	      struct nm_pkt_wrap_s*p_rdv_pw = nm_pw_alloc_global_header(p_trk_small);
+	      struct nm_pkt_wrap_s*p_rdv_pw = nm_pw_alloc_global_header(p_core, p_trk_small);
 	      nm_pw_add_control(p_rdv_pw, &rdv);
 	      nm_core_post_send(p_rdv_pw, p_gate, NM_TRK_SMALL);
 	    }
@@ -155,7 +156,7 @@ static void strat_default_rdv_accept(void*_status, nm_gate_t p_gate)
 	  struct nm_pkt_wrap_s*p_pw = nm_pkt_wrap_list_pop_front(&p_gate->pending_large_recv);
 	  struct nm_rdv_chunk chunk = 
 	    { .len = p_pw->length, .trk_id = NM_TRK_LARGE };
-	  nm_tactic_rtr_pack(p_pw, 1, &chunk);
+	  nm_tactic_rtr_pack(p_gate->p_core, p_pw, 1, &chunk);
 	}
     }
 }

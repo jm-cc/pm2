@@ -108,7 +108,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
       /* TODO- */
       if(p_trk->p_pw_send == NULL)
 	{
-	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_trk);
+	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_core, p_trk);
 	  /* ** control */
 	  while(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	    {
@@ -182,7 +182,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 			    {
 			      flags |= NM_REQ_FLAG_USE_COPY;
 			    }
-			  struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
+			  struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader(p_core);
 			  nm_pw_add_req_chunk(p_large_pw, p_req_chunk, flags);
 			  nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_large_pw);
 			  union nm_header_ctrl_generic_s rdv;
@@ -238,7 +238,7 @@ static void strat_split_balance_rdv_accept(void*_status, nm_gate_t p_gate)
       if(nb_chunks > 0)
 	{
 	  nm_pkt_wrap_list_remove(&p_gate->pending_large_recv, p_pw);
-	  nm_tactic_rtr_pack(p_pw, nb_chunks, chunks);
+	  nm_tactic_rtr_pack(p_gate->p_core, p_pw, nb_chunks, chunks);
 	}
     }
 }

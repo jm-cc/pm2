@@ -61,7 +61,7 @@ static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
 	{
 	  flags |= NM_REQ_FLAG_USE_COPY;
 	}
-      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
+      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader(p_gate->p_core);
       nm_pw_add_req_chunk(p_large_pw, p_req_chunk, flags);
       nm_pkt_wrap_list_push_back(&p_pack->p_gate->pending_large_send, p_large_pw);
       union nm_header_ctrl_generic_s rdv;
@@ -86,7 +86,7 @@ struct nm_rdv_chunk
 
 /** Packs a series of RTR for multiple chunks of a pw, and post corresponding recv
 */
-static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap_s*p_pw, int nb_chunks, const struct nm_rdv_chunk*chunks)
+static inline void nm_tactic_rtr_pack(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw, int nb_chunks, const struct nm_rdv_chunk*chunks)
 {
   int i;
   nm_len_t chunk_offset = p_pw->chunk_offset;
@@ -99,7 +99,7 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap_s*p_pw, int nb_chunks, 
       if(chunks[i].len < p_pw->length)
 	{
 	  /* create a new pw with the remaining data */
-	  p_pw2 = nm_pw_alloc_noheader();
+	  p_pw2 = nm_pw_alloc_noheader(p_gate->p_core);
 	  p_pw2->p_drv    = p_pw->p_drv;
 	  p_pw2->trk_id   = p_pw->trk_id;
 	  p_pw2->p_gate   = p_pw->p_gate;
@@ -132,7 +132,7 @@ static inline void nm_tactic_rtr_pack(struct nm_pkt_wrap_s*p_pw, int nb_chunks, 
 	}
       else
 	{
-	  nm_pw_free(p_pw);
+	  nm_pw_free(p_core, p_pw);
 	}
       nm_core_post_rtr(p_gate, tag, seq, chunks[i].trk_id, chunk_offset, chunks[i].len);
       chunk_offset += chunks[i].len;

@@ -775,7 +775,7 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
       assert(p_unpack->p_gate != NULL);
       assert(!nm_data_isnull(&p_unpack->data));
       nm_core_unpack_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader();
+      struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader(p_core);
       p_large_pw->p_unpack     = p_unpack;
       p_large_pw->length       = chunk_len;
       p_large_pw->chunk_offset = chunk_offset;
@@ -818,7 +818,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	      /* assert ack is partial */
 	      assert(chunk_len > 0 && chunk_len < p_large_pw->length);
 	      /* create a new pw with the remaining data */
-	      struct nm_pkt_wrap_s*p_pw2 = nm_pw_alloc_noheader();
+	      struct nm_pkt_wrap_s*p_pw2 = nm_pw_alloc_noheader(p_core);
 	      p_pw2->p_drv    = p_large_pw->p_drv;
 	      p_pw2->trk_id   = p_large_pw->trk_id;
 	      p_pw2->p_gate   = p_gate;
@@ -842,7 +842,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap_s*p_rtr_pw, const struct nm_header
 	    {
 	      /* rdv eventually accepted on trk#0- rollback and repack */
 	      assert(p_large_pw->p_data != NULL);
-	      nm_pw_free(p_large_pw);
+	      nm_pw_free(p_core, p_large_pw);
 	      struct nm_req_chunk_s*p_req_chunk0 = nm_req_chunk_malloc(p_core->req_chunk_allocator);
 	      nm_req_chunk_init(p_req_chunk0, p_pack, chunk_offset, chunk_len);
 	      nm_req_chunk_list_push_back(&p_gate->req_chunk_list, p_req_chunk0);

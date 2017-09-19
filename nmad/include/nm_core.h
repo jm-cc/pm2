@@ -50,6 +50,8 @@ struct nm_core
   struct nm_req_chunk_lfqueue_s pack_submissions;  /**< list of new pack reqs (lock-free submission list) */
   nm_req_chunk_allocator_t req_chunk_allocator;    /**< allocator for req_chunk elements */
   nm_ctrl_chunk_allocator_t ctrl_chunk_allocator;  /**< allocator for control chunks */
+  struct nm_pw_nohd_allocator_s pw_nohd_allocator; /**< allocator for header-less pw*/
+  struct nm_pw_buf_allocator_s pw_buf_allocator;   /**< allocator for pw with contiguous buffer */
   uint64_t unpack_seq;                             /**< next sequence number for unpacks */
   struct nm_req_list_s wildcard_unpacks;           /**< list of wildcards unpacks; non-wildcard unpacks are in nm_gtag_s */
   struct nm_unexpected_core_list_s unexpected;     /**< global list of unexpected chunks */

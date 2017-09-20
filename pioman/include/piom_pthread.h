@@ -28,10 +28,11 @@
 
 /* ** base pthread types *********************************** */
 
-#define piom_thread_t      pthread_t
-#define piom_thread_attr_t pthread_attr_t
-#define PIOM_THREAD_NULL ((pthread_t)(-1))
-#define PIOM_THREAD_SELF          pthread_self()
+#define piom_thread_t        pthread_t
+#define piom_thread_attr_t   pthread_attr_t
+#define PIOM_THREAD_NULL     ((pthread_t)(-1))
+#define PIOM_THREAD_SELF     pthread_self()
+#define PIOM_THREAD_INVALID  ((pthread_t)(0))
 
 /* ** spinlocks for pthread ******************************** */
 
@@ -69,6 +70,9 @@ static inline void piom_spin_destroy(piom_spinlock_t*lock)
 static inline void piom_spin_lock(piom_spinlock_t*lock)
 {
   int err __attribute__((unused));
+#ifdef PIOMAN_DEBUG
+  assert(lock->owner != PIOM_THREAD_INVALID);
+#endif /* PIOMAN_DEBUG */
   err = pthread_spin_lock(&lock->spinlock);
 #ifdef PIOMAN_DEBUG
   if(err != 0)
@@ -97,6 +101,9 @@ static inline void piom_spin_unlock(piom_spinlock_t*lock)
 static inline int piom_spin_trylock(piom_spinlock_t*lock)
 {
   int err __attribute__((unused));
+#ifdef PIOMAN_DEBUG
+  assert(lock->owner != PIOM_THREAD_INVALID);
+#endif /* PIOMAN_DEBUG */
   err = pthread_spin_trylock(&lock->spinlock);
   int rc = (err == 0);
 #ifdef PIOMAN_DEBUG

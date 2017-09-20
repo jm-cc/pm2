@@ -47,6 +47,8 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
       assert(p_pack != NULL);
       if(p_pack->seq == NM_SEQ_NONE)
 	{
+	  /* first chunk in pack */
+	  p_core->n_packs++;
 	  p_pack->p_gtag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);
 	  const nm_seq_t seq = nm_seq_next(p_pack->p_gtag->send_seq_number);
 	  p_pack->p_gtag->send_seq_number = seq;
@@ -440,6 +442,8 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_req_list_init(&p_core->wildcard_unpacks);
   nm_req_list_init(&p_core->pending_packs);
   nm_unexpected_core_list_init(&p_core->unexpected);
+  p_core->n_packs = 0;
+  p_core->n_unpacks = 0;
 
   nm_req_chunk_lfqueue_init(&p_core->pack_submissions);
   nm_req_chunk_allocator_init(&p_core->req_chunk_allocator, NM_REQ_CHUNK_QUEUE_SIZE);

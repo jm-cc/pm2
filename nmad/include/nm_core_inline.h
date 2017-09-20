@@ -264,8 +264,14 @@ static inline void nm_core_post_ack(nm_gate_t p_gate, nm_core_tag_t tag, nm_seq_
 /** dynamically adapt pioman polling frequency level depending on the number of pending requests */
 static inline void nm_core_polling_level(struct nm_core*p_core)
 {
+  nm_core_lock_assert(p_core);
+  assert(p_core->n_packs >= 0);
+  assert(p_core->n_unpacks >= 0);
 #ifdef PIOMAN
-  const int high = (!nm_req_list_empty(&p_core->wildcard_unpacks)) || (!nm_req_list_empty(&p_core->pending_packs));
+  const int high =
+    (p_core->n_packs > 0) ||
+    (p_core->n_unpacks > 0) ||
+    (!nm_req_chunk_lfqueue_empty(&p_core->pack_submissions));
   piom_ltask_poll_level_set(high);
 #endif /* PIOMAN */
 }

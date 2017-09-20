@@ -214,7 +214,6 @@ static inline void nm_core_unpack_check_completion(struct nm_core*p_core, struct
 	{
 	  nm_req_list_remove(&p_so_tag->unpacks, p_unpack);
 	}
-      nm_core_polling_level(p_core);
       if((p_pw != NULL) && (p_pw->trk_id == NM_TRK_LARGE) && (p_pw->flags & NM_PW_DYNAMIC_V0))
 	{
 	  nm_data_copy_to(&p_unpack->data, 0 /* offset */, chunk_len, p_pw->v[0].iov_base);
@@ -225,7 +224,10 @@ static inline void nm_core_unpack_check_completion(struct nm_core*p_core, struct
 	  .p_req = p_unpack
 	};
       nm_core_status_event(p_core, &event, p_unpack);
+      p_core->n_unpacks--;
+      nm_core_polling_level(p_core);
       *pp_unpack = NULL;
+      /* check for out-of-order packets already received on this tag */
       while(!nm_unexpected_tag_list_empty(&p_so_tag->unexpected))
 	{
 	  struct nm_unexpected_s*p_unexpected = nm_unexpected_tag_list_begin(&p_so_tag->unexpected);
@@ -557,6 +559,8 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
       nm_req_list_push_back(&p_unpack->p_gtag->unpacks, p_unpack);
     }
   nm_profile_inc(p_core->profiling.n_unpacks);
+  p_core->n_unpacks++;
+  nm_core_polling_level(p_core);
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
   while(p_unexpected)
     {
@@ -564,7 +568,6 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
       nm_core_unpack_unexpected(p_core, &p_unpack, p_unexpected);
       p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
     }
-  nm_core_polling_level(p_core);
   nm_core_unlock(p_core);
 }
 
@@ -867,7 +870,6 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
       if(nm_core_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
 	{
 	  nm_core_lock_assert(p_core);
-	  nm_core_polling_level(p_core);
 	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_ACK_RECEIVED | (nm_status_test(p_pack, NM_STATUS_PACK_COMPLETED) ? NM_STATUS_FINALIZED : 0),
@@ -876,8 +878,10 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
 	  if(event.status & NM_STATUS_FINALIZED)
 	    {
 	      nm_req_list_remove(&p_core->pending_packs, p_pack);
+	      p_core->n_packs--;
 	    }
 	  nm_core_status_event(p_core, &event, p_pack);
+	  nm_core_polling_level(p_core);
 	  return;
 	}
     }

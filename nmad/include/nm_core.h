@@ -56,7 +56,6 @@ struct nm_core
   int n_packs, n_unpacks;                          /**< number of pending packs & unpacks */
   struct nm_req_list_s wildcard_unpacks;           /**< list of wildcards unpacks; non-wildcard unpacks are in nm_gtag_s */
   struct nm_unexpected_core_list_s unexpected;     /**< global list of unexpected chunks */
-  struct nm_req_list_s pending_packs;              /**< list of pack reqs in progress (or waiting for ACK) */
   struct nm_pkt_wrap_lfqueue_s completed_pws;      /**< queue of completed pw waiting for event dispatch */
   struct nm_core_monitor_vect_s monitors;          /**< monitors for upper layers to track events in nmad core */
   

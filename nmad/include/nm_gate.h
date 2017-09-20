@@ -23,6 +23,7 @@ struct nm_gtag_s
   nm_seq_t recv_seq_number;     /**< next sequence number for recv */
   nm_seq_t send_seq_number;     /**< next sequence number for send */
   struct nm_req_list_s unpacks; /**< posted unpacks on this gate/tag */
+  struct nm_req_list_s pending_packs;                 /**< pack reqs waiting for ACK */
   struct nm_unexpected_tag_list_s unexpected;         /**< unexpected chunks pending on this gate/tag; sorted by seq number */
   struct nm_core_pending_event_list_s pending_events; /**< events received out-of-order, waiting for dispatch */
 };
@@ -31,6 +32,7 @@ static inline void nm_gtag_ctor(struct nm_gtag_s*p_so_tag, nm_core_tag_t tag)
   p_so_tag->recv_seq_number = NM_SEQ_FIRST;
   p_so_tag->send_seq_number = NM_SEQ_FIRST;
   nm_req_list_init(&p_so_tag->unpacks);
+  nm_req_list_init(&p_so_tag->pending_packs);
   nm_unexpected_tag_list_init(&p_so_tag->unexpected);
   nm_core_pending_event_list_init(&p_so_tag->pending_events);
 }

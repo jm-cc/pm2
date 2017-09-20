@@ -127,15 +127,20 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
       if(p_pack->pack.done == p_pack->pack.len)
 	{
 	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->pack.len);
+	  const int is_sync = (p_pack->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS);
+	  const int acked = (is_sync && nm_status_test(p_pack, NM_STATUS_ACK_RECEIVED));
+	  const int finalized = (acked || !is_sync);
 	  const struct nm_core_event_s event =
 	    {
-	      .status = NM_STATUS_PACK_COMPLETED |
-	      ( ((!(p_pack->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS)) || nm_status_test(p_pack, NM_STATUS_ACK_RECEIVED)) ? NM_STATUS_FINALIZED : 0),
+	      .status = NM_STATUS_PACK_COMPLETED | (finalized ? NM_STATUS_FINALIZED : 0),
 	      .p_req = p_pack
 	    };
-	  if(event.status & NM_STATUS_FINALIZED)
+	  if(finalized)
 	    {
-	      nm_req_list_remove(&p_core->pending_packs, p_pack);
+	      if(acked)
+		{
+		  nm_req_list_remove(&p_pack->p_gtag->pending_packs, p_pack);
+		}
 	      p_core->n_packs--;
 	      nm_core_polling_level(p_core);
 	    }

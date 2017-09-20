@@ -54,7 +54,10 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
 	  p_pack->p_gtag->send_seq_number = seq;
 	  p_pack->seq = seq;
 	}
-      nm_req_list_push_back(&p_core->pending_packs, p_pack);
+      if(p_pack->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS)
+	{
+	  nm_req_list_push_back(&p_pack->p_gtag->pending_packs, p_pack);
+	}
       const struct puk_receptacle_NewMad_Strategy_s*r = &p_pack->p_gate->strategy_receptacle;
       if(r->driver->pack_data != NULL)
 	{
@@ -440,7 +443,6 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_core_monitor_vect_init(&p_core->monitors);
 
   nm_req_list_init(&p_core->wildcard_unpacks);
-  nm_req_list_init(&p_core->pending_packs);
   nm_unexpected_core_list_init(&p_core->unexpected);
   p_core->n_packs = 0;
   p_core->n_unpacks = 0;

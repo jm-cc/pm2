@@ -864,20 +864,23 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
   const nm_core_tag_t tag = header->tag_id;
   const nm_seq_t seq = header->seq;
   struct nm_req_s*p_pack = NULL;
+  struct nm_gtag_s*p_gtag = nm_gtag_get(&p_ack_pw->p_gate->tags, tag);
   
-  puk_list_foreach(nm_req, p_pack, &p_core->pending_packs)
+  puk_list_foreach(nm_req, p_pack, &p_gtag->pending_packs)
     {
-      if(nm_core_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
+      assert(nm_core_tag_eq(p_pack->tag, tag));
+      if(p_pack->seq == seq)
 	{
+	  const int finalized = nm_status_test(p_pack, NM_STATUS_PACK_COMPLETED);
 	  nm_core_lock_assert(p_core);
 	  const struct nm_core_event_s event =
 	    {
-	      .status = NM_STATUS_ACK_RECEIVED | (nm_status_test(p_pack, NM_STATUS_PACK_COMPLETED) ? NM_STATUS_FINALIZED : 0),
+	      .status = NM_STATUS_ACK_RECEIVED | ( finalized ? NM_STATUS_FINALIZED : 0),
 	      .p_req = p_pack
 	    };
-	  if(event.status & NM_STATUS_FINALIZED)
+	  if(finalized)
 	    {
-	      nm_req_list_remove(&p_core->pending_packs, p_pack);
+	      nm_req_list_remove(&p_gtag->pending_packs, p_pack);
 	      p_core->n_packs--;
 	    }
 	  nm_core_status_event(p_core, &event, p_pack);

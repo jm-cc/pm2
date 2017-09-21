@@ -250,7 +250,7 @@ static inline void nm_core_unpack_check_completion(struct nm_core*p_core, struct
 }
 
 /** decode and manage data flags found in a matched data/short_data/rdv chunk */
-static inline void nm_core_unpack_flags_decode(struct nm_req_s*p_unpack, uint8_t flags, nm_len_t chunk_offset, nm_len_t chunk_len)
+static inline void nm_core_unpack_flags_decode(struct nm_req_s*p_unpack, nm_proto_t flags, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   const nm_len_t chunk_end = chunk_offset + chunk_len;
   assert(p_unpack->unpack.expected_len != NM_LEN_UNDEFINED);
@@ -726,7 +726,7 @@ static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
     {
       if(!nm_status_test(*pp_unpack, NM_STATUS_UNPACK_CANCELLED))
 	{
-	  const uint8_t flags = NM_PROTO_FLAG_LASTCHUNK;
+	  const nm_proto_t flags = NM_PROTO_FLAG_LASTCHUNK;
 	  const void*ptr = ((void*)h) + NM_HEADER_SHORT_DATA_SIZE;
 	  nm_core_unpack_flags_decode(*pp_unpack, flags, chunk_offset, chunk_len);
 	  nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);

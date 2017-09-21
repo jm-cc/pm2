@@ -269,6 +269,9 @@ static inline nm_len_t nm_data_size(const struct nm_data_s*p_data)
 /** find base pointer for a data known to be contiguous */
 void*nm_data_baseptr_get(const struct nm_data_s*p_data);
 
+/** checksum data  */
+uint32_t nm_data_checksum(const struct nm_data_s*p_data);
+
 /** copy chunk of data from user layout to contiguous buffer */
 void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t len, void*destbuf);
 

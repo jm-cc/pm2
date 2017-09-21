@@ -743,6 +743,31 @@ void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t 
 
 /* ********************************************************* */
 
+/** checksum data
+ */
+struct nm_data_checksum_s
+{
+  uint32_t csum;
+  const struct tbx_checksum_s*p_checksum;
+};
+static void nm_data_checksum_apply(void*ptr, nm_len_t len, void*_context)
+{
+  struct nm_data_checksum_s*p_context = _context;
+  const uint32_t csum = (*p_context->p_checksum->func)(ptr, len);
+  p_context->csum ^= csum;
+}
+uint32_t nm_data_checksum(const struct nm_data_s*p_data)
+{
+  static struct tbx_checksum_s*p_checksum = NULL;
+  if(!p_checksum)
+    p_checksum = tbx_checksum_get("fnv1a");
+  struct nm_data_checksum_s context = { .csum = 0, .p_checksum = p_checksum };
+  nm_data_traversal_apply(p_data, &nm_data_checksum_apply, &context);
+  return context.csum;
+}
+
+/* ********************************************************* */
+
 /** pack iterator-based data to pw with global header
  */
 struct nm_data_pkt_packer_s

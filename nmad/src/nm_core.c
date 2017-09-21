@@ -467,6 +467,16 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
     {
       p_core->enable_auto_flush = 0;
     }
+  p_core->enable_isend_csum = 0;
+  if(getenv("NMAD_ISEND_CSUM"))
+    {
+#ifdef DEBUG
+      p_core->enable_isend_csum = 1;
+      NM_DISPF("# nmad: isend checksum enabled.\n");
+#else
+      NM_WARN("# nmad: isend checksum available only in DEBUG mode.\n");
+#endif
+    }
 
 #ifdef NMAD_PROFILE
   p_core->profiling.n_locks      = 0;

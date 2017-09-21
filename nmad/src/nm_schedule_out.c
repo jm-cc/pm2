@@ -34,6 +34,12 @@ void nm_core_pack_data(nm_core_t p_core, struct nm_req_s*p_pack, const struct nm
   p_pack->pack.hlen = 0;
   p_pack->pack.priority = 0;
   p_pack->monitor   = NM_MONITOR_NULL;
+#ifdef DEBUG
+  if(p_core->enable_isend_csum)
+    {
+      p_pack->pack.checksum = nm_data_checksum(&p_pack->data);
+    }
+#endif /* DEBUG */
 }
 
 void nm_core_pack_send(struct nm_core*p_core, struct nm_req_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
@@ -127,6 +133,17 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
       if(p_pack->pack.done == p_pack->pack.len)
 	{
 	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->pack.len);
+#ifdef DEBUG
+	  if(p_core->enable_isend_csum)
+	    {
+	      const uint32_t checksum = nm_data_checksum(&p_pack->data);
+	      if(checksum != p_pack->pack.checksum)
+		{
+		  NM_FATAL("data corrupted between isend and completion.\n");
+		}
+	    }
+#endif /* DEBUG */
+	  
 	  const int is_sync = (p_pack->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS);
 	  const int acked = (is_sync && nm_status_test(p_pack, NM_STATUS_ACK_RECEIVED));
 	  const int finalized = (acked || !is_sync);

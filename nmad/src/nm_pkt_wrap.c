@@ -330,7 +330,7 @@ int nm_pw_split_data(struct nm_pkt_wrap_s *p_pw,
 
 /** pack data from req_chunk into packet wrapper */
 void nm_pw_pack_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
-			  struct nm_req_chunk_s*__restrict__ p_req_chunk, nm_req_flag_t req_flags)
+			  struct nm_req_chunk_s*__restrict__ p_req_chunk, const nm_req_chunk_flag_t req_chunk_flags)
 {
   const nm_len_t chunk_len     = p_req_chunk->chunk_len;
   const nm_len_t chunk_offset  = p_req_chunk->chunk_offset;
@@ -344,7 +344,7 @@ void nm_pw_pack_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
   if(p_pw->flags & NM_PW_BUF_SEND)
     {
       /* ** Data with a driver header in v[0] */
-      if(req_flags & NM_REQ_FLAG_SHORT_CHUNK)
+      if(req_chunk_flags & NM_REQ_CHUNK_FLAG_SHORT)
 	{
 	  /* short data with short header */
 	  assert((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0));
@@ -359,13 +359,13 @@ void nm_pw_pack_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
   else if(p_pw->flags & NM_PW_GLOBAL_HEADER)
     {
       /* ** Data with a global header in v[0] */
-      if(req_flags & NM_REQ_FLAG_SHORT_CHUNK)
+      if(req_chunk_flags & NM_REQ_CHUNK_FLAG_SHORT)
 	{
 	  /* short data with short header */
 	  assert((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0));
 	  nm_pw_add_short_data(p_pw, tag, seq, p_data, chunk_len);
 	}
-      else if(req_flags & NM_REQ_FLAG_USE_COPY)
+      else if(req_chunk_flags & NM_REQ_CHUNK_FLAG_USE_COPY)
 	{
 	  /* Data immediately follows its header */
 	  nm_pw_add_data_in_header(p_pw, tag, seq, p_data, chunk_len, chunk_offset, proto_flags);
@@ -380,7 +380,7 @@ void nm_pw_pack_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
     {
       /* ** Add raw data to pw, without header */
       nm_pw_set_data_raw(p_pw, p_data, chunk_len, chunk_offset);
-      if(req_flags & NM_REQ_FLAG_USE_COPY)
+      if(req_chunk_flags & NM_REQ_CHUNK_FLAG_USE_COPY)
 	p_pw->flags |= NM_PW_DATA_COPY;
     }
 }			  
@@ -392,12 +392,12 @@ void nm_pw_pack_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
  *  @param flags the flags controlling the way the fragment is appended.
  */
 void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
-			 struct nm_req_chunk_s*__restrict__ p_req_chunk, nm_req_flag_t req_flags)
+			 struct nm_req_chunk_s*__restrict__ p_req_chunk, nm_req_chunk_flag_t req_chunk_flags)
 {
   /* add the contrib ref to the pw */
   nm_req_chunk_list_push_back(&p_pw->req_chunks, p_req_chunk);
-  if(!(req_flags & NM_REQ_FLAG_BUF_SEND))
-    nm_pw_pack_req_chunk(p_pw, p_req_chunk, req_flags);
+  if(!(req_chunk_flags & NM_REQ_CHUNK_FLAG_BUF_SEND))
+    nm_pw_pack_req_chunk(p_pw, p_req_chunk, req_chunk_flags);
 }
 
 

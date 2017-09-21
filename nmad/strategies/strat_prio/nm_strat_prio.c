@@ -129,7 +129,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 	    {
 	      /* post short data on trk #0 */
 	      nm_req_chunk_list_pop_front(&p_status->req_chunk_list);
-	      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_USE_COPY);
+	      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_CHUNK_FLAG_USE_COPY);
 	      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 	    }
 	  else

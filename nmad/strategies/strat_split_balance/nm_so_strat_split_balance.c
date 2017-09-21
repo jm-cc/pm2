@@ -138,7 +138,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 		  /* ** short send */
 		  if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_SHORT_DATA_SIZE + chunk_len)
 		    {
-		      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_NONE);
+		      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_CHUNK_FLAG_NONE);
 		      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 		    }
 		  else
@@ -160,7 +160,7 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 		      /* ** small send- always flatten data */
 		      if(NM_HEADER_DATA_SIZE + chunk_len <= nm_pw_remaining_buf(p_pw))
 			{
-			  nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_USE_COPY);
+			  nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_CHUNK_FLAG_USE_COPY);
 			  assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 			}
 		      else
@@ -177,10 +177,10 @@ static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 		      if(nm_pw_remaining_buf(p_pw) >= NM_HEADER_CTRL_SIZE)
 			{
 			  const int is_lastchunk = (p_req_chunk->chunk_offset + p_req_chunk->chunk_len == p_pack->pack.len);
-			  nm_req_flag_t flags = NM_REQ_FLAG_NONE;
+			  nm_req_chunk_flag_t flags = NM_REQ_CHUNK_FLAG_NONE;
 			  if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->data.ops.p_generator == NULL))
 			    {
-			      flags |= NM_REQ_FLAG_USE_COPY;
+			      flags |= NM_REQ_CHUNK_FLAG_USE_COPY;
 			    }
 			  struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader(p_core);
 			  nm_pw_add_req_chunk(p_large_pw, p_req_chunk, flags);

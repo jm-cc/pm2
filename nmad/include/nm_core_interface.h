@@ -106,7 +106,10 @@ typedef nm_status_t nm_cond_status_t;
 /** pack/unpack flags */
 typedef uint32_t nm_req_flag_t;
 
-/** protocol flags- not part of the public API, bu needed for inline */
+/** flags for req_chunk */
+typedef uint32_t nm_req_chunk_flag_t;
+
+/** protocol flags- not part of the public API, but needed for inline */
 typedef uint8_t nm_proto_t;
 
 
@@ -148,17 +151,19 @@ typedef uint8_t nm_proto_t;
 #define NM_REQ_FLAG_UNPACK                 ((nm_req_flag_t)0x00004000)
 /** flag unpack request as matched */
 #define NM_REQ_FLAG_UNPACK_MATCHED         ((nm_req_flag_t)0x00008000)
-
-/** flag req_chunk as short */
-#define NM_REQ_FLAG_SHORT_CHUNK            ((nm_req_flag_t)0x00010000)
-/** use buf_send to send this request */
-#define NM_REQ_FLAG_BUF_SEND               ((nm_req_flag_t)0x00020000)
-/** flatten data as contiguous block before send */
-#define NM_REQ_FLAG_USE_COPY               ((nm_req_flag_t)0x00040000)
-/* use iterator-based data description in pw */
-#define NM_REQ_FLAG_DATA_ITERATOR          ((nm_req_flag_t)0x00080000)
 /** request submited in wildcard queue */
-#define NM_REQ_FLAG_WILDCARD               ((nm_req_flag_t)0x00100000)
+#define NM_REQ_FLAG_WILDCARD               ((nm_req_flag_t)0x00010000)
+
+/** no flag set */
+#define NM_REQ_CHUNK_FLAG_NONE             ((nm_req_chunk_flag_t)0x00000000)
+/** flag req_chunk as short */
+#define NM_REQ_CHUNK_FLAG_SHORT            ((nm_req_chunk_flag_t)0x00020000)
+/** use buf_send to send this request */
+#define NM_REQ_CHUNK_FLAG_BUF_SEND         ((nm_req_chunk_flag_t)0x00040000)
+/** flatten data as contiguous block before send */
+#define NM_REQ_CHUNK_FLAG_USE_COPY         ((nm_req_chunk_flag_t)0x00080000)
+/* use iterator-based data description in pw */
+#define NM_REQ_CHUNK_FLAG_DATA_ITERATOR    ((nm_req_chunk_flag_t)0x00100000)
 
 /** Sequence number */
 typedef uint32_t nm_seq_t;

@@ -130,7 +130,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	      if(NM_HEADER_SHORT_DATA_SIZE + chunk_len + p_pw->length <= max_small)
 		{
 		  nm_req_chunk_list_remove(&p_gate->req_chunk_list, p_req_chunk);
-		  nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_SHORT_CHUNK);
+		  nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_CHUNK_FLAG_SHORT);
 		  assert(p_pw->length <= max_small);
 		}
 	      else
@@ -153,7 +153,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 		    {
 #warning TODO- select pack strategy depending on data sparsity
 		      nm_req_chunk_list_remove(&p_gate->req_chunk_list, p_req_chunk);
-		      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_FLAG_NONE);
+		      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_CHUNK_FLAG_NONE);
 		      assert(p_pw->length <= max_small);
 		    }
 		  else

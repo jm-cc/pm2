@@ -59,7 +59,7 @@ static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
       nm_pw_flag_t flags = NM_PW_FLAG_NONE;
       if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->data.ops.p_generator == NULL))
 	{
-	  flags |= NM_REQ_FLAG_USE_COPY;
+	  flags |= NM_REQ_CHUNK_FLAG_USE_COPY;
 	}
       struct nm_pkt_wrap_s*p_large_pw = nm_pw_alloc_noheader(p_gate->p_core);
       nm_pw_add_req_chunk(p_large_pw, p_req_chunk, flags);

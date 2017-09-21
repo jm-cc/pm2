@@ -120,7 +120,7 @@ static inline piom_cond_value_t piom_cond_test(const piom_cond_t*cond, piom_cond
 {
   return cond->value & mask;
 }
-/** tests whether a bit is set, whit lock 
+/** tests whether a bit is set, with lock 
  * (needed to prevent race condition between cond destroy and 'finalized' state signal)
  */
 static inline piom_cond_value_t piom_cond_test_locked(piom_cond_t*cond, piom_cond_value_t mask)

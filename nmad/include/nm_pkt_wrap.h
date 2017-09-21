@@ -26,54 +26,57 @@
 /** flags to describe packet wrappers */
 typedef uint32_t nm_pw_flag_t;
 
+/** empty pw flags */
+#define NM_PW_FLAG_NONE     ((nm_pw_flag_t)0x00000000)
+
 /** Headerless pkt, if set. */
-#define NM_PW_NOHEADER      (nm_pw_flag_t)0x00000001
+#define NM_PW_NOHEADER      ((nm_pw_flag_t)0x00000001)
 
 /** pw allocated with NM_SO_MAX_UNEXPECTED contiguous buffer.
  * Used to receive small pw on trk #0
  */
-#define NM_PW_BUFFER        (nm_pw_flag_t)0x00000002
+#define NM_PW_BUFFER        ((nm_pw_flag_t)0x00000002)
 
 /** pw allocated with a contiguous buffer and a global header has been prepared.
  * Used to send small pw on trk #0
  */
-#define NM_PW_GLOBAL_HEADER (nm_pw_flag_t)0x00000004
+#define NM_PW_GLOBAL_HEADER ((nm_pw_flag_t)0x00000004)
 
 /** v[0] is dynamically allocated */
-#define NM_PW_DYNAMIC_V0    (nm_pw_flag_t)0x00000008
+#define NM_PW_DYNAMIC_V0    ((nm_pw_flag_t)0x00000008)
 
 /** Pkt has been finalized- ready to send on the wire. */
-#define NM_PW_FINALIZED     (nm_pw_flag_t)0x00000010
+#define NM_PW_FINALIZED     ((nm_pw_flag_t)0x00000010)
 
 /** Pkt has been prefetched */
-#define NM_PW_PREFETCHED    (nm_pw_flag_t)0x00000020
+#define NM_PW_PREFETCHED    ((nm_pw_flag_t)0x00000020)
 
 /** Pkt has bee posted */
-#define NM_PW_POSTED        (nm_pw_flag_t)0x00000040
+#define NM_PW_POSTED        ((nm_pw_flag_t)0x00000040)
 
 /** send/recv of pw is completed */
-#define NM_PW_COMPLETED     (nm_pw_flag_t)0x00000080
+#define NM_PW_COMPLETED     ((nm_pw_flag_t)0x00000080)
 
 /** pw used for sending */
-#define NM_PW_SEND          (nm_pw_flag_t)0x00000100
+#define NM_PW_SEND          ((nm_pw_flag_t)0x00000100)
 
 /** pw used for recv */
-#define NM_PW_RECV          (nm_pw_flag_t)0x00000200
+#define NM_PW_RECV          ((nm_pw_flag_t)0x00000200)
 
 /** requests to copy data to contiguous block before sending */
-#define NM_PW_DATA_COPY     (nm_pw_flag_t)0x00000400
+#define NM_PW_DATA_COPY     ((nm_pw_flag_t)0x00000400)
 
 /** use buffer-based driver for send */
-#define NM_PW_BUF_SEND      (nm_pw_flag_t)0x00000800
+#define NM_PW_BUF_SEND      ((nm_pw_flag_t)0x00000800)
 
 /** use buffer-based driver for recv */
-#define NM_PW_BUF_RECV      (nm_pw_flag_t)0x00001000
+#define NM_PW_BUF_RECV      ((nm_pw_flag_t)0x00001000)
 
 /** data received in driver buffer has been mirrored in pw buffer */
-#define NM_PW_BUF_MIRROR    (nm_pw_flag_t)0x00002000
+#define NM_PW_BUF_MIRROR    ((nm_pw_flag_t)0x00002000)
 
 /** driver reported gate as closed */
-#define NM_PW_CLOSED        (nm_pw_flag_t)0x00004000
+#define NM_PW_CLOSED        ((nm_pw_flag_t)0x00004000)
 
 /*@}*/
 

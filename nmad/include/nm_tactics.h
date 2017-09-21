@@ -56,7 +56,7 @@ static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
       const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
       const nm_len_t density = p_props->size / p_props->blocks;
       const int is_lastchunk = (p_req_chunk->chunk_offset + p_req_chunk->chunk_len == p_pack->pack.len);
-      nm_pw_flag_t flags = NM_REQ_FLAG_NONE;
+      nm_pw_flag_t flags = NM_PW_FLAG_NONE;
       if((!p_props->is_contig) && (density < NM_LARGE_MIN_DENSITY) && (p_pack->data.ops.p_generator == NULL))
 	{
 	  flags |= NM_REQ_FLAG_USE_COPY;

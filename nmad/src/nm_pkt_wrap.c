@@ -126,7 +126,7 @@ static inline void nm_pw_init(struct nm_pkt_wrap_s *p_pw)
   p_pw->p_gate = NULL;
   p_pw->p_trk  = NULL;
 
-  p_pw->flags = 0;
+  p_pw->flags = NM_PW_FLAG_NONE;
   p_pw->length = 0;
 
   p_pw->p_data  = NULL;
@@ -232,7 +232,7 @@ struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_core*p_core, struct nm_
 void nm_pw_free(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
   int err;
-  int flags = p_pw->flags;
+  const nm_pw_flag_t flags = p_pw->flags;
 
   if(p_pw->destructor)
     {

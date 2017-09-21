@@ -49,7 +49,7 @@ extern "C++" {
 # define MA_VERIFY(R) extern int (* verify_function__ (void)) [MA_VERIFY_TRUE (R)]
 
 
-#ifdef PM2DEBUG
+#ifdef MARCEL_DEBUG
 
 #ifdef MARCEL_LOGGER_DECLARE
 tbx_log_t marcel_events;
@@ -126,10 +126,10 @@ extern tbx_log_t marcel_timer_events;
 #define MARCEL_ALLOC_DISP(format, ...)       (void)0
 #define MARCEL_TIMER_DISP(format, ...)       (void)0
 
-#endif /** PM2DEBUG **/
+#endif /** MARCEL_DEBUG **/
 
 
-/** PM2DEBUG & PROFILE **/
+/** MARCEL_DEBUG & PROFILE **/
 #define MARCEL_LOG_IN()                      do { MARCEL_LOG("%s: -->\n", __TBX_FUNCTION__) ; PROF_IN() ; } while(0)
 #define MARCEL_LOG_OUT()                     do { MARCEL_LOG("%s: <--\n", __TBX_FUNCTION__) ; PROF_OUT() ; } while(0)
 #define MARCEL_ALLOC_LOG_IN()                do { MARCEL_ALLOC_LOG("%s: -->\n", __TBX_FUNCTION__) ; PROF_IN() ; } while(0)

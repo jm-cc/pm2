@@ -21,7 +21,7 @@
 #include "tbx_compiler.h"
 
 
-#ifdef PM2DEBUG
+#ifdef MARCEL_DEBUG
 #  define MA__DEBUG
 #endif
 

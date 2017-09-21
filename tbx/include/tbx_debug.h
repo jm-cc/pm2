@@ -33,7 +33,7 @@
 #endif
 
 
-#ifdef PM2DEBUG
+#ifdef TBX_DEBUG
 
 #ifdef TBX_C
 tbx_log_t pm2events;
@@ -67,10 +67,10 @@ extern tbx_log_t pm2events;
 #define PM2_DISP(format, ...)   (void)0
 
 
-#endif /** PM2DEBUG **/
+#endif /** TBX_DEBUG **/
 
 
-/** PM2DEBUG & PROFILE **/
+/** TBX_DEBUG & PROFILE **/
 #define PM2_LOG_IN()            do { PM2_LOG("%s: -->\n", __TBX_FUNCTION__) ; PROF_IN() ; } while(0)
 #define PM2_LOG_OUT()           do { PM2_LOG("%s: <--\n", __TBX_FUNCTION__) ; PROF_OUT() ; } while(0)
 

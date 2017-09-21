@@ -175,7 +175,7 @@ static __tbx_inline__ void tbx_fast_list_del(struct tbx_fast_list_head
 					     *entry)
 {
 	__tbx_fast_list_del(entry->prev, entry->next);
-#ifdef PM2DEBUG
+#ifdef TBX_DEBUG
 	TBX_THRASH_FAST_LIST_HEAD(entry);
 #endif
 }
@@ -208,7 +208,7 @@ static __tbx_inline__ void tbx_shared_fast_list_del(struct
 						    *entry)
 {
 	__tbx_shared_fast_list_del(entry->prev, entry->next);
-#ifdef PM2DEBUG
+#ifdef TBX_DEBUG
 	TBX_THRASH_FAST_LIST_HEAD(entry);
 #endif
 }
@@ -453,7 +453,7 @@ static __tbx_inline__ void __hlist_del(struct hlist_node *n)
 static __tbx_inline__ void hlist_del(struct hlist_node *n)
 {
 	__hlist_del(n);
-#ifdef PM2DEBUG
+#ifdef TBX_DEBUG
 	THRASH_HLIST_NODE(n);
 #endif
 	/*n->next = LIST_POISON1;

@@ -1392,7 +1392,7 @@ static void main_thread_init(void)
 	ma_irq_enter();
 	ma_set_current_state(MA_TASK_BORNING);
 
-#ifdef PM2DEBUG
+#ifdef MARCEL_DEBUG
 	marcel_debug_show_thread_info(tbx_true) ;
 #endif
 	PROF_SET_THREAD_NAME(__main_thread);

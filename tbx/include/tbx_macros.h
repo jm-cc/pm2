@@ -92,10 +92,10 @@
             #op " != " #val, __FILE__, __LINE__),   abort()
 
 /*
- * VERIFY: assertion verification macro activated by PM2DEBUG flag
+ * VERIFY: assertion verification macro activated by TBX_DEBUG flag
  * ------------------------------------------------------------
  */
-#ifdef PM2DEBUG
+#ifdef TBX_DEBUG
 #  define TBX_VERIFY(op, val) \
   if((op) != (val))     \
     PM2_LOG("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
@@ -104,7 +104,7 @@
 #  define TBX_VERIFY(op, val) ((void)(op))
 #endif				/* DEBUG */
 
-#ifdef PM2DEBUG
+#ifdef TBX_DEBUG
 #  define TBX_ASSERT(op) \
   if(!(op))     \
     PM2_LOG("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \

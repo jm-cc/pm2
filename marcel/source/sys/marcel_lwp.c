@@ -88,7 +88,7 @@ static void marcel_lwp_start(marcel_lwp_t * lwp)
 
 	MA_BUG_ON(!ma_in_irq());
 
-#if defined(PM2DEBUG) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__NUMA)
+#if defined(MARCEL_DEBUG) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__NUMA)
 	int vpnum = ma_vpnum(lwp);
 	MARCEL_LOG("process %i (%s): LWP %u on core %i, node %i\n",
 		   getpid(), program_invocation_name,
@@ -649,7 +649,7 @@ static void lwp_init(ma_lwp_t lwp)
 		tbx_fast_list_add_tail(&lwp->lwp_list, &ma_list_lwp_head);
 		ma_lwp_list_unlock_write();
 
-#if defined(PM2DEBUG) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__NUMA)
+#if defined(MARCEL_DEBUG) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__NUMA)
 		MARCEL_LOG("process %i (%s): LWP %u on core %i, node %i\n",
 			   getpid(), program_invocation_name,
 			   lwp->pid,

@@ -69,7 +69,7 @@ static void *unmapped_slot_alloc(void *foo TBX_UNUSED)
 		return NULL;
 	}
 	ptr = next_slot -=
-#if defined(PM2VALGRIND) || defined(PM2STACKSGUARD) || defined(PM2DEBUG)
+#if defined(PM2VALGRIND) || defined(PM2STACKSGUARD) || defined(MARCEL_DEBUG)
 	    /* Put a hole between slots to catch overflows */
 	    2 *
 #endif

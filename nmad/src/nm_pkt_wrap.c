@@ -64,14 +64,14 @@ void nm_pw_add_short_data(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t
 
 /** Add small data to pw, in header */
 void nm_pw_add_data_in_header(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-			      struct nm_data_s*p_data, nm_len_t chunk_len, nm_len_t chunk_offset, uint8_t flags)
+			      struct nm_data_s*p_data, nm_len_t chunk_len, nm_len_t chunk_offset, nm_proto_t proto_flags)
 {
   assert((p_pw->flags & NM_PW_GLOBAL_HEADER) || (p_pw->flags & NM_PW_BUF_SEND));
   assert(chunk_len <= nm_pw_remaining_buf(p_pw));
   assert(seq != NM_SEQ_NONE);
   struct iovec*hvec = &p_pw->v[0];
   struct nm_header_data_s*h = hvec->iov_base + hvec->iov_len;
-  nm_header_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0xFFFF, chunk_len, chunk_offset);
+  nm_header_init_data(h, tag, seq, proto_flags | NM_PROTO_FLAG_ALIGNED, 0xFFFF, chunk_len, chunk_offset);
   hvec->iov_len += NM_HEADER_DATA_SIZE;
   p_pw->length  += NM_HEADER_DATA_SIZE;
   if(chunk_len)

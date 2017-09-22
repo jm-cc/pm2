@@ -392,10 +392,10 @@ static inline void nm_cond_init(nm_cond_status_t*p_cond, nm_status_t bitmask)
   piom_cond_init(p_cond, bitmask);
 }
 /** @internal */
-static inline nm_status_t nm_cond_test(nm_cond_status_t*p_cond, nm_status_t bitmask)
+static inline nm_status_t nm_cond_test(const nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   if(bitmask & NM_STATUS_FINALIZED)
-    return piom_cond_test_locked(p_cond, bitmask);
+    return piom_cond_test_locked((nm_cond_status_t*)p_cond, bitmask);
   return piom_cond_test(p_cond, bitmask);
 }
 /** @internal */
@@ -425,7 +425,7 @@ static inline void nm_cond_init(nm_cond_status_t*p_cond, nm_status_t bitmask)
   *p_cond = bitmask;
 }
 /** @internal */
-static inline nm_status_t nm_cond_test(nm_cond_status_t*p_cond, nm_status_t bitmask)
+static inline nm_status_t nm_cond_test(const nm_cond_status_t*p_cond, nm_status_t bitmask)
 {
   return ((*p_cond) & bitmask);
 }
@@ -467,7 +467,7 @@ static inline void nm_status_init(struct nm_req_s*p_req, nm_status_t bitmask)
   nm_cond_init(&p_req->status, bitmask);
 }
 /** query for given bits in req status; returns matched bits */
-static inline nm_status_t nm_status_test(struct nm_req_s*p_req, nm_status_t bitmask)
+static inline nm_status_t nm_status_test(const struct nm_req_s*p_req, nm_status_t bitmask)
 {
   return nm_cond_test(&p_req->status, bitmask);
 }

@@ -561,12 +561,25 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
   nm_profile_inc(p_core->profiling.n_unpacks);
   p_core->n_unpacks++;
   nm_core_polling_level(p_core);
-  struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
-  while(p_unexpected)
+  if(p_unpack->unpack.expected_len == NM_LEN_UNDEFINED)
     {
-      /* data is already here (at least one chunk)- process all matching chunks */
-      nm_core_unpack_unexpected(p_core, &p_unpack, p_unexpected);
-      p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
+      /* data spec still undefined- fire data event */
+      const struct nm_core_event_s event =
+	{
+	  .status = NM_STATUS_UNPACK_DATA,
+	  .p_req = p_unpack
+	};
+      nm_core_status_event(p_core, &event, p_unpack);
+    }
+  else
+    {
+      struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
+      while(p_unexpected)
+	{
+	  /* data is already here (at least one chunk)- process all matching chunks */
+	  nm_core_unpack_unexpected(p_core, &p_unpack, p_unexpected);
+	  p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
+	}
     }
   nm_core_unlock(p_core);
 }
@@ -692,6 +705,28 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
   return rc;
 }
 
+/** checks whether an unpack request is ready to receive data */
+static inline int nm_core_unpack_ready_to_receive(struct nm_core*p_core, struct nm_req_s*p_unpack)
+{
+  if((p_unpack != NULL) &&
+     (!(nm_status_test(p_unpack, NM_STATUS_UNPACK_CANCELLED))) &&
+     (p_unpack->unpack.expected_len != NM_LEN_UNDEFINED))
+    {
+      return 1;
+    }
+  else if((p_unpack != NULL) && (p_unpack->unpack.expected_len == NM_LEN_UNDEFINED))
+    {
+      /* data spec still undefined- fire data event */
+      const struct nm_core_event_s event =
+	{
+	  .status = NM_STATUS_UNPACK_DATA,
+	  .p_req = p_unpack
+	};
+      nm_core_status_event(p_core, &event, p_unpack);
+    }
+  return 0;
+}
+
 /** Process a packed data request (NM_PROTO_PKT_DATA)- p_unpack may be NULL (unexpected)
  */
 static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s**pp_unpack,
@@ -699,15 +734,12 @@ static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct 
 {
   const nm_len_t chunk_len = h->data_len;
   const nm_len_t chunk_offset = h->chunk_offset;
-  if(*pp_unpack)
+  if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack))
     {
-      if(!(nm_status_test(*pp_unpack, NM_STATUS_UNPACK_CANCELLED)))
-	{
-	  assert(nm_status_test(*pp_unpack, NM_STATUS_UNPACK_POSTED));
-	  nm_core_unpack_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-	  nm_data_pkt_unpack(&(*pp_unpack)->data, h, p_pw, chunk_offset, chunk_len);
-	  nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
-	}
+      assert(nm_status_test(*pp_unpack, NM_STATUS_UNPACK_POSTED));
+      nm_core_unpack_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
+      nm_data_pkt_unpack(&(*pp_unpack)->data, h, p_pw, chunk_offset, chunk_len);
+      nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
     }
   else
     {
@@ -722,16 +754,13 @@ static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
 {
   const nm_len_t chunk_len = h->len;
   const nm_len_t chunk_offset = 0;
-  if(*pp_unpack)
+  if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack))
     {
-      if(!nm_status_test(*pp_unpack, NM_STATUS_UNPACK_CANCELLED))
-	{
-	  const nm_proto_t flags = NM_PROTO_FLAG_LASTCHUNK;
-	  const void*ptr = ((void*)h) + NM_HEADER_SHORT_DATA_SIZE;
-	  nm_core_unpack_flags_decode(*pp_unpack, flags, chunk_offset, chunk_len);
-	  nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
-	  nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
-	}
+      const nm_proto_t flags = NM_PROTO_FLAG_LASTCHUNK;
+      const void*ptr = ((void*)h) + NM_HEADER_SHORT_DATA_SIZE;
+      nm_core_unpack_flags_decode(*pp_unpack, flags, chunk_offset, chunk_len);
+      nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
+      nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
     }
   else
     {
@@ -750,14 +779,11 @@ static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
   assert(ptr + h->len <= p_pw->v->iov_base + p_pw->v->iov_len);
   const nm_len_t chunk_len = h->len;
   const nm_len_t chunk_offset = h->chunk_offset;
-  if(*pp_unpack)
+  if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack))
     {
-      if(!nm_status_test(*pp_unpack, NM_STATUS_UNPACK_CANCELLED))
-	{
-	  nm_core_unpack_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
-	  nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
-	  nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
-	}
+      nm_core_unpack_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
+      nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
+      nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
     }
   else
     {
@@ -773,7 +799,7 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
 {
   const nm_len_t chunk_len = h->len;
   const nm_len_t chunk_offset = h->chunk_offset;
-  if(p_unpack)
+  if(nm_core_unpack_ready_to_receive(p_core, p_unpack))
     {
       assert(p_unpack->p_gate != NULL);
       assert(!nm_data_isnull(&p_unpack->data));

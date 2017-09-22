@@ -135,6 +135,8 @@ typedef uint8_t nm_proto_t;
 #define NM_STATUS_UNPACK_POSTED            ((nm_status_t)0x0080)
 /** ack received for the given pack */
 #define NM_STATUS_ACK_RECEIVED             ((nm_status_t)0x0100)
+/** data arrived, not unpacked yet */
+#define NM_STATUS_UNPACK_DATA              ((nm_status_t)0x0200)
 /** request is finalized, may be freed */
 #define NM_STATUS_FINALIZED                ((nm_status_t)0x0400)
 

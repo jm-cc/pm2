@@ -352,9 +352,20 @@ void nm_core_unpack_init(struct nm_core*p_core, struct nm_req_s*p_unpack)
 
 void nm_core_unpack_data(struct nm_core*p_core, struct nm_req_s*p_unpack, const struct nm_data_s*p_data)
 {
-  nm_status_assert(p_unpack, NM_STATUS_UNPACK_INIT);
+  assert(p_unpack->unpack.expected_len == NM_LEN_UNDEFINED);
   p_unpack->data = *p_data;
   p_unpack->unpack.expected_len = nm_data_size(p_data);
+  if(nm_status_test(p_unpack, NM_STATUS_UNPACK_DATA))
+    {
+      nm_core_lock(p_core);
+      struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
+      while(p_unexpected)
+	{
+	  nm_core_unpack_unexpected(p_core, &p_unpack, p_unexpected);
+	  p_unexpected = p_unpack ? nm_unexpected_find_matching(p_core, p_unpack) : NULL;
+	}
+      nm_core_unlock(p_core);
+    }
 }
 
 static inline void nm_core_unpack_match(struct nm_core*p_core, struct nm_req_s*p_unpack,

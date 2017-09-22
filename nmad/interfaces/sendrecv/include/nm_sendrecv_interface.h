@@ -41,6 +41,8 @@ typedef enum
     NM_SR_EVENT_RECV_COMPLETED  = NM_STATUS_UNPACK_COMPLETED,
     /** a posted send has completed */
     NM_SR_EVENT_SEND_COMPLETED  = NM_STATUS_PACK_COMPLETED,
+    /** data arrived on a req posted without data spec */
+    NM_SR_EVENT_RECV_DATA       = NM_STATUS_UNPACK_DATA,
     /** recv operation was canceled */
     NM_SR_EVENT_RECV_CANCELLED  = NM_STATUS_UNPACK_CANCELLED,
     /** request finalized, may be freed by user */
@@ -65,7 +67,7 @@ typedef union
   struct
   {
     nm_sr_request_t*p_request;
-  } req; /**< field for req events NM_SR_EVENT_SEND_COMPLETED, RECV_COMPLETED, CANCELLED, FINALIZED */
+  } req; /**< field for req events NM_SR_EVENT_SEND_COMPLETED, RECV_DATA, RECV_COMPLETED, CANCELLED, FINALIZED */
 } nm_sr_event_info_t;
 
 /** notification function for sendrecv events. 

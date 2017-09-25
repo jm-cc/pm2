@@ -260,16 +260,17 @@ piom_topo_obj_t piom_topo_current_obj(void)
     if(update)
 	{
 	    int rc = hwloc_get_last_cpu_location(__piom_topology.topology, threadinfo->cpuset, HWLOC_CPUBIND_THREAD);
-	    if(rc != 0)
-		abort();
-	    threadinfo->obj = hwloc_get_obj_covering_cpuset(__piom_topology.topology, threadinfo->cpuset);
-	    while(threadinfo->obj != NULL && (threadinfo->obj->userdata == NULL))
+	    if(rc == 0)
 		{
-		    threadinfo->obj = threadinfo->obj->parent;
-		}	    
-	    if(threadinfo->obj == NULL)
-		abort();
-	    TBX_GET_TICK(threadinfo->timestamp);
+		    threadinfo->obj = hwloc_get_obj_covering_cpuset(__piom_topology.topology, threadinfo->cpuset);
+		    while(threadinfo->obj != NULL && (threadinfo->obj->userdata == NULL))
+			{
+			    threadinfo->obj = threadinfo->obj->parent;
+			}	    
+		    if(threadinfo->obj == NULL)
+			abort();
+		    TBX_GET_TICK(threadinfo->timestamp);
+		}
 	}
     return threadinfo->obj;
 }

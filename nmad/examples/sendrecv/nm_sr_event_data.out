@@ -1,0 +1,11 @@
+   buffer contents: 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+   buffer contents: hello, world
+:: event NM_SR_EVENT_FINALIZEDD- tag = 0; size = 131080; ref = (nil); from gate = peer
+:: event NM_SR_EVENT_FINALIZEDD- tag = 0; size = 21; ref = (nil); from gate = peer
+:: event NM_SR_EVENT_FINALIZEDD- tag = 0; size = 309; ref = (nil); from gate = peer
+:: event NM_SR_EVENT_FINALIZEDD- tag = 0; size = 8; ref = (nil); from gate = peer
+:: event NM_SR_EVENT_RECV_DATA- tag = 0; len = 0; from gate = peer
+:: event NM_SR_EVENT_RECV_DATA- tag = 0; len = 131072; from gate = peer
+:: event NM_SR_EVENT_RECV_DATA- tag = 0; len = 13; from gate = peer
+:: event NM_SR_EVENT_RECV_DATA- tag = 0; len = 301; from gate = peer
+:: received EOS; don't rearm req.

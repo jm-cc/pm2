@@ -716,8 +716,11 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_req_s*p_unpack)
   return rc;
 }
 
-/** checks whether an unpack request is ready to receive data */
-static inline int nm_core_unpack_ready_to_receive(struct nm_core*p_core, struct nm_req_s*p_unpack)
+/** checks whether an unpack request is ready to receive data, store chunk as unexpected otherwise */
+static inline int nm_core_unpack_ready_to_receive(struct nm_core*p_core, struct nm_req_s*p_unpack,
+						  nm_gate_t p_gate, const struct nm_header_generic_s*p_header,
+						  nm_len_t chunk_offset, nm_len_t chunk_len, nm_core_tag_t tag, nm_seq_t seq,
+						  struct nm_pkt_wrap_s*p_pw)
 {
   if((p_unpack != NULL) &&
      (!(nm_status_test(p_unpack, NM_STATUS_UNPACK_CANCELLED))) &&
@@ -725,7 +728,8 @@ static inline int nm_core_unpack_ready_to_receive(struct nm_core*p_core, struct 
     {
       return 1;
     }
-  else if((p_unpack != NULL) && (p_unpack->unpack.expected_len == NM_LEN_UNDEFINED))
+  nm_unexpected_store(p_core, p_gate, p_header, chunk_offset, chunk_len, tag, seq, p_pw);
+  if((p_unpack != NULL) && (p_unpack->unpack.expected_len == NM_LEN_UNDEFINED))
     {
       /* data spec still undefined- fire data event */
       const struct nm_core_event_s event =
@@ -745,16 +749,13 @@ static void nm_pkt_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struct 
 {
   const nm_len_t chunk_len = h->data_len;
   const nm_len_t chunk_offset = h->chunk_offset;
-  if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack))
+  if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack,
+				     p_gate, (void*)h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw))
     {
       assert(nm_status_test(*pp_unpack, NM_STATUS_UNPACK_POSTED));
       nm_core_unpack_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
       nm_data_pkt_unpack(&(*pp_unpack)->data, h, p_pw, chunk_offset, chunk_len);
       nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
-    }
-  else
-    {
-      nm_unexpected_store(p_core, p_gate, (void*)h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw);
     }
 }
 
@@ -765,17 +766,14 @@ static void nm_short_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
 {
   const nm_len_t chunk_len = h->len;
   const nm_len_t chunk_offset = 0;
-  if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack))
+  if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack,
+				     p_gate, (void*)h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw))
     {
       const nm_proto_t flags = NM_PROTO_FLAG_LASTCHUNK;
       const void*ptr = ((void*)h) + NM_HEADER_SHORT_DATA_SIZE;
       nm_core_unpack_flags_decode(*pp_unpack, flags, chunk_offset, chunk_len);
       nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
       nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
-    }
-  else
-    {
-      nm_unexpected_store(p_core, p_gate, (void*)h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw);
     }
 }
 
@@ -790,15 +788,12 @@ static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
   assert(ptr + h->len <= p_pw->v->iov_base + p_pw->v->iov_len);
   const nm_len_t chunk_len = h->len;
   const nm_len_t chunk_offset = h->chunk_offset;
-  if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack))
+  if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack,
+				     p_gate, (void*)h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw))
     {
       nm_core_unpack_flags_decode(*pp_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);
       nm_data_copy_to(&(*pp_unpack)->data, chunk_offset, chunk_len, ptr);
       nm_core_unpack_check_completion(p_core, p_pw, pp_unpack, chunk_len);
-    }
-  else
-    {
-      nm_unexpected_store(p_core, p_gate, (void*)h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw);
     }
 }
 
@@ -810,7 +805,8 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
 {
   const nm_len_t chunk_len = h->len;
   const nm_len_t chunk_offset = h->chunk_offset;
-  if(nm_core_unpack_ready_to_receive(p_core, p_unpack))
+  if(nm_core_unpack_ready_to_receive(p_core, p_unpack,
+				     p_gate, (void*)h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw))
     {
       assert(p_unpack->p_gate != NULL);
       assert(!nm_data_isnull(&p_unpack->data));
@@ -822,10 +818,6 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
       p_large_pw->p_data       = &p_unpack->data;
       p_large_pw->p_gate       = p_gate;
       nm_pkt_wrap_list_push_back(&p_gate->pending_large_recv, p_large_pw);
-    }
-  else
-    {
-      nm_unexpected_store(p_core, p_gate, (void*)h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw);
     }
 }
 

@@ -788,16 +788,6 @@ static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
   const void*ptr = (h->skip == 0xFFFF) ? (((void*)h) + NM_HEADER_DATA_SIZE) :
     p_pw->v[0].iov_base + (h->skip + nm_header_global_v0len(p_pw));
   assert(p_pw->v_nb == 1);
-  if(p_pw->flags & NM_PW_BUF_MIRROR)
-    {
-      assert(ptr >= ((void*)&p_pw->buf));
-      assert(ptr + h->len <= ((void*)&p_pw->buf) + p_pw->v->iov_len);
-    }
-  else
-    {
-      assert(ptr >= p_pw->v->iov_base);
-      assert(ptr + h->len <= p_pw->v->iov_base + p_pw->v->iov_len);
-    }
   const nm_len_t chunk_len = h->len;
   const nm_len_t chunk_offset = h->chunk_offset;
   if(nm_core_unpack_ready_to_receive(p_core, *pp_unpack,

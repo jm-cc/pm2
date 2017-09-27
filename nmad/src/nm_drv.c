@@ -146,8 +146,14 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	    p_drv->driver->cancel_recv(NULL);
 #ifndef PIOMAN
 	  nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
-#endif /* PIOMAN */
 	  nm_pkt_wrap_list_push_back(pending_pw, p_pw);
+#else
+	  int rc = piom_ltask_cancel_request(&p_pw->ltask);
+	  if(rc == 0)
+	    {
+	      nm_pkt_wrap_list_push_back(pending_pw, p_pw);
+	    }
+#endif /* PIOMAN */
 	}
     }
   
@@ -169,15 +175,21 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	      
 #ifndef PIOMAN
 	      nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
-#endif
 	      nm_pkt_wrap_list_push_back(pending_pw, p_pw);
+#else
+	      int rc = piom_ltask_cancel_request(&p_pw->ltask);
+	      if(rc == 0)
+		{
+		  nm_pkt_wrap_list_push_back(pending_pw, p_pw);
+		}
+#endif
 	    }
 	  p_trk->p_pw_recv= NULL;
 	}
     }
     
   /* cancel ltasks with core unlocked */
-  nm_core_unlock(p_core);
+  nm_core_unlock(p_core); 
   struct nm_pkt_wrap_s*p_pw = NULL;
   do
     {
@@ -185,7 +197,7 @@ void nm_core_driver_flush(struct nm_core*p_core)
       if(p_pw)
 	{
 #ifdef PIOMAN
-	  piom_ltask_cancel(&p_pw->ltask);
+	  piom_ltask_cancel_wait(&p_pw->ltask);
 #endif
 	  nm_pw_ref_dec(p_pw);
 	}

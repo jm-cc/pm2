@@ -238,6 +238,14 @@ extern void piom_ltask_mask(struct piom_ltask *ltask);
 /** re-enable a previously masked ltask */
 extern void piom_ltask_unmask(struct piom_ltask *ltask);
 
+/** asynchronously request task cancellation
+ * @return 1 if task already completed in-between; 0 otherwise
+ */
+int piom_ltask_cancel_request(struct piom_ltask*ltask);
+
+/** wait for cancellation completion */
+void piom_ltask_cancel_wait(struct piom_ltask*ltask);
+
 /** @} */
 
 #endif /* PIOM_LTASK_H */

@@ -416,19 +416,46 @@ void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int
     clock_gettime(CLOCK_MONOTONIC, &task->origin);
 }
 
-void piom_ltask_mask(struct piom_ltask *task)
+void piom_ltask_mask(struct piom_ltask*ltask)
 {
-    piom_ltask_state_unset(task, PIOM_LTASK_STATE_READY);
-    while(piom_ltask_state_test(task, PIOM_LTASK_STATE_SCHEDULED))
+    piom_ltask_state_unset(ltask, PIOM_LTASK_STATE_READY);
+    while(piom_ltask_state_test(ltask, PIOM_LTASK_STATE_SCHEDULED))
 	{
 	    sched_yield();
 	}
 }
 
-void piom_ltask_unmask(struct piom_ltask *task)
+void piom_ltask_unmask(struct piom_ltask*ltask)
 {
-    assert(piom_ltask_state_test(task, PIOM_LTASK_STATE_READY) == 0);
-    piom_ltask_state_set(task, PIOM_LTASK_STATE_READY);
+    assert(piom_ltask_state_test(ltask, PIOM_LTASK_STATE_READY) == 0);
+    piom_ltask_state_set(ltask, PIOM_LTASK_STATE_READY);
+}
+
+int piom_ltask_cancel_request(struct piom_ltask*ltask)
+{
+    if(ltask->state == PIOM_LTASK_STATE_NONE)
+	return;
+    piom_ltask_state_set(ltask, PIOM_LTASK_STATE_CANCELLED);
+    piom_ltask_state_unset(ltask, PIOM_LTASK_STATE_READY);
+    while(piom_ltask_state_test(ltask, PIOM_LTASK_STATE_SCHEDULED))
+	{
+	    sched_yield();
+	}
+    return !!(ltask->state & PIOM_LTASK_STATE_TERMINATED);
+}
+
+void piom_ltask_cancel_wait(struct piom_ltask*ltask)
+{
+    assert(ltask->state & PIOM_LTASK_STATE_CANCELLED);
+    struct piom_ltask_queue*queue = ltask->queue;
+    if(queue)
+	{
+	    while(!piom_ltask_state_test(ltask, PIOM_LTASK_STATE_TERMINATED))
+		{
+		    piom_ltask_queue_schedule(queue, 0);
+		}
+	}
+    ltask->state = PIOM_LTASK_STATE_TERMINATED;
 }
 
 void piom_ltask_cancel(struct piom_ltask*ltask)

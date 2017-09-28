@@ -221,6 +221,13 @@ static int nm_core_tag_indirect_eq(const void*_tag1, const void*_tag2)
 	puk_hashtable_insert(t->_h, key, e);				\
       }									\
     return e;								\
+  }									\
+  static inline void NAME##_delete(struct NAME##_table_s*t, ENTRY_TYPE*_e) \
+  {									\
+    struct NAME##_entry_s*entry = (void*)_e;				\
+    puk_hashtable_remove(t->_h, &entry->_tag);				\
+    NAME##_dtor(&entry->_data);						\
+    NAME##_entry_free(t->_allocator, entry);				\
   }
 
 #endif /* NM_TAGS_AS_INDIRECT_HASH */

@@ -59,6 +59,10 @@ PUK_LIST_TYPE(nm_prio_tag_chunk,
 	      struct nm_req_chunk_s*p_req_chunk;
 	      );
 
+PUK_ALLOCATOR_TYPE(nm_prio_tag_chunk, struct nm_prio_tag_chunk_s);
+
+static nm_prio_tag_chunk_allocator_t nm_prio_tag_chunk_allocator = NULL;
+
 /** per-tag strat prio status */
 struct nm_prio_tag_s
 {
@@ -92,6 +96,8 @@ static void*strat_prio_instantiate(puk_instance_t instance, puk_context_t contex
   p_status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
   nm_req_chunk_list_init(&p_status->req_chunk_list);
   nm_prio_tag_table_init(&p_status->tags);
+  if(nm_prio_tag_chunk_allocator == NULL)
+    nm_prio_tag_chunk_allocator = nm_prio_tag_chunk_allocator_new(16);
   return p_status;
 }
 
@@ -132,7 +138,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 	nm_req_chunk_list_push_front(&p_status->req_chunk_list, p_req_chunk);
       /* ** store req chunk in tag table */
       struct nm_prio_tag_s*p_prio_tag = nm_prio_tag_get(&p_status->tags, p_req_chunk->p_req->tag);
-      struct nm_prio_tag_chunk_s*p_prio_tag_chunk = nm_prio_tag_chunk_new(); /* TODO- fast allocator */
+      struct nm_prio_tag_chunk_s*p_prio_tag_chunk = nm_prio_tag_chunk_malloc(nm_prio_tag_chunk_allocator);
       p_prio_tag_chunk->p_req_chunk = p_req_chunk;
       nm_prio_tag_chunk_list_push_back(&p_prio_tag->chunks, p_prio_tag_chunk);
     }
@@ -177,7 +183,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 	    }
 	  assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
 	  nm_prio_tag_chunk_list_pop_front(&p_prio_tag->chunks);
-	  nm_prio_tag_chunk_delete(p_prio_tag_chunk); /* TODO- fast allocator */
+	  nm_prio_tag_chunk_free(nm_prio_tag_chunk_allocator, p_prio_tag_chunk);
 	  if(nm_prio_tag_chunk_list_empty(&p_prio_tag->chunks))
 	    {
 	      /* garbage-collect empty tags */

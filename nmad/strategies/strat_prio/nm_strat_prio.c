@@ -118,7 +118,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
   struct nm_core*p_core = p_drv->p_core;
   while(!nm_req_chunk_list_empty(&p_gate->req_chunk_list))
     {
-      /* ** store req chunks in priority list & tag table */
+      /* ** store req chunk in priority list */
       struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_pop_front(&p_gate->req_chunk_list);
       const int prio = p_req_chunk->p_req->pack.priority;
       nm_req_chunk_itor_t i = nm_req_chunk_list_rend(&p_status->req_chunk_list);
@@ -130,6 +130,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 	nm_req_chunk_list_insert_after(&p_status->req_chunk_list, i, p_req_chunk);
       else
 	nm_req_chunk_list_push_front(&p_status->req_chunk_list, p_req_chunk);
+      /* ** store req chunk in tag table */
       struct nm_prio_tag_s*p_prio_tag = nm_prio_tag_get(&p_status->tags, p_req_chunk->p_req->tag);
       struct nm_prio_tag_chunk_s*p_prio_tag_chunk = nm_prio_tag_chunk_new(); /* TODO- fast allocator */
       p_prio_tag_chunk->p_req_chunk = p_req_chunk;
@@ -168,22 +169,19 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 	      /* post short data on trk #0 */
 	      nm_req_chunk_list_remove(&p_status->req_chunk_list, p_req_chunk);
 	      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_CHUNK_FLAG_USE_COPY);
-	      assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
-	      nm_prio_tag_chunk_list_pop_front(&p_prio_tag->chunks);
-	      nm_prio_tag_chunk_delete(p_prio_tag_chunk); /* TODO- fast allocator */
-	      if(nm_prio_tag_chunk_list_empty(&p_prio_tag->chunks))
-		{
-		  /* gargabe-collect empty tags */
-		  nm_prio_tag_delete(&p_status->tags, p_prio_tag);
-		}
 	    }
 	  else
 	    {
 	      /* post RDV for large data */
-
-	      abort(); /* TODO- fix nm_tactic_pack_rdv */
-
-	      nm_tactic_pack_rdv(p_gate, p_drv, p_req_chunk, p_pw);
+	      nm_tactic_pack_rdv(p_gate, p_drv, &p_status->req_chunk_list, p_req_chunk, p_pw);
+	    }
+	  assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
+	  nm_prio_tag_chunk_list_pop_front(&p_prio_tag->chunks);
+	  nm_prio_tag_chunk_delete(p_prio_tag_chunk); /* TODO- fast allocator */
+	  if(nm_prio_tag_chunk_list_empty(&p_prio_tag->chunks))
+	    {
+	      /* garbage-collect empty tags */
+	      nm_prio_tag_delete(&p_status->tags, p_prio_tag);
 	    }
 	}
       nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);

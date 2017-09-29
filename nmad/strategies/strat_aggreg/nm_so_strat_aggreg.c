@@ -165,7 +165,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 	      else
 		{
 		  /* ** large send */
-		  int rc = nm_tactic_pack_rdv(p_gate, p_drv, p_req_chunk, p_pw);
+		  int rc = nm_tactic_pack_rdv(p_gate, p_drv, &p_gate->req_chunk_list, p_req_chunk, p_pw);
 		  if(rc)
 		    {
 		      goto post_send;

@@ -312,7 +312,7 @@ struct nm_req_s
       nm_len_t done;            /**< cumulated length of data sent so far */
       nm_len_t hlen;            /**< length of header to send eagerly */
       int priority;             /**< request priority level */
-      uint32_t checksum;
+      uint32_t checksum;        /**< data checkusm when pack was submitted- for debug only */
     } pack;
     struct
     {

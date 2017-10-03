@@ -107,6 +107,14 @@ struct nm_strat_prio_s
   int nm_copy_on_send_threshold;
 };
 
+/** compute hashkey for given priority */
+static inline void*nm_strat_prio_hashkey(int prio)
+{
+  assert(prio >= 0);
+  const uintptr_t hprio = 1 + (uintptr_t)prio;
+  return (void*)hprio;
+}
+
 /** Initialize the gate storage for prio strategy.
  */
 static void*strat_prio_instantiate(puk_instance_t instance, puk_context_t context)
@@ -150,13 +158,13 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
     {
       struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_pop_front(&p_gate->req_chunk_list);
       const int prio = p_req_chunk->p_req->pack.priority;
-      struct nm_prio_queue_s*p_prio_queue = puk_hashtable_lookup(p_status->queues_by_prio, puk_long2ptr(1+prio));
+      struct nm_prio_queue_s*p_prio_queue = puk_hashtable_lookup(p_status->queues_by_prio, nm_strat_prio_hashkey(prio));
       if(p_prio_queue == NULL)
 	{
 	  /* create new priority queue for the given level */
 	  p_prio_queue = nm_prio_queue_malloc(nm_prio_queue_allocator);
 	  nm_prio_queue_prio_list_insert(&p_status->prio_queues, prio, p_prio_queue);
-	  puk_hashtable_insert(p_status->queues_by_prio, puk_long2ptr(1+prio), p_prio_queue);
+	  puk_hashtable_insert(p_status->queues_by_prio, nm_strat_prio_hashkey(prio), p_prio_queue);
 	}
       struct nm_prio_chunk_s*p_prio_chunk = nm_prio_chunk_malloc(nm_prio_chunk_allocator);
       p_prio_chunk->p_req_chunk = p_req_chunk;
@@ -171,8 +179,8 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
     {
       nm_prio_queue_prio_list_pop(&p_status->prio_queues);
       nm_prio_queue_chunk_list_destroy(&p_prio_queue->chunks);
+      puk_hashtable_remove(p_status->queues_by_prio, nm_strat_prio_hashkey(nm_prio_queue_prio_cell_get_prio(p_prio_queue)));
       nm_prio_queue_free(nm_prio_queue_allocator, p_prio_queue);
-      puk_hashtable_remove(p_status->queues_by_prio, puk_long2ptr(1+nm_prio_queue_prio_cell_get_prio(p_prio_queue)));
       p_prio_queue = nm_prio_queue_prio_list_top(&p_status->prio_queues);
     }
   /* ** issue a new packet */
@@ -204,7 +212,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 		 p_prio_tag_chunk->p_req_chunk->p_req->pack.priority)
 		{
 		  /* different priority- find the right queue */
-		  p_prio_queue = puk_hashtable_lookup(p_status->queues_by_prio, puk_long2ptr(1+p_prio_tag_chunk->p_req_chunk->p_req->pack.priority));
+		  p_prio_queue = puk_hashtable_lookup(p_status->queues_by_prio, nm_strat_prio_hashkey(p_prio_tag_chunk->p_req_chunk->p_req->pack.priority));
 		}
 	      p_prio_chunk = p_prio_tag_chunk;
 	      p_req_chunk = p_prio_tag_chunk->p_req_chunk;

@@ -163,6 +163,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 	{
 	  /* create new priority queue for the given level */
 	  p_prio_queue = nm_prio_queue_malloc(nm_prio_queue_allocator);
+	  nm_prio_queue_chunk_list_init(&p_prio_queue->chunks);
 	  nm_prio_queue_prio_list_insert(&p_status->prio_queues, prio, p_prio_queue);
 	  puk_hashtable_insert(p_status->queues_by_prio, nm_strat_prio_hashkey(prio), p_prio_queue);
 	}

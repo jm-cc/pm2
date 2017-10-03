@@ -52,7 +52,8 @@ static inline int nm_tactic_pack_rdv(nm_gate_t p_gate, nm_drv_t p_drv,
 {
   if(NM_HEADER_CTRL_SIZE < nm_pw_remaining_buf(p_pw))
     {
-      nm_req_chunk_list_remove(p_req_chunk_list, p_req_chunk);
+      if(p_req_chunk_list)
+	nm_req_chunk_list_remove(p_req_chunk_list, p_req_chunk);
       struct nm_req_s*p_pack = p_req_chunk->p_req;
       const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
       const nm_len_t density = p_props->size / p_props->blocks;

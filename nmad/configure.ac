@@ -344,7 +344,8 @@ AC_ARG_ENABLE(mpi,
 		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpicxx.madmpi])
 		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpif77.madmpi])
 		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpif90.madmpi])
-	        fi
+		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpiexec-nobind])
+		fi
 	      ],
 	      [
                 nmad_enable_mpi=no

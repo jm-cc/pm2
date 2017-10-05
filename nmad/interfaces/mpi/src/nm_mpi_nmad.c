@@ -30,9 +30,15 @@ void nm_mpi_nmad_dest(nm_session_t*p_session, nm_gate_t*p_gate, MPI_Comm comm, i
 }
 
 
-void nm_mpi_nmad_data(struct nm_data_s*p_data, void*ptr, MPI_Datatype datatype, int count)
+void nm_mpi_nmad_data_get(struct nm_data_s*p_data, void*ptr, MPI_Datatype datatype, int count)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   nm_mpi_data_build(p_data, ptr, p_datatype, count);
+  nm_mpi_datatype_ref_inc(p_datatype);
 }
 
+void nm_mpi_nmad_data_release(MPI_Datatype datatype)
+{
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  nm_mpi_datatype_ref_dec(p_datatype);
+}

@@ -1502,6 +1502,7 @@ int nm_mpi_datatype_ref_dec(nm_mpi_datatype_t*p_datatype)
 	}
       else
 	{
+	  NM_MPI_WARNING("trying to free internal datatype %d (%s).\n", p_datatype->id, p_datatype->name);
 	  return MPI_ERR_TYPE;
 	}
     }

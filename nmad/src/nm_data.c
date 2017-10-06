@@ -758,7 +758,7 @@ static void nm_data_checksum_apply(void*ptr, nm_len_t len, void*_context)
 }
 uint32_t nm_data_checksum(const struct nm_data_s*p_data)
 {
-  static struct tbx_checksum_s*p_checksum = NULL;
+  static const struct tbx_checksum_s*p_checksum = NULL;
   if(!p_checksum)
     p_checksum = tbx_checksum_get("fnv1a");
   struct nm_data_checksum_s context = { .csum = 0, .p_checksum = p_checksum };

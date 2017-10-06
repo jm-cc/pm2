@@ -92,7 +92,10 @@ static struct nm_sr_monitor_s nm_mpi_datatype_requests_monitor =
 
 /** store builtin datatypes */
 static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*name);
+/** free a dataype and release its refs */
 static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype);
+/** destroy a datatype, without updating refs (used for final cleanup) */
+static void nm_mpi_datatype_destroy(nm_mpi_datatype_t*p_datatype);
 static void nm_mpi_datatype_properties_compute(nm_mpi_datatype_t*p_datatype);
 static void nm_mpi_datatype_update_bounds(int blocklength, MPI_Aint displacement, nm_mpi_datatype_t*p_oldtype, nm_mpi_datatype_t*p_newtype);
 static void nm_mpi_datatype_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context);
@@ -257,7 +260,7 @@ void nm_mpi_datatype_exit(void)
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(MPI_COMM_WORLD);
   nm_session_t       p_session = nm_mpi_communicator_get_session(p_comm);
   nm_sr_session_monitor_remove(p_session, &nm_mpi_datatype_requests_monitor);
-  nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes, &nm_mpi_datatype_free);
+  nm_mpi_handle_datatype_finalize(&nm_mpi_datatypes, &nm_mpi_datatype_destroy);
   nm_mpi_datatype_hashtable_destroy();
   nm_mpi_datatype_exchange_hashtable_destroy();
 }
@@ -1512,31 +1515,67 @@ int nm_mpi_datatype_ref_dec(nm_mpi_datatype_t*p_datatype)
     }
 }
 
-static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
+static void nm_mpi_datatype_free_internal(nm_mpi_datatype_t*p_datatype, int ref_update)
 {
   switch(p_datatype->combiner)
     {
+    case MPI_COMBINER_DUP:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->DUP.p_old_type);
+      break;
+    case MPI_COMBINER_RESIZED:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->RESIZED.p_old_type);
+      break;
+    case MPI_COMBINER_CONTIGUOUS:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->CONTIGUOUS.p_old_type);
+      break;
+    case MPI_COMBINER_VECTOR:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->VECTOR.p_old_type);
+      break;
+    case MPI_COMBINER_HVECTOR:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->HVECTOR.p_old_type);
+      break;
     case MPI_COMBINER_INDEXED:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->INDEXED.p_old_type);
       if(p_datatype->INDEXED.p_map != NULL)
 	FREE_AND_SET_NULL(p_datatype->INDEXED.p_map);
       break;
     case MPI_COMBINER_HINDEXED:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->HINDEXED.p_old_type);
       if(p_datatype->HINDEXED.p_map != NULL)
 	FREE_AND_SET_NULL(p_datatype->HINDEXED.p_map);
       break;
     case MPI_COMBINER_INDEXED_BLOCK:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->INDEXED_BLOCK.p_old_type);
       if(p_datatype->INDEXED_BLOCK.array_of_displacements != NULL)
 	FREE_AND_SET_NULL(p_datatype->INDEXED_BLOCK.array_of_displacements);
       break;
     case MPI_COMBINER_HINDEXED_BLOCK:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->HINDEXED_BLOCK.p_old_type);
       if(p_datatype->HINDEXED_BLOCK.array_of_displacements != NULL)
 	FREE_AND_SET_NULL(p_datatype->HINDEXED_BLOCK.array_of_displacements);
       break;
     case MPI_COMBINER_SUBARRAY:
+      if(ref_update)
+	nm_mpi_datatype_ref_dec(p_datatype->SUBARRAY.p_old_type);
       if(p_datatype->SUBARRAY.p_dims != NULL)
 	FREE_AND_SET_NULL(p_datatype->SUBARRAY.p_dims);
       break;
     case MPI_COMBINER_STRUCT:
+      if(ref_update)
+	{
+	  int i;
+	  for(i = 0; i < p_datatype->count; i++)
+	    nm_mpi_datatype_ref_dec(p_datatype->STRUCT.p_map[i].p_old_type);
+	}	  
       if(p_datatype->STRUCT.p_map != NULL)
 	FREE_AND_SET_NULL(p_datatype->STRUCT.p_map);
       break;
@@ -1553,6 +1592,16 @@ static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
     }
   nm_mpi_attrs_destroy(p_datatype->id, &p_datatype->attrs);
   nm_mpi_handle_datatype_free(&nm_mpi_datatypes, p_datatype);
+}
+
+static void nm_mpi_datatype_free(nm_mpi_datatype_t*p_datatype)
+{
+  nm_mpi_datatype_free_internal(p_datatype, 1);
+}
+
+static void nm_mpi_datatype_destroy(nm_mpi_datatype_t*p_datatype)
+{
+  nm_mpi_datatype_free_internal(p_datatype, 0);
 }
 
 /** recursively call traversal function on all sub data; slow (regular) version

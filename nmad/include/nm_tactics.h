@@ -24,6 +24,43 @@ static inline nm_len_t nm_pw_remaining_buf(struct nm_pkt_wrap_s*p_pw)
   return p_pw->max_len - p_pw->length;
 }
 
+/** checks whether req_chunk is a SHORT chunk for optimized protocol */
+static inline int nm_tactic_req_is_short(const struct nm_req_chunk_s*p_req_chunk)
+{
+  return ( (p_req_chunk->chunk_offset == 0) &&
+	   (p_req_chunk->chunk_len < 255) &&
+	   (p_req_chunk->chunk_len == p_req_chunk->p_req->pack.len) &&
+	   (p_req_chunk->proto_flags == NM_PROTO_FLAG_LASTCHUNK) );
+}
+
+/** returns size in pw for the given short req_chunk */
+static inline nm_len_t nm_tactic_req_short_size(const struct nm_req_chunk_s*p_req_chunk)
+{
+  assert(nm_tactic_req_is_short(p_req_chunk));
+  return (NM_HEADER_SHORT_DATA_SIZE + p_req_chunk->chunk_len);
+}
+
+/** returns max size in pw for given data req_chunk-
+ * value is a upper bound, actual size may be lower */
+static inline nm_len_t nm_tactic_req_data_max_size(const struct nm_req_chunk_s*p_req_chunk)
+{
+  const nm_len_t chunk_len = p_req_chunk->chunk_len;
+  const struct nm_req_s*p_pack = p_req_chunk->p_req;
+  const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
+  const nm_len_t max_blocks = (p_props->blocks > chunk_len) ? chunk_len : p_props->blocks;
+  const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + max_blocks * sizeof(struct nm_header_pkt_data_chunk_s) + NM_ALIGN_FRONTIER;
+  return (max_header_len + chunk_len);
+}
+
+/** compute average block size */
+static inline nm_len_t nm_tactic_req_data_density(const struct nm_req_chunk_s*p_req_chunk)
+{
+  const struct nm_req_s*p_pack = p_req_chunk->p_req;
+  const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
+  const nm_len_t density = (p_props->blocks > 0) ? p_props->size / p_props->blocks : 0;
+  return density;
+}
+
 /** Try to pack a control chunk in a pw.
  * @return NM_ESUCCESS for success, -NM_EBUSY if pw full
  * @note function takes ownership of p_ctrl_chunk

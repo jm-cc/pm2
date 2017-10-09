@@ -142,18 +142,9 @@ static void strat_prio_destroy(void*_status)
   free(_status);
 }
 
-/** Compute and apply the best possible packet rearrangement, then
- *  return next packet to send.
- *
- *  @param p_gate a pointer to the gate object.
- */
-static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
+/** flush req chunks from list in gate to priority queues */
+static inline void strat_prio_flush_reqs(struct nm_strat_prio_s*p_status, nm_gate_t p_gate)
 {
-  struct nm_strat_prio_s*p_status = _status;
-  struct nm_trk_s*p_trk_small = &p_gate->trks[NM_TRK_SMALL];
-  struct nm_drv_s*p_drv = p_trk_small->p_drv;
-  struct nm_core*p_core = p_drv->p_core;
-  /* ** store req chunks in priority queues */
   while(!nm_req_chunk_list_empty(&p_gate->req_chunk_list))
     {
       struct nm_req_chunk_s*p_req_chunk = nm_req_chunk_list_pop_front(&p_gate->req_chunk_list);
@@ -174,6 +165,10 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
       struct nm_prio_tag_s*p_prio_tag = nm_prio_tag_get(&p_status->tags, p_req_chunk->p_req->tag);
       nm_prio_tag_chunk_list_push_back(&p_prio_tag->chunks, p_prio_chunk);
     }
+}
+
+static inline struct nm_prio_queue_s*strat_prio_queue_normalize(struct nm_strat_prio_s*p_status)
+{
   /* ** normalize prio queue- purge empty lists */
   struct nm_prio_queue_s*p_prio_queue = nm_prio_queue_prio_list_top(&p_status->prio_queues);
   while((p_prio_queue != NULL) && nm_prio_queue_chunk_list_empty(&p_prio_queue->chunks))
@@ -184,21 +179,62 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
       nm_prio_queue_free(nm_prio_queue_allocator, p_prio_queue);
       p_prio_queue = nm_prio_queue_prio_list_top(&p_status->prio_queues);
     }
+  return p_prio_queue;
+}
+
+/** dequeue a prio chunk from all queues */
+static inline void strat_prio_chunk_dequeue(struct nm_strat_prio_s*p_status,
+					    struct nm_prio_chunk_s*p_prio_chunk,
+					    struct nm_prio_queue_s*p_prio_queue,
+					    struct nm_prio_tag_s*p_prio_tag)
+{
+  nm_prio_queue_chunk_list_remove(&p_prio_queue->chunks, p_prio_chunk);
+  nm_prio_tag_chunk_list_pop_front(&p_prio_tag->chunks);
+  nm_prio_chunk_free(nm_prio_chunk_allocator, p_prio_chunk);
+  if(nm_prio_tag_chunk_list_empty(&p_prio_tag->chunks))
+    {
+      /* garbage-collect empty tags */
+      nm_prio_tag_delete(&p_status->tags, p_prio_tag);
+    }
+}
+					    
+
+/** Compute and apply the best possible packet rearrangement, then
+ *  return next packet to send.
+ *
+ *  @param p_gate a pointer to the gate object.
+ */
+static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
+{
+  struct nm_strat_prio_s*p_status = _status;
+  struct nm_trk_s*p_trk_small = &p_gate->trks[NM_TRK_SMALL];
+  struct nm_drv_s*p_drv = p_trk_small->p_drv;
+  struct nm_core*p_core = p_drv->p_core;
+
+  strat_prio_flush_reqs(p_status, p_gate);
+  
+  struct nm_prio_queue_s*p_prio_queue = strat_prio_queue_normalize(p_status);
+  
   /* ** issue a new packet */
   if((p_trk_small->p_pw_send == NULL) &&
-     !(nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list) &&
-       (p_prio_queue == NULL)))
+     ( (p_prio_queue != NULL) ||
+       (!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list)) ))
     {
       struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_global_header(p_core, p_trk_small);
-      if(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
+      /* ** pack control */
+      while(!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list))
 	{
-	  /* post ctrl on trk #0 */
+	  /* ** post ctrl on trk #0 */
 	  struct nm_ctrl_chunk_s*p_ctrl_chunk = nm_ctrl_chunk_list_begin(&p_gate->ctrl_chunk_list);
-	  int rc __attribute__((unused));
-	  rc = nm_tactic_pack_ctrl(p_gate, p_drv, p_ctrl_chunk, p_pw);
-	  assert(rc == NM_ESUCCESS);
+	  int rc = nm_tactic_pack_ctrl(p_gate, p_drv, p_ctrl_chunk, p_pw);
+	  if(rc)
+	    {
+	      /* don't even try to aggregate data if pw cannot even contain any ctrl header */
+	      goto post_send;
+	    }
 	}
-      else if(p_prio_queue != NULL)
+      /* ** pack data */
+      while(p_prio_queue != NULL)
 	{
 	  struct nm_prio_chunk_s*p_prio_chunk = nm_prio_queue_chunk_list_begin(&p_prio_queue->chunks);
 	  struct nm_req_chunk_s*p_req_chunk = p_prio_chunk->p_req_chunk;
@@ -217,30 +253,52 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 		}
 	      p_prio_chunk = p_prio_tag_chunk;
 	      p_req_chunk = p_prio_tag_chunk->p_req_chunk;
-	    }	  
-	  struct nm_req_s*p_pack = p_req_chunk->p_req;
-	  const struct nm_data_properties_s*p_props = nm_data_properties_get(&p_pack->data);
-	  const nm_len_t max_header_len = NM_HEADER_DATA_SIZE + p_props->blocks * sizeof(struct nm_header_pkt_data_chunk_s);
-	  if(p_req_chunk->chunk_len + max_header_len <= p_pw->max_len)
+	    }
+	  
+	  if(nm_tactic_req_is_short(p_req_chunk))
 	    {
-	      /* post short data on trk #0 */
-	      nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_CHUNK_FLAG_USE_COPY);
+	      /* ** short send */
+	      if(nm_tactic_req_short_size(p_req_chunk) <= nm_pw_remaining_buf(p_pw))
+		{
+		  strat_prio_chunk_dequeue(p_status, p_prio_chunk, p_prio_queue, p_prio_tag);
+		  nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_CHUNK_FLAG_SHORT);
+		}
+	      else
+		{
+		  goto post_send;
+		}
+	    }
+	  else if(nm_tactic_req_data_max_size(p_req_chunk) < p_pw->max_len)
+	    {
+	      /* ** small data- post on trk #0 */
+	      if(nm_tactic_req_data_max_size(p_req_chunk) < nm_pw_remaining_buf(p_pw))
+		{
+		  strat_prio_chunk_dequeue(p_status, p_prio_chunk, p_prio_queue, p_prio_tag);
+		  nm_pw_add_req_chunk(p_pw, p_req_chunk, NM_REQ_CHUNK_FLAG_NONE);
+		}
+	      else
+		{
+		  goto post_send;
+		}
 	    }
 	  else
 	    {
-	      /* post RDV for large data */
-	      nm_tactic_pack_rdv(p_gate, p_drv, NULL, p_req_chunk, p_pw);
+	      /* ** large data- post RDV */
+	      int rc = nm_tactic_pack_rdv(p_gate, p_drv, NULL, p_req_chunk, p_pw);
+	      if(rc == NM_ESUCCESS)
+		{
+		  strat_prio_chunk_dequeue(p_status, p_prio_chunk, p_prio_queue, p_prio_tag);
+		}
+	      else
+		{
+		  goto post_send;
+		}
 	    }
-	  assert(p_pw->length <= NM_SO_MAX_UNEXPECTED);
-	  nm_prio_queue_chunk_list_remove(&p_prio_queue->chunks, p_prio_chunk);
-	  nm_prio_tag_chunk_list_pop_front(&p_prio_tag->chunks);
-	  nm_prio_chunk_free(nm_prio_chunk_allocator, p_prio_chunk);
-	  if(nm_prio_tag_chunk_list_empty(&p_prio_tag->chunks))
-	    {
-	      /* garbage-collect empty tags */
-	      nm_prio_tag_delete(&p_status->tags, p_prio_tag);
-	    }
+	  assert(p_pw->length <= p_pw->max_len);
+	  p_prio_queue = strat_prio_queue_normalize(p_status);
 	}
+    post_send:
+      assert(p_pw->length <= p_pw->max_len);
       nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
     }
 }

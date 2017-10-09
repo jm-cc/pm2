@@ -398,6 +398,7 @@ void nm_pw_add_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
   nm_req_chunk_list_push_back(&p_pw->req_chunks, p_req_chunk);
   if(!(req_chunk_flags & NM_REQ_CHUNK_FLAG_BUF_SEND))
     nm_pw_pack_req_chunk(p_pw, p_req_chunk, req_chunk_flags);
+  assert(p_pw->length <= p_pw->max_len);
 }
 
 

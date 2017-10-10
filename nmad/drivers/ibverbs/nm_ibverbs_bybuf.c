@@ -281,6 +281,7 @@ static void nm_ibverbs_bybuf_buf_send_post(void*_status, nm_len_t len)
 {
   struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
   bybuf->send.chunk_len = len;
+  assert(len <= NM_IBVERBS_BYBUF_DATA_SIZE);
 }
 static int nm_ibverbs_bybuf_send_poll(void*_status)
 {
@@ -308,9 +309,13 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
   assert(bybuf->cnx->pending.wrids[NM_IBVERBS_WRID_RDMA] == 0);
 
   /* 3- prepare and send packet */
+  const nm_len_t offset0 = NM_IBVERBS_BYBUF_DATA_SIZE - bybuf->send.chunk_len;
   const nm_len_t padding = (nm_ibverbs_alignment > 0 &&  bybuf->send.chunk_len >= 1024) ?
-    (nm_ibverbs_alignment - ((bybuf->send.chunk_len + sizeof(struct nm_ibverbs_bybuf_header_s)) % nm_ibverbs_alignment)) : 0 ;
-  const nm_len_t offset = NM_IBVERBS_BYBUF_DATA_SIZE - bybuf->send.chunk_len - padding;
+    (offset0 % nm_ibverbs_alignment) : 0 ;
+  assert((nm_ibverbs_alignment == 0) || (padding < nm_ibverbs_alignment));
+  const nm_len_t offset = offset0 - padding;
+  assert(offset >= 0);
+  assert(offset <= NM_IBVERBS_BYBUF_DATA_SIZE);
   void*p_packet = &bybuf->buffer.sbuf;
   struct nm_ibverbs_bybuf_header_s*p_header = p_packet + bybuf->send.chunk_len + padding;
   assert(bybuf->send.chunk_len <= NM_IBVERBS_BYBUF_DATA_SIZE);
@@ -334,6 +339,7 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
     {
       goto wouldblock;
     }
+  assert(bybuf->send.done <= bybuf->send.chunk_len);
   bybuf->send.done = NM_LEN_UNDEFINED;
   bybuf->send.chunk_len = NM_LEN_UNDEFINED;
   return NM_ESUCCESS;
@@ -352,6 +358,8 @@ static int nm_ibverbs_bybuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t
       assert((packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
       assert(bybuf->recv.buf == NULL);
       const int offset = packet->header.offset;
+      assert(offset >= 0);
+      assert(offset <= NM_IBVERBS_BYBUF_DATA_SIZE);
       const int packet_size = NM_IBVERBS_BYBUF_DATA_SIZE - offset;
       *p_buffer = &packet->data[offset];
       *p_len = packet_size;

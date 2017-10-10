@@ -268,7 +268,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 		  goto post_send;
 		}
 	    }
-	  else if(nm_tactic_req_data_max_size(p_req_chunk) < p_pw->max_len)
+	  else if(nm_tactic_req_data_max_size(p_req_chunk) + sizeof(struct nm_header_global_s) < p_pw->max_len)
 	    {
 	      /* ** small data- post on trk #0 */
 	      if(nm_tactic_req_data_max_size(p_req_chunk) < nm_pw_remaining_buf(p_pw))

@@ -132,7 +132,7 @@ static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 		  goto post_send;
 		}
 	    }
-	  else if(nm_tactic_req_data_max_size(p_req_chunk) < max_small)
+	  else if(nm_tactic_req_data_max_size(p_req_chunk) + sizeof(struct nm_header_global_s) < max_small)
 	    {
 	      /* ** small send */
 	      if(nm_tactic_req_data_max_size(p_req_chunk) < nm_pw_remaining_buf(p_pw))

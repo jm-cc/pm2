@@ -299,6 +299,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
 	}
     post_send:
       assert(p_pw->length <= p_pw->max_len);
+      assert(p_pw->length > sizeof(struct nm_header_global_s));
       nm_core_post_send(p_pw, p_gate, NM_TRK_SMALL);
     }
 }

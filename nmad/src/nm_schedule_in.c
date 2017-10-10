@@ -90,8 +90,11 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 	  err = (*r->driver->buf_recv_poll)(r->_status, &buf, &len);
 	  if(err == NM_ESUCCESS)
 	    {
+	      assert(len != NM_LEN_UNDEFINED);
+	      assert(len <= p_pw->max_len);
 	      p_pw->v[0].iov_base = buf;
 	      p_pw->v[0].iov_len = len;
+	      p_pw->length = len;
 	    }
 	}
       else

@@ -30,6 +30,8 @@ struct rpc_flood_header_s
   nm_len_t len;
 } __attribute__((packed));
 
+static volatile long received = 0;
+
 #define MAX_REQS   40000
 #define ITERATIONS 5
 
@@ -37,6 +39,7 @@ static void rpc_flood_handler(nm_rpc_token_t p_token)
 {
   const struct rpc_flood_header_s*p_header = nm_rpc_get_header(p_token);
   const nm_len_t rlen = p_header->len;
+  assert(rlen == strlen(msg) + 1);
   char*buf = malloc(rlen);
   memset(buf, 0, rlen);
   nm_rpc_token_set_ref(p_token, buf);
@@ -54,6 +57,7 @@ static void rpc_flood_finalizer(nm_rpc_token_t p_token)
       abort();
     }
   free(buf);
+  __sync_fetch_and_add(&received, 1);
 }
 
 static int comp_double(const void*_a, const void*_b)
@@ -108,6 +112,10 @@ int main(int argc, char**argv)
       nm_coll_barrier(p_comm, 0xF2);
       for(k = 0; k < iterations; k++)
 	{
+	  nm_coll_barrier(p_comm, 0xF1);
+          received = 0;
+          __sync_synchronize();
+	  nm_coll_barrier(p_comm, 0xF3);
 	  TBX_GET_TICK(t1);
 	  int i;
 	  for(i = 0; i < burst; i++)
@@ -118,8 +126,10 @@ int main(int argc, char**argv)
 	    {
 	      nm_rpc_req_wait(reqs[i]);
 	    }
-	  nm_coll_barrier(p_comm, 0xF2);
+          while(received != burst)
+            nm_sr_progress(p_session);
 	  TBX_GET_TICK(t2);
+	  nm_coll_barrier(p_comm, 0xF2);
 	  const double delay = TBX_TIMING_DELAY(t1, t2);
 	  const double t = delay / burst;
 	  lats[k] = t;

@@ -30,6 +30,7 @@
 #include <nm_session_interface.h>
 #include <nm_core_interface.h>
 #include <sys/uio.h>
+#include <limits.h>
 
 
 /** events for nm_sr_monitor() */
@@ -150,6 +151,12 @@ static inline int  nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_re
 static inline int nm_sr_send_dest(nm_session_t p_session, nm_sr_request_t*p_request,
 				  nm_gate_t p_gate, nm_tag_t tag);
 static inline void nm_sr_send_set_priority(nm_session_t p_session, nm_sr_request_t*p_request, int priority);
+
+/** minimum priority level */
+#define NM_SR_PRIORITY_MIN 0
+/** maximum priority level */
+#define NM_SR_PRIORITY_MAX INT_MAX
+
 static inline int nm_sr_send_header(nm_session_t p_session, nm_sr_request_t*p_request, nm_len_t hlen);
 static inline int nm_sr_send_submit(nm_session_t p_session, nm_sr_request_t*p_request);
 

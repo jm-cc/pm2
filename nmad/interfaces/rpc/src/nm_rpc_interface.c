@@ -24,10 +24,8 @@
 /* ********************************************************* */
 
 PUK_ALLOCATOR_TYPE(nm_rpc_req, struct nm_rpc_req_s);
-PUK_ALLOCATOR_TYPE(nm_rpc_token, struct nm_rpc_token_s);
 
 static nm_rpc_req_allocator_t nm_rpc_req_allocator = NULL;
-static nm_rpc_token_allocator_t nm_rpc_token_allocator = NULL;
 
 static inline nm_rpc_req_t nm_rpc_req_new(void)
 {
@@ -39,6 +37,9 @@ void nm_rpc_req_delete(nm_rpc_req_t p_rpc_req)
 {
   nm_rpc_req_free(nm_rpc_req_allocator, p_rpc_req);
 }
+
+static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref);
+
 
 /* ********************************************************* */
 
@@ -110,40 +111,41 @@ void nm_rpc_req_set_notifier(nm_rpc_req_t p_req, nm_rpc_req_notifier_t p_notifie
   nm_sr_request_monitor(p_req->request.p_session, &p_req->request, NM_SR_EVENT_FINALIZED, &nm_rpc_req_notifier);
 }
 
-static void nm_rpc_finalizer(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
+static inline void nm_rpc_req_reload(nm_rpc_service_t p_service)
 {
-  struct nm_rpc_token_s*p_token = _ref;
-  (*p_token->p_service->p_finalizer)(p_token);
-  nm_rpc_token_free(nm_rpc_token_allocator, p_token);
-}
-
-static void nm_rpc_core_event_handler(const struct nm_core_event_s*const p_event, void*_ref)
-{
-  struct nm_rpc_service_s*p_service = _ref;
-  assert(p_event->status == NM_STATUS_UNEXPECTED);
-
-  
+  p_service->token.p_service = p_service;
+  nm_sr_recv_init(p_service->p_session, &p_service->token.request);
+  nm_sr_request_set_ref(&p_service->token.request, &p_service->token);
+  nm_sr_request_monitor(p_service->p_session, &p_service->token.request,
+                        NM_SR_EVENT_FINALIZED | NM_SR_EVENT_RECV_DATA | NM_SR_EVENT_RECV_CANCELLED, &nm_rpc_handler);
+  nm_sr_recv_irecv(p_service->p_session, &p_service->token.request, NM_ANY_GATE, p_service->tag, p_service->tag_mask);
 }
 
 static void nm_rpc_handler(nm_sr_event_t event, const nm_sr_event_info_t*p_info, void*_ref)
 {
-  assert(event & NM_SR_EVENT_RECV_UNEXPECTED);
-  nm_session_t p_session = p_info->recv_unexpected.p_session;
-  struct nm_rpc_service_s*p_service = _ref;
-  struct nm_rpc_token_s*p_token = nm_rpc_token_malloc(nm_rpc_token_allocator);
-  p_token->p_service = p_service;
-  p_token->ref = NULL;
-  nm_data_null_build(&p_token->body);
-  nm_sr_recv_init(p_session, &p_token->request);
-  nm_sr_recv_match_event(p_session, &p_token->request, p_info);
-  int rc = nm_sr_recv_peek(p_session, &p_token->request, &p_service->header);
-  if(rc != NM_ESUCCESS)
+  struct nm_rpc_token_s*p_token = _ref;
+  nm_rpc_service_t p_service = p_token->p_service;
+  assert(! ((event & NM_SR_EVENT_FINALIZED) &&
+            (event & NM_SR_EVENT_RECV_DATA)));
+  if(!(event & NM_SR_EVENT_RECV_CANCELLED))
     {
-      NM_FATAL("# nm_rpc: rc = %d in nm_sr_recv_peek()\n", rc);
+      if(event & NM_SR_EVENT_FINALIZED)
+        {
+          (*p_service->p_finalizer)(p_token);
+          nm_rpc_req_reload(p_service);
+        }
+      if(event & NM_SR_EVENT_RECV_DATA)
+        {
+          p_token->ref = NULL;
+          nm_data_null_build(&p_token->body);
+          int rc = nm_sr_recv_peek(p_service->p_session, &p_token->request, &p_service->header);
+          if(rc != NM_ESUCCESS)
+            {
+              NM_FATAL("# nm_rpc: rc = %d in nm_sr_recv_peek()\n", rc);
+            }
+          (*p_service->p_handler)(p_token);
+        }
     }
-  nm_sr_request_set_ref(&p_token->request, p_token);
-  nm_sr_request_monitor(p_session, &p_token->request, NM_STATUS_FINALIZED, &nm_rpc_finalizer);
-  (*p_service->p_handler)(p_token);
 }
 
 nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t tag_mask, nm_len_t hlen,
@@ -157,32 +159,21 @@ nm_rpc_service_t nm_rpc_register(nm_session_t p_session, nm_tag_t tag, nm_tag_t 
   p_service->ref         = ref;
   p_service->hlen        = hlen;
   p_service->header_ptr  = malloc(hlen);
-  p_service->monitor     = (struct nm_sr_monitor_s)
-    {
-      .p_notifier = &nm_rpc_handler,
-      .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
-      .p_gate     = NM_GATE_NONE,
-      .tag        = tag,
-      .tag_mask   = tag_mask,
-      .ref        = p_service
-    };
+  p_service->tag         = tag;
+  p_service->tag_mask    = tag_mask;
   nm_data_contiguous_build(&p_service->header, p_service->header_ptr, p_service->hlen);
   if(nm_rpc_req_allocator == NULL)
     {
       nm_rpc_req_allocator = nm_rpc_req_allocator_new(8);
     }
-  if(nm_rpc_token_allocator == NULL)
-    {
-      nm_rpc_token_allocator = nm_rpc_token_allocator_new(8);
-    }
-  nm_sr_session_monitor_set(p_session, &p_service->monitor);
+  nm_rpc_req_reload(p_service);
   return p_service;
 }
 
 void nm_rpc_unregister(nm_rpc_service_t p_service)
 {
   nm_sr_flush(p_service->p_session);
-  nm_sr_session_monitor_remove(p_service->p_session, &p_service->monitor);
+  nm_sr_rcancel(p_service->p_session, &p_service->token.request);
   free(p_service->header_ptr);
   free(p_service);
 }

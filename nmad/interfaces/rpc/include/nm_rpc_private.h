@@ -44,14 +44,16 @@ struct nm_rpc_token_s
 /** descriptor for a registered RPC service */
 struct nm_rpc_service_s
 {
-  struct nm_sr_monitor_s monitor;     /**< the monitor triggered by UNEXPECTED events */
+  struct nm_rpc_token_s token;        /**< token given to rpc handlers */
+  nm_tag_t tag;                       /**< tag(s) to listen to for this service */
+  nm_tag_t tag_mask;                  /**< tag mask to apply to above tag */
   nm_rpc_handler_t p_handler;         /**< user-supplied function, called upon header arrival */
   nm_rpc_finalizer_t p_finalizer;     /**< user-supplied function, called upon data body arrival */
   nm_session_t p_session;             /**< session used to send/recv requests */
-  struct nm_data_s header;
-  void*header_ptr;
-  nm_len_t hlen;
-  void*ref;
+  struct nm_data_s header;            /**< pre-built type for header recv */
+  void*header_ptr;                    /**< pre-allocated memory for header recv */
+  nm_len_t hlen;                      /**< header length */
+  void*ref;                           /**< user-supplied ref for the service */
 };
 
 /** @internal data constructor for the compound rpc data type (header + body) */
@@ -128,9 +130,7 @@ static inline void nm_rpc_irecv_data(struct nm_rpc_token_s*p_token, struct nm_da
   p_token->body = *p_body;
   nm_rpc_data_build(&p_token->rpc_data, p_token->p_service->header_ptr, p_token->p_service->hlen, &p_token->body);
   nm_sr_recv_unpack_data(p_token->p_service->p_session, &p_token->request, &p_token->rpc_data);
-  nm_sr_recv_post(p_token->p_service->p_session, &p_token->request);
 }
-
 
 
 #endif /* NM_RPC_PRIVATE_H */

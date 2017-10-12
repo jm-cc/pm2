@@ -167,12 +167,15 @@ void nm_gate_ref_set(nm_gate_t p_gate, void*ref);
 /* 8 bits, contained in flat array  */
 #if defined(NM_TAGS_AS_FLAT_ARRAY)
 typedef uint8_t nm_tag_t;
+#define NM_TAG_MAX UINT8_MAX
 #elif defined(NM_TAGS_AS_HASHTABLE)
 /* 32 bits, contained in hashtable */
 typedef uint32_t nm_tag_t;
+#define NM_TAG_MAX UINT32_MAX
 #elif defined(NM_TAGS_AS_INDIRECT_HASH)
 /* 64 bits, contained in indirect hashtable */
-typedef uint64_t nm_tag_t; 
+typedef uint64_t nm_tag_t;
+#define NM_TAG_MAX UINT64_MAX
 #else
 #  error NewMad: no container type defined for tag-indexed tables
 #endif

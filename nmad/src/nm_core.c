@@ -194,6 +194,29 @@ void nm_core_events_dispatch(struct nm_core*p_core)
     }
 }
 
+static inline void nm_core_dispatching_event_enqueue(struct nm_core*p_core, const struct nm_core_event_s*const p_event,
+                                                     struct nm_monitor_s*p_monitor)
+{
+  nm_core_lock_assert(p_core);
+  struct nm_core_dispatching_event_s*p_dispatching_event =
+    nm_core_dispatching_event_malloc(&p_core->dispatching_event_allocator);
+  p_dispatching_event->event = *p_event;
+  p_dispatching_event->p_monitor = p_monitor;
+  int rc = 0;
+  do
+    {
+      rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
+      if(rc)
+        {
+          nm_profile_inc(p_core->profiling.n_event_queue_full);
+          nm_core_unlock(p_core);
+          nm_core_events_dispatch(p_core);
+          nm_core_lock(p_core);
+        }
+    }
+  while(rc);
+}
+
 /** dispatch a global event that matches the given monitor */
 static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*const p_event, struct nm_core_monitor_s*p_core_monitor)
 {
@@ -207,24 +230,9 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 	{
 	  /* next packet in sequence; commit matching and enqueue for dispatch */
 	  p_so_tag->recv_seq_number = next_seq;
-	  struct nm_core_dispatching_event_s*p_dispatching_event =
-	    nm_core_dispatching_event_malloc(&p_core->dispatching_event_allocator);
-	  p_dispatching_event->event = *p_event;
-	  p_dispatching_event->p_monitor = &p_core_monitor->monitor;
-	  int rc = 0;
-	  do
-	    {
-	      rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
-	      if(rc)
-		{
-		  nm_profile_inc(p_core->profiling.n_event_queue_full);
-		  nm_core_unlock(p_core);
-		  nm_core_events_dispatch(p_core);
-		  nm_core_lock(p_core);
-		}
-	    }
-	  while(rc);
-	restart:
+          nm_core_dispatching_event_enqueue(p_core, p_event, &p_core_monitor->monitor);
+
+        restart:
 	  if(!nm_core_pending_event_list_empty(&p_so_tag->pending_events))
 	    {
 	      /* recover pending events */
@@ -236,23 +244,8 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 		  assert(p_pending_event->event.status & NM_STATUS_UNEXPECTED);
 		  p_so_tag->recv_seq_number = next_seq;
 		  nm_core_pending_event_list_pop_front(&p_so_tag->pending_events);
-		  struct nm_core_dispatching_event_s*p_dispatching_event =
-		    nm_core_dispatching_event_malloc(&p_core->dispatching_event_allocator);
-		  p_dispatching_event->event = p_pending_event->event;
-		  p_dispatching_event->p_monitor = &p_pending_event->p_core_monitor->monitor;
-		  int rc = 0;
-		  do
-		    {
-		      rc = nm_core_dispatching_event_lfqueue_enqueue_single_writer(&p_core->dispatching_events, p_dispatching_event);
-		      if(rc)
-			{
-			  nm_profile_inc(p_core->profiling.n_event_queue_full);
-			  nm_core_unlock(p_core);
-			  nm_core_events_dispatch(p_core);
-			  nm_core_lock(p_core);
-			}
-		    }
-		  while(rc);
+                  nm_core_dispatching_event_enqueue(p_core, &p_pending_event->event, 
+                                                    &p_pending_event->p_core_monitor->monitor);
 		  nm_core_pending_event_delete(p_pending_event);
 		  goto restart; /* retry to find another matching event */
 		}

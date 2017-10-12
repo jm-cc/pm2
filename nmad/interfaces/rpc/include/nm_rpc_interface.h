@@ -61,6 +61,7 @@ nm_rpc_req_t nm_rpc_isend(nm_session_t p_session, nm_gate_t p_gate, nm_tag_t tag
 /** wait for a send request completion */
 static inline void nm_rpc_req_wait(nm_rpc_req_t p_req);
 
+/** set a handler called upon RPC send completion */
 void nm_rpc_req_set_notifier(nm_rpc_req_t p_req, nm_rpc_req_notifier_t p_notifier, void*ref);
 
 /** send a RPC request; blocking */

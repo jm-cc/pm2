@@ -726,7 +726,8 @@ void mpi_reduce_(void *sendbuf,
                  int *root,
                  int *comm,
                  int *ierr) {
-  *ierr = MPI_Reduce(sendbuf, recvbuf, *count, *datatype, *op,
+  void * _sendbuf = sendbuf==&f90_mpi_in_place ? MPI_IN_PLACE : sendbuf;
+  *ierr = MPI_Reduce(_sendbuf, recvbuf, *count, *datatype, *op,
                      *root, *comm);
 }
 
@@ -740,7 +741,8 @@ void mpi_allreduce_(void *sendbuf,
                     int *op,
                     int *comm,
                     int *ierr) {
-  *ierr = MPI_Allreduce(sendbuf, recvbuf, *count, *datatype, *op, *comm);
+  void * _sendbuf = sendbuf==&f90_mpi_in_place ? MPI_IN_PLACE : sendbuf;
+  *ierr = MPI_Allreduce(_sendbuf, recvbuf, *count, *datatype, *op, *comm);
 }
 
 /**

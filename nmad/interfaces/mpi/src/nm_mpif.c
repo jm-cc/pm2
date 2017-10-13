@@ -1085,4 +1085,17 @@ void mpi_group_incl_(int*group, int*n, int*ranks, int*newgroup, int*ierr)
   *ierr = err;
 }
 
+/**
+ * Fortran version for MPI_TYPE_CREATE_HINDEXED
+ */
+void mpi_type_create_hindexed_(int *count,
+                               int *array_of_blocklengths,
+                               uintptr_t *array_of_displacements,
+                               int *oldtype,
+                               int *newtype,
+                               int *ierr)
+{
+  mpi_type_hindexed_(count,array_of_blocklengths,array_of_displacements,oldtype,newtype,ierr);
+}
+
 #endif /* NMAD_FORTRAN_TARGET_NONE */

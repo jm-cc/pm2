@@ -197,8 +197,11 @@ int mpi_wait(MPI_Request*request, MPI_Status*status)
       err = nm_mpi_set_status(p_req, status);
     }
   nm_mpi_request_complete(p_req);
-  nm_mpi_request_free(p_req);
-  *request = MPI_REQUEST_NULL;
+  if(!(p_req->status & NM_MPI_REQUEST_PERSISTENT))
+    {
+      nm_mpi_request_free(p_req);
+      *request = MPI_REQUEST_NULL;
+    }
   return err;
 }
 
@@ -228,7 +231,10 @@ int mpi_waitall(int count, MPI_Request*array_of_requests, MPI_Status*array_of_st
 	  err = nm_mpi_set_status(p_req, &array_of_statuses[i]);
 	}
       nm_mpi_request_complete(p_req);
-      nm_mpi_request_free(p_req);
+      if(!(p_req->status & NM_MPI_REQUEST_PERSISTENT))
+        {
+          nm_mpi_request_free(p_req);
+        }
       if(err != NM_ESUCCESS)
 	{
 	  break;

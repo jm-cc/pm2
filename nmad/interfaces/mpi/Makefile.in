@@ -40,7 +40,7 @@ FC      := @FC@
 FFLAGS  := @FFLAGS@ -I@nmad_srcdir@/interfaces/mpi/include
 ifneq (@nmad_fortran_target@,none)
 CFLAGS  += -I$(madmpi_f90_builddir)
-MADMPI_F90_FILES := mpi_constants mpi1 mpi
+MADMPI_F90_FILES := mpi_constants mpi1 mpi2 mpi
 MADMPI_F90_SRC   := $(patsubst %, $(madmpi_f90_srcdir)/%.f90,   $(MADMPI_F90_FILES))
 MADMPI_F90_MODS  := $(patsubst %, $(madmpi_f90_builddir)/%.mod, $(MADMPI_F90_FILES))
 MADMPI_F90_OBJS  := $(patsubst %, $(madmpi_f90_builddir)/%.o,   $(MADMPI_F90_FILES))
@@ -65,8 +65,9 @@ $(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.
         # change dir end gen mod in . because -M<dir> is not portable
 
 # dirty ordered modules because of no make dep for Fortran
-$(madmpi_f90_builddir)/mpi.mod: | $(madmpi_f90_builddir)/mpi1.mod
+$(madmpi_f90_builddir)/mpi.mod: | $(madmpi_f90_builddir)/mpi1.mod $(madmpi_f90_builddir)/mpi2.mod
 $(madmpi_f90_builddir)/mpi1.mod: | $(madmpi_f90_builddir)/mpi_constants.mod
+$(madmpi_f90_builddir)/mpi2.mod: | $(madmpi_f90_builddir)/mpi_constants.mod
 
 install: install-link
 

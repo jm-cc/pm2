@@ -53,9 +53,12 @@ int mpi_init_(void)
 /**
  * Fortran version for MPI_INIT_THREAD
  */
-void mpi_init_thread_(int *argc, char ***argv, int required, int *provided)
+void mpi_init_thread_(int * required, int *provided, int * ierr)
 {
-  MPI_Init_thread(argc, argv, required, provided);
+  int argc = -1;
+  char**argv = NULL;
+  tbx_fortran_init(&argc, &argv);
+  *ierr = MPI_Init_thread(&argc, &argv, *required, provided);
 }
 
 /**

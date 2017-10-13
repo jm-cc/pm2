@@ -26,6 +26,10 @@
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(MadMPI);
 
+extern int f90_mpi_in_place;
+extern int f90_mpi_bottom;
+extern int f90_mpi_statuses_ignore;
+extern int f90_mpi_status_ignore;
 
 #if defined(NMAD_FORTRAN_TARGET_GFORTRAN) || defined(NMAD_FORTRAN_TARGET_IFORT)
 /**

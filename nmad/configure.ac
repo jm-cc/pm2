@@ -404,7 +404,7 @@ dnl -- flags to use an installed nmad
 dnl --
 
 NMAD_CFLAGS="-DNMAD -I${nmad_root}/include"
-NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad ${NMAD_CORE_LIBS}"
+NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad ${NMAD_CORE_LIBS} ${nmad_root}/build/nmad/interfaces/mpi/src/f90modules/mpi.o"
 
 AC_SUBST(NMAD_CFLAGS)
 AC_SUBST(NMAD_LIBS)

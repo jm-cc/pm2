@@ -1098,4 +1098,20 @@ void mpi_type_create_hindexed_(int *count,
   mpi_type_hindexed_(count,array_of_blocklengths,array_of_displacements,oldtype,newtype,ierr);
 }
 
+/**
+ * Fortran version for MPI_TYPE_CREATE_INDEXED_BLOCK
+ */
+void mpi_type_create_indexed_block_(int *count,
+                                    int *blocklength,
+                                    int *array_of_displacements,
+                                    int *oldtype,
+                                    int *newtype,
+                                    int *ierr)
+{
+  MPI_Datatype _newtype;
+  *ierr = MPI_Type_create_indexed_block(*count, *blocklength, array_of_displacements,
+          *oldtype, &_newtype);
+  *newtype = _newtype;
+}
+
 #endif /* NMAD_FORTRAN_TARGET_NONE */

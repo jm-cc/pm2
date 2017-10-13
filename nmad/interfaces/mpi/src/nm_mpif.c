@@ -155,7 +155,8 @@ void mpi_send_(void *buffer,
                int *tag,
                int *comm,
                int *ierr) {
-  *ierr = MPI_Send(buffer, *count, *datatype, *dest, *tag, *comm);
+  void * _buffer = buffer==&f90_mpi_bottom ? MPI_BOTTOM : buffer;
+  *ierr = MPI_Send(_buffer, *count, *datatype, *dest, *tag, *comm);
 }
 
 /**
@@ -170,7 +171,8 @@ void mpi_isend_(void *buffer,
                 int *request,
                 int *ierr) {
   MPI_Request c_request;
-  *ierr = MPI_Isend(buffer, *count, *datatype, *dest, *tag, *comm, &c_request);
+  void * _buffer = buffer==&f90_mpi_bottom ? MPI_BOTTOM : buffer;
+  *ierr = MPI_Isend(_buffer, *count, *datatype, *dest, *tag, *comm, &c_request);
   *request = c_request;
 }
 
@@ -212,7 +214,8 @@ void mpi_recv_(void *buffer,
                int *status,
                int *ierr) {
   MPI_Status _status;
-  *ierr = MPI_Recv(buffer, *count, *datatype, *source, *tag, *comm, &_status);
+  void * _buffer = buffer==&f90_mpi_bottom ? MPI_BOTTOM : buffer;
+  *ierr = MPI_Recv(_buffer, *count, *datatype, *source, *tag, *comm, &_status);
   mpi_status_c2f(&_status, status);
 }
 
@@ -228,7 +231,8 @@ void mpi_irecv_(void *buffer,
                 int *request,
                 int *ierr) {
   MPI_Request c_request;
-  *ierr = MPI_Irecv(buffer, *count, *datatype, *source, *tag, *comm, &c_request);
+  void * _buffer = buffer==&f90_mpi_bottom ? MPI_BOTTOM : buffer;
+  *ierr = MPI_Irecv(_buffer, *count, *datatype, *source, *tag, *comm, &c_request);
   *request = c_request;
 }
 
@@ -509,7 +513,8 @@ void mpi_send_init_(void* buf,
 		    int *comm,
 		    int *request,
 		    int *ierr) {
-  *ierr = MPI_Send_init(buf, *count, *datatype, *dest, *tag, *comm, request);
+  void * _buf = buf==&f90_mpi_bottom ? MPI_BOTTOM : buf;
+  *ierr = MPI_Send_init(_buf, *count, *datatype, *dest, *tag, *comm, request);
 }
 
 /**
@@ -523,7 +528,8 @@ void mpi_recv_init_(void* buf,
 		    int *comm,
 		    int *request,
 		    int *ierr) {
-  *ierr = MPI_Recv_init(buf, *count, *datatype, *source, *tag, *comm, request);
+  void * _buf = buf==&f90_mpi_bottom ? MPI_BOTTOM : buf;
+  *ierr = MPI_Recv_init(_buf, *count, *datatype, *source, *tag, *comm, request);
 }
 
 /**

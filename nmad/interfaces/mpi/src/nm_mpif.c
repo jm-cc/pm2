@@ -803,7 +803,7 @@ void mpi_get_version_(int *version,
  * Fortran version for MPI_GET_ADDRESS
  */
 void mpi_get_address_(void *location,
-		      int *address,
+		      uintptr_t *address,
 		      int *ierr) {
   MPI_Aint _address;
   *ierr = MPI_Get_address(location, &_address);
@@ -814,7 +814,7 @@ void mpi_get_address_(void *location,
  * Fortran version for MPI_ADDRESS
  */
 void mpi_address_(void *location,
-		  int *address,
+		  uintptr_t *address,
 		  int *ierr) {
   MPI_Aint _address;
   *ierr = MPI_Address(location, &_address);
@@ -954,7 +954,7 @@ void mpi_type_indexed_(int *count,
  */
 void mpi_type_hindexed_(int *count,
                         int *array_of_blocklengths,
-                        int *array_of_displacements,
+                        uintptr_t *array_of_displacements,
                         int *oldtype,
                         int *newtype,
 			int *ierr) {

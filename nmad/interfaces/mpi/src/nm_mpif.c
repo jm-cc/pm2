@@ -1114,4 +1114,17 @@ void mpi_type_create_indexed_block_(int *count,
   *newtype = _newtype;
 }
 
+/**
+ * Fortran version for MPI_TYPE_CREATE_STRUCT
+ */
+void mpi_type_create_struct_(int *count,
+                             int *array_of_blocklengths,
+                             int *array_of_displacements,
+                             int *array_of_types,
+                             int *newtype,
+                             int *ierr)
+{
+  mpi_type_struct_(count,array_of_blocklengths,array_of_displacements,array_of_types,newtype,ierr);
+}
+
 #endif /* NMAD_FORTRAN_TARGET_NONE */

@@ -514,11 +514,11 @@ void nm_mpi_request_complete(nm_mpi_request_t*p_req)
   if(!(p_req->status & NM_MPI_REQUEST_PERSISTENT))
     {
       p_req->request_type = NM_MPI_REQUEST_ZERO;
-    }
-  /* Release one active communication for that type */
-  if(p_req->p_datatype->id >= _NM_MPI_DATATYPE_OFFSET)
-    {
-      nm_mpi_datatype_ref_dec(p_req->p_datatype);
+      /* Release one active communication for that type */
+      if(p_req->p_datatype->id >= _NM_MPI_DATATYPE_OFFSET)
+        {
+          nm_mpi_datatype_ref_dec(p_req->p_datatype);
+        }
     }
 }
 

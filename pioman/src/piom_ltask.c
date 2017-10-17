@@ -434,7 +434,7 @@ void piom_ltask_unmask(struct piom_ltask*ltask)
 int piom_ltask_cancel_request(struct piom_ltask*ltask)
 {
     if(ltask->state == PIOM_LTASK_STATE_NONE)
-	return;
+	return 1;
     piom_ltask_state_set(ltask, PIOM_LTASK_STATE_CANCELLED);
     piom_ltask_state_unset(ltask, PIOM_LTASK_STATE_READY);
     while(piom_ltask_state_test(ltask, PIOM_LTASK_STATE_SCHEDULED))

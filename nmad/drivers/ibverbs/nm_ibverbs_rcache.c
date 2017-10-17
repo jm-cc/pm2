@@ -173,7 +173,7 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_rcache,
 
 static void* nm_ibverbs_rcache_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_ibverbs_rcache*rcache = TBX_MALLOC(sizeof(struct nm_ibverbs_rcache));
+  struct nm_ibverbs_rcache*rcache = malloc(sizeof(struct nm_ibverbs_rcache));
  /* init state */
   memset(&rcache->headers, 0, sizeof(rcache->headers));
   memset(&rcache->send, 0, sizeof(rcache->send));

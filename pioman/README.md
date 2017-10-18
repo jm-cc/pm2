@@ -53,7 +53,7 @@ Documentation
   + PIOM_ENABLE_PROGRESSION: whether to enable asynchronous progression.
     default is 1.
   + PIOM_BUSY_WAIT_USEC: time to busy wait before passive wait, on explicit wait, in usec.
-    default is 10
+    default is 10; 0 disables busy-waiting; -1 does only busy waiting
   + PIOM_BUSY_WAIT_GRANULARITY: number of iterations between time check in busy, to amortize
     cost of clock_gettime. default is 100.
   + PIOM_IDLE_GRANULARITY: time between polling in idle threads, in usec.

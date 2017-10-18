@@ -162,7 +162,7 @@ void piom_cond_wait(piom_cond_t*cond, piom_cond_value_t mask)
 	    busy_wait = 0;
 	}
     }
-  while(busy_wait || !piom_parameters.enable_progression);
+  while(busy_wait || (!piom_parameters.enable_progression) || (piom_parameters.busy_wait_usec < 0));
 #ifdef PIOM_BLOCKING_PRIO
   piom_cond_wait_blocking_prio(cond, mask);
 #else

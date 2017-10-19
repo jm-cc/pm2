@@ -85,7 +85,7 @@ static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, stru
 
 uint32_t nm_ibverbs_hca_hash(const void*_key)
 {
-  struct nm_ibverbs_hca_key_s*p_key = _key;
+  const struct nm_ibverbs_hca_key_s*p_key = _key;
   const uint32_t hash = p_key->port + puk_hash_string(p_key->device);
   return hash;
 }

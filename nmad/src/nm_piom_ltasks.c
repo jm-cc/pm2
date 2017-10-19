@@ -121,7 +121,6 @@ static piom_topo_obj_t nm_get_binding_policy(nm_drv_t p_drv)
 static int nm_ltask_pw_recv(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
-  struct nm_core*p_core = p_pw->p_drv->p_core;
   if(p_pw->flags & NM_PW_POSTED)
     nm_pw_poll_recv(p_pw);
   else
@@ -158,14 +157,13 @@ static int nm_task_block_recv(void*_pw)
       NM_WARN("wait_recv returned err = %d\n", err);
     }
   */
-  NM_FATAL("blocking recv not supported with minidriver.\n");
+  NM_FATAL("blocking recv not supported with minidriver- p_pw = %p.\n", p_pw);
   return NM_ESUCCESS;
 }
 
 static int nm_ltask_pw_send(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
-  struct nm_core*p_core = p_pw->p_drv->p_core;
   if(p_pw->flags & NM_PW_POSTED)
     nm_pw_poll_send(p_pw);
   else
@@ -198,7 +196,7 @@ static int nm_task_block_send(void*_pw)
     }
   nm_core_unlock(p_core);
   */
-  NM_FATAL("blocking send not supported with minidriver.\n");
+  NM_FATAL("blocking send not supported with minidriver- p_pw = %p\n", p_pw);
   return NM_ESUCCESS;
 }
 

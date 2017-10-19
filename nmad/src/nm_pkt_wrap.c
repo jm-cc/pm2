@@ -231,7 +231,6 @@ struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_core*p_core, struct nm_
  */
 void nm_pw_free(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
-  int err;
   const nm_pw_flag_t flags = p_pw->flags;
 
   if(p_pw->destructor)

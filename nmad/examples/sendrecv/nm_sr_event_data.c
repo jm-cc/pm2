@@ -71,7 +71,11 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*p_inf
       struct nm_data_s header;
       nm_data_contiguous_build(&header, &recv_len, sizeof(nm_len_t));
       int rc = nm_sr_recv_peek(p_session, p_request, &header);
-      assert(rc == NM_ESUCCESS);
+      if(rc != NM_ESUCCESS)
+        {
+          fprintf(stderr, "error %d in nm_sr_recv_pekk()\n", rc);
+          abort();
+        }
       printf(":: event NM_SR_EVENT_RECV_DATA- tag = %d; len = %d; from gate = %s\n",
 	     (int)tag, (int)recv_len, from?(from == p_gate ? "peer":"unknown"):"(nil)");
       recv_iov[0].iov_base = &recv_len;
@@ -120,7 +124,7 @@ int main(int argc, char **argv)
       nm_sr_request_t request;
       /* header + short */
       msg_len = short_len;
-      fprintf(stderr, "# send tag 0- short = %d\n", msg_len);
+      fprintf(stderr, "# send tag 0- short = %d\n", (int)msg_len);
       struct iovec iov[2] = 
 	{ [0] = { .iov_base = (void*)&msg_len,   .iov_len = sizeof(nm_len_t) }, 
 	  [1] = { .iov_base = (void*)short_msg,  .iov_len = short_len } };
@@ -131,7 +135,7 @@ int main(int argc, char **argv)
       nm_sr_swait(p_session, &request);
 
       /* header + small */
-      fprintf(stderr, "# send tag 0- small = %d\n", small_len);
+      fprintf(stderr, "# send tag 0- small = %d\n", (int)small_len);
       msg_len = small_len;
       struct iovec iov2[2] = 
 	{ [0] = { .iov_base = (void*)&msg_len,   .iov_len = sizeof(nm_len_t) }, 

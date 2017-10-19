@@ -74,7 +74,7 @@ int main(int argc, char**argv)
 	    }
 	  qsort(lats, iterations, sizeof(double), &comp_double);
 	  const double min_lat = lats[0];
-	  const double max_lat = lats[iterations - 1];
+          /*  const double max_lat = lats[iterations - 1]; */
 	  const double med_lat = lats[(iterations - 1) / 2];
 	  const double d1_lat  = lats[(iterations - 1) / 10];
 	  const double d9_lat  = lats[ 9 *(iterations - 1) / 10];

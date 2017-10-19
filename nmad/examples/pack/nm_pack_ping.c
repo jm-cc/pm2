@@ -87,8 +87,8 @@ int main(int argc, char**argv)
 	  bw_million_byte = len * (LOOPS / (sum / 2));
 	  bw_mbyte        = bw_million_byte / 1.048576;
 	  
-	  printf("%d\t%lf\t%8.3f\t%8.3f\n",
-		 len, lat, bw_million_byte, bw_mbyte);
+	  printf("%lld\t%lf\t%8.3f\t%8.3f\n",
+		 (long long)len, lat, bw_million_byte, bw_mbyte);
 	}
     }
   

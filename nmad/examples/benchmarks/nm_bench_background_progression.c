@@ -32,7 +32,7 @@ static void bg_prog_send(void*buf, nm_len_t len)
   volatile int done = 0;
   nm_sr_request_t sreq;
   nm_sr_isend(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, buf, len, &sreq);
-  nm_sr_request_set_ref(&sreq, &done);
+  nm_sr_request_set_ref(&sreq, (void*)&done);
   nm_sr_request_monitor(nm_bench_common.p_session, &sreq, NM_SR_EVENT_FINALIZED, &bg_prog_completed_req);
 #ifdef BG_PROG_FLUSH
      nm_sr_flush(nm_bench_common.p_session);
@@ -48,7 +48,7 @@ static void bg_prog_recv(void*buf, nm_len_t len)
   volatile int done = 0;
   nm_sr_request_t rreq;
   nm_sr_irecv(nm_bench_common.p_session, nm_bench_common.p_gate, data_tag, buf, len, &rreq);
-  nm_sr_request_set_ref(&rreq, &done);
+  nm_sr_request_set_ref(&rreq, (void*)&done);
   nm_sr_request_monitor(nm_bench_common.p_session, &rreq, NM_SR_EVENT_FINALIZED, &bg_prog_completed_req);
   while(!done)
     {

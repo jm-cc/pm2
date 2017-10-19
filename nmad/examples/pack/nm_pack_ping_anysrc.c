@@ -77,7 +77,7 @@ int main(int argc, char**argv)
 	    }
 	  TBX_GET_TICK(t2);
 	  
-	  printf("%d\t%lf\n", len, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
+	  printf("%lld\t%lf\n", (long long)len, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
 	}
     }
   

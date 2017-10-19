@@ -18,8 +18,6 @@
 #include "nm_bench_generic.h"
 #include <nm_sendrecv_interface.h>
 
-static const nm_tag_t data_tag = 0x01;
-
 static void*buffer = NULL;
 static void*flypack_buffer = NULL;
 static struct nm_data_s data;

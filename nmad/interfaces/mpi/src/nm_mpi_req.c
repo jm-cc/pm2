@@ -473,12 +473,15 @@ int mpi_start(MPI_Request*request)
   int err = MPI_SUCCESS;
   assert(p_req->request_type != NM_MPI_REQUEST_ZERO);
   assert(p_req->status & NM_MPI_REQUEST_PERSISTENT);
+  assert(!(p_req->status & NM_MPI_REQUEST_ACTIVE));
   if(p_req->request_type == NM_MPI_REQUEST_SEND)
     {
+      p_req->status |= NM_MPI_REQUEST_ACTIVE;
       err = nm_mpi_isend_start(p_req);
     }
   else if(p_req->request_type == NM_MPI_REQUEST_RECV)
     {
+      p_req->status |= NM_MPI_REQUEST_ACTIVE;
       err = nm_mpi_irecv_start(p_req);
     }
   else 
@@ -511,6 +514,7 @@ int mpi_startall(int count, MPI_Request *array_of_requests)
 __PUK_SYM_INTERNAL
 void nm_mpi_request_complete(nm_mpi_request_t*p_req)
 {
+  p_req->status &= ~NM_MPI_REQUEST_ACTIVE;
   if(!(p_req->status & NM_MPI_REQUEST_PERSISTENT))
     {
       p_req->request_type = NM_MPI_REQUEST_ZERO;
@@ -527,6 +531,10 @@ int nm_mpi_request_test(nm_mpi_request_t*p_req)
  {
   int err = NM_ESUCCESS;
   if(p_req->status & NM_MPI_REQUEST_CANCELLED)
+    {
+      err = MPI_SUCCESS;
+    }
+  else if(!(p_req->status & NM_MPI_REQUEST_ACTIVE))
     {
       err = MPI_SUCCESS;
     }
@@ -550,6 +558,10 @@ int nm_mpi_request_wait(nm_mpi_request_t*p_req)
 {
   int err = MPI_SUCCESS;
   if(p_req->status & NM_MPI_REQUEST_CANCELLED)
+    {
+      err = MPI_SUCCESS;
+    }
+  else if(!(p_req->status & NM_MPI_REQUEST_ACTIVE))
     {
       err = MPI_SUCCESS;
     }

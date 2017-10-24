@@ -232,6 +232,7 @@ typedef int8_t nm_mpi_status_t;
 #define NM_MPI_STATUS_NONE        ((nm_mpi_status_t)0x00)
 #define NM_MPI_REQUEST_CANCELLED  ((nm_mpi_status_t)0x01) /**< request has been cancelled */
 #define NM_MPI_REQUEST_PERSISTENT ((nm_mpi_status_t)0x02) /**< request is persistent */
+#define NM_MPI_REQUEST_ACTIVE     ((nm_mpi_status_t)0x04) /**< request is persistent and active*/
 
 /** @name Extended modes */
 /* @{ */

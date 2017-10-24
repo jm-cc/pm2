@@ -342,7 +342,7 @@ void mpi_waitall_(int *count,
     {
       MPI_Status _status;
       err = MPI_Wait(&array_of_requests[i], &_status);
-      if ((MPI_Status *)array_of_statuses != f90_mpi_statuses_ignore)
+      if ((MPI_Status *)array_of_statuses != &f90_mpi_statuses_ignore)
 	{
 	  mpi_status_c2f(&_status, array_of_statuses[i]);
 	}

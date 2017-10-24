@@ -682,10 +682,11 @@ int mpi_comm_call_errhandler(MPI_Comm comm, int errorcode)
 
 int mpi_status_f2c(MPI_Fint *f_status, MPI_Status *c_status)
 {
-  if (*f_status && c_status) {
+  if (f_status && c_status) {
     c_status->MPI_SOURCE = f_status[0];
     c_status->MPI_TAG    = f_status[1];
     c_status->MPI_ERROR  = f_status[2];
+    c_status->size       = f_status[3];
     return MPI_SUCCESS;
   }
   return MPI_ERR_ARG;
@@ -693,10 +694,11 @@ int mpi_status_f2c(MPI_Fint *f_status, MPI_Status *c_status)
 
 int mpi_status_c2f(MPI_Status *c_status, MPI_Fint *f_status)
 {
-  if (*f_status && c_status) {
+  if (f_status && c_status) {
     f_status[0] = c_status->MPI_SOURCE;
     f_status[1] = c_status->MPI_TAG;
     f_status[2] = c_status->MPI_ERROR;
+    f_status[3] = c_status->size;
     return MPI_SUCCESS;
   }
   return MPI_ERR_ARG;

@@ -561,7 +561,7 @@ int nm_mpi_request_wait(nm_mpi_request_t*p_req)
     {
       err = MPI_SUCCESS;
     }
-  else if(!(p_req->status & NM_MPI_REQUEST_ACTIVE))
+  else if((p_req->status & NM_MPI_REQUEST_PERSISTENT) && !(p_req->status & NM_MPI_REQUEST_ACTIVE))
     {
       err = MPI_SUCCESS;
     }

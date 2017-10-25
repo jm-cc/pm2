@@ -1,3 +1,11 @@
+README specific to github unofficial clone (jm-cc/pm2)
+======================================================
+
+In order to make this version works, it is necessary to clone the PadicoTM SVN (https://scm.gforge.inria.fr/anonscm/svn/padico/PadicoTM/trunk/PadicoTM) in ./externals/PadicoTM/.
+
+- Branch master follows strictly the official SVN (svn://scm.gforge.inria.fr/svnroot/pm2/trunk/).
+- Branch experiment contains some patchs, that can be dirty. "experiment" is supposed to be up-to-date with "master" (i.e. master will be merged into experiment.)
+
 #
 README for PM2
 ==============

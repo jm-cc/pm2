@@ -13,6 +13,7 @@ TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
 INSTALL_BIN = $(TARGET_BIN) $(wildcard bin/*)
 INSTALL_LIB = $(TARGET_LIB)
+INSTALL_LIBEXEC = libexec/madmpi-compile-common.sh
 INSTALL_INCLUDE = $(wildcard $(srcdir)/include/*.h)
 INSTALL_INIT =
 

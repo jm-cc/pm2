@@ -292,8 +292,11 @@ int mpi_test(MPI_Request*request, int*flag, MPI_Status*status)
 	  err = nm_mpi_set_status(p_req, status);
 	}
       nm_mpi_request_complete(p_req);
-      nm_mpi_request_free(p_req);
-      *request = MPI_REQUEST_NULL;
+      if(!(p_req->status & NM_MPI_REQUEST_PERSISTENT))
+        {
+          nm_mpi_request_free(p_req);
+          *request = MPI_REQUEST_NULL;
+        }
     }
   else
     { /* err == -NM_EAGAIN */

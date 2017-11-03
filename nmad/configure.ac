@@ -339,6 +339,7 @@ AC_ARG_ENABLE(mpi,
 	            AC_DEFINE([MAD_MPI], 1, [enable MadMPI])
                     nmad_enable_mpi=yes
 		    nmad_interfaces="${nmad_interfaces} mpi"
+		    AC_PADICO_OUT_SH([interfaces/mpi/libexec/madmpi-compile-common.sh])
 		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpirun.madmpi])
 		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpicc.madmpi])
 		    AC_PADICO_OUT_SH([interfaces/mpi/bin/mpicxx.madmpi])

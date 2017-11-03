@@ -1,0 +1,93 @@
+#! /bin/bash
+
+# NewMadeleine
+# Copyright (C) 2006-2017 (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
+usage() {
+    cat <<EOF
+usage: $0 [<mpiflags>...] [<cfglags>...] <file.c> [<libs>...]
+with <mpiflags>:
+  --help
+        Show the help message
+  --showme
+        Show the command that would be run with running it
+  --showme:compile
+        Show CFLAGS that would be used
+  --showme:link
+        Show LIBS that would be used
+  --compile_info
+        Show the command the would be used, assuming it would compile the given file
+  --link_info
+        Show the command the would be used, assuming it would link the given file
+  --cc=<cc>
+        Override the compiler used by $0
+        Note: the same behavior may be obtained by setting the MADMPI_CC environment variable
+EOF
+}
+
+while [ "x$1" != "x" ]; do
+    case "$1" in
+	"-h"|"-help"|"--help")
+	    usage
+	    exit
+	    ;;
+	"-show"|"-showme"|"--showme")
+	    shift
+	    echo "${CC} ${CFLAGS} ${@} ${LIBS}"
+	    exit
+	    ;;
+	"-showme:compile"|"--showme:compile")
+	    echo "${CFLAGS}"
+	    exit
+	    ;;
+	"-showme:link"|"--showme:link")
+	    echo "${LIBS}"
+	    exit
+	    ;;
+	"-compile_info")
+	    echo "${CC} ${CFLAGS}"
+	    exit
+	    ;;
+	"-link_info"|"--link_info")
+	    echo "${CC} ${LIBS}"
+	    exit
+	    ;;
+	-cc=*|--cc=*)
+	    CC=$( echo "${1}" | cut -f 2 -d '=' )
+	    echo "cc = $CC"
+	    shift
+	    continue
+	    ;;
+	*)
+	    compile=no
+	    for a in "$@"; do
+		case "x${a}" in
+		    x-c)
+			compile=yes
+			;;
+		    x-M*)
+			compile=yes
+			;;
+		esac
+	    done
+	    if [ ${compile} = no ]; then
+		libs="${LIBS}"
+	    else
+		libs=
+	    fi
+	    exec ${CC} ${CFLAGS} ${@} ${libs}
+	    ;;
+    esac
+done
+

@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # NewMadeleine
-# Copyright (C) 2006-2016 (see AUTHORS file)
+# Copyright (C) 2006-2017 (see AUTHORS file)
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,49 +13,18 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-CC="@CC@"
-CFLAGS="-I@nmad_root@/include"
-LIBS="@NMAD_LIBS@ -lmadmpi @nmad_mpi_romio_libs@"
+if [ "x${MADMPI_CC}" = "x" ]; then
+    export CC="@CC@"
+else
+    export CC="${MADMPI_CC}"
+fi
+export CFLAGS="-I@nmad_root@/include"
+export LIBS="@NMAD_LIBS@ -lmadmpi @nmad_mpi_romio_libs@"
 
 if [ "x${NMAD_BUILD}" != "x" ]; then
-    CFLAGS="${CFLAGS} -DNMAD_BUILD"
+    export CFLAGS="${CFLAGS} -DNMAD_BUILD"
 fi
 
-case "$1" in
-    "-showme"|"--showme")
-	shift
-	echo "${CC} ${CFLAGS} ${@} ${LIBS}"
-	;;
-    "-showme:compile"|"--showme:compile")
-	echo "${CFLAGS}"
-	;;
-    "-showme:link"|"--showme:link")
-	echo "${LIBS}"
-	;;
-    "-compile_info")
-	echo "${CC} ${CFLAGS}"
-	;;
-    "-link_info"|"--link_info")
-	echo "${CC} ${LIBS}"
-	;;
-    *)
-	compile=no
-	for a in "$@"; do
-	    case "x${a}" in
-		x-c)
-		    compile=yes
-		    ;;
-		x-M*)
-		    compile=yes
-		    ;;
-	    esac
-	done
-	if [ ${compile} = no ]; then
-	    libs="${LIBS}"
-	else
-	    libs=
-	fi
-	exec ${CC} ${CFLAGS} ${@} ${libs}
-	;;
-esac
+libexec="$(dirname ${BASH_SOURCE[0]})"/../libexec
+exec ${libexec}/madmpi-compile-common.sh "$@"
 

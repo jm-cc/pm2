@@ -101,8 +101,6 @@ static void nm_ibverbs_bybuf_connect(void*_status, const void*remote_url, size_t
 static void nm_ibverbs_bybuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_ibverbs_bybuf_buf_send_post(void*_status, nm_len_t len);
 static int  nm_ibverbs_bybuf_send_poll(void*_status);
-static void nm_ibverbs_bybuf_recv_init(void*_status, struct iovec*v, int n);
-static int  nm_ibverbs_bybuf_poll_one(void*_status);
 static int  nm_ibverbs_bybuf_cancel_recv(void*_status);
 static int  nm_ibverbs_bybuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_ibverbs_bybuf_buf_recv_release(void*_status);
@@ -118,9 +116,9 @@ static const struct nm_minidriver_iface_s nm_ibverbs_bybuf_minidriver =
     .send_poll        = &nm_ibverbs_bybuf_send_poll,
     .buf_send_get     = &nm_ibverbs_bybuf_buf_send_get,
     .buf_send_post    = &nm_ibverbs_bybuf_buf_send_post,
-    .recv_init        = &nm_ibverbs_bybuf_recv_init,
+    .recv_init        = NULL,
     .recv_data        = NULL,
-    .poll_one         = &nm_ibverbs_bybuf_poll_one,
+    .poll_one         = NULL,
     .cancel_recv      = &nm_ibverbs_bybuf_cancel_recv,
     .buf_recv_poll    = &nm_ibverbs_bybuf_buf_recv_poll,
     .buf_recv_release = &nm_ibverbs_bybuf_buf_recv_release
@@ -345,7 +343,6 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
   return NM_ESUCCESS;
  wouldblock:
   return -NM_EAGAIN;
-
 }
 
 static int nm_ibverbs_bybuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len)
@@ -402,59 +399,6 @@ static void nm_ibverbs_bybuf_buf_recv_release(void*_status)
   nm_ibverbs_rdma_poll(bybuf->cnx);
   bybuf->recv.buf = NULL;
   nm_ibverbs_send_flush(bybuf->cnx, NM_IBVERBS_WRID_ACK);
-}
-
-static void nm_ibverbs_bybuf_recv_init(void*_status, struct iovec*v, int n)
-{
-  struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
-  assert(bybuf->recv.buf == NULL);
-  assert(n == 1);
-  bybuf->recv.buf       = v[0].iov_base;
-  bybuf->recv.chunk_len = v[0].iov_len;
-}
-
-static int nm_ibverbs_bybuf_poll_one(void*_status)
-{
-  int err = -NM_EUNKNOWN;
-  struct nm_ibverbs_bybuf*__restrict__ bybuf = _status;
-  struct nm_ibverbs_bybuf_packet_s*__restrict__ packet = &bybuf->buffer.rbuf[bybuf->window.next_in];
-  if(packet->header.status != 0)
-    {
-      assert((packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
-      assert(bybuf->recv.buf != NULL);
-      const int offset = packet->header.offset;
-      const int packet_size = NM_IBVERBS_BYBUF_DATA_SIZE - offset;
-      memcpy(bybuf->recv.buf, &packet->data[offset], packet_size);
-      bybuf->window.credits += packet->header.ack;
-      packet->header.ack = 0;
-      packet->header.status = 0;
-      const int to_ack = nm_atomic_inc(&bybuf->window.to_ack);
-      if(to_ack > NM_IBVERBS_BYBUF_CREDITS_THR) 
-	{
-	  bybuf->buffer.sack = nm_ibverbs_bybuf_to_ack(bybuf);
-	  if(bybuf->buffer.sack > 0)
-	    {
-	      nm_ibverbs_rdma_send(bybuf->cnx,
-				   sizeof(uint16_t),
-				   (void*)&bybuf->buffer.sack,
-				   (void*)&bybuf->buffer.rack,
-				   &bybuf->buffer,
-				   &bybuf->seg,
-				   bybuf->mr,
-				   NM_IBVERBS_WRID_ACK);
-	    }
-	}
-      bybuf->window.next_in = (bybuf->window.next_in + 1) % NM_IBVERBS_BYBUF_RBUF_NUM;
-      nm_ibverbs_rdma_poll(bybuf->cnx);
-      bybuf->recv.buf = NULL;
-      nm_ibverbs_send_flush(bybuf->cnx, NM_IBVERBS_WRID_ACK);
-      err = NM_ESUCCESS;
-    }
-  else 
-    {
-      err = -NM_EAGAIN;
-    }
-  return err;
 }
 
 static int nm_ibverbs_bybuf_cancel_recv(void*_status)

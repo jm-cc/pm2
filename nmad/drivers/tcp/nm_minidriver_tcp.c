@@ -75,12 +75,27 @@ PADICO_MODULE_COMPONENT(Minidriver_tcp,
 
 /* ********************************************************* */
 
+#define NM_TCP_URL_SIZE_MAX 64
+/** identity of peer node */
+struct nm_tcp_peer_id_s
+{
+  char url[NM_TCP_URL_SIZE_MAX];
+};
+/** pending connection */
+struct nm_tcp_pending_s
+{
+  int fd;
+  struct nm_tcp_peer_id_s peer;
+};
+PUK_VECT_TYPE(nm_tcp_pending, struct nm_tcp_pending_s);
+
 /** 'tcp' driver per-context data. */
 struct nm_tcp_context_s
 {
   struct sockaddr_in addr;  /**< server socket address */
   int server_fd;            /**< server socket fd */
   char*url;                 /**< server url */
+  nm_tcp_pending_vect_t pending_fds;
 };
 
 /** 'tcp' per-instance status. */
@@ -95,19 +110,6 @@ struct nm_tcp_s
   } recv;
 };
 
-#define NM_TCP_URL_SIZE_MAX 64
-/** identity of peer node */
-struct nm_tcp_peer_id_s
-{
-  char url[NM_TCP_URL_SIZE_MAX];
-};
-/** pending connection */
-struct nm_tcp_pending_s
-{
-  int fd;
-  struct nm_tcp_peer_id_s peer;
-};
-PUK_VECT_TYPE(nm_tcp_pending, struct nm_tcp_pending_s);
 
 /* ********************************************************* */
 
@@ -177,6 +179,7 @@ static void nm_tcp_init(puk_context_t context, const void**drv_url, size_t*url_s
     {
       NM_FATAL("tcp: listen() error: %s\n", strerror(errno));
     }
+  p_tcp_context->pending_fds = nm_tcp_pending_vect_new();
   puk_context_set_status(context, p_tcp_context);
   *drv_url = p_tcp_context->url;
   *url_size = strlen(p_tcp_context->url) + 1;
@@ -196,7 +199,6 @@ static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size)
 {
   struct nm_tcp_s*p_status = _status;
   struct nm_tcp_context_s*p_tcp_context = p_status->p_tcp_context;
-  static nm_tcp_pending_vect_t pending_fds = NULL;
 
   if(strcmp(p_tcp_context->url, remote_url) > 0)
     {
@@ -235,19 +237,16 @@ static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size)
   else
     {
       int fd = -1;
-      if(pending_fds != NULL)
-	{
-	  nm_tcp_pending_vect_itor_t i;
-	  puk_vect_foreach(i, nm_tcp_pending, pending_fds)
-	    {
-	      if(strcmp(i->peer.url, remote_url) == 0)
-		{
-		  fd = i->fd;
-		  nm_tcp_pending_vect_erase(pending_fds, i);
-		  break;
-		}
-	    }
-	}
+      nm_tcp_pending_vect_itor_t i;
+      puk_vect_foreach(i, nm_tcp_pending, p_tcp_context->pending_fds)
+        {
+          if(strcmp(i->peer.url, remote_url) == 0)
+            {
+              fd = i->fd;
+              nm_tcp_pending_vect_erase(p_tcp_context->pending_fds, i);
+              break;
+            }
+        }
       while(fd == -1)
 	{
 	  fd = NM_SYS(accept)(p_tcp_context->server_fd, NULL, NULL);
@@ -268,9 +267,7 @@ static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size)
 		  .fd = fd,
 		  .peer = id
 		};
-	      if(pending_fds == NULL)
-		pending_fds = nm_tcp_pending_vect_new();
-	      nm_tcp_pending_vect_push_back(pending_fds, pending);
+	      nm_tcp_pending_vect_push_back(p_tcp_context->pending_fds, pending);
 	      fd = -1;
 	    }
 	}

@@ -45,8 +45,8 @@ static void nm_selfbuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len
 static void nm_selfbuf_buf_send_post(void*_status, nm_len_t len);
 static int  nm_selfbuf_send_poll(void*_status);
 static int  nm_selfbuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len);
-static int  nm_selfbuf_recv_poll_any(puk_context_t p_context, void**pp_status, void**p_buffer, nm_len_t*p_len);
-static int  nm_selfbuf_recv_wait_any(puk_context_t p_context, void**pp_status, void**p_buffer, nm_len_t*p_len);
+static int  nm_selfbuf_recv_poll_any(puk_context_t p_context, void**pp_status);
+static int  nm_selfbuf_recv_wait_any(puk_context_t p_context, void**pp_status);
 static void nm_selfbuf_buf_recv_release(void*_status);
 
 static const struct nm_minidriver_iface_s nm_selfbuf_minidriver =
@@ -63,9 +63,9 @@ static const struct nm_minidriver_iface_s nm_selfbuf_minidriver =
     .recv_init         = NULL,
     .recv_data         = NULL,
     .poll_one          = NULL,
+    .recv_poll_any     = &nm_selfbuf_recv_poll_any,
+    .recv_wait_any     = &nm_selfbuf_recv_wait_any,
     .buf_recv_poll     = &nm_selfbuf_buf_recv_poll,
-    .buf_recv_poll_any = &nm_selfbuf_recv_poll_any,
-    .buf_recv_wait_any = &nm_selfbuf_recv_wait_any,
     .buf_recv_release  = &nm_selfbuf_buf_recv_release,
     .cancel_recv       = NULL
   };
@@ -190,6 +190,33 @@ static int nm_selfbuf_send_poll(void*_status)
     }
 }
 
+static int nm_selfbuf_recv_poll_any(puk_context_t p_context, void**pp_status)
+{
+  struct nm_selfbuf_context_s*p_selfbuf_context = puk_context_get_status(p_context);
+  if(p_selfbuf_context->p_status->posted)
+    {
+      *pp_status = p_selfbuf_context->p_status;
+      return NM_ESUCCESS;
+    }
+  else
+    {
+      *pp_status = NULL;
+      return -NM_EAGAIN;
+    }
+}
+
+static int nm_selfbuf_recv_wait_any(puk_context_t p_context, void**pp_status)
+{
+  struct nm_selfbuf_context_s*p_selfbuf_context = puk_context_get_status(p_context);
+  int rc = nm_selfbuf_recv_poll_any(p_context, pp_status);
+  while(rc == -NM_EAGAIN)
+    {
+      sem_wait(&p_selfbuf_context->sem);
+      rc = nm_selfbuf_recv_poll_any(p_context, pp_status);
+    }
+  return rc;
+}
+
 static int nm_selfbuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len)
 {
   struct nm_selfbuf_s*p_status = _status;
@@ -203,27 +230,6 @@ static int nm_selfbuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len
     {
       return -NM_EAGAIN;
     }
-}
-
-static int nm_selfbuf_recv_poll_any(puk_context_t p_context, void**pp_status, void**p_buffer, nm_len_t*p_len)
-{
-  struct nm_selfbuf_context_s*p_selfbuf_context = puk_context_get_status(p_context);
-  int rc = nm_selfbuf_buf_recv_poll(p_selfbuf_context->p_status, p_buffer, p_len);
-  if(rc == NM_ESUCCESS)
-    *pp_status = p_selfbuf_context->p_status;
-  return rc;
-}
-
-static int nm_selfbuf_recv_wait_any(puk_context_t p_context, void**pp_status, void**p_buffer, nm_len_t*p_len)
-{
-  struct nm_selfbuf_context_s*p_selfbuf_context = puk_context_get_status(p_context);
-  int rc = nm_selfbuf_recv_poll_any(p_context, pp_status, p_buffer, p_len);
-  while(rc == -NM_EAGAIN)
-    {
-      sem_wait(&p_selfbuf_context->sem);
-      rc = nm_selfbuf_recv_poll_any(p_context, pp_status, p_buffer, p_len);
-    }
-  return rc;
 }
 
 static void nm_selfbuf_buf_recv_release(void*_status)

@@ -394,6 +394,7 @@ static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int ti
   struct nm_tcp_s*p_status = NULL;
   struct nm_tcp_context_s*p_tcp_context = puk_context_get_status(p_context);
   int rc = NM_SYS(poll)(p_tcp_context->fds, p_tcp_context->nfds, timeout);
+  p_tcp_context->round_robin = (p_tcp_context->round_robin + 1) % p_tcp_context->nfds;
   if(rc == 0)
     {
       int i;
@@ -418,7 +419,7 @@ static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int ti
                 }
               else if(e & POLLNVAL)
                 {
-                  NM_FATAL("tcp: invalid fd in poll.\n");
+                  NM_FATAL("tcp: invalid fd = %d in poll.\n", p_tcp_context->fds[k].fd);
                 }
               else
                 {

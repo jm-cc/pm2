@@ -78,6 +78,9 @@ typedef uint32_t nm_pw_flag_t;
 /** driver reported gate as closed */
 #define NM_PW_CLOSED        ((nm_pw_flag_t)0x00004000)
 
+/** pw is polling on any gate (bit cleared once we know the gate) */
+#define NM_PW_POLL_ANY      ((nm_pw_flag_t)0x00008000)
+
 /*@}*/
 
 

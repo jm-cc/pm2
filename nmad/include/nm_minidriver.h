@@ -111,6 +111,10 @@ struct nm_minidriver_iface_s
   /** cancel a posted recv */
   int  (*cancel_recv)(void*_status);
 
+  int  (*recv_poll_any)(puk_context_t p_context, void**_status);
+
+  int  (*recv_wait_any)(puk_context_t p_context, void**_status);
+
   /* ** buffer-based recv */
 
   /** poll the driver for a pending recv; returns buffer */

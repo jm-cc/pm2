@@ -115,7 +115,11 @@ struct nm_minidriver_iface_s
 
   /** poll the driver for a pending recv; returns buffer */
   int  (*buf_recv_poll)(void*_status, void**p_buffer, nm_len_t*p_len);
-  /** release a buffer returned by buf_recv_poll() */
+  /** poll the driver for a pending recv from any source; returns status of instance & buffer */
+  int  (*buf_recv_poll_any)(puk_context_t p_context, void**_status, void**p_buffer, nm_len_t*p_len);
+  /** passively wait for a pending recv from any source; returns status of instance & buffer */
+  int  (*buf_recv_wait_any)(puk_context_t p_context, void**_status, void**p_buffer, nm_len_t*p_len);
+  /** release a buffer returned by buf_recv_poll() or buf_recv_wait_any() */
   void (*buf_recv_release)(void*_status);
 };
 PUK_IFACE_TYPE(NewMad_minidriver, struct nm_minidriver_iface_s);

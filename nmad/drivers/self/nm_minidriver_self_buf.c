@@ -136,6 +136,7 @@ static void nm_selfbuf_init(puk_context_t context, const void**drv_url, size_t*u
   struct nm_selfbuf_context_s*p_selfbuf_context = malloc(sizeof(struct nm_selfbuf_context_s));
   p_selfbuf_context->url = strdup("-");
   puk_context_set_status(context, p_selfbuf_context);
+  p_selfbuf_context->p_status = NULL;
   sem_init(&p_selfbuf_context->sem, 0, 0);
   *drv_url = p_selfbuf_context->url;
   *url_size = strlen(p_selfbuf_context->url) + 1;

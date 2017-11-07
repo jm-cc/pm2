@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <limits.h>
 #include <sys/uio.h>
 #include <sys/poll.h>
@@ -50,20 +51,24 @@ static void nm_tcp_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_tcp_send_poll(void*_status);
 static void nm_tcp_recv_init(void*_status,  struct iovec*v, int n);
 static int  nm_tcp_poll_one(void*_status);
+static int  nm_tcp_recv_poll_any(puk_context_t p_context, void**_status);
+static int  nm_tcp_recv_wait_any(puk_context_t p_context, void**_status);
 
 static const struct nm_minidriver_iface_s nm_tcp_minidriver =
   {
-    .getprops    = &nm_tcp_getprops,
-    .init        = &nm_tcp_init,
-    .close       = &nm_tcp_close,
-    .connect     = &nm_tcp_connect,
-    .send_post   = &nm_tcp_send_post,
-    .send_data   = NULL,
-    .send_poll   = &nm_tcp_send_poll,
-    .recv_init   = &nm_tcp_recv_init,
-    .recv_data   = NULL,
-    .poll_one    = &nm_tcp_poll_one,
-    .cancel_recv = NULL
+    .getprops      = &nm_tcp_getprops,
+    .init          = &nm_tcp_init,
+    .close         = &nm_tcp_close,
+    .connect       = &nm_tcp_connect,
+    .send_post     = &nm_tcp_send_post,
+    .send_data     = NULL,
+    .send_poll     = &nm_tcp_send_poll,
+    .recv_init     = &nm_tcp_recv_init,
+    .recv_data     = NULL,
+    .poll_one      = &nm_tcp_poll_one,
+    .recv_poll_any = &nm_tcp_recv_poll_any,
+    .recv_wait_any = &nm_tcp_recv_wait_any,
+    .cancel_recv   = NULL
   };
 
 /* ********************************************************* */
@@ -84,14 +89,20 @@ struct nm_tcp_peer_id_s
 /** pending connection */
 struct nm_tcp_pending_s
 {
-  int fd;
-  struct nm_tcp_peer_id_s peer;
+  int fd;                       /**< socket of the pending connection */
+  struct nm_tcp_peer_id_s peer; /**< url of the peer node */
 };
 PUK_VECT_TYPE(nm_tcp_pending, struct nm_tcp_pending_s);
 
+PUK_VECT_TYPE(nm_tcp_status, struct nm_tcp_s*);
+              
 /** 'tcp' driver per-context data. */
 struct nm_tcp_context_s
 {
+  struct nm_tcp_status_vect_s p_statuses;
+  struct pollfd*fds;        /**< pollfd used for recv_poll|wait_any */
+  int nfds;                 /**< size of above fds */
+  int round_robin;          /**< first fd to poll for fairness */
   struct sockaddr_in addr;  /**< server socket address */
   int server_fd;            /**< server socket fd */
   char*url;                 /**< server url */
@@ -102,6 +113,7 @@ struct nm_tcp_context_s
 struct nm_tcp_s
 {
   int fd;                   /**< tcp socket */
+  int error;
   struct nm_tcp_context_s*p_tcp_context;
   struct
   {
@@ -118,13 +130,18 @@ static void*nm_tcp_instantiate(puk_instance_t instance, puk_context_t context)
   struct nm_tcp_s*p_status = padico_malloc(sizeof(struct nm_tcp_s));
   struct nm_tcp_context_s*p_tcp_context = puk_context_get_status(context);
   p_status->fd = -1;
+  p_status->error = 0;
   p_status->p_tcp_context = p_tcp_context;
+  nm_tcp_status_vect_push_back(&p_tcp_context->p_statuses, p_status);
   return p_status;
 }
 
 static void nm_tcp_destroy(void*_status)
 {
   struct nm_tcp_s*p_status = _status;
+  struct nm_tcp_context_s*p_tcp_context = p_status->p_tcp_context;
+  nm_tcp_status_vect_itor_t itor = nm_tcp_status_vect_find(&p_tcp_context->p_statuses, p_status);
+  nm_tcp_status_vect_erase(&p_tcp_context->p_statuses, itor);
   /* half-close for sending */
   NM_SYS(shutdown)(p_status->fd, SHUT_WR);
   /* flush (and throw away) remaining bytes in the pipe up to the EOS */
@@ -141,6 +158,26 @@ static void nm_tcp_destroy(void*_status)
 }
 
 /* ********************************************************* */
+
+static void nm_tcp_rebuild_fds(struct nm_tcp_context_s*p_tcp_context)
+{
+  if(p_tcp_context->nfds != nm_tcp_status_vect_size(&p_tcp_context->p_statuses))
+    {
+      p_tcp_context->nfds = nm_tcp_status_vect_size(&p_tcp_context->p_statuses);
+      p_tcp_context->fds = realloc(p_tcp_context->fds, sizeof(struct pollfd) * p_tcp_context->nfds);
+    }
+  int i;
+  for(i = 0; i < p_tcp_context->nfds; i++)
+    {
+      const struct nm_tcp_s*p_status = nm_tcp_status_vect_at(&p_tcp_context->p_statuses, i);
+      if(!p_status->error)
+        p_tcp_context->fds[i].fd = p_status->fd;
+      else
+        p_tcp_context->fds[i].fd = -p_status->fd;
+      p_tcp_context->fds[i].events = POLLIN;
+    }
+  p_tcp_context->round_robin = 0;
+}
 
 static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
@@ -179,7 +216,10 @@ static void nm_tcp_init(puk_context_t context, const void**drv_url, size_t*url_s
     {
       NM_FATAL("tcp: listen() error: %s\n", strerror(errno));
     }
+  nm_tcp_status_vect_init(&p_tcp_context->p_statuses);
   p_tcp_context->pending_fds = nm_tcp_pending_vect_new();
+  p_tcp_context->fds = NULL;
+  p_tcp_context->nfds = 0;
   puk_context_set_status(context, p_tcp_context);
   *drv_url = p_tcp_context->url;
   *url_size = strlen(p_tcp_context->url) + 1;
@@ -276,6 +316,7 @@ static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size)
   int val = 1;
   socklen_t len = sizeof(val);
   NM_SYS(setsockopt)(p_status->fd, IPPROTO_TCP, TCP_NODELAY, (void*)&val, len);
+  nm_tcp_rebuild_fds(p_tcp_context);
 }
 
 static void nm_tcp_send_post(void*_status, const struct iovec*v, int n)
@@ -318,7 +359,6 @@ static void nm_tcp_recv_init(void*_status, struct iovec*v, int n)
   p_status->recv.n = n;
 }
 
-
 static int nm_tcp_poll_one(void*_status)
 {
   struct nm_tcp_s*p_status = _status;
@@ -349,3 +389,59 @@ static int nm_tcp_poll_one(void*_status)
   return NM_ESUCCESS;
 }
 
+static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int timeout)
+{
+  struct nm_tcp_s*p_status = NULL;
+  struct nm_tcp_context_s*p_tcp_context = puk_context_get_status(p_context);
+  int rc = NM_SYS(poll)(p_tcp_context->fds, p_tcp_context->nfds, timeout);
+  if(rc == 0)
+    {
+      int i;
+      for(i = 0; i < p_tcp_context->nfds; i++)
+        {
+          const int k = (p_tcp_context->round_robin + i) % p_tcp_context->nfds;
+          const short e = p_tcp_context->fds[k].revents;
+          if(e)
+            {
+              if(e & POLLIN)
+                {
+                  assert(nm_tcp_status_vect_at(&p_tcp_context->p_statuses, k)->fd == p_tcp_context->fds[k].fd);
+                  if(p_status == NULL)
+                    {
+                      p_status = nm_tcp_status_vect_at(&p_tcp_context->p_statuses, k);
+                    }
+                }
+              else if(e & (POLLERR | POLLHUP))
+                {
+                  nm_tcp_status_vect_at(&p_tcp_context->p_statuses, k)->error = 1;
+                  p_tcp_context->fds[k].fd = -p_tcp_context->fds[k].fd;
+                }
+              else if(e & POLLNVAL)
+                {
+                  NM_FATAL("tcp: invalid fd in poll.\n");
+                }
+              else
+                {
+                  NM_FATAL("tcp: unexpected revent %d in poll.\n", e);
+                }
+            }
+        }
+      *_status = p_status;
+      return NM_ESUCCESS;
+    }
+  else
+    {
+      *_status = NULL;
+      return -NM_EAGAIN;
+    }
+}
+
+static int nm_tcp_recv_poll_any(puk_context_t p_context, void**_status)
+{
+  return nm_tcp_recv_any_common(p_context, _status, 0);
+}
+
+static int nm_tcp_recv_wait_any(puk_context_t p_context, void**_status)
+{
+  return nm_tcp_recv_any_common(p_context, _status, -1);
+}

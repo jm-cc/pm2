@@ -148,7 +148,7 @@ static void nm_tcp_destroy(void*_status)
   int ret = -1;
   do
     {
-      int dummy = 0;
+      char dummy = 0;
       ret = NM_SYS(read)(p_status->fd, &dummy, sizeof(dummy));
     }
   while (ret > 0 || ((ret == -1 && errno == EAGAIN)));
@@ -181,6 +181,7 @@ static void nm_tcp_rebuild_fds(struct nm_tcp_context_s*p_tcp_context)
 
 static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
+  props->capabilities.has_recv_any = 1;
   props->profile.latency = 500;
   props->profile.bandwidth = 8000;
 }
@@ -367,6 +368,8 @@ static int nm_tcp_poll_one(void*_status)
   int err = errno;
   if(rc == 0)
     {
+      p_status->error = 1;
+      nm_tcp_rebuild_fds(p_status->p_tcp_context);
       return -NM_ECLOSED;
     }
   else if(rc < 0 && err == EAGAIN)
@@ -393,9 +396,10 @@ static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int ti
 {
   struct nm_tcp_s*p_status = NULL;
   struct nm_tcp_context_s*p_tcp_context = puk_context_get_status(p_context);
+  int rebuild = 0;
   int rc = NM_SYS(poll)(p_tcp_context->fds, p_tcp_context->nfds, timeout);
   p_tcp_context->round_robin = (p_tcp_context->round_robin + 1) % p_tcp_context->nfds;
-  if(rc == 0)
+  if(rc > 0)
     {
       int i;
       for(i = 0; i < p_tcp_context->nfds; i++)
@@ -414,8 +418,10 @@ static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int ti
                 }
               else if(e & (POLLERR | POLLHUP))
                 {
+                  NM_WARN("tcp: error for fd = %d\n", p_tcp_context->fds[k].fd);
                   nm_tcp_status_vect_at(&p_tcp_context->p_statuses, k)->error = 1;
                   p_tcp_context->fds[k].fd = -p_tcp_context->fds[k].fd;
+                  rebuild = 1;
                 }
               else if(e & POLLNVAL)
                 {
@@ -427,7 +433,10 @@ static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int ti
                 }
             }
         }
+      if(rebuild)
+        nm_tcp_rebuild_fds(p_tcp_context);
       *_status = p_status;
+      assert(p_status != NULL);
       return NM_ESUCCESS;
     }
   else

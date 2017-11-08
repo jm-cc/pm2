@@ -86,6 +86,7 @@ static void nm_pw_poll_recv_any(struct nm_pkt_wrap_s*p_pw)
   if(rc == NM_ESUCCESS)
     {
       assert(_status != NULL);
+      assert(p_pw->p_drv->p_pw_recv_any == p_pw);
       p_pw->flags &= ~NM_PW_POLL_ANY;
       p_pw->p_drv->p_pw_recv_any = NULL;
       /* reverse resolution status -> gate */
@@ -97,6 +98,7 @@ static void nm_pw_poll_recv_any(struct nm_pkt_wrap_s*p_pw)
           if(_status == r->_status)
             {
               nm_pw_assign(p_pw, p_pw->trk_id, p_pw->p_drv, p_gate);
+              p_trk->p_pw_recv = p_pw;
               break;
             }
         }

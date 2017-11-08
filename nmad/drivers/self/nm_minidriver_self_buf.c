@@ -44,10 +44,10 @@ static void nm_selfbuf_connect(void*_status, const void*remote_url, size_t url_s
 static void nm_selfbuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_selfbuf_buf_send_post(void*_status, nm_len_t len);
 static int  nm_selfbuf_send_poll(void*_status);
-static int  nm_selfbuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len);
+static int  nm_selfbuf_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_len);
+static void nm_selfbuf_recv_buf_release(void*_status);
 static int  nm_selfbuf_recv_poll_any(puk_context_t p_context, void**pp_status);
 static int  nm_selfbuf_recv_wait_any(puk_context_t p_context, void**pp_status);
-static void nm_selfbuf_buf_recv_release(void*_status);
 
 static const struct nm_minidriver_iface_s nm_selfbuf_minidriver =
   {
@@ -60,14 +60,14 @@ static const struct nm_minidriver_iface_s nm_selfbuf_minidriver =
     .buf_send_get      = &nm_selfbuf_buf_send_get,
     .buf_send_post     = &nm_selfbuf_buf_send_post,
     .send_poll         = &nm_selfbuf_send_poll,
-    .recv_init         = NULL,
-    .recv_data         = NULL,
-    .poll_one          = NULL,
+    .recv_iov_post     = NULL,
+    .recv_data_post    = NULL,
+    .recv_poll_one     = NULL,
     .recv_poll_any     = &nm_selfbuf_recv_poll_any,
     .recv_wait_any     = &nm_selfbuf_recv_wait_any,
-    .buf_recv_poll     = &nm_selfbuf_buf_recv_poll,
-    .buf_recv_release  = &nm_selfbuf_buf_recv_release,
-    .cancel_recv       = NULL
+    .recv_buf_poll     = &nm_selfbuf_recv_buf_poll,
+    .recv_buf_release  = &nm_selfbuf_recv_buf_release,
+    .recv_cancel       = NULL
   };
 
 /* ********************************************************* */
@@ -217,7 +217,7 @@ static int nm_selfbuf_recv_wait_any(puk_context_t p_context, void**pp_status)
   return rc;
 }
 
-static int nm_selfbuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len)
+static int nm_selfbuf_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_len)
 {
   struct nm_selfbuf_s*p_status = _status;
   if(p_status->posted)
@@ -232,7 +232,7 @@ static int nm_selfbuf_buf_recv_poll(void*_status, void**p_buffer, nm_len_t*p_len
     }
 }
 
-static void nm_selfbuf_buf_recv_release(void*_status)
+static void nm_selfbuf_recv_buf_release(void*_status)
 {
   struct nm_selfbuf_s*p_status = _status;
   p_status->posted = 0;

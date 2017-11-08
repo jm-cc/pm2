@@ -49,26 +49,26 @@ static void nm_tcp_close(puk_context_t context);
 static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_tcp_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_tcp_send_poll(void*_status);
-static void nm_tcp_recv_init(void*_status,  struct iovec*v, int n);
-static int  nm_tcp_poll_one(void*_status);
+static void nm_tcp_recv_iov_post(void*_status,  struct iovec*v, int n);
+static int  nm_tcp_recv_poll_one(void*_status);
 static int  nm_tcp_recv_poll_any(puk_context_t p_context, void**_status);
 static int  nm_tcp_recv_wait_any(puk_context_t p_context, void**_status);
 
 static const struct nm_minidriver_iface_s nm_tcp_minidriver =
   {
-    .getprops      = &nm_tcp_getprops,
-    .init          = &nm_tcp_init,
-    .close         = &nm_tcp_close,
-    .connect       = &nm_tcp_connect,
-    .send_post     = &nm_tcp_send_post,
-    .send_data     = NULL,
-    .send_poll     = &nm_tcp_send_poll,
-    .recv_init     = &nm_tcp_recv_init,
-    .recv_data     = NULL,
-    .poll_one      = &nm_tcp_poll_one,
-    .recv_poll_any = &nm_tcp_recv_poll_any,
-    .recv_wait_any = &nm_tcp_recv_wait_any,
-    .cancel_recv   = NULL
+    .getprops       = &nm_tcp_getprops,
+    .init           = &nm_tcp_init,
+    .close          = &nm_tcp_close,
+    .connect        = &nm_tcp_connect,
+    .send_post      = &nm_tcp_send_post,
+    .send_data      = NULL,
+    .send_poll      = &nm_tcp_send_poll,
+    .recv_iov_post  = &nm_tcp_recv_iov_post,
+    .recv_data_post = NULL,
+    .recv_poll_one  = &nm_tcp_recv_poll_one,
+    .recv_poll_any  = &nm_tcp_recv_poll_any,
+    .recv_wait_any  = &nm_tcp_recv_wait_any,
+    .recv_cancel    = NULL
   };
 
 /* ********************************************************* */
@@ -349,7 +349,7 @@ static int nm_tcp_send_poll(void*_status)
   return NM_ESUCCESS;
 }
 
-static void nm_tcp_recv_init(void*_status, struct iovec*v, int n)
+static void nm_tcp_recv_iov_post(void*_status, struct iovec*v, int n)
 {
   struct nm_tcp_s*p_status = _status;
   if(n != 1)
@@ -360,7 +360,7 @@ static void nm_tcp_recv_init(void*_status, struct iovec*v, int n)
   p_status->recv.n = n;
 }
 
-static int nm_tcp_poll_one(void*_status)
+static int nm_tcp_recv_poll_one(void*_status)
 {
   struct nm_tcp_s*p_status = _status;
   int size = 0;

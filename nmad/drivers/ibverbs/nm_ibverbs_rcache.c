@@ -117,16 +117,16 @@ static int  nm_ibverbs_rcache_poll_one(void*_status);
 
 static const struct nm_minidriver_iface_s nm_ibverbs_rcache_minidriver =
   {
-    .getprops    = &nm_ibverbs_rcache_getprops,
-    .init        = &nm_ibverbs_rcache_init,
-    .connect     = &nm_ibverbs_rcache_connect,
-    .send_data   = NULL,
-    .send_post   = &nm_ibverbs_rcache_send_post,
-    .send_poll   = &nm_ibverbs_rcache_send_poll,
-    .recv_init   = &nm_ibverbs_rcache_recv_init,
-    .recv_data   = NULL,
-    .poll_one    = &nm_ibverbs_rcache_poll_one,
-    .cancel_recv = NULL
+    .getprops        = &nm_ibverbs_rcache_getprops,
+    .init            = &nm_ibverbs_rcache_init,
+    .connect         = &nm_ibverbs_rcache_connect,
+    .send_data       = NULL,
+    .send_post       = &nm_ibverbs_rcache_send_post,
+    .send_poll       = &nm_ibverbs_rcache_send_poll,
+    .recv_iov_post   = &nm_ibverbs_rcache_recv_init,
+    .recv_data_post  = NULL,
+    .recv_poll_one   = &nm_ibverbs_rcache_poll_one,
+    .recv_cancel     = NULL
   };
 
 static void*nm_ibverbs_rcache_instantiate(puk_instance_t instance, puk_context_t context);

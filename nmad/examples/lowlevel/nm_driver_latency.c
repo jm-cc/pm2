@@ -61,32 +61,32 @@ static inline void minidriver_recv(struct puk_receptacle_NewMad_minidriver_s*r, 
   int rc = -1;
   struct iovec v = { .iov_base = buf, .iov_len = len };
   struct nm_data_s data;
-  if(r->driver->buf_recv_poll)
+  if(r->driver->recv_buf_poll)
     {
       void*p_driver_buf = NULL;
       nm_len_t driver_len = NM_LEN_UNDEFINED;
       do
 	{
-	  rc = (*r->driver->buf_recv_poll)(r->_status, &p_driver_buf, &driver_len);
+	  rc = (*r->driver->recv_buf_poll)(r->_status, &p_driver_buf, &driver_len);
 	}
       while(rc != 0);
       memcpy(buf, p_driver_buf, len);
-      (*r->driver->buf_recv_release)(r->_status);
+      (*r->driver->recv_buf_release)(r->_status);
     }
   else
     {
-      if(r->driver->recv_init)
+      if(r->driver->recv_iov_post)
 	{
-	  (*r->driver->recv_init)(r->_status, &v, 1);
+	  (*r->driver->recv_iov_post)(r->_status, &v, 1);
 	}
       else
 	{
 	  nm_data_contiguous_build(&data, buf, len);
-	  (*r->driver->recv_data)(r->_status, &data, 0, len);
+	  (*r->driver->recv_data_post)(r->_status, &data, 0, len);
 	}
       do
 	{
-	  rc = (*r->driver->poll_one)(r->_status);
+	  rc = (*r->driver->recv_poll_one)(r->_status);
 	}
       while(rc != 0);
     }

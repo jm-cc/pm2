@@ -142,8 +142,8 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	{
 	  struct nm_pkt_wrap_s*p_pw = p_drv->p_pw_recv_any;
 	  p_drv->p_pw_recv_any = NULL;
-	  if(p_drv->driver->cancel_recv)
-	    p_drv->driver->cancel_recv(NULL);
+	  if(p_drv->driver->recv_cancel)
+	    (*p_drv->driver->recv_cancel)(NULL);
 #ifndef PIOMAN
 	  nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
 	  nm_pkt_wrap_list_push_back(pending_pw, p_pw);
@@ -169,8 +169,8 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	  if(p_pw)
 	    {
 	      struct puk_receptacle_NewMad_minidriver_s*r = &p_trk->receptacle;
-	      if(r->driver->cancel_recv)
-		r->driver->cancel_recv(r->_status);
+	      if(r->driver->recv_cancel)
+		(*r->driver->recv_cancel)(r->_status);
 	      p_trk->p_pw_recv = NULL;
 	      
 #ifndef PIOMAN

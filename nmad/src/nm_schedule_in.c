@@ -149,7 +149,7 @@ static void nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
     {
       void*buf = NULL;
       nm_len_t len = NM_LEN_UNDEFINED;
-      err = (*r->driver->buf_recv_poll)(r->_status, &buf, &len);
+      err = (*r->driver->recv_buf_poll)(r->_status, &buf, &len);
       if(err == NM_ESUCCESS)
         {
           assert(len != NM_LEN_UNDEFINED);
@@ -161,12 +161,12 @@ static void nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
     }
   else
     {
-      err = (*r->driver->poll_one)(r->_status);
+      err = (*r->driver->recv_poll_one)(r->_status);
     }
 #ifdef DEBUG
   if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && 
-     (p_pw->p_drv->driver->recv_init == NULL) &&
-     (p_pw->p_drv->driver->buf_recv_poll == NULL) &&
+     (p_pw->p_drv->driver->recv_iov_post == NULL) &&
+     (p_pw->p_drv->driver->recv_buf_poll == NULL) &&
      (p_pw->p_drv->props.capabilities.supports_data))
     {
       struct nm_data_s*p_data = &p_pw->p_trk->rdata;
@@ -211,27 +211,27 @@ static void nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
       if((p_pw->p_data != NULL) && (p_pw->v_nb == 0))
 	{
 	  /* pw content is only p_data */
-	  assert(r->driver->recv_data != NULL);
-	  (*r->driver->recv_data)(r->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
+	  assert(r->driver->recv_data_post != NULL);
+	  (*r->driver->recv_data_post)(r->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
 	}
       else
 	{
 	  /* no p_data, or data has been flattened */
-	  if(r->driver->buf_recv_poll)
+	  if(r->driver->recv_buf_poll)
 	    {
 	      p_pw->flags |= NM_PW_BUF_RECV;
 	    }
-	  else if(r->driver->recv_init)
+	  else if(r->driver->recv_iov_post)
 	    {
-	      (*r->driver->recv_init)(r->_status, &p_pw->v[0], p_pw->v_nb);
+	      (*r->driver->recv_iov_post)(r->_status, &p_pw->v[0], p_pw->v_nb);
 	    }
 	  else
 	    {
-	      assert(r->driver->recv_data);
+	      assert(r->driver->recv_data_post);
 	      struct nm_data_s*p_data = &p_pw->p_trk->rdata;
 	      assert(nm_data_isnull(p_data));
 	      nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
-	      (*r->driver->recv_data)(r->_status, p_data, 0 /* chunk_offset */, p_pw->length);
+	      (*r->driver->recv_data_post)(r->_status, p_data, 0 /* chunk_offset */, p_pw->length);
 	    }
 	}
     } 

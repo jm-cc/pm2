@@ -41,21 +41,21 @@ static void nm_self_close(puk_context_t context);
 static void nm_self_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_self_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_self_send_poll(void*_status);
-static void nm_self_recv_init(void*_status,  struct iovec*v, int n);
-static int  nm_self_poll_one(void*_status);
-static int  nm_self_cancel_recv(void*_status);
+static void nm_self_recv_iov_post(void*_status,  struct iovec*v, int n);
+static int  nm_self_recv_poll_one(void*_status);
+static int  nm_self_recv_cancel(void*_status);
 
 static const struct nm_minidriver_iface_s nm_self_minidriver =
   {
-    .getprops    = &nm_self_getprops,
-    .init        = &nm_self_init,
-    .close       = &nm_self_close,
-    .connect     = &nm_self_connect,
-    .send_post   = &nm_self_send_post,
-    .send_poll   = &nm_self_send_poll,
-    .recv_init   = &nm_self_recv_init,
-    .poll_one    = &nm_self_poll_one,
-    .cancel_recv = &nm_self_cancel_recv
+    .getprops       = &nm_self_getprops,
+    .init           = &nm_self_init,
+    .close          = &nm_self_close,
+    .connect        = &nm_self_connect,
+    .send_post      = &nm_self_send_post,
+    .send_poll      = &nm_self_send_poll,
+    .recv_iov_post  = &nm_self_recv_iov_post,
+    .recv_poll_one  = &nm_self_recv_poll_one,
+    .recv_cancel    = &nm_self_recv_cancel
   };
 
 /* ********************************************************* */
@@ -174,7 +174,7 @@ static int nm_self_send_poll(void*_status)
     }
 }
 
-static void nm_self_recv_init(void*_status, struct iovec*v, int n)
+static void nm_self_recv_iov_post(void*_status, struct iovec*v, int n)
 {
   struct nm_self_s*p_status = _status;
   if(n != 1)
@@ -186,7 +186,7 @@ static void nm_self_recv_init(void*_status, struct iovec*v, int n)
   p_status->recv.n = n;
 }
 
-static int nm_self_poll_one(void*_status)
+static int nm_self_recv_poll_one(void*_status)
 {
   struct nm_self_s*p_status = _status;
   if(p_status->send.posted)
@@ -215,7 +215,7 @@ static int nm_self_poll_one(void*_status)
 }
 
 
-static int nm_self_cancel_recv(void*_status)
+static int nm_self_recv_cancel(void*_status)
 { 
   return -NM_ENOTIMPL;
 }

@@ -44,21 +44,22 @@ static void nm_local_close(puk_context_t context);
 static void nm_local_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_local_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_local_send_poll(void*_status);
-static void nm_local_recv_init(void*_status,  struct iovec*v, int n);
-static int  nm_local_poll_one(void*_status);
-static int  nm_local_cancel_recv(void*_status);
+static void nm_local_recv_iov_post(void*_status,  struct iovec*v, int n);
+static int  nm_local_recv_poll_one(void*_status);
+static int  nm_local_recv_cancel(void*_status);
 
 static const struct nm_minidriver_iface_s nm_local_minidriver =
   {
-    .getprops    = &nm_local_getprops,
-    .init        = &nm_local_init,
-    .close       = &nm_local_close,
-    .connect     = &nm_local_connect,
-    .send_post   = &nm_local_send_post,
-    .send_poll   = &nm_local_send_poll,
-    .recv_init   = &nm_local_recv_init,
-    .poll_one    = &nm_local_poll_one,
-    .cancel_recv = &nm_local_cancel_recv
+    .getprops       = &nm_local_getprops,
+    .init           = &nm_local_init,
+    .close          = &nm_local_close,
+    .connect        = &nm_local_connect,
+    .send_post      = &nm_local_send_post,
+    .send_poll      = &nm_local_send_poll,
+    .recv_iov_post  = &nm_local_recv_iov_post,
+    .recv_data_post = NULL,
+    .recv_poll_one  = &nm_local_recv_poll_one,
+    .recv_cancel    = &nm_local_recv_cancel
   };
 
 /* ********************************************************* */
@@ -284,7 +285,7 @@ static int nm_local_send_poll(void*_status)
   return NM_ESUCCESS;
 }
 
-static void nm_local_recv_init(void*_status, struct iovec*v, int n)
+static void nm_local_recv_iov_post(void*_status, struct iovec*v, int n)
 {
   struct nm_local_s*p_status = _status;
   if(n != 1)
@@ -297,7 +298,7 @@ static void nm_local_recv_init(void*_status, struct iovec*v, int n)
 }
 
 
-static int nm_local_poll_one(void*_status)
+static int nm_local_recv_poll_one(void*_status)
 {
   struct nm_local_s*p_status = _status;
   int size = 0;
@@ -331,7 +332,7 @@ static int nm_local_poll_one(void*_status)
 }
 
 
-static int nm_local_cancel_recv(void*_status)
+static int nm_local_recv_cancel(void*_status)
 { 
   return -NM_ENOTIMPL;
 }

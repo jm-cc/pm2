@@ -103,24 +103,22 @@ struct nm_minidriver_iface_s
   /* ** receiving primitives */
 
   /** post a recv for data described by iovec */
-  void (*recv_init)(void*_status, struct iovec*v, int n);
+  void (*recv_iov_post)(void*_status, struct iovec*v, int n);
   /** post a recv for data described by nm_data iterator */
-  void (*recv_data)(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
+  void (*recv_data_post)(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
   /** poll a recv operation already posted */
-  int  (*poll_one)(void*_status);
-  /** cancel a posted recv */
-  int  (*cancel_recv)(void*_status);
+  int  (*recv_poll_one)(void*_status);
+  /** poll the driver for a pending recv; returns buffer */
+  int  (*recv_buf_poll)(void*_status, void**p_buffer, nm_len_t*p_len);
+  /** release a buffer returned by buf_recv_poll() or buf_recv_wait_any() */
+  void (*recv_buf_release)(void*_status);
   /** poll the driver for a pending recv from any source; returns status of instance */
   int  (*recv_poll_any)(puk_context_t p_context, void**_status);
   /** passively wait for a pending recv from any source; returns status of instance */
   int  (*recv_wait_any)(puk_context_t p_context, void**_status);
+  /** cancel a posted recv */
+  int  (*recv_cancel)(void*_status);
 
-  /* ** buffer-based recv */
-
-  /** poll the driver for a pending recv; returns buffer */
-  int  (*buf_recv_poll)(void*_status, void**p_buffer, nm_len_t*p_len);
-  /** release a buffer returned by buf_recv_poll() or buf_recv_wait_any() */
-  void (*buf_recv_release)(void*_status);
 };
 PUK_IFACE_TYPE(NewMad_minidriver, struct nm_minidriver_iface_s);
 

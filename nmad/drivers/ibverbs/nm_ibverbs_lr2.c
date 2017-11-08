@@ -105,24 +105,24 @@ static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n);
 static void nm_ibverbs_lr2_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_ibverbs_lr2_send_poll(void*_status);
 static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t size);
-static void nm_ibverbs_lr2_recv_init(void*_status, struct iovec*v, int n);
-static void nm_ibverbs_lr2_recv_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
-static int  nm_ibverbs_lr2_poll_one(void*_status);
+static void nm_ibverbs_lr2_recv_iov_post(void*_status, struct iovec*v, int n);
+static void nm_ibverbs_lr2_recv_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
+static int  nm_ibverbs_lr2_recv_poll_one(void*_status);
 
 static const struct nm_minidriver_iface_s nm_ibverbs_lr2_minidriver =
   {
-    .getprops    = &nm_ibverbs_lr2_getprops,
-    .init        = &nm_ibverbs_lr2_init,
-    .close       = &nm_ibverbs_lr2_close,
-    .connect     = &nm_ibverbs_lr2_connect,
-    .send_post   = &nm_ibverbs_lr2_send_post,
-    .send_data   = &nm_ibverbs_lr2_send_data,
-    .send_poll   = &nm_ibverbs_lr2_send_poll,
-    .send_prefetch = &nm_ibverbs_lr2_send_prefetch,
-    .recv_init   = &nm_ibverbs_lr2_recv_init,
-    .recv_data   = &nm_ibverbs_lr2_recv_data,
-    .poll_one    = &nm_ibverbs_lr2_poll_one,
-    .cancel_recv = NULL
+    .getprops       = &nm_ibverbs_lr2_getprops,
+    .init           = &nm_ibverbs_lr2_init,
+    .close          = &nm_ibverbs_lr2_close,
+    .connect        = &nm_ibverbs_lr2_connect,
+    .send_post      = &nm_ibverbs_lr2_send_post,
+    .send_data      = &nm_ibverbs_lr2_send_data,
+    .send_poll      = &nm_ibverbs_lr2_send_poll,
+    .send_prefetch  = &nm_ibverbs_lr2_send_prefetch,
+    .recv_iov_post  = &nm_ibverbs_lr2_recv_iov_post,
+    .recv_data_post = &nm_ibverbs_lr2_recv_data_post,
+    .recv_poll_one  = &nm_ibverbs_lr2_recv_poll_one,
+    .recv_cancel    = NULL
   };
 
 static void*nm_ibverbs_lr2_instantiate(puk_instance_t instance, puk_context_t context);
@@ -367,7 +367,7 @@ static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t 
     }
 }
 
-static void nm_ibverbs_lr2_recv_init(void*_status, struct iovec*v, int n)
+static void nm_ibverbs_lr2_recv_iov_post(void*_status, struct iovec*v, int n)
 {
   struct nm_ibverbs_lr2*lr2 = _status;
   lr2->recv.done    = 0;
@@ -379,7 +379,7 @@ static void nm_ibverbs_lr2_recv_init(void*_status, struct iovec*v, int n)
   lr2->recv.nbuffer = 0;
 }
 
-static void nm_ibverbs_lr2_recv_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
+static void nm_ibverbs_lr2_recv_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_ibverbs_lr2*lr2 = _status;
   assert(chunk_offset + chunk_len <= nm_data_size(p_data));
@@ -394,7 +394,7 @@ static void nm_ibverbs_lr2_recv_data(void*_status, const struct nm_data_s*p_data
     nm_data_slicer_forward(&lr2->recv.slicer, chunk_offset);
 }
 
-static int nm_ibverbs_lr2_poll_one(void*_status)
+static int nm_ibverbs_lr2_recv_poll_one(void*_status)
 {
   struct nm_ibverbs_lr2*lr2 = _status;
   while(lr2->recv.done < lr2->recv.size)

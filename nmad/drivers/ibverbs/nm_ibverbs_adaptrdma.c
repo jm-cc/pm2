@@ -83,14 +83,14 @@ static int  nm_ibverbs_adaptrdma_poll_one(void*_status);
 
 static const struct nm_minidriver_iface_s nm_ibverbs_adaptrdma_minidriver =
   {
-    .getprops    = &nm_ibverbs_adaptrdma_getprops,
-    .init        = &nm_ibverbs_adaptrdma_init,
-    .connect     = &nm_ibverbs_adaptrdma_connect,
-    .send_post   = &nm_ibverbs_adaptrdma_send_post,
-    .send_poll   = &nm_ibverbs_adaptrdma_send_poll,
-    .recv_init   = &nm_ibverbs_adaptrdma_recv_init,
-    .poll_one    = &nm_ibverbs_adaptrdma_poll_one,
-    .cancel_recv = NULL
+    .getprops       = &nm_ibverbs_adaptrdma_getprops,
+    .init           = &nm_ibverbs_adaptrdma_init,
+    .connect        = &nm_ibverbs_adaptrdma_connect,
+    .send_post      = &nm_ibverbs_adaptrdma_send_post,
+    .send_poll      = &nm_ibverbs_adaptrdma_send_poll,
+    .recv_iov_post  = &nm_ibverbs_adaptrdma_recv_init,
+    .recv_poll_one  = &nm_ibverbs_adaptrdma_poll_one,
+    .recv_cancel    = NULL
   };
 
 static void*nm_ibverbs_adaptrdma_instantiate(puk_instance_t instance, puk_context_t context);

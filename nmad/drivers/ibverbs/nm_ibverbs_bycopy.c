@@ -102,23 +102,23 @@ static void nm_ibverbs_bycopy_close(puk_context_t context);
 static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_bycopy_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_ibverbs_bycopy_send_poll(void*_status);
-static void nm_ibverbs_bycopy_recv_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
-static int  nm_ibverbs_bycopy_poll_one(void*_status);
-static int  nm_ibverbs_bycopy_cancel_recv(void*_status);
+static void nm_ibverbs_bycopy_recv_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
+static int  nm_ibverbs_bycopy_recv_poll_one(void*_status);
+static int  nm_ibverbs_bycopy_recv_cancel(void*_status);
 
 static const struct nm_minidriver_iface_s nm_ibverbs_bycopy_minidriver =
   {
-    .getprops    = &nm_ibverbs_bycopy_getprops,
-    .init        = &nm_ibverbs_bycopy_init,
-    .close       = &nm_ibverbs_bycopy_close,
-    .connect     = &nm_ibverbs_bycopy_connect,
-    .send_post   = NULL,
-    .send_data   = &nm_ibverbs_bycopy_send_data,
-    .send_poll   = &nm_ibverbs_bycopy_send_poll,
-    .recv_init   = NULL,
-    .recv_data   = &nm_ibverbs_bycopy_recv_data,
-    .poll_one    = &nm_ibverbs_bycopy_poll_one,
-    .cancel_recv = &nm_ibverbs_bycopy_cancel_recv
+    .getprops        = &nm_ibverbs_bycopy_getprops,
+    .init            = &nm_ibverbs_bycopy_init,
+    .close           = &nm_ibverbs_bycopy_close,
+    .connect         = &nm_ibverbs_bycopy_connect,
+    .send_post       = NULL,
+    .send_data       = &nm_ibverbs_bycopy_send_data,
+    .send_poll       = &nm_ibverbs_bycopy_send_poll,
+    .recv_iov_post   = NULL,
+    .recv_data_post  = &nm_ibverbs_bycopy_recv_data_post,
+    .recv_poll_one   = &nm_ibverbs_bycopy_recv_poll_one,
+    .recv_cancel     = &nm_ibverbs_bycopy_recv_cancel
   };
 
 static void*nm_ibverbs_bycopy_instantiate(puk_instance_t instance, puk_context_t context);
@@ -345,7 +345,7 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
   return -NM_EAGAIN;
 }
 
-static void nm_ibverbs_bycopy_recv_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
+static void nm_ibverbs_bycopy_recv_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_ibverbs_bycopy*bycopy = _status;
   assert(nm_data_slicer_isnull(&bycopy->recv.slicer));
@@ -356,7 +356,7 @@ static void nm_ibverbs_bycopy_recv_data(void*_status, const struct nm_data_s*p_d
   bycopy->recv.done      = 0;
 }
 
-static int nm_ibverbs_bycopy_poll_one(void*_status)
+static int nm_ibverbs_bycopy_recv_poll_one(void*_status)
 {
   int err = -NM_EUNKNOWN;
   int complete = 0;
@@ -420,7 +420,7 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
   return err;
 }
 
-static int nm_ibverbs_bycopy_cancel_recv(void*_status)
+static int nm_ibverbs_bycopy_recv_cancel(void*_status)
 {
   int err = -NM_EAGAIN;
   struct nm_ibverbs_bycopy*__restrict__ bycopy = _status;

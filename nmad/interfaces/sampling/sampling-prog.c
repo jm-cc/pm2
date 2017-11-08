@@ -154,18 +154,18 @@ static inline void minidriver_recv(struct puk_receptacle_NewMad_minidriver_s*r, 
   int rc = -1;
   struct iovec v = { .iov_base = buf, .iov_len = len };
   struct nm_data_s data;
-  if(r->driver->recv_init)
+  if(r->driver->recv_iov_post)
     {
-      (*r->driver->recv_init)(r->_status, &v, 1);
+      (*r->driver->recv_iov_post)(r->_status, &v, 1);
     }
   else
     {
       nm_data_contiguous_build(&data, buf, len);
-      (*r->driver->recv_data)(r->_status, &data, 0, len);
+      (*r->driver->recv_data_post)(r->_status, &data, 0, len);
     }
   do
     {
-      rc = (*r->driver->poll_one)(r->_status);
+      rc = (*r->driver->recv_poll_one)(r->_status);
     }
   while(rc != 0);
 }
@@ -173,19 +173,19 @@ static inline void minidriver_recv_data(struct puk_receptacle_NewMad_minidriver_
 {
   int rc = -1;
   const nm_len_t len = nm_data_size(p_data);
-  if(r->driver->recv_data)
+  if(r->driver->recv_data_post)
     {
-      (*r->driver->recv_data)(r->_status, p_data, 0, len);
+      (*r->driver->recv_data_post)(r->_status, p_data, 0, len);
     }
   else
     {
       void*buf = nm_data_baseptr_get(p_data);
       struct iovec v = { .iov_base = buf, .iov_len = len };
-      (*r->driver->recv_init)(r->_status, &v, 1);
+      (*r->driver->recv_iov_post)(r->_status, &v, 1);
     }
   do
     {
-      rc = (*r->driver->poll_one)(r->_status);
+      rc = (*r->driver->recv_poll_one)(r->_status);
     }
   while(rc != 0);
 }

@@ -1029,10 +1029,10 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
       /* request was posted on a given gate */
       p_pw->p_trk->p_pw_recv = NULL;
     }
-  else if((!p_pw->p_trk) && p_drv->p_in_rq == p_pw)
+  else if((!p_pw->p_trk) && p_drv->p_pw_recv_any == p_pw)
     {
       /* request was posted on a driver, for any gate */
-      p_drv->p_in_rq = NULL;
+      p_drv->p_pw_recv_any = NULL;
     }
   /* check error status */
   if(p_pw->flags & NM_PW_CLOSED)

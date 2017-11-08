@@ -207,7 +207,7 @@ void nm_drv_refill_recv(nm_drv_t p_drv, nm_gate_t p_gate)
   if(p_drv->props.capabilities.has_recv_any)
     {
       /* recv any available- single pw with no gate */
-      if(p_drv->p_in_rq == NULL)
+      if(p_drv->p_pw_recv_any == NULL)
 	{
 	  struct nm_pkt_wrap_s*p_pw = nm_pw_alloc_buffer(p_core);
 	  nm_core_post_recv(p_pw, NM_GATE_NONE, NM_TRK_SMALL, p_drv);

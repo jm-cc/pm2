@@ -59,8 +59,8 @@ static inline void nm_pw_assign(struct nm_pkt_wrap_s*p_pw, nm_trk_id_t trk_id, s
   p_pw->trk_id = trk_id;
   if(p_gate == NM_GATE_NONE)
     {
-      assert(p_drv->p_in_rq == NULL);
-      p_drv->p_in_rq = p_pw;
+      assert(p_drv->p_pw_recv_any == NULL);
+      p_drv->p_pw_recv_any = p_pw;
       p_pw->p_trk = NULL;
       p_pw->p_drv = p_drv;
     }

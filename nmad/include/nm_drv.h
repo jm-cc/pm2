@@ -38,7 +38,7 @@ struct nm_drv_s
   const struct nm_minidriver_iface_s*driver;
     
   /** global recv request if driver supports recv_any */
-  struct nm_pkt_wrap_s*p_in_rq;
+  struct nm_pkt_wrap_s*p_pw_recv_any;
 
   /** driver properties (profile & capabilities) */
   struct nm_minidriver_properties_s props;

@@ -32,7 +32,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
   p_drv->assembly  = driver_component;
   p_drv->driver    = puk_component_get_driver_NewMad_minidriver(p_drv->assembly, NULL);
   p_drv->minidriver_context = puk_component_get_context(driver_component, puk_iface_NewMad_minidriver(), NULL);
-  p_drv->p_in_rq   = NULL;
+  p_drv->p_pw_recv_any = NULL;
   p_drv->props.capabilities = (struct nm_minidriver_capabilities_s){ 0 };
 #ifdef PM2_TOPOLOGY
   p_drv->props.profile.cpuset = NULL;
@@ -138,10 +138,10 @@ void nm_core_driver_flush(struct nm_core*p_core)
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
       /* cancel pre-posted pw on trk #0 for anygate */
-      if(p_drv->p_in_rq)
+      if(p_drv->p_pw_recv_any)
 	{
-	  struct nm_pkt_wrap_s*p_pw = p_drv->p_in_rq;
-	  p_drv->p_in_rq = NULL;
+	  struct nm_pkt_wrap_s*p_pw = p_drv->p_pw_recv_any;
+	  p_drv->p_pw_recv_any = NULL;
 	  if(p_drv->driver->cancel_recv)
 	    p_drv->driver->cancel_recv(NULL);
 #ifndef PIOMAN

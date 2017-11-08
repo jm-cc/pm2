@@ -1024,21 +1024,14 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_pw_in);
   /* clear the input request field */
-  if(p_pw->p_trk && p_pw->p_trk->p_pw_recv == p_pw)
-    {
-      /* request was posted on a given gate */
-      p_pw->p_trk->p_pw_recv = NULL;
-    }
-  else if((!p_pw->p_trk) && p_drv->p_pw_recv_any == p_pw)
-    {
-      /* request was posted on a driver, for any gate */
-      p_drv->p_pw_recv_any = NULL;
-    }
+  assert(p_pw->p_trk);
+  assert(p_pw->p_trk->p_pw_recv == p_pw);
+  p_pw->p_trk->p_pw_recv = NULL;
   /* check error status */
   if(p_pw->flags & NM_PW_CLOSED)
     {
       nm_pw_ref_dec(p_pw);
-      p_gate->status = NM_GATE_STATUS_DISCONNECTING;
+      nm_gate_disconnected(p_core, p_gate, p_drv);
       return;
     }
   

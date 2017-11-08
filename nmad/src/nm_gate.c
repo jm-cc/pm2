@@ -114,3 +114,19 @@ void nm_core_gate_connect(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_dr
   nm_core_unlock(p_core);
 }
 
+/** notify from driver p_drv that gate p_gate has been closed by peer.
+ */
+void nm_gate_disconnected(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_drv)
+{
+  p_gate->status = NM_GATE_STATUS_DISCONNECTING;
+  int connected = 0;
+  NM_FOR_EACH_GATE(p_gate, p_core)
+    {
+      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
+        connected++;
+    }
+  if((connected > 0) && (p_drv->props.capabilities.has_recv_any))
+    {
+      nm_drv_refill_recv(p_drv, NULL);
+    }
+}

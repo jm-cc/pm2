@@ -22,6 +22,9 @@
 
 PADICO_MODULE_HOOK(NewMad_Core);
 
+static void nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw);
+static void nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw);
+static void nm_pw_poll_recv_any(struct nm_pkt_wrap_s*p_pw);
 
 /** Post a pw for recv on a driver.
  * either p_gate or p_drv may be NULL, but not both at the same time.
@@ -31,22 +34,80 @@ void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate,
 {
   nm_pw_assign(p_pw, trk_id, p_drv, p_gate);
   p_pw->flags |= NM_PW_RECV;
-  struct nm_trk_s*p_trk = p_pw->p_trk;
-  if(p_trk)
+  if(p_gate)
     {
+      struct nm_trk_s*p_trk = p_pw->p_trk;
+      assert(p_trk != NULL);
       assert(p_trk->p_pw_recv == NULL);
       p_trk->p_pw_recv = p_pw;
     }
+  else
+    {
+      p_pw->flags |= NM_PW_POLL_ANY;
+    }
 #ifdef PIOMAN
   nm_ltask_submit_pw_recv(p_pw);
-#else
-  nm_pw_post_recv(p_pw);
-#endif
+#else /* PIOMAN */
+  nm_pw_recv_progress(p_pw);
+#endif /* PIOMAN */
+}
+
+/** Make progress on an active incoming request.
+ */
+void nm_pw_recv_progress(struct nm_pkt_wrap_s*p_pw)
+{
+  const nm_pw_flag_t flags = p_pw->flags;
+  if(flags & NM_PW_POLL_ANY)
+    {
+      /* polling on any before posting */
+      nm_pw_poll_recv_any(p_pw);
+    }
+  else if(flags & NM_PW_POSTED)
+    {
+      /* already posted- poll */
+      nm_pw_poll_recv(p_pw);
+    }
+  else
+    {
+      /* not posted yet */
+      nm_pw_post_recv(p_pw);
+    }
+}
+
+static void nm_pw_poll_recv_any(struct nm_pkt_wrap_s*p_pw)
+{
+  struct nm_core*p_core = p_pw->p_drv->p_core;
+  nm_core_nolock_assert(p_core);
+  assert(p_pw->p_trk == NULL);
+  const struct nm_minidriver_iface_s*p_driver = p_pw->p_drv->driver;
+  assert(p_driver->recv_poll_any != NULL);
+  void*_status = NULL;
+  int rc = (*p_driver->recv_poll_any)(p_pw->p_drv->minidriver_context, &_status);
+  if(rc == NM_ESUCCESS)
+    {
+      assert(_status != NULL);
+      p_pw->flags &= ~NM_PW_POLL_ANY;
+      p_pw->p_drv->p_pw_recv_any = NULL;
+      /* reverse resolution status -> gate */
+      struct nm_gate_s*p_gate;
+      NM_FOR_EACH_GATE(p_gate, p_core)
+        {
+          struct nm_trk_s*p_trk = &p_gate->trks[p_pw->trk_id];
+          const struct puk_receptacle_NewMad_minidriver_s*r = &p_trk->receptacle;
+          if(_status == r->_status)
+            {
+              nm_pw_assign(p_pw, p_pw->trk_id, p_pw->p_drv, p_gate);
+              break;
+            }
+        }
+      assert(p_pw->p_gate != NULL);
+      nm_pw_post_recv(p_pw);
+    }
 }
 
 /** Poll active incoming requests 
  */
-int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
+static void nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 {
   int err = NM_ESUCCESS;
   struct nm_core*p_core = p_pw->p_drv->p_core;
@@ -69,7 +130,7 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
       clock_gettime(clock, &t);
       if(t.tv_sec < next_poll.tv_sec ||
 	 (t.tv_sec == next_poll.tv_sec && t.tv_nsec < next_poll.tv_nsec))
-	return -NM_EAGAIN;
+	return;
       t.tv_nsec += 100 * 1000;
       if(t.tv_nsec > 1000000000)
 	{
@@ -79,32 +140,26 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
       next_poll = t;
       NM_WARN("nm_pw_poll_recv()- non-zero min_period.\n");
     }
-  if(p_pw->p_trk)
+  assert(p_pw->p_trk != NULL);
+  assert(p_pw->p_trk == &p_pw->p_gate->trks[p_pw->trk_id]);
+  const struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
+  if(p_pw->flags & NM_PW_BUF_RECV)
     {
-      assert(p_pw->p_trk == &p_pw->p_gate->trks[p_pw->trk_id]);
-      const struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
-      if(p_pw->flags & NM_PW_BUF_RECV)
-	{
-	  void*buf = NULL;
-	  nm_len_t len = NM_LEN_UNDEFINED;
-	  err = (*r->driver->buf_recv_poll)(r->_status, &buf, &len);
-	  if(err == NM_ESUCCESS)
-	    {
-	      assert(len != NM_LEN_UNDEFINED);
-	      assert(len <= p_pw->max_len);
-	      p_pw->v[0].iov_base = buf;
-	      p_pw->v[0].iov_len = len;
-	      p_pw->length = len;
-	    }
-	}
-      else
-	{
-	  err = (*r->driver->poll_one)(r->_status);
-	}
+      void*buf = NULL;
+      nm_len_t len = NM_LEN_UNDEFINED;
+      err = (*r->driver->buf_recv_poll)(r->_status, &buf, &len);
+      if(err == NM_ESUCCESS)
+        {
+          assert(len != NM_LEN_UNDEFINED);
+          assert(len <= p_pw->max_len);
+          p_pw->v[0].iov_base = buf;
+          p_pw->v[0].iov_len = len;
+          p_pw->length = len;
+        }
     }
   else
     {
-      NM_FATAL("nmad: FATAL- recv_any not implemented yet.\n");
+      err = (*r->driver->poll_one)(r->_status);
     }
 #ifdef DEBUG
   if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && 
@@ -137,12 +192,11 @@ int nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
     {
       NM_WARN("drv->poll_recv returned %d", err);
     }
-  return err;
 }
 
 /** Actually post a recv request to the driver
  */
-int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
+static void nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
 {
   struct nm_core*p_core = p_pw->p_drv->p_core;
   /* no locck needed; only this ltask is allow to touch the pw */
@@ -193,9 +247,7 @@ int nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
 #endif /* !PIOMAN */
   p_pw->flags |= NM_PW_POSTED;
 
-  int err = nm_pw_poll_recv(p_pw);
-  
-  return err;
+  nm_pw_poll_recv(p_pw);
 }
 
 void nm_drv_refill_recv(nm_drv_t p_drv, nm_gate_t p_gate)

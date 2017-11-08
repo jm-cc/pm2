@@ -121,10 +121,7 @@ static piom_topo_obj_t nm_get_binding_policy(nm_drv_t p_drv)
 static int nm_ltask_pw_recv(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
-  if(p_pw->flags & NM_PW_POSTED)
-    nm_pw_poll_recv(p_pw);
-  else
-    nm_pw_post_recv(p_pw);
+  nm_pw_recv_progress(p_pw);
   return NM_ESUCCESS;
 }
 

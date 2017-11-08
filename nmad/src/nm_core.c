@@ -132,7 +132,7 @@ int nm_schedule(struct nm_core*p_core)
       struct nm_pkt_wrap_s*p_pw, *p_pw2;
       puk_list_foreach_safe(nm_pkt_wrap, p_pw, p_pw2, &p_core->pending_recv_list)
 	{
-	  nm_pw_poll_recv(p_pw);
+	  nm_pw_recv_progress(p_pw);
 	}
     }
   /* poll pending out requests */

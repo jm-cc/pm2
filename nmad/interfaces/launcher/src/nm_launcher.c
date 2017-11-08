@@ -203,10 +203,12 @@ int nm_launcher_exit(void)
       nm_status_wait(&rreqs[i], NM_STATUS_FINALIZED, p_core);
       nm_status_wait(&sreqs[i], NM_STATUS_FINALIZED, p_core);
     }
-  
+  free(sreqs);
+  free(rreqs);
   free(launcher.gates);
   launcher.gates = NULL;
   puk_instance_destroy(launcher.instance);
+  p_core = NULL;
   launcher.instance = NULL;
   if(launcher.boot_mod)
     {

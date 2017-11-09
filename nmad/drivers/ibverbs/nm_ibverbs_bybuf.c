@@ -50,11 +50,15 @@ struct nm_ibverbs_bybuf_packet_s
   struct nm_ibverbs_bybuf_header_s header;
 } __attribute__((packed));
 
+PUK_VECT_TYPE(nm_ibverbs_bybuf_status, struct nm_ibverbs_bybuf*);
+
 /** context for ibverbs bybuf */
 struct nm_ibverbs_bybuf_context_s
 {
   struct nm_ibverbs_hca_s*p_hca;
   struct nm_connector_s*p_connector;
+  struct nm_ibverbs_bybuf_status_vect_s p_statuses;
+  int round_robin;
 };
 
 /** Connection state for tracks sending by copy
@@ -102,6 +106,7 @@ static void nm_ibverbs_bybuf_buf_send_get(void*_status, void**p_buffer, nm_len_t
 static void nm_ibverbs_bybuf_buf_send_post(void*_status, nm_len_t len);
 static int  nm_ibverbs_bybuf_send_poll(void*_status);
 static int  nm_ibverbs_bybuf_recv_cancel(void*_status);
+static int  nm_ibverbs_bybuf_recv_poll_any(puk_context_t p_context, void**_status);
 static int  nm_ibverbs_bybuf_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_ibverbs_bybuf_recv_buf_release(void*_status);
 
@@ -119,6 +124,7 @@ static const struct nm_minidriver_iface_s nm_ibverbs_bybuf_minidriver =
     .recv_iov_post    = NULL,
     .recv_data_post   = NULL,
     .recv_poll_one    = NULL,
+    .recv_poll_any    = &nm_ibverbs_bybuf_recv_poll_any,
     .recv_buf_poll    = &nm_ibverbs_bybuf_recv_buf_poll,
     .recv_buf_release = &nm_ibverbs_bybuf_recv_buf_release,
     .recv_cancel      = &nm_ibverbs_bybuf_recv_cancel
@@ -157,7 +163,8 @@ static inline int nm_ibverbs_bybuf_to_ack(struct nm_ibverbs_bybuf*__restrict__ b
 
 static void* nm_ibverbs_bybuf_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  /* check parameters consistency */
+  struct nm_ibverbs_bybuf_context_s*p_bybuf_context = puk_context_get_status(context);
+ /* check parameters consistency */
   assert(sizeof(struct nm_ibverbs_bybuf_packet_s) % 1024 == 0);
   assert(NM_IBVERBS_BYBUF_CREDITS_THR > NM_IBVERBS_BYBUF_RBUF_NUM / 2);
   /* init */
@@ -181,12 +188,16 @@ static void* nm_ibverbs_bybuf_instantiate(puk_instance_t instance, puk_context_t
   bybuf->send.chunk_len  = NM_LEN_UNDEFINED;
   bybuf->context         = context;
   bybuf->cnx             = NULL;
+  nm_ibverbs_bybuf_status_vect_push_back(&p_bybuf_context->p_statuses, bybuf);
   return bybuf;
 }
 
 static void nm_ibverbs_bybuf_destroy(void*_status)
 {
   struct nm_ibverbs_bybuf*bybuf = _status;
+  struct nm_ibverbs_bybuf_context_s*p_bybuf_context = puk_context_get_status(bybuf->context);
+  nm_ibverbs_bybuf_status_vect_itor_t itor = nm_ibverbs_bybuf_status_vect_find(&p_bybuf_context->p_statuses, bybuf);
+  nm_ibverbs_bybuf_status_vect_erase(&p_bybuf_context->p_statuses, itor);
   if(bybuf->cnx)
     {
       nm_ibverbs_cnx_close(bybuf->cnx);
@@ -209,6 +220,7 @@ static void nm_ibverbs_bybuf_getprops(puk_context_t context, struct nm_minidrive
   props->capabilities.supports_data = 0;
   props->capabilities.supports_buf_send = 1;
   props->capabilities.supports_buf_recv = 1;
+  props->capabilities.has_recv_any = 1;
   props->capabilities.max_msg_size = NM_IBVERBS_BYBUF_DATA_SIZE;
 }
 
@@ -217,6 +229,8 @@ static void nm_ibverbs_bybuf_init(puk_context_t context, const void**drv_url, si
   struct nm_ibverbs_bybuf_context_s*p_bybuf_context = puk_context_get_status(context);
   const char*url = NULL;
   p_bybuf_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
+  nm_ibverbs_bybuf_status_vect_init(&p_bybuf_context->p_statuses);
+  p_bybuf_context->round_robin = 0;
   puk_context_putattr(context, "local_url", url);
   *drv_url = url;
   *url_size = strlen(url);
@@ -342,6 +356,22 @@ static int nm_ibverbs_bybuf_send_poll(void*_status)
   bybuf->send.chunk_len = NM_LEN_UNDEFINED;
   return NM_ESUCCESS;
  wouldblock:
+  return -NM_EAGAIN;
+}
+
+static int  nm_ibverbs_bybuf_recv_poll_any(puk_context_t p_context, void**_status)
+{
+  struct nm_ibverbs_bybuf_context_s*p_bybuf_context = puk_context_get_status(p_context);
+  nm_ibverbs_bybuf_status_vect_itor_t i;
+  puk_vect_foreach(i, nm_ibverbs_bybuf_status, &p_bybuf_context->p_statuses)
+    {
+      if((*i)->buffer.rbuf[(*i)->window.next_in].header.status)
+        {
+          *_status = *i;
+          return NM_ESUCCESS;
+        }
+    }
+  *_status = NULL;
   return -NM_EAGAIN;
 }
 

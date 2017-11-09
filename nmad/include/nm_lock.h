@@ -56,10 +56,7 @@ static inline void nm_core_lock(struct nm_core*p_core)
 #ifdef PIOMAN
   piom_spin_lock(&p_core->lock);
   nm_profile_inc(p_core->profiling.n_locks);
-#else
-  assert(p_core->lock == 0);
-  p_core->lock++;
-#endif
+#endif /* PIOMAN */
 }
 
 static inline int nm_core_trylock(struct nm_core*p_core)
@@ -69,57 +66,44 @@ static inline int nm_core_trylock(struct nm_core*p_core)
   if(rc)
     nm_profile_inc(p_core->profiling.n_locks);
   return rc;
-#else
-  if(p_core->lock == 0)
-    {
-      p_core->lock++;
-      return 1;
-    }
-  else
-    {
-      return 0;
-    }
-#endif
+#else /* PIOMAN*/
+  return 1;
+#endif /* PIOMAN */
 }
 
 static inline void nm_core_unlock(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_unlock(&p_core->lock);
-#else
-  p_core->lock--;
-  assert(p_core->lock == 0);
-#endif
+#endif /* PIOMAN */
 }
 
 static inline void nm_core_lock_init(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_init(&p_core->lock);
-#else
-  p_core->lock = 0;
-#endif
+#endif /* PIOMAN */
 }
 
 static inline void nm_core_lock_destroy(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_destroy(&p_core->lock);
-#endif
+#endif /* PIOMAN */
 }
 
 static inline void nm_core_lock_assert(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_assert_locked(&p_core->lock);
-#endif
+#endif /* PIOMAN */
 }
 
 static inline void nm_core_nolock_assert(struct nm_core*p_core)
 {
 #ifdef PIOMAN
   piom_spin_assert_notlocked(&p_core->lock);
-#endif
+#endif /* PIOMAN */
 }
 
 /** memory fence only when multithread */

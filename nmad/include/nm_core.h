@@ -29,8 +29,6 @@ struct nm_core
 #ifdef PIOMAN
   piom_spinlock_t lock;                         /**< lock to protect req lists in core */
   struct piom_ltask ltask;                      /**< task used for main core progress */
-#else
-  int lock;
 #endif  /* PIOMAN */
   
   puk_component_t strategy_component;           /**< selected strategy */

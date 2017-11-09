@@ -48,6 +48,11 @@ void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate,
 #ifdef PIOMAN
   nm_ltask_submit_pw_recv(p_pw);
 #else /* PIOMAN */
+  /* always put the request in the list of pending requests,
+   * even if it completes immediately. It will be removed from
+   * the list by nm_pw_process_complete_recv().
+   */
+  nm_pkt_wrap_list_push_back(&p_pw->p_drv->p_core->pending_recv_list, p_pw);
   nm_pw_recv_progress(p_pw);
 #endif /* PIOMAN */
 }
@@ -239,16 +244,7 @@ static void nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
     {
       NM_FATAL("nmad: FATAL- recv_any not implemented yet.\n");
     }
-  
-#ifndef PIOMAN
-  /* always put the request in the list of pending requests,
-   * even if it completes immediately. It will be removed from
-   * the list by nm_pw_process_complete_recv().
-   */
-  nm_pkt_wrap_list_push_back(&p_core->pending_recv_list, p_pw);
-#endif /* !PIOMAN */
   p_pw->flags |= NM_PW_POSTED;
-
   nm_pw_poll_recv(p_pw);
 }
 

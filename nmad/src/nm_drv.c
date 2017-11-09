@@ -223,7 +223,8 @@ void nm_core_driver_exit(struct nm_core*p_core)
 	  struct nm_trk_s*p_trk = &p_gate->trks[i];
 	  if(p_trk->instance != NULL)
 	    {
-	      puk_instance_destroy(p_trk->instance);
+              puk_hashtable_remove(p_core->trk_table, p_trk->receptacle._status);
+              puk_instance_destroy(p_trk->instance);
 	      p_trk->instance = NULL;
 	    }
 	}

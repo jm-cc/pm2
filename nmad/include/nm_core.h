@@ -56,6 +56,8 @@ struct nm_core
   struct nm_unexpected_core_list_s unexpected;     /**< global list of unexpected chunks */
   struct nm_pkt_wrap_lfqueue_s completed_pws;      /**< queue of completed pw waiting for event dispatch */
   struct nm_core_monitor_vect_s monitors;          /**< monitors for upper layers to track events in nmad core */
+
+  puk_hashtable_t trk_table;                       /**< trk table hashed by component status; used for reverse lookup */
   
   struct nm_core_dispatching_event_allocator_s dispatching_event_allocator;
   struct nm_core_dispatching_event_lfqueue_s dispatching_events;

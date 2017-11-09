@@ -448,6 +448,8 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   
   nm_core_dispatching_event_allocator_init(&p_core->dispatching_event_allocator, 16);
   nm_core_dispatching_event_lfqueue_init(&p_core->dispatching_events);
+
+  p_core->trk_table = puk_hashtable_new_ptr();
   
   p_core->enable_schedopt = 1;
   p_core->strategy_component = NULL;

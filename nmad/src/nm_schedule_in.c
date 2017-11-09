@@ -95,18 +95,11 @@ static void nm_pw_poll_recv_any(struct nm_pkt_wrap_s*p_pw)
       p_pw->flags &= ~NM_PW_POLL_ANY;
       p_pw->p_drv->p_pw_recv_any = NULL;
       /* reverse resolution status -> gate */
-      struct nm_gate_s*p_gate;
-      NM_FOR_EACH_GATE(p_gate, p_core)
-        {
-          struct nm_trk_s*p_trk = &p_gate->trks[p_pw->trk_id];
-          const struct puk_receptacle_NewMad_minidriver_s*r = &p_trk->receptacle;
-          if(_status == r->_status)
-            {
-              nm_pw_assign(p_pw, p_pw->trk_id, p_pw->p_drv, p_gate);
-              p_trk->p_pw_recv = p_pw;
-              break;
-            }
-        }
+      struct nm_trk_s*p_trk = puk_hashtable_lookup(p_core->trk_table, _status);
+      assert(p_trk != NULL);
+      nm_pw_assign(p_pw, p_pw->trk_id, p_trk->p_drv, p_trk->p_gate);
+      assert(p_trk->p_pw_recv == NULL);
+      p_trk->p_pw_recv = p_pw;
       assert(p_pw->p_gate != NULL);
       nm_pw_post_recv(p_pw);
     }

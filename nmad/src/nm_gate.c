@@ -70,8 +70,10 @@ void nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate, nm_drv_vect_t*p_drvs
       struct nm_drv_s*p_drv = nm_drv_vect_at(*p_drvs, i);
       /* instantiate driver */
       p_trk->p_drv = p_drv;
+      p_trk->p_gate = p_gate;
       p_trk->instance = puk_component_instantiate(p_drv->assembly);
       puk_instance_indirect_NewMad_minidriver(p_trk->instance, NULL, &p_trk->receptacle);
+      puk_hashtable_insert(p_core->trk_table, p_trk->receptacle._status, p_trk);
       p_trk->p_pw_send = NULL;
       p_trk->p_pw_recv = NULL;
       nm_data_null_build(&p_trk->sdata);
@@ -84,7 +86,6 @@ void nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate, nm_drv_vect_t*p_drvs
       else
 	p_trk->kind = nm_trk_large;
     }
-
   *pp_gate = p_gate;
 }
 

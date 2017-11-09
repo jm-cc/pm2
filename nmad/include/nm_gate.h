@@ -46,6 +46,7 @@ NM_TAG_TABLE_TYPE(nm_gtag, struct nm_gtag_s);
 /** a track on a given gate */
 struct nm_trk_s
 {
+  struct nm_gate_s*p_gate;                          /**< gate this trk belong to */
   struct nm_drv_s*p_drv;                            /**< driver attached to the track */
   struct puk_receptacle_NewMad_minidriver_s receptacle; /**< receptacle for the driver */
   puk_instance_t instance;                          /**< driver instance */

@@ -18,31 +18,26 @@
 
 /** Error codes.
  */
-enum nm_errno {
-        NM_ESUCCESS		=  0,	/* successful operation	*/
-        NM_EUNKNOWN		=  1,	/* unknown error	*/
-        NM_ENOTIMPL		=  2,	/* not implemented	*/
-        NM_ESCFAILD		=  3,	/* syscall failed, see	*
-                                         * errno		*/
-        NM_EAGAIN		=  4,	/* poll again		*/
-        NM_ECLOSED		=  5,	/* connection closed	*/
-        NM_EBROKEN		=  6,	/* error condition on	*
-                                         * connection 		*/
-        NM_EINVAL		=  7,	/* invalid parameter	*/
-        NM_ENOTFOUND		=  8,	/* not found		*/
-        NM_ENOMEM		=  9,	/* out of memory 	*/
-        NM_EALREADY		= 10,	/* already in progress  *
-                                         * or done		*/
-
-        NM_ETIMEDOUT		= 11,	/* operation timeout	*/
-        NM_EINPROGRESS		= 12,	/* operation in		*
-                                         * progress		*/
-        NM_EUNREACH		= 13,	/* destination		*
-                                         * unreachable		*/
-        NM_ECANCELED		= 14,	/* operation canceled	*/
-        NM_EABORTED		= 15,	/* operation aborted	*/
-	NM_EBUSY                = 16,   /* gate/track is busy   */
-	NM_ENOTPOSTED           = 17    /* request not posted   */
-};
+enum nm_errno_e
+  {
+    NM_ESUCCESS	        =  0,	/**< successful operation */
+    NM_EUNKNOWN	        =  1,	/**< unknown error */
+    NM_ENOTIMPL	        =  2,	/**< not implemented */
+    NM_ESCFAILD	        =  3,	/**< syscall failed, see errno */
+    NM_EAGAIN	        =  4,	/**< poll again */
+    NM_ECLOSED	        =  5,	/**< connection closed */
+    NM_EBROKEN	        =  6,	/**< error condition on	connection */
+    NM_EINVAL	        =  7,	/**< invalid parameter */
+    NM_ENOTFOUND        =  8,	/**< not found */
+    NM_ENOMEM	        =  9,	/**< out of memory */
+    NM_EALREADY	        = 10,	/**< already in progress or done */
+    NM_ETIMEDOUT        = 11,	/**< operation timeout */
+    NM_EINPROGRESS	= 12,	/**< operation in progress */
+    NM_EUNREACH	        = 13,	/**< destination unreachable */
+    NM_ECANCELED	= 14,	/**< operation canceled */
+    NM_EABORTED		= 15,	/**< operation aborted */
+    NM_EBUSY            = 16,   /**< gate/track is busy */
+    NM_ENOTPOSTED       = 17    /**< request not posted */
+  };
 
 #endif /* NM_ERRNO_H */

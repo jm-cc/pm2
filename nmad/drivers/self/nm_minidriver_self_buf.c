@@ -129,6 +129,7 @@ static void nm_selfbuf_getprops(puk_context_t context, struct nm_minidriver_prop
   props->capabilities.max_msg_size = NM_SELFBUF_SIZE;
   props->capabilities.supports_buf_send = 1;
   props->capabilities.supports_buf_recv = 1;
+  props->capabilities.has_recv_any = 1;
 }
 
 static void nm_selfbuf_init(puk_context_t context, const void**drv_url, size_t*url_size)

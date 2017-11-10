@@ -45,6 +45,8 @@ struct nm_minidriver_capabilities_s
   int supports_data;     /**< driver can send/recv direct nm_data_s */
   int supports_buf_send; /**< driver supported buffer-based send */
   int supports_buf_recv; /**< driver supported buffer-based recv */
+  int supports_wait_any; /**< drivers supports passive wait_any */
+  int prefers_wait_any;  /**< wait_any must be prefered for this driver */
   int has_recv_any;      /**< driver accepts receive from NM_GATE_ANY */
   int min_period;        /**< minimum delay between poll (in microseconds) */
   int is_exportable;     /**< blocking calls may be exported by PIOMan */

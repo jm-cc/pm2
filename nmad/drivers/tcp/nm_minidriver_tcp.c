@@ -182,6 +182,8 @@ static void nm_tcp_rebuild_fds(struct nm_tcp_context_s*p_tcp_context)
 static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
   props->capabilities.has_recv_any = 1;
+  props->capabilities.supports_wait_any = 1;
+  props->capabilities.prefers_wait_any = 1;
   props->profile.latency = 500;
   props->profile.bandwidth = 8000;
 }

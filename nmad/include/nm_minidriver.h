@@ -120,7 +120,8 @@ struct nm_minidriver_iface_s
   int  (*recv_wait_any)(puk_context_t p_context, void**_status);
   /** cancel a posted recv */
   int  (*recv_cancel)(void*_status);
-
+  /** cancel a recv_wait_any */
+  int  (*recv_cancel_any)(puk_context_t p_context);
 };
 PUK_IFACE_TYPE(NewMad_minidriver, struct nm_minidriver_iface_s);
 

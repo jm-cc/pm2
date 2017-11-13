@@ -105,7 +105,50 @@ static void nm_pw_poll_recv_any(struct nm_pkt_wrap_s*p_pw)
     }
 }
 
-/** Poll active incoming requests 
+/** Blocking wait on an active incoming request.
+ */
+void nm_pw_wait_recv_any(struct nm_pkt_wrap_s*p_pw)
+{
+  struct nm_core*p_core = p_pw->p_drv->p_core;
+  nm_core_nolock_assert(p_core);
+  assert(p_pw->p_trk == NULL);
+  const struct nm_minidriver_iface_s*p_driver = p_pw->p_drv->driver;
+  assert(p_driver->recv_wait_any != NULL);
+  void*_status = NULL;
+  int rc = (*p_driver->recv_wait_any)(p_pw->p_drv->minidriver_context, &_status);
+  if(rc == NM_ESUCCESS)
+    {
+      assert(_status != NULL);
+      assert(p_pw->p_drv->p_pw_recv_any == p_pw);
+      p_pw->flags &= ~NM_PW_POLL_ANY;
+      p_pw->p_drv->p_pw_recv_any = NULL;
+      /* reverse resolution status -> gate */
+      struct nm_trk_s*p_trk = puk_hashtable_lookup(p_core->trk_table, _status);
+      assert(p_trk != NULL);
+      nm_pw_assign(p_pw, p_pw->trk_id, p_trk->p_drv, p_trk->p_gate);
+      assert(p_trk->p_pw_recv == NULL);
+      p_trk->p_pw_recv = p_pw;
+      assert(p_pw->p_gate != NULL);
+      nm_pw_post_recv(p_pw);
+    }
+  else if((rc == -NM_ECLOSED) || (rc == -NM_ECANCELED))
+    {
+      if(rc == -NM_ECLOSED)
+        p_pw->flags |= NM_PW_CLOSED;
+      if(rc == -NM_ECANCELED)
+        p_pw->flags |= NM_PW_CANCELED;
+#ifndef PIOMAN
+      nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
+#endif /* !PIOMAN */
+      nm_pw_completed_enqueue(p_core, p_pw);
+    }
+  else
+    {
+      NM_WARN("nm_pw_wait_any()- rc = %d", rc);
+    }
+}
+
+/** Poll an active incoming request.
  */
 static void nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
 {
@@ -173,16 +216,12 @@ static void nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
     }
 #endif /* DEBUG */
    
-  if(err == NM_ESUCCESS)
+  if((err == NM_ESUCCESS) || (err == -NM_ECLOSED) || (err == -NM_ECANCELED))
     {
-#ifndef PIOMAN
-      nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
-#endif /* !PIOMAN */
-      nm_pw_completed_enqueue(p_core, p_pw);
-    }
-  else if(err == -NM_ECLOSED)
-    {
-      p_pw->flags |= NM_PW_CLOSED;
+      if(err == -NM_ECLOSED)
+        p_pw->flags |= NM_PW_CLOSED;
+      if(err == -NM_ECANCELED)
+        p_pw->flags |= NM_PW_CANCELED;
 #ifndef PIOMAN
       nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
 #endif /* !PIOMAN */

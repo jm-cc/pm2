@@ -125,36 +125,10 @@ static int nm_ltask_pw_recv(void*_pw)
   return NM_ESUCCESS;
 }
 
-static int nm_task_block_recv(void*_pw)
+static int nm_ltask_pw_block_recv(void*_pw)
 {
   struct nm_pkt_wrap_s*p_pw = _pw;
-  /*
-  struct nm_core*p_core = p_pw->p_gate->p_core;
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = r->driver->wait_recv_iov(r->_status, p_pw);
-  if(err == NM_ESUCCESS)
-    {
-      nm_core_lock(p_core);
-      piom_ltask_completed(&p_pw->ltask);
-      nm_pw_process_complete_recv(p_core, p_pw);
-      nm_core_unlock(p_core);
-    }
-  else if((p_pw->ltask.state & PIOM_LTASK_STATE_CANCELLED) || (err == -NM_ECLOSED))
-    {
-      piom_ltask_completed(&p_pw->ltask);
-      return NM_ESUCCESS;
-    }
-  else if(err == -NM_EAGAIN)
-    {
-      p_pw->flags |= NM_PW_POSTED;
-      nm_ltask_submit_pw_recv(p_pw);
-    }
-  else
-    {
-      NM_WARN("wait_recv returned err = %d\n", err);
-    }
-  */
-  NM_FATAL("blocking recv not supported with minidriver- p_pw = %p.\n", p_pw);
+  nm_pw_wait_recv_any(p_pw);
   return NM_ESUCCESS;
 }
 
@@ -235,9 +209,10 @@ void nm_ltask_submit_pw_recv(struct nm_pkt_wrap_s*p_pw)
   piom_ltask_set_name(&p_pw->ltask, "nmad: poll_recv");
   piom_ltask_set_destructor(&p_pw->ltask, &nm_ltask_destructor);
   nm_pw_ref_inc(p_pw);
-  if(p_pw->p_drv->props.capabilities.is_exportable)
+  if((p_pw->flags & NM_PW_POLL_ANY) && p_pw->p_drv->props.capabilities.prefers_wait_any)
     {
-      piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_recv, 2 * p_pw->p_drv->props.profile.latency);
+      const int delay_usec = 0;  /* 2 * p_pw->p_drv->props.profile.latency */
+      piom_ltask_set_blocking(&p_pw->ltask, &nm_ltask_pw_block_recv, delay_usec);
     }
   piom_ltask_submit(&p_pw->ltask);	
 }

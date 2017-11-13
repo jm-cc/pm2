@@ -28,7 +28,7 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 	.idle_coef          = 10,
 	.idle_distrib       = PIOM_BIND_DISTRIB_ALL,
 	.timer_period       = 4000,
-	.spare_lwp          = 0,
+	.spare_lwp          = 2,
 	.mckernel           = 0
     };
 

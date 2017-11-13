@@ -156,7 +156,6 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	      nm_pkt_wrap_list_push_back(pending_pw, p_pw);
 	    }
 #endif /* PIOMAN */
-	  p_drv->p_pw_recv_any = NULL;
 	}
     }
   

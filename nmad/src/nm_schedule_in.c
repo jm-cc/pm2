@@ -91,9 +91,7 @@ static void nm_pw_poll_recv_any(struct nm_pkt_wrap_s*p_pw)
   if(rc == NM_ESUCCESS)
     {
       assert(_status != NULL);
-      assert(p_pw->p_drv->p_pw_recv_any == p_pw);
       p_pw->flags &= ~NM_PW_POLL_ANY;
-      p_pw->p_drv->p_pw_recv_any = NULL;
       /* reverse resolution status -> gate */
       struct nm_trk_s*p_trk = puk_hashtable_lookup(p_core->trk_table, _status);
       assert(p_trk != NULL);
@@ -121,7 +119,6 @@ void nm_pw_wait_recv_any(struct nm_pkt_wrap_s*p_pw)
       assert(_status != NULL);
       assert(p_pw->p_drv->p_pw_recv_any == p_pw);
       p_pw->flags &= ~NM_PW_POLL_ANY;
-      p_pw->p_drv->p_pw_recv_any = NULL;
       /* reverse resolution status -> gate */
       struct nm_trk_s*p_trk = puk_hashtable_lookup(p_core->trk_table, _status);
       assert(p_trk != NULL);

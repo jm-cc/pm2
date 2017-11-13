@@ -1031,6 +1031,8 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
   assert(p_pw->p_trk);
   assert(p_pw->p_trk->p_pw_recv == p_pw);
   p_pw->p_trk->p_pw_recv = NULL;
+  assert((p_drv->p_pw_recv_any == p_pw) || (p_drv->p_pw_recv_any == NULL));
+  p_drv->p_pw_recv_any = NULL;
   nm_gate_t const p_gate = p_pw->p_gate;
   assert(p_gate != NULL);
   if(p_pw->flags & NM_PW_CLOSED)

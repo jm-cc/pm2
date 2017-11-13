@@ -152,7 +152,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 		    double d = 0.0;
 		    do
 			{
-			    sched_yield();
+			    pthread_yield();
 #if 0
 #ifdef PIOMAN_X86INTRIN
 			    /* TODO: we should check for 'contant_tsc' cpuid flag before using tsc */
@@ -197,7 +197,22 @@ static void*__piom_ltask_lwp_worker(void*_dummy)
 	    piom_ltask_state_set(task, PIOM_LTASK_STATE_BLOCKED);
 	    (*task->blocking_func)(task->data_ptr);
 	    if(!(options & PIOM_LTASK_OPTION_DESTROY))
-		piom_ltask_state_unset(task, PIOM_LTASK_STATE_BLOCKED);
+		{
+		    piom_ltask_state_unset(task, PIOM_LTASK_STATE_BLOCKED);
+		    if((options & PIOM_LTASK_OPTION_REPEAT) && !(task->state & PIOM_LTASK_STATE_SUCCESS))
+			{
+			    PIOM_WARN("task not completed after block!\n");
+			}
+		    else
+			{
+			    task->state = PIOM_LTASK_STATE_TERMINATED;
+			    piom_ltask_completed(task);
+			    if((task->options & PIOM_LTASK_OPTION_NOWAIT) && (task->destructor))
+				{
+				    (*task->destructor)(task);
+				}
+			}
+		}
 	    __sync_fetch_and_add(&__piom_pthread.lwps_avail, 1);
 	}
     return NULL;

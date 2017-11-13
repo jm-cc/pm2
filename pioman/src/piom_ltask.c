@@ -167,11 +167,19 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 					    assert(!(task->state & PIOM_LTASK_STATE_DESTROYED));
 					    if(options & PIOM_LTASK_OPTION_BLOCKING)
 						{
-						    struct timespec t;
-						    clock_gettime(CLOCK_MONOTONIC, &t);
-						    const long d_usec = (t.tv_sec - task->origin.tv_sec) * 1000000 +
-							(t.tv_nsec - task->origin.tv_nsec) / 1000;
-						    if(d_usec > task->blocking_delay)
+						    int do_block = (task->blocking_delay == 0);
+						    if(task->blocking_delay > 0)
+							{
+							    struct timespec t;
+							    clock_gettime(CLOCK_MONOTONIC, &t);
+							    const long d_usec = (t.tv_sec - task->origin.tv_sec) * 1000000 +
+								(t.tv_nsec - task->origin.tv_nsec) / 1000;
+							    if(d_usec > task->blocking_delay)
+								{
+								    do_block = 1;
+								}
+							}
+						    if(do_block)
 							{
 							    if(piom_ltask_submit_in_lwp(task) == 0)
 								again = 0;
@@ -413,7 +421,8 @@ void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int
     task->blocking_func = func;
     task->blocking_delay = delay_usec;
     task->options |= PIOM_LTASK_OPTION_BLOCKING;
-    clock_gettime(CLOCK_MONOTONIC, &task->origin);
+    if(delay_usec > 0)
+	clock_gettime(CLOCK_MONOTONIC, &task->origin);
 }
 
 void piom_ltask_mask(struct piom_ltask*ltask)
@@ -446,7 +455,7 @@ int piom_ltask_cancel_request(struct piom_ltask*ltask)
 
 void piom_ltask_cancel_wait(struct piom_ltask*ltask)
 {
-    assert(ltask->state & PIOM_LTASK_STATE_CANCELLED);
+    assert((ltask->state & PIOM_LTASK_STATE_CANCELLED) || (ltask->state & PIOM_LTASK_STATE_TERMINATED));
     struct piom_ltask_queue*queue = ltask->queue;
     if(queue)
 	{

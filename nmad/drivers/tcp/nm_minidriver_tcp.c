@@ -53,22 +53,24 @@ static void nm_tcp_recv_iov_post(void*_status,  struct iovec*v, int n);
 static int  nm_tcp_recv_poll_one(void*_status);
 static int  nm_tcp_recv_poll_any(puk_context_t p_context, void**_status);
 static int  nm_tcp_recv_wait_any(puk_context_t p_context, void**_status);
+static int  nm_tcp_recv_cancel_any(puk_context_t p_context);
 
 static const struct nm_minidriver_iface_s nm_tcp_minidriver =
   {
-    .getprops       = &nm_tcp_getprops,
-    .init           = &nm_tcp_init,
-    .close          = &nm_tcp_close,
-    .connect        = &nm_tcp_connect,
-    .send_post      = &nm_tcp_send_post,
-    .send_data      = NULL,
-    .send_poll      = &nm_tcp_send_poll,
-    .recv_iov_post  = &nm_tcp_recv_iov_post,
-    .recv_data_post = NULL,
-    .recv_poll_one  = &nm_tcp_recv_poll_one,
-    .recv_poll_any  = &nm_tcp_recv_poll_any,
-    .recv_wait_any  = &nm_tcp_recv_wait_any,
-    .recv_cancel    = NULL
+    .getprops        = &nm_tcp_getprops,
+    .init            = &nm_tcp_init,
+    .close           = &nm_tcp_close,
+    .connect         = &nm_tcp_connect,
+    .send_post       = &nm_tcp_send_post,
+    .send_data       = NULL,
+    .send_poll       = &nm_tcp_send_poll,
+    .recv_iov_post   = &nm_tcp_recv_iov_post,
+    .recv_data_post  = NULL,
+    .recv_poll_one   = &nm_tcp_recv_poll_one,
+    .recv_poll_any   = &nm_tcp_recv_poll_any,
+    .recv_wait_any   = &nm_tcp_recv_wait_any,
+    .recv_cancel     = NULL,
+    .recv_cancel_any = &nm_tcp_recv_cancel_any
   };
 
 /* ********************************************************* */
@@ -103,6 +105,7 @@ struct nm_tcp_context_s
   struct pollfd*fds;        /**< pollfd used for recv_poll|wait_any */
   int nfds;                 /**< size of above fds */
   int round_robin;          /**< first fd to poll for fairness */
+  int cancel_fd[2];         /**< pipe used to cancel a recv_wait */
   struct sockaddr_in addr;  /**< server socket address */
   int server_fd;            /**< server socket fd */
   char*url;                 /**< server url */
@@ -164,7 +167,7 @@ static void nm_tcp_rebuild_fds(struct nm_tcp_context_s*p_tcp_context)
   if(p_tcp_context->nfds != nm_tcp_status_vect_size(&p_tcp_context->p_statuses))
     {
       p_tcp_context->nfds = nm_tcp_status_vect_size(&p_tcp_context->p_statuses);
-      p_tcp_context->fds = realloc(p_tcp_context->fds, sizeof(struct pollfd) * p_tcp_context->nfds);
+      p_tcp_context->fds = realloc(p_tcp_context->fds, sizeof(struct pollfd) * (p_tcp_context->nfds + 1));
     }
   int i;
   for(i = 0; i < p_tcp_context->nfds; i++)
@@ -177,6 +180,8 @@ static void nm_tcp_rebuild_fds(struct nm_tcp_context_s*p_tcp_context)
       p_tcp_context->fds[i].events = POLLIN;
     }
   p_tcp_context->round_robin = 0;
+  p_tcp_context->fds[p_tcp_context->nfds].fd     = p_tcp_context->cancel_fd[0];
+  p_tcp_context->fds[p_tcp_context->nfds].events = POLLIN;
 }
 
 static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
@@ -223,6 +228,7 @@ static void nm_tcp_init(puk_context_t context, const void**drv_url, size_t*url_s
   p_tcp_context->pending_fds = nm_tcp_pending_vect_new();
   p_tcp_context->fds = NULL;
   p_tcp_context->nfds = 0;
+  NM_SYS(pipe)(p_tcp_context->cancel_fd);
   puk_context_set_status(context, p_tcp_context);
   *drv_url = p_tcp_context->url;
   *url_size = strlen(p_tcp_context->url) + 1;
@@ -399,7 +405,7 @@ static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int ti
   struct nm_tcp_s*p_status = NULL;
   struct nm_tcp_context_s*p_tcp_context = puk_context_get_status(p_context);
   int rebuild = 0;
-  int rc = NM_SYS(poll)(p_tcp_context->fds, p_tcp_context->nfds, timeout);
+  int rc = NM_SYS(poll)(p_tcp_context->fds, p_tcp_context->nfds + 1, timeout);
   p_tcp_context->round_robin = (p_tcp_context->round_robin + 1) % p_tcp_context->nfds;
   if(rc > 0)
     {
@@ -434,6 +440,13 @@ static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int ti
                   NM_FATAL("tcp: unexpected revent %d in poll.\n", e);
                 }
             }
+          if(p_tcp_context->fds[p_tcp_context->nfds].revents & POLLIN)
+            {
+              char dummy;
+              NM_SYS(read)(p_tcp_context->cancel_fd[1], &dummy, 1);
+              *_status = NULL;
+              return -NM_ECANCELED;
+            }
         }
       if(rebuild)
         nm_tcp_rebuild_fds(p_tcp_context);
@@ -456,4 +469,12 @@ static int nm_tcp_recv_poll_any(puk_context_t p_context, void**_status)
 static int nm_tcp_recv_wait_any(puk_context_t p_context, void**_status)
 {
   return nm_tcp_recv_any_common(p_context, _status, -1);
+}
+
+static int nm_tcp_recv_cancel_any(puk_context_t p_context)
+{
+  struct nm_tcp_context_s*p_tcp_context = puk_context_get_status(p_context);
+  char dummy = 0;
+  NM_SYS(write)(p_tcp_context->cancel_fd[1], &dummy, 1);
+  return NM_ESUCCESS;
 }

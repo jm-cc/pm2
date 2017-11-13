@@ -445,6 +445,11 @@ static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int ti
                 }
             }
         }
+      if(p_status)
+        {
+          *_status = p_status;
+          return NM_ESUCCESS;
+        }
       if(p_tcp_context->fds[p_tcp_context->nfds].revents & POLLIN)
         {
           char dummy;
@@ -457,9 +462,8 @@ static int nm_tcp_recv_any_common(puk_context_t p_context, void**_status, int ti
           *_status = NULL;
           return -NM_ECLOSED;
         }
-      *_status = p_status;
-      assert(p_status != NULL);
-      return NM_ESUCCESS;
+      NM_WARN("tcp: unexpected return value from poll().\n");
+      return -NM_EUNKNOWN;
     }
   else
     {

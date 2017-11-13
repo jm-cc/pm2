@@ -1018,16 +1018,21 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
  */
 void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
-  nm_gate_t const p_gate = p_pw->p_gate;
   nm_drv_t const p_drv = p_pw->p_drv;
-  assert(p_gate != NULL);
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_pw_in);
+  /* check error status */
+  if(p_pw->flags & NM_PW_CANCELED)
+    {
+      nm_pw_ref_dec(p_pw);
+      return;
+    }
   /* clear the input request field */
   assert(p_pw->p_trk);
   assert(p_pw->p_trk->p_pw_recv == p_pw);
   p_pw->p_trk->p_pw_recv = NULL;
-  /* check error status */
+  nm_gate_t const p_gate = p_pw->p_gate;
+  assert(p_gate != NULL);
   if(p_pw->flags & NM_PW_CLOSED)
     {
       nm_pw_ref_dec(p_pw);

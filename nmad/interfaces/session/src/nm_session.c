@@ -191,6 +191,19 @@ static void nm_session_init_drivers(void)
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
 	}
+      else if(strcmp(driver_name, "ibrcache") == 0)
+	{
+	  driver_trk_small =
+	    "<puk:composite id=\"nm:minidriver_ibverbs_bycopy\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+          driver_trk_large =
+            "<puk:composite id=\"nm:minidriver_ibverbs_rcache\">"
+            "  <puk:component id=\"0\" name=\"NewMad_ibverbs_rcache\"/>"
+            "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+            "</puk:composite>";
+	}
       else if(strcmp(driver_name, "shm") == 0)
 	{
 	  driver_trk_small = 

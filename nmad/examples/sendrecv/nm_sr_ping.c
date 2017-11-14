@@ -95,7 +95,7 @@ main(int	  argc,
       warmups = atoi(argv[i+1]);
     }
     else {
-      fprintf(stderr, "Illegal argument %s\n", argv[i]);
+      fprintf(stderr, "Illegal argument '%s'\n", argv[i]);
       usage_ping();
       nm_examples_exit();
       exit(0);

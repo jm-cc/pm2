@@ -52,7 +52,7 @@ void puk_mem_unreg(const struct puk_mem_reg_s*reg);
 /* *** method: 'rcache' ********************************* */
 
 /** Header sent by the receiver to ask for RDMA data (rcache rdv) */
-struct nm_ibverbs_rcache_rdvhdr 
+struct nm_ibverbs_rcache_rdvhdr_s
 {
   uint64_t raddr;
   uint32_t rkey;
@@ -60,7 +60,7 @@ struct nm_ibverbs_rcache_rdvhdr
 };
 
 /** Header sent to signal presence of rcache data */
-struct nm_ibverbs_rcache_sighdr 
+struct nm_ibverbs_rcache_sighdr_s
 {
   volatile int busy;
 };
@@ -73,19 +73,19 @@ struct nm_ibverbs_rcache_context_s
 };
 
 /** Connection state for 'rcache' tracks */
-struct nm_ibverbs_rcache
+struct nm_ibverbs_rcache_s
 {
-  struct ibv_mr*mr;              /**< global MR (used for headers) */
-  struct ibv_pd*pd;              /**< protection domain */
-  struct nm_ibverbs_segment seg; /**< remote segment */
-  struct nm_ibverbs_cnx*cnx;
+  struct ibv_mr*mr;                /**< global MR (used for headers) */
+  struct ibv_pd*pd;                /**< protection domain */
+  struct nm_ibverbs_segment_s seg; /**< remote segment */
+  struct nm_ibverbs_cnx_s*p_cnx;
   puk_context_t context;
   struct
   {
     char*message;
     int size;
 #if defined(PUKABI) || defined(MINI_PUKABI)
-    const struct puk_mem_reg_s*reg;
+    const struct puk_mem_reg_s*p_reg;
 #else
     struct ibv_mr*mr;
 #endif /* PUKABI */
@@ -95,20 +95,20 @@ struct nm_ibverbs_rcache
     const char*message;
     int size;
 #if defined(PUKABI) || defined(MINI_PUKABI)
-    const struct puk_mem_reg_s*reg;
+    const struct puk_mem_reg_s*p_reg;
 #else
     struct ibv_mr*mr;
 #endif /* PUKABI */
   } send;
   struct
   {
-    struct nm_ibverbs_rcache_rdvhdr shdr, rhdr;
-    struct nm_ibverbs_rcache_sighdr ssig, rsig;
+    struct nm_ibverbs_rcache_rdvhdr_s shdr, rhdr;
+    struct nm_ibverbs_rcache_sighdr_s ssig, rsig;
   } headers;
 };
 
-static void nm_ibverbs_rcache_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
-static void nm_ibverbs_rcache_init(puk_context_t context, const void**drv_url, size_t*url_size);
+static void nm_ibverbs_rcache_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props);
+static void nm_ibverbs_rcache_init(puk_context_t context, const void**p_url, size_t*p_url_size);
 static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_rcache_send_poll(void*_status);
@@ -146,8 +146,7 @@ static void*nm_ibverbs_mem_reg(void*context, const void*ptr, size_t len)
 				IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(mr == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: error while registering memory- ptr = %p; len = %d.\n", ptr, (int)len);
-      abort();
+      NM_FATAL("ibverbs: error while registering memory- ptr = %p; len = %d.\n", ptr, (int)len);
     }
   return mr;
 }
@@ -157,11 +156,9 @@ static void nm_ibverbs_mem_unreg(void*context, const void*ptr, void*key)
   int rc = ibv_dereg_mr(mr);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: error while deregistering memory.\n");
-      abort();
+      NM_FATAL("ibverbs: error while deregistering memory.\n");
     }
 }
-
 
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_rcache,
   puk_component_declare("NewMad_ibverbs_rcache",
@@ -173,75 +170,74 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_rcache,
 
 static void* nm_ibverbs_rcache_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_ibverbs_rcache*rcache = malloc(sizeof(struct nm_ibverbs_rcache));
- /* init state */
-  memset(&rcache->headers, 0, sizeof(rcache->headers));
-  memset(&rcache->send, 0, sizeof(rcache->send));
-  memset(&rcache->recv, 0, sizeof(rcache->recv));
-  rcache->mr  = NULL;
-  rcache->cnx = NULL;
-  rcache->pd  = NULL;
-  rcache->context = context;
+  struct nm_ibverbs_rcache_s*p_rcache = malloc(sizeof(struct nm_ibverbs_rcache_s));
+  memset(&p_rcache->headers, 0, sizeof(p_rcache->headers));
+  memset(&p_rcache->send, 0, sizeof(p_rcache->send));
+  memset(&p_rcache->recv, 0, sizeof(p_rcache->recv));
+  p_rcache->mr  = NULL;
+  p_rcache->p_cnx = NULL;
+  p_rcache->pd  = NULL;
+  p_rcache->context = context;
 #if defined(PUKABI) || defined(MINI_PUKABI)
   puk_mem_set_handlers(&nm_ibverbs_mem_reg, &nm_ibverbs_mem_unreg);
 #endif /* PUKABI */
-  return rcache;
+  return p_rcache;
 }
 
 static void nm_ibverbs_rcache_destroy(void*_status)
 {
-  /* TODO */
+  struct nm_ibverbs_rcache_s*p_rcache = _status;
+  free(p_rcache);
 }
 
 /* *** rcache connection *********************************** */
 
-static void nm_ibverbs_rcache_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
+static void nm_ibverbs_rcache_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props)
 {
   struct nm_ibverbs_rcache_context_s*p_rcache_context = malloc(sizeof(struct nm_ibverbs_rcache_context_s));
   puk_context_set_status(context, p_rcache_context);
   p_rcache_context->p_hca = nm_ibverbs_hca_from_context(context);
-  nm_ibverbs_hca_get_profile(p_rcache_context->p_hca, &props->profile);
-  props->capabilities.supports_data = 0;
+  nm_ibverbs_hca_get_profile(p_rcache_context->p_hca, &p_props->profile);
+  p_props->capabilities.supports_data = 0;
 }
 
-
-static void nm_ibverbs_rcache_init(puk_context_t context, const void**drv_url, size_t*url_size)
+static void nm_ibverbs_rcache_init(puk_context_t context, const void**p_url, size_t*p_url_size)
 {
   struct nm_ibverbs_rcache_context_s*p_rcache_context = puk_context_get_status(context);
   const char*url = NULL;
-  p_rcache_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
+  p_rcache_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr_s), &url);
   puk_context_putattr(context, "local_url", url);
-  *drv_url = url;
-  *url_size = strlen(url);
+  *p_url = url;
+  *p_url_size = strlen(url);
 }
 
 static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_t url_size)
 {
-  struct nm_ibverbs_rcache*rcache = _status; 
-  struct nm_ibverbs_rcache_context_s*p_rcache_context = puk_context_get_status(rcache->context);
+  struct nm_ibverbs_rcache_s*p_rcache = _status; 
+  struct nm_ibverbs_rcache_context_s*p_rcache_context = puk_context_get_status(p_rcache->context);
   struct nm_ibverbs_hca_s*p_hca = p_rcache_context->p_hca;
-  struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
-  rcache->cnx = p_ibverbs_cnx;
-  rcache->pd = p_hca->pd;
+  struct nm_ibverbs_cnx_s*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
+  p_rcache->p_cnx = p_ibverbs_cnx;
+  p_rcache->pd = p_hca->pd;
   /* register Memory Region */
-  rcache->mr = ibv_reg_mr(p_hca->pd, &rcache->headers, sizeof(rcache->headers),
-			  IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
-  if(rcache->mr == NULL)
+  p_rcache->mr = ibv_reg_mr(p_hca->pd, &p_rcache->headers, sizeof(p_rcache->headers),
+                            IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+  if(p_rcache->mr == NULL)
     {
-      NM_FATAL("Infiniband: rcache cannot register MR.\n");
+      NM_FATAL("ibverbs: rcache cannot register MR.\n");
     }
-  struct nm_ibverbs_segment*seg = &p_ibverbs_cnx->local_addr.segment;
-  seg->raddr = (uintptr_t)&rcache->headers;
-  seg->rkey  = rcache->mr->rkey;
+  struct nm_ibverbs_segment_s*p_seg = &p_ibverbs_cnx->local_addr.segment;
+  p_seg->raddr = (uintptr_t)&p_rcache->headers;
+  p_seg->rkey  = p_rcache->mr->rkey;
   /* ** exchange addresses */
-  const char*local_url = puk_context_getattr(rcache->context, "local_url");
+  const char*local_url = puk_context_getattr(p_rcache->context, "local_url");
   int rc = nm_connector_exchange(local_url, remote_url,
 				 &p_ibverbs_cnx->local_addr, &p_ibverbs_cnx->remote_addr);
   if(rc)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: timeout in address exchange.\n");
+      NM_FATAL("ibverbs: timeout in address exchange.\n");
     }
-  rcache->seg = p_ibverbs_cnx->remote_addr.segment;
+  p_rcache->seg = p_ibverbs_cnx->remote_addr.segment;
   nm_ibverbs_cnx_connect(p_ibverbs_cnx);
 }
 
@@ -250,64 +246,63 @@ static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_
 
 static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int n)
 {
-  struct nm_ibverbs_rcache*rcache = _status;
+  struct nm_ibverbs_rcache_s*p_rcache = _status;
   char*message = v[0].iov_base;
   const int size = v[0].iov_len;
   assert(n == 1);
-  if(rcache->send.message != NULL)
+  if(p_rcache->send.message != NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: rendez-vous already posted on sender side.\n");
-      abort();
+      NM_FATAL("ibverbs: rendez-vous already posted on sender side.\n");
     }
-  rcache->send.message = message;
-  rcache->send.size = size;
+  p_rcache->send.message = message;
+  p_rcache->send.size = size;
 #if defined(PUKABI) || (defined MINI_PUKABI)
-  rcache->send.reg = puk_mem_reg(rcache->pd, message, size);
+  p_rcache->send.p_reg = puk_mem_reg(p_rcache->pd, message, size);
 #else /* PUKABI */
-  rcache->send.mr = nm_ibverbs_mem_reg(rcache->pd, message, size);
+  p_rcache->send.mr = nm_ibverbs_mem_reg(p_rcache->pd, message, size);
 #endif /* PUKABI */
 }
 
 static int nm_ibverbs_rcache_send_poll(void*_status)
 {
-  struct nm_ibverbs_rcache*rcache = _status;
-  struct nm_ibverbs_rcache_rdvhdr*const h = &rcache->headers.rhdr;
-  if(h->busy)
+  struct nm_ibverbs_rcache_s*p_rcache = _status;
+  struct nm_ibverbs_rcache_rdvhdr_s*const p_rdvhdr = &p_rcache->headers.rhdr;
+  if(p_rdvhdr->busy)
     {
-      const uint64_t raddr = h->raddr;
-      const uint32_t rkey  = h->rkey;
+      const uint64_t raddr = p_rdvhdr->raddr;
+      const uint32_t rkey  = p_rdvhdr->rkey;
       struct ibv_mr*mr = NULL;
 #if defined(PUKABI) || defined(MINI_PUKABI)
-      mr = rcache->send.reg->key;
+      mr = p_rcache->send.p_reg->key;
 #else
-      mr = rcache->send.mr;      
+      mr = p_rcache->send.mr;      
 #endif
-      h->raddr = 0;
-      h->rkey  = 0;
-      h->busy  = 0;
-      nm_ibverbs_do_rdma(rcache->cnx, 
-			 rcache->send.message, rcache->send.size,
+      p_rdvhdr->raddr = 0;
+      p_rdvhdr->rkey  = 0;
+      p_rdvhdr->busy  = 0;
+      nm_ibverbs_do_rdma(p_rcache->p_cnx, 
+			 p_rcache->send.message, p_rcache->send.size,
 			 raddr, IBV_WR_RDMA_WRITE, IBV_SEND_SIGNALED,
 			 mr->lkey, rkey, NM_IBVERBS_WRID_DATA);
-      rcache->headers.ssig.busy = 1;
-      nm_ibverbs_rdma_send(rcache->cnx, sizeof(struct nm_ibverbs_rcache_sighdr),
-			   &rcache->headers.ssig,
-			   &rcache->headers.rsig,
-			   &rcache->headers,
-			   &rcache->seg,
-			   rcache->mr,
+      p_rcache->headers.ssig.busy = 1;
+      nm_ibverbs_rdma_send(p_rcache->p_cnx, sizeof(struct nm_ibverbs_rcache_sighdr_s),
+			   &p_rcache->headers.ssig,
+			   &p_rcache->headers.rsig,
+			   &p_rcache->headers,
+			   &p_rcache->seg,
+			   p_rcache->mr,
 			   NM_IBVERBS_WRID_HEADER);
-      nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_DATA);
-      nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_HEADER);
+      nm_ibverbs_send_flush(p_rcache->p_cnx, NM_IBVERBS_WRID_DATA);
+      nm_ibverbs_send_flush(p_rcache->p_cnx, NM_IBVERBS_WRID_HEADER);
 #if defined(PUKABI) || defined(MINI_PUKABI)
-      puk_mem_unreg(rcache->send.reg);
-      rcache->send.reg = NULL;
+      puk_mem_unreg(p_rcache->send.p_reg);
+      p_rcache->send.p_reg = NULL;
 #else /* PUKABI */
-      nm_ibverbs_mem_unreg(rcache->pd, rcache->send.message, rcache->send.mr);
-      rcache->send.mr = NULL;
+      nm_ibverbs_mem_unreg(p_rcache->pd, p_rcache->send.message, p_rcache->send.mr);
+      p_rcache->send.mr = NULL;
 #endif /* PUKABI */
-      rcache->send.message = NULL;
-      rcache->send.size    = -1;
+      p_rcache->send.message = NULL;
+      p_rcache->send.size    = -1;
       return NM_ESUCCESS;
     }
   else
@@ -318,53 +313,52 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
 
 static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n)
 {
-  struct nm_ibverbs_rcache*rcache = _status;
-  if(rcache->recv.message != NULL)
+  struct nm_ibverbs_rcache_s*p_rcache = _status;
+  if(p_rcache->recv.message != NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: rendez-vous already posted on receiver side.\n");
-      abort();
+      NM_FATAL("ibverbs: rendez-vous already posted on receiver side.\n");
     }
-  rcache->headers.rsig.busy = 0;
-  rcache->recv.message = v->iov_base;
-  rcache->recv.size = v->iov_len;
-  struct nm_ibverbs_rcache_rdvhdr*const h = &rcache->headers.shdr;
-  h->raddr =  (uintptr_t)rcache->recv.message;
-  h->busy  = 1;
+  p_rcache->headers.rsig.busy = 0;
+  p_rcache->recv.message = v->iov_base;
+  p_rcache->recv.size = v->iov_len;
+  struct nm_ibverbs_rcache_rdvhdr_s*const p_rdvhdr = &p_rcache->headers.shdr;
+  p_rdvhdr->raddr = (uintptr_t)p_rcache->recv.message;
+  p_rdvhdr->busy  = 1;
 #if defined(PUKABI) || defined(MINI_PUKABI)
-  rcache->recv.reg = puk_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
-  struct ibv_mr*mr = rcache->recv.reg->key;
-  h->rkey  = mr->rkey;
+  p_rcache->recv.p_reg = puk_mem_reg(p_rcache->pd, p_rcache->recv.message, p_rcache->recv.size);
+  struct ibv_mr*mr = p_rcache->recv.p_reg->key;
+  p_rdvhdr->rkey  = mr->rkey;
 #else /* PUKABI */
-  rcache->recv.mr = nm_ibverbs_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
-  h->rkey  = rcache->recv.mr->rkey;
+  p_rcache->recv.mr = nm_ibverbs_mem_reg(p_rcache->pd, p_rcache->recv.message, p_rcache->recv.size);
+  p_rdvhdr->rkey  = p_rcache->recv.mr->rkey;
 #endif /* PUKABI */
 
-  nm_ibverbs_rdma_send(rcache->cnx, sizeof(struct nm_ibverbs_rcache_rdvhdr),
-		       &rcache->headers.shdr, 
-		       &rcache->headers.rhdr,
-		       &rcache->headers,
-		       &rcache->seg,
-		       rcache->mr,
+  nm_ibverbs_rdma_send(p_rcache->p_cnx, sizeof(struct nm_ibverbs_rcache_rdvhdr_s),
+		       &p_rcache->headers.shdr, 
+		       &p_rcache->headers.rhdr,
+		       &p_rcache->headers,
+		       &p_rcache->seg,
+		       p_rcache->mr,
 		       NM_IBVERBS_WRID_RDV);
-  nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_RDV);
+  nm_ibverbs_send_flush(p_rcache->p_cnx, NM_IBVERBS_WRID_RDV);
 }
 
 static int nm_ibverbs_rcache_poll_one(void*_status)
 {
-  struct nm_ibverbs_rcache*rcache = _status;
-  struct nm_ibverbs_rcache_sighdr*rsig = &rcache->headers.rsig;
-  if(rsig->busy)
+  struct nm_ibverbs_rcache_s*p_rcache = _status;
+  struct nm_ibverbs_rcache_sighdr_s*p_rsig = &p_rcache->headers.rsig;
+  if(p_rsig->busy)
     {
-      rsig->busy = 0;
+      p_rsig->busy = 0;
 #if defined(PUKABI) || defined(MINI_PUKABI)
-      puk_mem_unreg(rcache->recv.reg);
-      rcache->recv.reg = NULL;
+      puk_mem_unreg(p_rcache->recv.p_reg);
+      p_rcache->recv.p_reg = NULL;
 #else /* PUKABI */
-      nm_ibverbs_mem_unreg(rcache->pd, rcache->recv.message, rcache->recv.mr);
-      rcache->recv.mr = NULL;
+      nm_ibverbs_mem_unreg(p_rcache->pd, p_rcache->recv.message, p_rcache->recv.mr);
+      p_rcache->recv.mr = NULL;
 #endif /* PUKABI */
-      rcache->recv.message = NULL;
-      rcache->recv.size = -1;
+      p_rcache->recv.message = NULL;
+      p_rcache->recv.size = -1;
       return NM_ESUCCESS;
     }
   else

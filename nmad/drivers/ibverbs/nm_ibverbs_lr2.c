@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2010 (see AUTHORS file)
+ * Copyright (C) 2010-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ struct nm_ibverbs_lr2_context_s
 };
 
 /** Connection state for tracks sending with lr2 */
-struct nm_ibverbs_lr2
+struct nm_ibverbs_lr2_s
 {  
   struct
   {
@@ -68,8 +68,8 @@ struct nm_ibverbs_lr2
     volatile uint32_t sack, rack;
   } buffer; /* buffers should be 64-byte aligned */
   struct ibv_mr*mr;
-  struct nm_ibverbs_segment seg; /**< remote segment */
-  struct nm_ibverbs_cnx*cnx;
+  struct nm_ibverbs_segment_s seg; /**< remote segment */
+  struct nm_ibverbs_cnx_s*p_cnx;
   puk_context_t context;
 
   struct
@@ -97,8 +97,8 @@ struct nm_ibverbs_lr2
   } recv;
 };
 
-static void nm_ibverbs_lr2_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
-static void nm_ibverbs_lr2_init(puk_context_t context, const void**drv_url, size_t*url_size);
+static void nm_ibverbs_lr2_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props);
+static void nm_ibverbs_lr2_init(puk_context_t context, const void**p_url, size_t*p_url_size);
 static void nm_ibverbs_lr2_close(puk_context_t context);
 static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n);
@@ -149,54 +149,54 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_lr2,
 
 static void* nm_ibverbs_lr2_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_ibverbs_lr2*lr2 = NULL;
+  struct nm_ibverbs_lr2_s*p_lr2 = NULL;
   if(nm_ibverbs_memalign > 0)
-    posix_memalign((void**)&lr2, nm_ibverbs_memalign, sizeof(struct nm_ibverbs_lr2));
+    posix_memalign((void**)&p_lr2, nm_ibverbs_memalign, sizeof(struct nm_ibverbs_lr2_s));
   else
-    lr2 = malloc(sizeof(struct nm_ibverbs_lr2));
-  memset(&lr2->buffer, 0, sizeof(lr2->buffer));
-  lr2->buffer.rack = 0;
-  lr2->mr = NULL;
-  lr2->context = context;
-  lr2->cnx = NULL;
-  return lr2;
+    p_lr2 = malloc(sizeof(struct nm_ibverbs_lr2_s));
+  memset(&p_lr2->buffer, 0, sizeof(p_lr2->buffer));
+  p_lr2->buffer.rack = 0;
+  p_lr2->mr = NULL;
+  p_lr2->context = context;
+  p_lr2->p_cnx = NULL;
+  return p_lr2;
 }
 
 static void nm_ibverbs_lr2_destroy(void*_status)
 {
-  struct nm_ibverbs_lr2*lr2 = _status;
-  if(lr2->cnx)
+  struct nm_ibverbs_lr2_s*p_lr2 = _status;
+  if(p_lr2->p_cnx)
     {
-      nm_ibverbs_cnx_close(lr2->cnx);
+      nm_ibverbs_cnx_close(p_lr2->p_cnx);
     }
-  if(lr2->mr)
+  if(p_lr2->mr)
     {
-      ibv_dereg_mr(lr2->mr);
+      ibv_dereg_mr(p_lr2->mr);
     }
-  free(lr2);
+  free(p_lr2);
 }
 
 /* *** lr2 connection ************************************** */
 
-static void nm_ibverbs_lr2_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
+static void nm_ibverbs_lr2_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props)
 {
   struct nm_ibverbs_lr2_context_s*p_lr2_context = malloc(sizeof(struct nm_ibverbs_lr2_context_s));
   puk_context_set_status(context, p_lr2_context);
   p_lr2_context->p_hca = nm_ibverbs_hca_from_context(context);
-  nm_ibverbs_hca_get_profile(p_lr2_context->p_hca, &props->profile);
-  props->capabilities.supports_data = 1;
-  props->capabilities.max_msg_size = 0; /* unlimited */
-  props->capabilities.trk_rdv = 1;
+  nm_ibverbs_hca_get_profile(p_lr2_context->p_hca, &p_props->profile);
+  p_props->capabilities.supports_data = 1;
+  p_props->capabilities.max_msg_size = 0; /* unlimited */
+  p_props->capabilities.trk_rdv = 1;
 }
 
-static void nm_ibverbs_lr2_init(puk_context_t context, const void**drv_url, size_t*url_size)
+static void nm_ibverbs_lr2_init(puk_context_t context, const void**p_url, size_t*p_url_size)
 { 
   const char*url = NULL;
   struct nm_ibverbs_lr2_context_s*p_lr2_context = puk_context_get_status(context);
-  p_lr2_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
+  p_lr2_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr_s), &url);
   puk_context_putattr(context, "local_url", url);
-  *drv_url = url;
-  *url_size = strlen(url);
+  *p_url = url;
+  *p_url_size = strlen(url);
 }
 
 static void nm_ibverbs_lr2_close(puk_context_t context)
@@ -210,97 +210,97 @@ static void nm_ibverbs_lr2_close(puk_context_t context)
 
 static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t url_size)
 {
-  struct nm_ibverbs_lr2*lr2 = _status;
-  struct nm_ibverbs_lr2_context_s*p_lr2_context = puk_context_get_status(lr2->context);
-  lr2->cnx = nm_ibverbs_cnx_new(p_lr2_context->p_hca);
-  lr2->mr = ibv_reg_mr(p_lr2_context->p_hca->pd, &lr2->buffer, sizeof(lr2->buffer),
-		       IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
-  lr2->send.prefetch = NULL;
-  if(lr2->mr == NULL)
+  struct nm_ibverbs_lr2_s*p_lr2 = _status;
+  struct nm_ibverbs_lr2_context_s*p_lr2_context = puk_context_get_status(p_lr2->context);
+  p_lr2->p_cnx = nm_ibverbs_cnx_new(p_lr2_context->p_hca);
+  p_lr2->mr = ibv_reg_mr(p_lr2_context->p_hca->pd, &p_lr2->buffer, sizeof(p_lr2->buffer),
+                         IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+  p_lr2->send.prefetch = NULL;
+  if(p_lr2->mr == NULL)
     {
       NM_FATAL("Infiniband: lr2 cannot register MR.\n");
     }
-  struct nm_ibverbs_segment*seg = &lr2->cnx->local_addr.segment;
-  seg->raddr = (uintptr_t)&lr2->buffer;
-  seg->rkey  = lr2->mr->rkey;
+  struct nm_ibverbs_segment_s*p_seg = &p_lr2->p_cnx->local_addr.segment;
+  p_seg->raddr = (uintptr_t)&p_lr2->buffer;
+  p_seg->rkey  = p_lr2->mr->rkey;
   /* ** exchange addresses */
-  const char*local_url = puk_context_getattr(lr2->context, "local_url");
+  const char*local_url = puk_context_getattr(p_lr2->context, "local_url");
   int rc = nm_connector_exchange(local_url, remote_url,
-				 &lr2->cnx->local_addr, &lr2->cnx->remote_addr);
+				 &p_lr2->p_cnx->local_addr, &p_lr2->p_cnx->remote_addr);
   if(rc)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: timeout in address exchange.\n");
+      NM_FATAL("ibverbs: timeout in address exchange.\n");
     }
-  lr2->seg = lr2->cnx->remote_addr.segment;
-  nm_ibverbs_cnx_connect(lr2->cnx);
+  p_lr2->seg = p_lr2->p_cnx->remote_addr.segment;
+  nm_ibverbs_cnx_connect(p_lr2->p_cnx);
 }
 
 /* *** lr2 I/O ********************************************* */
 
-static inline void nm_ibverbs_lr2_send_init(struct nm_ibverbs_lr2*lr2)
+static inline void nm_ibverbs_lr2_send_init(struct nm_ibverbs_lr2_s*p_lr2)
 {
-  assert(lr2->send.message == NULL);
-  assert(nm_data_slicer_isnull(&lr2->send.slicer));
-  lr2->send.done    = 0;
-  lr2->send.rbuf    = lr2->buffer.rbuf;
-  lr2->send.sbuf    = lr2->buffer.sbuf;
-  lr2->send.step    = 0;
-  lr2->send.nbuffer = 0;
-  lr2->buffer.rack  = 0;
+  assert(p_lr2->send.message == NULL);
+  assert(nm_data_slicer_isnull(&p_lr2->send.slicer));
+  p_lr2->send.done    = 0;
+  p_lr2->send.rbuf    = p_lr2->buffer.rbuf;
+  p_lr2->send.sbuf    = p_lr2->buffer.sbuf;
+  p_lr2->send.step    = 0;
+  p_lr2->send.nbuffer = 0;
+  p_lr2->buffer.rack  = 0;
 }
 static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n)
 {
-  struct nm_ibverbs_lr2*lr2 = _status;
+  struct nm_ibverbs_lr2_s*p_lr2 = _status;
   assert(n == 1);
-  nm_ibverbs_lr2_send_init(lr2);
-  lr2->send.message = v[0].iov_base;
-  lr2->send.slicer  = NM_DATA_SLICER_NULL;
-  lr2->send.size    = v[0].iov_len;
+  nm_ibverbs_lr2_send_init(p_lr2);
+  p_lr2->send.message = v[0].iov_base;
+  p_lr2->send.slicer  = NM_DATA_SLICER_NULL;
+  p_lr2->send.size    = v[0].iov_len;
 }
 static void nm_ibverbs_lr2_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
-  struct nm_ibverbs_lr2*lr2 = _status;
+  struct nm_ibverbs_lr2_s*p_lr2 = _status;
   assert(chunk_offset + chunk_len <= nm_data_size(p_data));
-  nm_ibverbs_lr2_send_init(lr2);
-  lr2->send.message = NULL;
-  lr2->send.size    = chunk_len;
-  nm_data_slicer_init(&lr2->send.slicer, p_data);
+  nm_ibverbs_lr2_send_init(p_lr2);
+  p_lr2->send.message = NULL;
+  p_lr2->send.size    = chunk_len;
+  nm_data_slicer_init(&p_lr2->send.slicer, p_data);
   if(chunk_offset > 0)
-    nm_data_slicer_forward(&lr2->send.slicer, chunk_offset);
+    nm_data_slicer_forward(&p_lr2->send.slicer, chunk_offset);
 }
 
 static int nm_ibverbs_lr2_send_poll(void*_status)
 {
-  struct nm_ibverbs_lr2*lr2 = _status;
-  while(lr2->send.done < lr2->send.size)
+  struct nm_ibverbs_lr2_s*p_lr2 = _status;
+  while(p_lr2->send.done < p_lr2->send.size)
     {
-      const nm_len_t chunk_size = lr2_steps[lr2->send.step];
+      const nm_len_t chunk_size = lr2_steps[p_lr2->send.step];
       const nm_len_t block_size = NM_IBVERBS_LR2_BLOCKSIZE;
       const nm_len_t block_max_payload = block_size - lr2_hsize;
       const nm_len_t chunk_max_payload = chunk_size - lr2_hsize * chunk_size / block_size;
-      const nm_len_t chunk_payload = nm_ibverbs_min(lr2->send.size - lr2->send.done, chunk_max_payload);
+      const nm_len_t chunk_payload = nm_ibverbs_min(p_lr2->send.size - p_lr2->send.done, chunk_max_payload);
       /* ** N-buffering */
-      if((lr2->send.sbuf + chunk_size) > (((void*)lr2->buffer.sbuf) + (lr2->send.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
+      if((p_lr2->send.sbuf + chunk_size) > (((void*)p_lr2->buffer.sbuf) + (p_lr2->send.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
 	{
 	  /* flow control rationale- receiver may be:
 	   *   . reading buffer N -> ok for writing N + 1
 	   *   . already be ready for N + 1 -> ok
 	   *   . reading N - 1 (~= N + 2) -> wait
 	   * */
-	  const int n2 = (lr2->send.nbuffer + 2) % NM_IBVERBS_LR2_NBUF;
-	  if(lr2->buffer.rack == n2)
+	  const int n2 = (p_lr2->send.nbuffer + 2) % NM_IBVERBS_LR2_NBUF;
+	  if(p_lr2->buffer.rack == n2)
 	    { 
 	      return -NM_EAGAIN;
 	    }
 	  /* swap buffers */
-	  lr2->send.nbuffer = (lr2->send.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
-	  lr2->send.sbuf = ((void*)lr2->buffer.sbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
-	  lr2->send.rbuf = ((void*)lr2->buffer.rbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
+	  p_lr2->send.nbuffer = (p_lr2->send.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
+	  p_lr2->send.sbuf = ((void*)p_lr2->buffer.sbuf) + p_lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
+	  p_lr2->send.rbuf = ((void*)p_lr2->buffer.rbuf) + p_lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
 	}
       /* ** fill buffer (one chunk made of multiple blocks) */
       nm_len_t chunk_offset = 0; /**< offset in the sbuf/rbuf, i.e. payload + headers */
       nm_len_t base_offset = 0;
-      if((lr2->send.prefetch != NULL) && (lr2->send.prefetch == lr2->send.message) && (lr2->send.done == 0))
+      if((p_lr2->send.prefetch != NULL) && (p_lr2->send.prefetch == p_lr2->send.message) && (p_lr2->send.done == 0))
 	{
 	  chunk_offset = chunk_size;
 	}
@@ -315,37 +315,37 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 	    {
 	      const nm_len_t block_payload = (chunk_todo % block_max_payload == 0) ?
 		block_max_payload : (chunk_todo % block_max_payload);
-	      struct lr2_header_s*h = lr2->send.sbuf + chunk_offset + block_payload;
-	      h->checksum = 1 | nm_ibverbs_copy_from_and_checksum(lr2->send.sbuf + chunk_offset, &lr2->send.slicer, lr2->send.message, lr2->send.done + (chunk_payload - chunk_todo), block_payload);
+	      struct lr2_header_s*p_header = p_lr2->send.sbuf + chunk_offset + block_payload;
+	      p_header->checksum = 1 | nm_ibverbs_copy_from_and_checksum(p_lr2->send.sbuf + chunk_offset, &p_lr2->send.slicer, p_lr2->send.message, p_lr2->send.done + (chunk_payload - chunk_todo), block_payload);
 	      chunk_todo   -= block_payload;
 	      chunk_offset += block_payload + lr2_hsize;
 	    }
 	}
       /* ** send chunk */
-      nm_ibverbs_send_flushn(lr2->cnx, NM_IBVERBS_WRID_PACKET, 1);
-      nm_ibverbs_rdma_send(lr2->cnx, chunk_offset - base_offset, lr2->send.sbuf + base_offset, lr2->send.rbuf + base_offset,
-			   &lr2->buffer, &lr2->seg, lr2->mr, NM_IBVERBS_WRID_PACKET);
-      lr2->send.done += chunk_payload;
-      lr2->send.sbuf += chunk_offset;
-      lr2->send.rbuf += chunk_offset;
-      lr2->send.prefetch = NULL;
-      if(lr2->send.step < lr2_nsteps - 1)
-	lr2->send.step++;
+      nm_ibverbs_send_flushn(p_lr2->p_cnx, NM_IBVERBS_WRID_PACKET, 1);
+      nm_ibverbs_rdma_send(p_lr2->p_cnx, chunk_offset - base_offset, p_lr2->send.sbuf + base_offset, p_lr2->send.rbuf + base_offset,
+			   &p_lr2->buffer, &p_lr2->seg, p_lr2->mr, NM_IBVERBS_WRID_PACKET);
+      p_lr2->send.done += chunk_payload;
+      p_lr2->send.sbuf += chunk_offset;
+      p_lr2->send.rbuf += chunk_offset;
+      p_lr2->send.prefetch = NULL;
+      if(p_lr2->send.step < lr2_nsteps - 1)
+	p_lr2->send.step++;
     }
-  nm_ibverbs_send_flush(lr2->cnx, NM_IBVERBS_WRID_PACKET);
-  lr2->send.message = NULL;
-  if(!nm_data_slicer_isnull(&lr2->send.slicer))
+  nm_ibverbs_send_flush(p_lr2->p_cnx, NM_IBVERBS_WRID_PACKET);
+  p_lr2->send.message = NULL;
+  if(!nm_data_slicer_isnull(&p_lr2->send.slicer))
     {
-      nm_data_slicer_destroy(&lr2->send.slicer);
-      lr2->send.slicer = NM_DATA_SLICER_NULL;
+      nm_data_slicer_destroy(&p_lr2->send.slicer);
+      p_lr2->send.slicer = NM_DATA_SLICER_NULL;
     }
   return NM_ESUCCESS;
 }
 
 static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t size)
 {
-  struct nm_ibverbs_lr2*lr2 = _status;
-  if((lr2->send.prefetch == NULL) && (lr2->send.message == NULL))
+  struct nm_ibverbs_lr2_s*p_lr2 = _status;
+  if((p_lr2->send.prefetch == NULL) && (p_lr2->send.message == NULL))
     {
       const nm_len_t block_size = NM_IBVERBS_LR2_BLOCKSIZE;
       const nm_len_t chunk_size = lr2_steps[0];
@@ -357,63 +357,63 @@ static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t 
 	  /* prefetch only in case first step is complete */
 	  while(chunk_offset < chunk_size)
 	    {
-	      struct lr2_header_s*h = (struct lr2_header_s*)(&lr2->buffer.sbuf[chunk_offset] + block_payload);
-	      h->checksum = 1 | nm_ibverbs_memcpy_and_checksum(&lr2->buffer.sbuf[chunk_offset], ptr + chunk_done, block_payload);
+	      struct lr2_header_s*p_header = (struct lr2_header_s*)(&p_lr2->buffer.sbuf[chunk_offset] + block_payload);
+	      p_header->checksum = 1 | nm_ibverbs_memcpy_and_checksum(&p_lr2->buffer.sbuf[chunk_offset], ptr + chunk_done, block_payload);
 	      chunk_done   += block_payload;
-	  chunk_offset += block_size;
+              chunk_offset += block_size;
 	    }
-	  lr2->send.prefetch = ptr;
+	  p_lr2->send.prefetch = ptr;
 	}
     }
 }
 
 static void nm_ibverbs_lr2_recv_iov_post(void*_status, struct iovec*v, int n)
 {
-  struct nm_ibverbs_lr2*lr2 = _status;
-  lr2->recv.done    = 0;
-  lr2->recv.message = v->iov_base;
-  lr2->recv.slicer  = NM_DATA_SLICER_NULL;
-  lr2->recv.size    = v->iov_len;
-  lr2->recv.rbuf    = lr2->buffer.rbuf;
-  lr2->recv.step    = 0;
-  lr2->recv.nbuffer = 0;
+  struct nm_ibverbs_lr2_s*p_lr2 = _status;
+  p_lr2->recv.done    = 0;
+  p_lr2->recv.message = v->iov_base;
+  p_lr2->recv.slicer  = NM_DATA_SLICER_NULL;
+  p_lr2->recv.size    = v->iov_len;
+  p_lr2->recv.rbuf    = p_lr2->buffer.rbuf;
+  p_lr2->recv.step    = 0;
+  p_lr2->recv.nbuffer = 0;
 }
 
 static void nm_ibverbs_lr2_recv_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
-  struct nm_ibverbs_lr2*lr2 = _status;
+  struct nm_ibverbs_lr2_s*p_lr2 = _status;
   assert(chunk_offset + chunk_len <= nm_data_size(p_data));
-  lr2->recv.done    = 0;
-  lr2->recv.message = NULL;
-  lr2->recv.size    = chunk_len;
-  lr2->recv.rbuf    = lr2->buffer.rbuf;
-  lr2->recv.step    = 0;
-  lr2->recv.nbuffer = 0;
-  nm_data_slicer_init(&lr2->recv.slicer, p_data);
+  p_lr2->recv.done    = 0;
+  p_lr2->recv.message = NULL;
+  p_lr2->recv.size    = chunk_len;
+  p_lr2->recv.rbuf    = p_lr2->buffer.rbuf;
+  p_lr2->recv.step    = 0;
+  p_lr2->recv.nbuffer = 0;
+  nm_data_slicer_init(&p_lr2->recv.slicer, p_data);
   if(chunk_offset > 0)
-    nm_data_slicer_forward(&lr2->recv.slicer, chunk_offset);
+    nm_data_slicer_forward(&p_lr2->recv.slicer, chunk_offset);
 }
 
 static int nm_ibverbs_lr2_recv_poll_one(void*_status)
 {
-  struct nm_ibverbs_lr2*lr2 = _status;
-  while(lr2->recv.done < lr2->recv.size)
+  struct nm_ibverbs_lr2_s*p_lr2 = _status;
+  while(p_lr2->recv.done < p_lr2->recv.size)
     {
-      const nm_len_t chunk_size = lr2_steps[lr2->recv.step];
+      const nm_len_t chunk_size = lr2_steps[p_lr2->recv.step];
       const nm_len_t block_size = NM_IBVERBS_LR2_BLOCKSIZE;
       const nm_len_t block_max_payload = block_size - lr2_hsize;
       const nm_len_t chunk_max_payload = chunk_size - lr2_hsize * chunk_size / block_size;
-      const nm_len_t chunk_payload = nm_ibverbs_min(lr2->recv.size - lr2->recv.done, chunk_max_payload);
-      if((lr2->recv.rbuf + chunk_size) > (((void*)lr2->buffer.rbuf) + (lr2->recv.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
+      const nm_len_t chunk_payload = nm_ibverbs_min(p_lr2->recv.size - p_lr2->recv.done, chunk_max_payload);
+      if((p_lr2->recv.rbuf + chunk_size) > (((void*)p_lr2->buffer.rbuf) + (p_lr2->recv.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
       {
 	/* swap buffers */
-	lr2->recv.nbuffer = (lr2->recv.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
-	lr2->recv.rbuf = ((void*)lr2->buffer.rbuf) + lr2->recv.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
-	nm_ibverbs_send_flush(lr2->cnx, NM_IBVERBS_WRID_ACK);
-	lr2->buffer.sack = lr2->recv.nbuffer;
-	nm_ibverbs_rdma_send(lr2->cnx, sizeof(uint32_t),
-			     (void*)&lr2->buffer.sack, (void*)&lr2->buffer.rack,
-			     &lr2->buffer, &lr2->seg, lr2->mr, NM_IBVERBS_WRID_ACK);
+	p_lr2->recv.nbuffer = (p_lr2->recv.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
+	p_lr2->recv.rbuf = ((void*)p_lr2->buffer.rbuf) + p_lr2->recv.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
+	nm_ibverbs_send_flush(p_lr2->p_cnx, NM_IBVERBS_WRID_ACK);
+	p_lr2->buffer.sack = p_lr2->recv.nbuffer;
+	nm_ibverbs_rdma_send(p_lr2->p_cnx, sizeof(uint32_t),
+			     (void*)&p_lr2->buffer.sack, (void*)&p_lr2->buffer.rack,
+			     &p_lr2->buffer, &p_lr2->seg, p_lr2->mr, NM_IBVERBS_WRID_ACK);
       }
       nm_len_t chunk_todo = chunk_payload;
       nm_len_t chunk_offset = (chunk_max_payload - chunk_payload) % block_max_payload;
@@ -421,37 +421,36 @@ static int nm_ibverbs_lr2_recv_poll_one(void*_status)
 	{
 	  const nm_len_t block_payload = (chunk_todo % block_max_payload == 0) ?
 	    block_max_payload : (chunk_todo % block_max_payload);
-	  struct lr2_header_s*h = lr2->recv.rbuf + chunk_offset + block_payload;
-	  if((chunk_todo == chunk_payload) && !h->checksum)
+	  struct lr2_header_s*p_header = p_lr2->recv.rbuf + chunk_offset + block_payload;
+	  if((chunk_todo == chunk_payload) && !p_header->checksum)
 	    goto wouldblock;
 	  else
-	    while(!h->checksum)
+	    while(!p_header->checksum)
 	      {
 	      }
 	  const uint32_t checksum =
-	    1 | nm_ibverbs_copy_to_and_checksum(lr2->recv.rbuf + chunk_offset, &lr2->recv.slicer, lr2->recv.message,
-						lr2->recv.done, block_payload);
-	  if(h->checksum != checksum)
+	    1 | nm_ibverbs_copy_to_and_checksum(p_lr2->recv.rbuf + chunk_offset, &p_lr2->recv.slicer, p_lr2->recv.message,
+						p_lr2->recv.done, block_payload);
+	  if(p_header->checksum != checksum)
 	    {
-	      fprintf(stderr, "nmad: FATAL- ibverbs: checksum failed; step = %d; done = %d / %d;  received = %llX; expected = %llX.\n",
-		      lr2->recv.step, (int)lr2->recv.done, (int)lr2->recv.size, 
-		      (long long unsigned)h->checksum, (long long unsigned)checksum);
-	      abort();
+	      NM_FATAL("ibverbs: checksum failed; step = %d; done = %d / %d;  received = %llX; expected = %llX.\n",
+                       p_lr2->recv.step, (int)p_lr2->recv.done, (int)p_lr2->recv.size, 
+                       (long long unsigned)p_header->checksum, (long long unsigned)checksum);
 	    }
-    	  h->checksum = 0;
+    	  p_header->checksum = 0;
 	  chunk_todo -= block_payload;
-	  lr2->recv.done += block_payload;
-	  lr2->recv.rbuf += chunk_offset + block_payload + lr2_hsize;
+	  p_lr2->recv.done += block_payload;
+	  p_lr2->recv.rbuf += chunk_offset + block_payload + lr2_hsize;
 	  chunk_offset = 0;
 	}
-      if(lr2->recv.step < lr2_nsteps - 1)
-	lr2->recv.step++;
+      if(p_lr2->recv.step < lr2_nsteps - 1)
+	p_lr2->recv.step++;
     }
-  lr2->recv.message = NULL;
-  if(!nm_data_slicer_isnull(&lr2->recv.slicer))
+  p_lr2->recv.message = NULL;
+  if(!nm_data_slicer_isnull(&p_lr2->recv.slicer))
     {
-      nm_data_slicer_destroy(&lr2->recv.slicer);
-      lr2->recv.slicer = NM_DATA_SLICER_NULL;
+      nm_data_slicer_destroy(&p_lr2->recv.slicer);
+      p_lr2->recv.slicer = NM_DATA_SLICER_NULL;
     }
   return NM_ESUCCESS;
  wouldblock:

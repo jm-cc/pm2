@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,13 +27,13 @@ static const int nm_ibverbs_adaptrdma_step_base         = 16  * 1024;
 static const int nm_ibverbs_adaptrdma_step_overrun      = 16  * 1024;
 
 #define NM_IBVERBS_ADAPTRDMA_BUFSIZE (16 * 1024 * 1024)
-#define NM_IBVERBS_ADAPTRDMA_HDRSIZE (sizeof(struct nm_ibverbs_adaptrdma_header))
+#define NM_IBVERBS_ADAPTRDMA_HDRSIZE (sizeof(struct nm_ibverbs_adaptrdma_header_s))
 
 #define NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR      0x01
 #define NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE    0x02
 
 /** on the wire header of minidriver 'adaptrdma' */
-struct nm_ibverbs_adaptrdma_header 
+struct nm_ibverbs_adaptrdma_header_s
 {
   uint32_t checksum;
   volatile uint32_t offset;
@@ -41,11 +41,11 @@ struct nm_ibverbs_adaptrdma_header
 } __attribute__((packed));
 
 /** Connection state for tracks sending with adaptive RDMA super-pipeline */
-struct nm_ibverbs_adaptrdma 
+struct nm_ibverbs_adaptrdma_s
 {
   struct ibv_mr*mr;
-  struct nm_ibverbs_segment seg; /**< remote segment */
-  struct nm_ibverbs_cnx*cnx;
+  struct nm_ibverbs_segment_s seg; /**< remote segment */
+  struct nm_ibverbs_cnx_s*p_cnx;
   puk_context_t context;
   struct
   {
@@ -73,8 +73,8 @@ struct nm_ibverbs_adaptrdma
   } recv;
 };
 
-static void nm_ibverbs_adaptrdma_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
-static void nm_ibverbs_adaptrdma_init(puk_context_t context, const void**drv_url, size_t*url_size);
+static void nm_ibverbs_adaptrdma_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props);
+static void nm_ibverbs_adaptrdma_init(puk_context_t context, const void**p_url, size_t*p_url_size);
 static void nm_ibverbs_adaptrdma_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_adaptrdma_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_adaptrdma_send_poll(void*_status);
@@ -98,8 +98,8 @@ static void nm_ibverbs_adaptrdma_destroy(void*);
 
 static const struct puk_component_driver_s nm_ibverbs_adaptrdma_component =
   {
-    .instantiate = &nm_ibverbs_adaptrdma_instantiate,
-    .destroy = &nm_ibverbs_adaptrdma_destroy
+    .instantiate    = &nm_ibverbs_adaptrdma_instantiate,
+    .destroy        = &nm_ibverbs_adaptrdma_destroy
   };
 
 
@@ -117,60 +117,61 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_adaptrdma,
 
 static void* nm_ibverbs_adaptrdma_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_ibverbs_adaptrdma*adaptrdma = malloc(sizeof(struct nm_ibverbs_adaptrdma));
-  memset(&adaptrdma->buffer, 0, sizeof(adaptrdma->buffer));
-  adaptrdma->mr = NULL;
-  adaptrdma->context = context;
-  return adaptrdma;
+  struct nm_ibverbs_adaptrdma_s*p_adaptrdma = malloc(sizeof(struct nm_ibverbs_adaptrdma_s));
+  memset(&p_adaptrdma->buffer, 0, sizeof(p_adaptrdma->buffer));
+  p_adaptrdma->mr = NULL;
+  p_adaptrdma->context = context;
+  return p_adaptrdma;
 }
 
 static void nm_ibverbs_adaptrdma_destroy(void*_status)
 {
-  /* TODO */
+  struct nm_ibverbs_adaptrdma_s*p_adaptrdma = _status;
+  free(p_adaptrdma);
 }
 
 /* ********************************************************* */
 
-static void nm_ibverbs_adaptrdma_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
+static void nm_ibverbs_adaptrdma_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props)
 {
   struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_from_context(context);
-  nm_ibverbs_hca_get_profile(p_hca, &props->profile);
+  nm_ibverbs_hca_get_profile(p_hca, &p_props->profile);
 }
 
-static void nm_ibverbs_adaptrdma_init(puk_context_t context, const void**drv_url, size_t*url_size)
+static void nm_ibverbs_adaptrdma_init(puk_context_t context, const void**p_url, size_t*p_url_size)
 {
   const char*url = NULL;
-  nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
+  nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr_s), &url);
   puk_context_putattr(context, "local_url", url);
-  *drv_url = url;
-  *url_size = strlen(url);
+  *p_url = url;
+  *p_url_size = strlen(url);
 }
 
 static void nm_ibverbs_adaptrdma_connect(void*_status, const void*remote_url, size_t url_size)
 {
-  struct nm_ibverbs_adaptrdma*adaptrdma = _status;
-  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_from_context(adaptrdma->context);
-  struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
-  adaptrdma->cnx = p_ibverbs_cnx;
+  struct nm_ibverbs_adaptrdma_s*p_adaptrdma = _status;
+  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_from_context(p_adaptrdma->context);
+  struct nm_ibverbs_cnx_s*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
+  p_adaptrdma->p_cnx = p_ibverbs_cnx;
   /* register Memory Region */
-  adaptrdma->mr = ibv_reg_mr(p_hca->pd, &adaptrdma->buffer, sizeof(adaptrdma->buffer),
-			     IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
-  if(adaptrdma->mr == NULL)
+  p_adaptrdma->mr = ibv_reg_mr(p_hca->pd, &p_adaptrdma->buffer, sizeof(p_adaptrdma->buffer),
+                               IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+  if(p_adaptrdma->mr == NULL)
     {
       NM_FATAL("Infiniband: adaptrdma cannot register MR.\n");
     }
-  struct nm_ibverbs_segment*seg = &p_ibverbs_cnx->local_addr.segment;
-  seg->raddr = (uintptr_t)&adaptrdma->buffer;
-  seg->rkey  = adaptrdma->mr->rkey;
+  struct nm_ibverbs_segment_s*p_seg = &p_ibverbs_cnx->local_addr.segment;
+  p_seg->raddr = (uintptr_t)&p_adaptrdma->buffer;
+  p_seg->rkey  = p_adaptrdma->mr->rkey;
   /* ** exchange addresses */
-  const char*local_url = puk_context_getattr(adaptrdma->context, "local_url");
+  const char*local_url = puk_context_getattr(p_adaptrdma->context, "local_url");
   int rc = nm_connector_exchange(local_url, remote_url,
 				 &p_ibverbs_cnx->local_addr, &p_ibverbs_cnx->remote_addr);
   if(rc)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: timeout in address exchange.\n");
+      NM_FATAL("ibverbs: timeout in address exchange.\n");
     }
-  adaptrdma->seg =  p_ibverbs_cnx->remote_addr.segment;
+  p_adaptrdma->seg = p_ibverbs_cnx->remote_addr.segment;
   nm_ibverbs_cnx_connect(p_ibverbs_cnx);
 }
 
@@ -193,112 +194,112 @@ static inline int nm_ibverbs_adaptrdma_block_size(int done)
 
 /** calculates the position of the packet header, given the beginning of the packet and its size
  */
-static inline struct nm_ibverbs_adaptrdma_header*nm_ibverbs_adaptrdma_get_header(void*buf, int packet_size)
+static inline struct nm_ibverbs_adaptrdma_header_s*nm_ibverbs_adaptrdma_get_header(void*buf, int packet_size)
 {
-  return buf + packet_size - sizeof(struct nm_ibverbs_adaptrdma_header);
+  return buf + packet_size - sizeof(struct nm_ibverbs_adaptrdma_header_s);
 }
-
 
 static void nm_ibverbs_adaptrdma_send_post(void*_status, const struct iovec*v, int n)
 {
-  struct nm_ibverbs_adaptrdma*adaptrdma = _status;
+  struct nm_ibverbs_adaptrdma_s*p_adaptrdma = _status;
   assert(n == 1);
-  adaptrdma->send.message = v[0].iov_base;
-  adaptrdma->send.todo    = v[0].iov_len;
-  adaptrdma->send.done    = 0;
-  adaptrdma->send.rbuf    = adaptrdma->buffer.rbuf;
-  adaptrdma->send.sbuf    = adaptrdma->buffer.sbuf;
-  adaptrdma->send.size_guard = nm_ibverbs_adaptrdma_step_base;
+  p_adaptrdma->send.message = v[0].iov_base;
+  p_adaptrdma->send.todo    = v[0].iov_len;
+  p_adaptrdma->send.done    = 0;
+  p_adaptrdma->send.rbuf    = p_adaptrdma->buffer.rbuf;
+  p_adaptrdma->send.sbuf    = p_adaptrdma->buffer.sbuf;
+  p_adaptrdma->send.size_guard = nm_ibverbs_adaptrdma_step_base;
 }
 
 static int nm_ibverbs_adaptrdma_send_poll(void*_status)
 {
-  struct nm_ibverbs_adaptrdma*adaptrdma = _status;
+  struct nm_ibverbs_adaptrdma_s*p_adaptrdma = _status;
   int packet_size = 0;
-  const int block_size = nm_ibverbs_adaptrdma_block_size(adaptrdma->send.done);
+  const int block_size = nm_ibverbs_adaptrdma_block_size(p_adaptrdma->send.done);
   const int available  = block_size - NM_IBVERBS_ADAPTRDMA_HDRSIZE;
-  while((adaptrdma->send.todo > 0) && 
-	((adaptrdma->cnx->pending.wrids[NM_IBVERBS_WRID_PACKET] > 0) ||
-	 (packet_size < adaptrdma->send.size_guard) ||
-	 (adaptrdma->send.todo <= nm_ibverbs_adaptrdma_step_overrun)))
+  while((p_adaptrdma->send.todo > 0) && 
+	((p_adaptrdma->p_cnx->pending.wrids[NM_IBVERBS_WRID_PACKET] > 0) ||
+	 (packet_size < p_adaptrdma->send.size_guard) ||
+	 (p_adaptrdma->send.todo <= nm_ibverbs_adaptrdma_step_overrun)))
     {
-      const int frag_size = (adaptrdma->send.todo > available) ? available : adaptrdma->send.todo;
-      struct nm_ibverbs_adaptrdma_header*const h = 
-	nm_ibverbs_adaptrdma_get_header(adaptrdma->send.sbuf, packet_size + block_size);
-      memcpy(adaptrdma->send.sbuf + packet_size, 
-	     &adaptrdma->send.message[adaptrdma->send.done], frag_size);
-      h->checksum = nm_ibverbs_checksum(&adaptrdma->send.message[adaptrdma->send.done], frag_size);
-      h->busy   = NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR;
-      h->offset = frag_size;
-      adaptrdma->send.todo -= frag_size;
-      adaptrdma->send.done += frag_size;
+      const int frag_size = (p_adaptrdma->send.todo > available) ? available : p_adaptrdma->send.todo;
+      struct nm_ibverbs_adaptrdma_header_s*const p_header = 
+	nm_ibverbs_adaptrdma_get_header(p_adaptrdma->send.sbuf, packet_size + block_size);
+      memcpy(p_adaptrdma->send.sbuf + packet_size, 
+	     &p_adaptrdma->send.message[p_adaptrdma->send.done], frag_size);
+      p_header->checksum = nm_ibverbs_checksum(&p_adaptrdma->send.message[p_adaptrdma->send.done], frag_size);
+      p_header->busy   = NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR;
+      p_header->offset = frag_size;
+      p_adaptrdma->send.todo -= frag_size;
+      p_adaptrdma->send.done += frag_size;
       packet_size += block_size;
-      if((adaptrdma->cnx->pending.wrids[NM_IBVERBS_WRID_PACKET] > 0) &&
-	 (adaptrdma->send.done > nm_ibverbs_adaptrdma_step_base))
+      if((p_adaptrdma->p_cnx->pending.wrids[NM_IBVERBS_WRID_PACKET] > 0) &&
+	 (p_adaptrdma->send.done > nm_ibverbs_adaptrdma_step_base))
 	{
-	  nm_ibverbs_rdma_poll(adaptrdma->cnx);
+	  nm_ibverbs_rdma_poll(p_adaptrdma->p_cnx);
 	}
     }
-  struct nm_ibverbs_adaptrdma_header*const h_last =
-    nm_ibverbs_adaptrdma_get_header(adaptrdma->send.sbuf, packet_size);
-  h_last->busy = NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE;
-  nm_ibverbs_rdma_send(adaptrdma->cnx, packet_size, adaptrdma->send.sbuf, adaptrdma->send.rbuf, 
-		       &adaptrdma->buffer,
-		       &adaptrdma->seg,
-		       adaptrdma->mr,
+  struct nm_ibverbs_adaptrdma_header_s*const p_h_last =
+    nm_ibverbs_adaptrdma_get_header(p_adaptrdma->send.sbuf, packet_size);
+  p_h_last->busy = NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE;
+  nm_ibverbs_rdma_send(p_adaptrdma->p_cnx, packet_size, p_adaptrdma->send.sbuf, p_adaptrdma->send.rbuf, 
+		       &p_adaptrdma->buffer,
+		       &p_adaptrdma->seg,
+		       p_adaptrdma->mr,
 		       NM_IBVERBS_WRID_PACKET);
-  adaptrdma->send.size_guard *= (adaptrdma->send.size_guard <= 8192) ? 2 : 1.5;
-  nm_ibverbs_rdma_poll(adaptrdma->cnx);
-  adaptrdma->send.sbuf += packet_size;
-  adaptrdma->send.rbuf += packet_size;
-  if(adaptrdma->send.todo <= 0)
+  p_adaptrdma->send.size_guard *= (p_adaptrdma->send.size_guard <= 8192) ? 2 : 1.5;
+  nm_ibverbs_rdma_poll(p_adaptrdma->p_cnx);
+  p_adaptrdma->send.sbuf += packet_size;
+  p_adaptrdma->send.rbuf += packet_size;
+  if(p_adaptrdma->send.todo <= 0)
     {
-      nm_ibverbs_send_flush(adaptrdma->cnx, NM_IBVERBS_WRID_PACKET);
+      nm_ibverbs_send_flush(p_adaptrdma->p_cnx, NM_IBVERBS_WRID_PACKET);
       return NM_ESUCCESS;
     }
   else
-    return -NM_EAGAIN;
+    {
+      return -NM_EAGAIN;
+    }
 
 }
 
 static void nm_ibverbs_adaptrdma_recv_init(void*_status, struct iovec*v, int n)
 {
-  struct nm_ibverbs_adaptrdma*adaptrdma = _status;
-  adaptrdma->recv.done       = 0;
-  adaptrdma->recv.block_size = nm_ibverbs_adaptrdma_block_size(0);
-  adaptrdma->recv.message    = v->iov_base;
-  adaptrdma->recv.size       = v->iov_len;
-  adaptrdma->recv.rbuf       = adaptrdma->buffer.rbuf;
+  struct nm_ibverbs_adaptrdma_s*p_adaptrdma = _status;
+  p_adaptrdma->recv.done       = 0;
+  p_adaptrdma->recv.block_size = nm_ibverbs_adaptrdma_block_size(0);
+  p_adaptrdma->recv.message    = v->iov_base;
+  p_adaptrdma->recv.size       = v->iov_len;
+  p_adaptrdma->recv.rbuf       = p_adaptrdma->buffer.rbuf;
 }
 
 
 static int nm_ibverbs_adaptrdma_poll_one(void*_status)
 {
-  struct nm_ibverbs_adaptrdma*adaptrdma = _status;
+  struct nm_ibverbs_adaptrdma_s*p_adaptrdma = _status;
   do
     {
-      struct nm_ibverbs_adaptrdma_header*h = nm_ibverbs_adaptrdma_get_header(adaptrdma->recv.rbuf,
-									     adaptrdma->recv.block_size);
-      if(!h->busy)
+      struct nm_ibverbs_adaptrdma_header_s*p_header =
+        nm_ibverbs_adaptrdma_get_header(p_adaptrdma->recv.rbuf, p_adaptrdma->recv.block_size);
+      if(!p_header->busy)
 	goto wouldblock;
-      const int frag_size = h->offset;
-      const int flag = h->busy;
-      memcpy(&adaptrdma->recv.message[adaptrdma->recv.done], adaptrdma->recv.rbuf, frag_size);
+      const int frag_size = p_header->offset;
+      const int flag = p_header->busy;
+      memcpy(&p_adaptrdma->recv.message[p_adaptrdma->recv.done], p_adaptrdma->recv.rbuf, frag_size);
       /* checksum */
-      if(nm_ibverbs_checksum(&adaptrdma->recv.message[adaptrdma->recv.done], frag_size) != h->checksum)
+      if(nm_ibverbs_checksum(&p_adaptrdma->recv.message[p_adaptrdma->recv.done], frag_size) != p_header->checksum)
 	{
-	  fprintf(stderr, "nmad: FATAL- ibverbs: checksum failed.\n");
-	  abort();
+	  NM_FATAL("ibverbs: checksum failed.\n");
 	}
       /* clear blocks */
-      void*_rbuf = adaptrdma->recv.rbuf;
-      adaptrdma->recv.done += frag_size;
-      adaptrdma->recv.rbuf += adaptrdma->recv.block_size;
-      while(_rbuf < adaptrdma->recv.rbuf)
+      void*_rbuf = p_adaptrdma->recv.rbuf;
+      p_adaptrdma->recv.done += frag_size;
+      p_adaptrdma->recv.rbuf += p_adaptrdma->recv.block_size;
+      while(_rbuf < p_adaptrdma->recv.rbuf)
 	{
-	  h = nm_ibverbs_adaptrdma_get_header(_rbuf, nm_ibverbs_adaptrdma_block_granularity);
-	  h->offset = 0;
-	  h->busy = 0;
+	  p_header = nm_ibverbs_adaptrdma_get_header(_rbuf, nm_ibverbs_adaptrdma_block_granularity);
+	  p_header->offset = 0;
+	  p_header->busy = 0;
 	  _rbuf += nm_ibverbs_adaptrdma_block_granularity;
 	}
       switch(flag)
@@ -307,18 +308,17 @@ static int nm_ibverbs_adaptrdma_poll_one(void*_status)
 	  break;
 	  
 	case NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE:
-	  adaptrdma->recv.block_size = nm_ibverbs_adaptrdma_block_size(adaptrdma->recv.done);
+	  p_adaptrdma->recv.block_size = nm_ibverbs_adaptrdma_block_size(p_adaptrdma->recv.done);
 	  break;
 	  
 	default:
-	  fprintf(stderr, "nmad: FATAL- ibverbs: unexpected flag 0x%x in adaptrdma_recv()\n", flag);
-	  abort();
+	  NM_FATAL("ibverbs: unexpected flag 0x%x in adaptrdma_recv()\n", flag);
 	  break;
 	}
     }
-  while(adaptrdma->recv.done < adaptrdma->recv.size);
+  while(p_adaptrdma->recv.done < p_adaptrdma->recv.size);
   
-  adaptrdma->recv.message = NULL;
+  p_adaptrdma->recv.message = NULL;
   return NM_ESUCCESS;
   
  wouldblock:

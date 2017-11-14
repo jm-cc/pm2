@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2013 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,13 +73,13 @@ int nm_ibverbs_memalign  = 4096;
 
 /* ********************************************************* */
 
-static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx*p_ibverbs_cnx, struct nm_ibverbs_hca_s*p_hca);
-static void nm_ibverbs_cnx_qp_reset(struct nm_ibverbs_cnx*p_ibverbs_cnx);
-static void nm_ibverbs_cnx_qp_init(struct nm_ibverbs_cnx*p_ibverbs_cnx);
-static void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx*p_ibverbs_cnx);
-static void nm_ibverbs_cnx_qp_rts(struct nm_ibverbs_cnx*p_ibverbs_cnx);
+static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx_s*p_ibverbs_cnx, struct nm_ibverbs_hca_s*p_hca);
+static void nm_ibverbs_cnx_qp_reset(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
+static void nm_ibverbs_cnx_qp_init(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
+static void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
+static void nm_ibverbs_cnx_qp_rts(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 
-static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, struct nm_ibverbs_cnx*cnx);
+static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 
 /* ********************************************************* */
 
@@ -160,8 +160,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
   if(!dev_list) 
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: no device found.\n");
-      abort();
+      NM_FATAL("ibverbs: no device found.\n");
     }
  retry_autodetect:
   if(autodetect)
@@ -186,16 +185,14 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
     }
   if(p_hca->ib_dev == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot find required device %s.\n", device);
-      abort();
+      NM_FATAL("ibverbs: cannot find required device %s.\n", device);
     }
   
   /* open IB context */
   p_hca->context = ibv_open_device(p_hca->ib_dev);
   if(p_hca->context == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot open IB context.\n");
-      abort();
+      NM_FATAL("ibverbs: cannot open IB context.\n");
     }
 
   /* get IB context attributes */
@@ -203,8 +200,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   int rc = ibv_query_device(p_hca->context, &device_attr);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get device capabilities.\n");
-      abort();
+      NM_FATAL("ibverbs: cannot get device capabilities.\n");
     }
 
   /* detect LID */
@@ -212,13 +208,12 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   rc = ibv_query_port(p_hca->context, port, &port_attr);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: dev = %s; port = %d; cannot get local port attributes (%s).\n",
-	      ibv_get_device_name(p_hca->ib_dev), port, strerror(rc));
-      abort();
+      NM_FATAL("ibverbs: dev = %s; port = %d; cannot get local port attributes (%s).\n",
+               ibv_get_device_name(p_hca->ib_dev), port, strerror(rc));
     }
   if(port_attr.state != IBV_PORT_ACTIVE)
     {
-      fprintf(stderr, "# nmad: ibverbs- dev = %s; port = %d; port is down.\n",
+      NM_WARN("ibverbs- dev = %s; port = %d; port is down.\n",
 	      ibv_get_device_name(p_hca->ib_dev), port);
       if(autodetect)
 	{
@@ -237,7 +232,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   p_hca->lid = port_attr.lid;
   if(p_hca->lid == 0)
     {
-      fprintf(stderr, "nmad- WARNING- ibverbs: LID is null- subnet manager has probably crashed.\n");
+      NM_WARN("ibverbs: LID is null- subnet manager has probably crashed.\n");
     }
 
   /* IB capabilities */
@@ -288,8 +283,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   p_hca->pd = ibv_alloc_pd(p_hca->context);
   if(p_hca->pd == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot allocate IB protection domain.\n");
-      abort();
+      NM_FATAL("ibverbs: cannot allocate IB protection domain.\n");
     }
   p_hca->refcount = 1;
   p_hca->key.device = strdup(device);
@@ -315,7 +309,7 @@ void nm_ibverbs_hca_get_profile(struct nm_ibverbs_hca_s*p_hca, struct nm_drv_pro
   int rc = hwloc_ibv_get_device_cpuset(__topology, p_hca->ib_dev, p_profile->cpuset);
   if(rc)
     {
-      fprintf(stderr, "# nmad: ibverbs- error while detecting ibv device location.\n");
+      NM_WARN("ibverbs- error while detecting ibv device location.\n");
       hwloc_bitmap_copy(p_profile->cpuset, hwloc_topology_get_complete_cpuset(__topology));
     }
 #endif /* PM2_TOPOLOGY */
@@ -338,10 +332,10 @@ void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca)
 }
 
 
-struct nm_ibverbs_cnx*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca)
+struct nm_ibverbs_cnx_s*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca)
 {
-  struct nm_ibverbs_cnx*p_ibverbs_cnx = padico_malloc(sizeof(struct nm_ibverbs_cnx));
-  memset(p_ibverbs_cnx, 0, sizeof(struct nm_ibverbs_cnx));
+  struct nm_ibverbs_cnx_s*p_ibverbs_cnx = padico_malloc(sizeof(struct nm_ibverbs_cnx_s));
+  memset(p_ibverbs_cnx, 0, sizeof(struct nm_ibverbs_cnx_s));
   nm_ibverbs_cnx_qp_create(p_ibverbs_cnx, p_hca);
   p_ibverbs_cnx->local_addr.lid = p_hca->lid;
   p_ibverbs_cnx->local_addr.qpn = p_ibverbs_cnx->qp->qp_num;
@@ -350,14 +344,14 @@ struct nm_ibverbs_cnx*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca)
   return p_ibverbs_cnx;
 }
 
-void nm_ibverbs_cnx_connect(struct nm_ibverbs_cnx*p_ibverbs_cnx)
+void nm_ibverbs_cnx_connect(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 {
   nm_ibverbs_cnx_qp_init(p_ibverbs_cnx);
   nm_ibverbs_cnx_qp_rtr(p_ibverbs_cnx);
   nm_ibverbs_cnx_qp_rts(p_ibverbs_cnx);
 }
 
-void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx*p_ibverbs_cnx)
+void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 {
   ibv_destroy_qp(p_ibverbs_cnx->qp);
   ibv_destroy_cq(p_ibverbs_cnx->if_cq);
@@ -365,7 +359,7 @@ void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx*p_ibverbs_cnx)
   free(p_ibverbs_cnx);
 }
 
-void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx*p_ibverbs_cnx)
+void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 {
   volatile int*buffer = (void*)p_ibverbs_cnx->local_addr.segment.raddr;
   buffer[0] = 0; /* recv buffer */
@@ -377,7 +371,7 @@ void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx*p_ibverbs_cnx)
       int rc = nm_ibverbs_sync_send((void*)&buffer[1], (void*)&buffer[0], sizeof(int), p_ibverbs_cnx);
       if(rc)
 	{
-	  fprintf(stderr, "nmad: WARNING- ibverbs: connection failed to come up before RNR timeout; reset QP and try again.\n");
+	  NM_WARN("ibverbs: connection failed to come up before RNR timeout; reset QP and try again.\n");
 	  /* nm_ibverbs_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 1); */
 	  nm_ibverbs_cnx_qp_reset(p_ibverbs_cnx);
 	  nm_ibverbs_cnx_qp_init(p_ibverbs_cnx);
@@ -411,21 +405,19 @@ void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx*p_ibverbs_cnx)
 /* ** state transitions for QP finite-state automaton */
 
 /** create QP and both CQs */
-static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx*p_ibverbs_cnx, struct nm_ibverbs_hca_s*p_hca)
+static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx_s*p_ibverbs_cnx, struct nm_ibverbs_hca_s*p_hca)
 {
   /* init inbound CQ */
   p_ibverbs_cnx->if_cq = ibv_create_cq(p_hca->context, NM_IBVERBS_RX_DEPTH, NULL, NULL, 0);
   if(p_ibverbs_cnx->if_cq == NULL) 
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot create in CQ\n");
-      abort();
+      NM_FATAL("ibverbs: cannot create in CQ\n");
     }
   /* init outbound CQ */
   p_ibverbs_cnx->of_cq = ibv_create_cq(p_hca->context, NM_IBVERBS_TX_DEPTH, NULL, NULL, 0);
   if(p_ibverbs_cnx->of_cq == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot create out CQ\n");
-      abort();
+      NM_FATAL("ibverbs: cannot create out CQ\n");
     }
   /* create QP */
   struct ibv_qp_init_attr qp_init_attr = {
@@ -443,15 +435,14 @@ static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx*p_ibverbs_cnx, struct
   p_ibverbs_cnx->qp = ibv_create_qp(p_hca->pd, &qp_init_attr);
   if(p_ibverbs_cnx->qp == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: couldn't create QP\n");
-      abort();
+      NM_FATAL("ibverbs: couldn't create QP\n");
     }
   p_ibverbs_cnx->max_inline = qp_init_attr.cap.max_inline_data;
   p_ibverbs_cnx->p_hca = p_hca;
 }
 
 /** modify QP to state RESET */
-static void nm_ibverbs_cnx_qp_reset(struct nm_ibverbs_cnx*p_ibverbs_cnx)
+static void nm_ibverbs_cnx_qp_reset(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 {
   /* modify QP- step: RTS */
   struct ibv_qp_attr attr =
@@ -461,13 +452,12 @@ static void nm_ibverbs_cnx_qp_reset(struct nm_ibverbs_cnx*p_ibverbs_cnx)
   int rc = ibv_modify_qp(p_ibverbs_cnx->qp, &attr, IBV_QP_STATE);
   if(rc != 0)
     {
-      fprintf(stderr,"nmad: FATAL- ibverbs: failed to modify QP to RESET.\n");
-      abort();
+      NM_FATAL("ibverbs: failed to modify QP to RESET.\n");
     }
 }
 
 /** modify QP to state INIT */
-static void nm_ibverbs_cnx_qp_init(struct nm_ibverbs_cnx*p_ibverbs_cnx)
+static void nm_ibverbs_cnx_qp_init(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 {
   struct ibv_qp_attr attr =
     {
@@ -483,13 +473,12 @@ static void nm_ibverbs_cnx_qp_init(struct nm_ibverbs_cnx*p_ibverbs_cnx)
 			 IBV_QP_ACCESS_FLAGS);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: failed to modify QP to INIT.\n");
-      abort();
+      NM_FATAL("ibverbs: failed to modify QP to INIT.\n");
     }
 }
 
 /** modify QP to state RTR */
-static void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx*p_ibverbs_cnx)
+static void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 {
   struct ibv_qp_attr attr =
     {
@@ -517,14 +506,13 @@ static void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx*p_ibverbs_cnx)
 			 IBV_QP_MIN_RNR_TIMER);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: dev = %s; port = %d; failed to modify QP to RTR (%s)\n",
-	      ibv_get_device_name(p_ibverbs_cnx->p_hca->ib_dev), p_ibverbs_cnx->p_hca->key.port, strerror(rc));
-      abort();
+      NM_FATAL("ibverbs: dev = %s; port = %d; failed to modify QP to RTR (%s)\n",
+               ibv_get_device_name(p_ibverbs_cnx->p_hca->ib_dev), p_ibverbs_cnx->p_hca->key.port, strerror(rc));
     }
 }
 
 /** modify QP to state RTS */
-static void nm_ibverbs_cnx_qp_rts(struct nm_ibverbs_cnx*p_ibverbs_cnx)
+static void nm_ibverbs_cnx_qp_rts(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 {
   struct ibv_qp_attr attr =
     {
@@ -544,22 +532,21 @@ static void nm_ibverbs_cnx_qp_rts(struct nm_ibverbs_cnx*p_ibverbs_cnx)
 			 IBV_QP_MAX_QP_RD_ATOMIC);
   if(rc != 0)
     {
-      fprintf(stderr,"nmad: FATAL-  ibverbs: failed to modify QP to RTS\n");
-      abort();
+      NM_FATAL("ibverbs: failed to modify QP to RTS\n");
     }
 }
 
 
 /** RDMA used to synchronize connection establishment
  */
-static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, struct nm_ibverbs_cnx*cnx)
+static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 {
-  const int roffset = ((uintptr_t)rbuf) - cnx->local_addr.segment.raddr;
-  assert(rbuf >= (void*)cnx->local_addr.segment.raddr);
+  const int roffset = ((uintptr_t)rbuf) - p_ibverbs_cnx->local_addr.segment.raddr;
+  assert(rbuf >= (void*)p_ibverbs_cnx->local_addr.segment.raddr);
   struct ibv_sge list = {
     .addr   = (uintptr_t)sbuf,
     .length = size,
-    .lkey   = cnx->local_addr.segment.rkey
+    .lkey   = p_ibverbs_cnx->local_addr.segment.rkey
   };
   struct ibv_send_wr wr = {
     .wr_id      = NM_IBVERBS_WRID_SYNC,
@@ -571,32 +558,31 @@ static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, stru
     .imm_data   = 0,
     .wr.rdma =
     {
-      .remote_addr = cnx->remote_addr.segment.raddr + roffset,
-      .rkey        = cnx->remote_addr.segment.rkey
+      .remote_addr = p_ibverbs_cnx->remote_addr.segment.raddr + roffset,
+      .rkey        = p_ibverbs_cnx->remote_addr.segment.rkey
     }
   };
   struct ibv_send_wr*bad_wr = NULL;
-  int rc = ibv_post_send(cnx->qp, &wr, &bad_wr);
+  int rc = ibv_post_send(p_ibverbs_cnx->qp, &wr, &bad_wr);
   if(rc)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: post sync send failed.\n");
-      abort();
+      NM_FATAL("ibverbs: post sync send failed.\n");
     }
   struct ibv_wc wc;
   int ne = 0;
   do
     {
-      ne = ibv_poll_cq(cnx->of_cq, 1, &wc);
+      ne = ibv_poll_cq(p_ibverbs_cnx->of_cq, 1, &wc);
       if(ne < 0)
 	{
-	  fprintf(stderr, "nmad: FATAL- ibverbs: poll out CQ failed.\n");
+	  NM_FATAL("ibverbs: poll out CQ failed.\n");
 	  abort();
 	}
     }
   while(ne == 0);
   if(ne != 1 || wc.status != IBV_WC_SUCCESS)
     {
-      fprintf(stderr, "nmad: WARNING- ibverbs: WC send failed (status=%d; %s)\n",
+      NM_WARN("ibverbs: WC send failed (status=%d; %s)\n",
 	      wc.status, nm_ibverbs_status_strings[wc.status]);
       return 1;
     }
@@ -650,7 +636,7 @@ uint32_t nm_ibverbs_copy_from_and_checksum(void*dest, nm_data_slicer_t*p_slicer,
   assert(!(!nm_data_slicer_isnull(p_slicer) && (src != NULL)));
   if(_nm_ibverbs_checksum && !nm_data_slicer_isnull(p_slicer))
     {
-      padico_fatal("ibverbs: FATAL- checksums not supported yet with nm_data.\n");
+      NM_FATAL("ibverbs: FATAL- checksums not supported yet with nm_data.\n");
     }
   if(!nm_data_slicer_isnull(p_slicer))
     {
@@ -669,7 +655,7 @@ uint32_t nm_ibverbs_copy_to_and_checksum(const void*src, nm_data_slicer_t*p_slic
   assert(!((!nm_data_slicer_isnull(p_slicer)) && (dest != NULL)));
   if(_nm_ibverbs_checksum && (p_slicer->p_data != NULL))
     {
-      padico_fatal("ibverbs: FATAL- checksums not supported yet with nm_data.\n");
+      NM_FATAL("ibverbs: FATAL- checksums not supported yet with nm_data.\n");
     }
   if(!nm_data_slicer_isnull(p_slicer))
     {

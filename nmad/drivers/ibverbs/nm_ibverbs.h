@@ -62,7 +62,7 @@ enum {
 
 /** an RDMA segment. Each method usually use one segment per connection.
  */
-struct nm_ibverbs_segment 
+struct nm_ibverbs_segment_s
 {
   uint64_t raddr;
   uint32_t rkey;
@@ -70,12 +70,12 @@ struct nm_ibverbs_segment
 
 /** the address for a connection (one per track+gate).
  */
-struct nm_ibverbs_cnx_addr 
+struct nm_ibverbs_cnx_addr_s
 {
   uint16_t lid;
   uint32_t qpn;
   uint32_t psn;
-  struct nm_ibverbs_segment segment;
+  struct nm_ibverbs_segment_s segment;
 };
 
 
@@ -108,10 +108,10 @@ struct nm_ibverbs_hca_s
 
 
 /** an IB connection for a given trk/gate pair */
-struct nm_ibverbs_cnx
+struct nm_ibverbs_cnx_s
 {
-  struct nm_ibverbs_cnx_addr local_addr;
-  struct nm_ibverbs_cnx_addr remote_addr;
+  struct nm_ibverbs_cnx_addr_s local_addr;
+  struct nm_ibverbs_cnx_addr_s remote_addr;
   struct ibv_qp*qp;       /**< QP for this connection */
   struct ibv_cq*of_cq;    /**< CQ for outgoing packets */
   struct ibv_cq*if_cq;    /**< CQ for incoming packets */
@@ -137,13 +137,13 @@ void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca);
 
 void nm_ibverbs_hca_get_profile(struct nm_ibverbs_hca_s*p_hca, struct nm_drv_profile_s*p_profile);
 
-struct nm_ibverbs_cnx*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca);
+struct nm_ibverbs_cnx_s*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca);
 
-void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx*p_ibverbs_cnx);
+void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 
-void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx*p_ibverbs_cnx);
+void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 
-void nm_ibverbs_cnx_connect(struct nm_ibverbs_cnx*p_ibverbs_cnx);
+void nm_ibverbs_cnx_connect(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 
 
 /* ** RDMA toolbox ***************************************** */
@@ -176,7 +176,7 @@ static const char*const nm_ibverbs_status_strings[] =
     [IBV_WC_GENERAL_ERR]        = "general error"
   };
 
-static inline int nm_ibverbs_do_rdma(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx,
+static inline int nm_ibverbs_do_rdma(struct nm_ibverbs_cnx_s*__restrict__ p_ibverbs_cnx,
 				     const void*__restrict__ buf, int size, uint64_t raddr,
 				     int opcode, int flags, uint32_t lkey, uint32_t rkey, uint64_t wrid)
 {
@@ -206,21 +206,20 @@ static inline int nm_ibverbs_do_rdma(struct nm_ibverbs_cnx*__restrict__ p_ibverb
   p_ibverbs_cnx->pending.total++;
   if(rc) 
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: post RDMA write failed (rc=%d).\n", rc);
-      abort();
+      NM_FATAL("ibverbs: post RDMA write failed (rc=%d).\n", rc);
     }
   return NM_ESUCCESS;
 }
 
-static inline int nm_ibverbs_rdma_send(struct nm_ibverbs_cnx*p_ibverbs_cnx, int size,
+static inline int nm_ibverbs_rdma_send(struct nm_ibverbs_cnx_s*p_ibverbs_cnx, int size,
 				       const void*__restrict__ ptr,
 				       const void*__restrict__ _raddr,
 				       const void*__restrict__ _lbase,
-				       const struct nm_ibverbs_segment*seg,
+				       const struct nm_ibverbs_segment_s*p_seg,
 				       const struct ibv_mr*__restrict__ mr,
 				       int wrid)
 {
-  const uintptr_t _rbase = seg->raddr;
+  const uintptr_t _rbase = p_seg->raddr;
   const uint64_t raddr   = (uint64_t)(((uintptr_t)_raddr - (uintptr_t)_lbase) + _rbase);
   struct ibv_sge list = {
     .addr   = (uintptr_t)ptr,
@@ -236,7 +235,7 @@ static inline int nm_ibverbs_rdma_send(struct nm_ibverbs_cnx*p_ibverbs_cnx, int 
     .wr.rdma =
     {
       .remote_addr = raddr,
-      .rkey        = seg->rkey
+      .rkey        = p_seg->rkey
     }
   };
   struct ibv_send_wr*bad_wr = NULL;
@@ -246,13 +245,12 @@ static inline int nm_ibverbs_rdma_send(struct nm_ibverbs_cnx*p_ibverbs_cnx, int 
   p_ibverbs_cnx->pending.total++;
   if(rc) 
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: post RDMA send failed.\n");
-      abort();
+      NM_FATAL("ibverbs: post RDMA send failed.\n");
     }
   return NM_ESUCCESS;
 }
 
-static inline int nm_ibverbs_rdma_poll(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
+static inline int nm_ibverbs_rdma_poll(struct nm_ibverbs_cnx_s*__restrict__ p_ibverbs_cnx)
 {
   int ne = 0, done = 0;
   if(p_ibverbs_cnx->pending.total > 0)
@@ -270,14 +268,12 @@ static inline int nm_ibverbs_rdma_poll(struct nm_ibverbs_cnx*__restrict__ p_ibve
 	    }
 	  else if(ne > 0)
 	    {
-	      fprintf(stderr, "nmad: FATAL- ibverbs: WC send failed- status=%d (%s)\n", 
-		      wc.status, nm_ibverbs_status_strings[wc.status]);
-	      abort();
+	      NM_FATAL("ibverbs: WC send failed- status=%d (%s)\n", 
+                       wc.status, nm_ibverbs_status_strings[wc.status]);
 	    }
 	  else if(ne < 0)
 	    {
-	      fprintf(stderr, "nmad: FATAL- ibverbs: WC polling failed.\n");
-	      abort();
+	      NM_FATAL("ibverbs: WC polling failed.\n");
 	    }
 	}
       while(ne > 0);
@@ -285,7 +281,7 @@ static inline int nm_ibverbs_rdma_poll(struct nm_ibverbs_cnx*__restrict__ p_ibve
   return (done > 0) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
-static inline void nm_ibverbs_send_flush(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx, uint64_t wrid)
+static inline void nm_ibverbs_send_flush(struct nm_ibverbs_cnx_s*__restrict__ p_ibverbs_cnx, uint64_t wrid)
 {
   while(p_ibverbs_cnx->pending.wrids[wrid])
     {
@@ -293,21 +289,20 @@ static inline void nm_ibverbs_send_flush(struct nm_ibverbs_cnx*__restrict__ p_ib
     }
 }
 
-static inline void nm_ibverbs_send_flushn_total(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx, int n)
+static inline void nm_ibverbs_send_flushn_total(struct nm_ibverbs_cnx_s*__restrict__ p_ibverbs_cnx, int n)
 {
   while(p_ibverbs_cnx->pending.total > n) {
     nm_ibverbs_rdma_poll(p_ibverbs_cnx);
   }
 }
 
-static inline void nm_ibverbs_send_flushn(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx, int wrid, int n)
+static inline void nm_ibverbs_send_flushn(struct nm_ibverbs_cnx_s*__restrict__ p_ibverbs_cnx, int wrid, int n)
 {
   while(p_ibverbs_cnx->pending.wrids[wrid] > n)
     {
       nm_ibverbs_rdma_poll(p_ibverbs_cnx);
     }
 }
-
 
 #endif /* NM_IBVERBS_H */
 

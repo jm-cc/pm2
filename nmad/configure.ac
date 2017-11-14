@@ -301,6 +301,34 @@ if test "x${with_cci}" != "xno" ; then
     fi
 fi
 
+dnl -- PSM2
+HAVE_PSM2=no
+AC_ARG_WITH([psm2],
+	    [AS_HELP_STRING([--with-psm2], [use Intel Performance Scaled Messasging 2 (PSM2) @<:@default=check@:>@] )],
+	    [], [ with_psm2=check ])
+if test "x${with_psm2}" != "xno"; then
+    save_CPPFLAGS="${CPPFLAGS}"
+    if test "x${with_psm2}" != "xyes"; then
+        PSM2_DIR="${with_psm2}"
+      	CPPFLAGS="${CPPFLAGS} -I${PSM2_DIR}/include"
+    fi
+    AC_CHECK_HEADER(psm2.h, [ HAVE_PSM2=yes ], [HAVE_PSM2=no ])
+    CPPFLAGS="${save_CPPFLAGS}"
+    AC_SUBST(HAVE_PSM2)
+    if test ${HAVE_PSM2} = yes; then
+        nmad_drivers="${nmad_drivers} psm2"
+	if test "x${PSM2_DIR}" != "x" -a "x${PSM2_DIR}" != "x/usr"; then
+	    psm2_CPPFLAGS="-I${PSM2_DIR}/include"
+	    psm2_LIBS="-Wl,-rpath,${PSM2_DIR}/lib -L${PSM2_DIR}/lib"
+	fi
+	psm2_LIBS="${psm2_LIBS} -lpsm2"
+	AC_SUBST([psm2_CPPFLAGS])
+	AC_SUBST([psm2_LIBS])
+    elif test "x${with_psm2}" != "xcheck"; then
+    	AC_MSG_FAILURE([--with-psm2 was given but psm2.h is not found.])
+    fi
+fi
+
 dnl -- LZ4 compression
 AC_PADICO_CHECK_LZ4
 

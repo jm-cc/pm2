@@ -93,6 +93,7 @@ TBX_INTERNAL piom_ltask_queue_t*piom_topo_get_queue(piom_topo_obj_t obj);
 TBX_INTERNAL void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t binding);
 TBX_INTERNAL void piom_ltask_queue_exit(piom_ltask_queue_t*queue);
 TBX_INTERNAL int piom_ltask_submit_in_lwp(struct piom_ltask*task);
+TBX_INTERNAL void piom_ltask_blocking_invoke(struct piom_ltask*ltask);
 
 /* todo: get a dynamic value here !
  * it could be based on:

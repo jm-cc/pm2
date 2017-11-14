@@ -1,7 +1,7 @@
 /* -*- Mode: C; c-basic-offset:4 ; -*- */
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001-2016 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001-2017 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -262,6 +262,40 @@ void piom_ltask_queue_exit(piom_ltask_queue_t*queue)
 	{
 	    piom_ltask_queue_schedule(queue, 0);
 	}
+}
+
+void piom_ltask_blocking_invoke(struct piom_ltask*task)
+{
+    const int options = task->options;
+    assert(task != NULL);
+    piom_ltask_state_set(task, PIOM_LTASK_STATE_BLOCKED | PIOM_LTASK_STATE_SCHEDULED);
+    piom_ltask_hook_preinvoke();
+    (*task->blocking_func)(task->data_ptr);
+    if(!(options & PIOM_LTASK_OPTION_DESTROY))
+	{
+	    piom_ltask_state_unset(task, PIOM_LTASK_STATE_BLOCKED | PIOM_LTASK_STATE_SCHEDULED);
+	    if((options & PIOM_LTASK_OPTION_REPEAT) && !(task->state & PIOM_LTASK_STATE_SUCCESS))
+		{
+		    PIOM_WARN("task %p not completed after blocking call! Re-submitting.\n", task);
+		    piom_ltask_queue_t*queue = task->queue;
+		    int rc = -1;
+		    do
+			{
+			    rc = piom_ltask_lfqueue_enqueue(&queue->submit_queue, task);
+			}
+		    while(rc != 0);
+		}
+	    else
+		{
+		    task->state = PIOM_LTASK_STATE_TERMINATED;
+		    piom_ltask_completed(task);
+		    if((task->options & PIOM_LTASK_OPTION_NOWAIT) && (task->destructor))
+			{
+			    (*task->destructor)(task);
+			}
+		}
+	}
+    piom_ltask_hook_postinvoke();
 }
 
 void piom_init_ltasks(void)

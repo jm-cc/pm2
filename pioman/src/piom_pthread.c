@@ -192,27 +192,7 @@ static void*__piom_ltask_lwp_worker(void*_dummy)
 	{
 	    sem_wait(&__piom_pthread.lwps_ready);
 	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue(&__piom_pthread.lwps_queue);
-	    const int options = task->options;
-	    assert(task != NULL);
-	    piom_ltask_state_set(task, PIOM_LTASK_STATE_BLOCKED);
-	    (*task->blocking_func)(task->data_ptr);
-	    if(!(options & PIOM_LTASK_OPTION_DESTROY))
-		{
-		    piom_ltask_state_unset(task, PIOM_LTASK_STATE_BLOCKED);
-		    if((options & PIOM_LTASK_OPTION_REPEAT) && !(task->state & PIOM_LTASK_STATE_SUCCESS))
-			{
-			    PIOM_WARN("task not completed after block!\n");
-			}
-		    else
-			{
-			    task->state = PIOM_LTASK_STATE_TERMINATED;
-			    piom_ltask_completed(task);
-			    if((task->options & PIOM_LTASK_OPTION_NOWAIT) && (task->destructor))
-				{
-				    (*task->destructor)(task);
-				}
-			}
-		}
+	    piom_ltask_blocking_invoke(task);
 	    __sync_fetch_and_add(&__piom_pthread.lwps_avail, 1);
 	}
     return NULL;

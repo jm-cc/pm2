@@ -170,8 +170,8 @@ static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properti
   int wait_any = 1;
   if(strcmp(s_wait_any, "auto") != 0)
     {
-      NM_DISPF("# tcp: wait_any = %d; forced by user.\n", wait_any);
       wait_any = atoi(s_wait_any);
+      NM_DISPF("# tcp: wait_any = %d; forced by user.\n", wait_any);
     }
   props->capabilities.has_recv_any = 1;
   props->capabilities.supports_wait_any = 1;

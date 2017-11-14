@@ -15,6 +15,7 @@
 
 #include "nm_bench_generic.h"
 #include <nm_sendrecv_interface.h>
+#include <sched.h>
 
 #undef BG_PROG_FLUSH
 

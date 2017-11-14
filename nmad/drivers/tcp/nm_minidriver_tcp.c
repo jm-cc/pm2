@@ -78,7 +78,8 @@ static const struct nm_minidriver_iface_s nm_tcp_minidriver =
 PADICO_MODULE_COMPONENT(Minidriver_tcp,
   puk_component_declare("Minidriver_tcp",
 			puk_component_provides("PadicoComponent", "component", &nm_tcp_component),
-			puk_component_provides("NewMad_minidriver", "minidriver", &nm_tcp_minidriver)));
+			puk_component_provides("NewMad_minidriver", "minidriver", &nm_tcp_minidriver),
+                        puk_component_attr("wait_any", "auto")));
 
 /* ********************************************************* */
 
@@ -165,9 +166,16 @@ static void nm_tcp_destroy(void*_status)
 
 static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properties_s*props)
 {
+  const char*s_wait_any = puk_context_getattr(context, "wait_any");
+  int wait_any = 1;
+  if(strcmp(s_wait_any, "auto") != 0)
+    {
+      NM_DISPF("# tcp: wait_any = %d; forced by user.\n", wait_any);
+      wait_any = atoi(s_wait_any);
+    }
   props->capabilities.has_recv_any = 1;
   props->capabilities.supports_wait_any = 1;
-  props->capabilities.prefers_wait_any = 1;
+  props->capabilities.prefers_wait_any = wait_any;
   props->profile.latency = 500;
   props->profile.bandwidth = 8000;
 }

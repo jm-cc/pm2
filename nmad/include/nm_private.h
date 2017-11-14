@@ -208,6 +208,9 @@ void nm_pw_poll_send(struct nm_pkt_wrap_s *p_pw);
 void nm_pw_recv_progress(struct nm_pkt_wrap_s*p_pw);
 
 __PUK_SYM_INTERNAL
+void nm_pw_wait_recv_any(struct nm_pkt_wrap_s*p_pw);
+
+__PUK_SYM_INTERNAL
 void nm_out_prefetch(struct nm_core*p_core);
 
 /** Process a complete successful outgoing request.

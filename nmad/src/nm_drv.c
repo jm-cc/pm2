@@ -78,7 +78,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
 	      rc = hwloc_set_cpubind(topology, p_drv->props.profile.cpuset, HWLOC_CPUBIND_THREAD);
 	      if(rc)
 		{
-		  fprintf(stderr, "nmad: WARNING- hwloc_set_cpubind failed.\n");
+		  NM_WARN("hwloc_set_cpubind failed.\n");
 		}
 	    }
 	  free(s_drv_cpuset);

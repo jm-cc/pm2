@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014-2016 (see AUTHORS file)
+ * Copyright (C) 2014-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -294,7 +294,6 @@ struct nm_data_coroutine_traversal_s
 static void nm_data_coroutine_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_data_coroutine_traversal_s*p_coroutine = _context;
-  /*  fprintf(stderr, "# coroutine_apply- len = %d; ptr = %p\n", len, ptr); */
   p_coroutine->chunk.ptr = ptr;
   p_coroutine->chunk.len = len;
   if(_setjmp(p_coroutine->traversal_context))
@@ -303,7 +302,6 @@ static void nm_data_coroutine_apply(void*ptr, nm_len_t len, void*_context)
 }
 static void nm_data_coroutine_trampoline(const struct nm_data_s*p_data, struct nm_data_coroutine_traversal_s*p_coroutine)
 {
-  /* fprintf(stderr, "# coroutine_trampoline-\n");  */
   if(_setjmp(p_coroutine->traversal_context) == 0)
     {
       /* init */
@@ -312,13 +310,11 @@ static void nm_data_coroutine_trampoline(const struct nm_data_s*p_data, struct n
   else
     {
       /* back from longjmp- perform traversal */
-      /*   fprintf(stderr, "# coroutine_trampoline- back from longjmp\n"); */
       nm_data_traversal_apply(p_data, &nm_data_coroutine_apply, p_coroutine);
       p_coroutine->chunk = NM_DATA_CHUNK_NULL;
       if(_setjmp(p_coroutine->traversal_context))
 	{
-	  fprintf(stderr, "# nm_data_coroutine_trampoline- ### after traversal ###\n");
-	  abort();
+	  NM_FATAL("# nm_data_coroutine_trampoline- ### after traversal ###\n");
 	}
       _longjmp(p_coroutine->caller_context, 1);
     }
@@ -331,7 +327,6 @@ struct nm_data_coroutine_generator_s
 void nm_data_coroutine_generator(const struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_coroutine_generator_s*p_generator = _generator;
-  /* fprintf(stderr, "# coroutine_generator- generator = %p; data size = %d\n", p_generator, nm_data_size(p_data)); */
   p_generator->p_coroutine = malloc(sizeof(struct nm_data_coroutine_traversal_s));
   getcontext(&p_generator->p_coroutine->generator_context);
   p_generator->stack = malloc(NM_DATA_COROUTINE_STACK);
@@ -344,18 +339,16 @@ void nm_data_coroutine_generator(const struct nm_data_s*p_data, void*_generator)
   if(_setjmp(p_generator->p_coroutine->caller_context) == 0)
     {
       setcontext(&p_generator->p_coroutine->generator_context);
-      fprintf(stderr, "# ### after trampoline\n");
+      NM_FATAL("# ### after trampoline\n");
     }
   else
     {
       /* back from longjmp */
-      /* fprintf(stderr, "# coroutine_generator- generator = %p; back from longjmp\n", p_generator);  */
     }
 }
 struct nm_data_chunk_s nm_data_coroutine_next(const struct nm_data_s*p_data, void*_generator)
 {
   struct nm_data_coroutine_generator_s*p_generator = _generator;
-  /*  fprintf(stderr, "# coroutine_next- generator = %p\n", p_generator); */
   if(_setjmp(p_generator->p_coroutine->caller_context) == 0)
     {
       /* init */
@@ -500,8 +493,7 @@ static void nm_data_slicer_coroutine_apply(void*ptr, nm_len_t len, void*_context
     }
   else
     {
-      fprintf(stderr, "# nmad: FATAL- wrong state %d for data slicer.\n", p_coroutine->op);
-      abort();
+      NM_FATAL("wrong state %d for data slicer.\n", p_coroutine->op);
     }
   p_coroutine->slice_len -= chunk_len;
   p_coroutine->ptr       += chunk_len;
@@ -542,8 +534,7 @@ static void nm_data_slicer_coroutine_trampoline(struct nm_data_slicer_coroutine_
 	{
 	  /* back from longjmp- perform traversal */
 	  nm_data_traversal_apply(p_coroutine->p_data, &nm_data_slicer_coroutine_apply, p_coroutine);
-	  fprintf(stderr, "# slicer_coroutine_trampoline- ### after traversal ###\n");
-	  abort();
+	  NM_FATAL("# slicer_coroutine_trampoline- ### after traversal ###\n");
 	}
     }
 }
@@ -563,8 +554,7 @@ struct nm_data_slicer_coroutine_s*nm_data_slicer_coroutine_alloc(void)
       if(_setjmp(p_coroutine->caller_context) == 0)
 	{
 	  setcontext(&p_coroutine->init_context);
-	  fprintf(stderr, "# nmad: nm_data_slicer_coroutine_alloc()- internal error: after trampoline ### \n");
-	  abort();
+	  NM_FATAL("nm_data_slicer_coroutine_alloc()- internal error: after trampoline ### \n");
 	}
     }
   /* init coroutine */
@@ -585,8 +575,7 @@ void nm_data_slicer_coroutine_init(nm_data_slicer_t*p_slicer, const struct nm_da
     {
       /* jump to trampoline once to initialize traversal_context */
       _longjmp(p_slicer->p_coroutine->trampoline_context, 1);
-      fprintf(stderr, "# nmad: nm_data_slicer_coroutine_init()- internal error: after trampoline ### \n");
-      abort();
+      NM_FATAL("nm_data_slicer_coroutine_init()- internal error: after trampoline ### \n");
     }
 }
 

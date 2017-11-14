@@ -507,8 +507,7 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
   puk_facet_t strat_facet = puk_component_get_facet_NewMad_Strategy(strategy, NULL);
   if(strat_facet == NULL)
     {
-      fprintf(stderr, "# nmad: component %s given as strategy has no interface 'NewMad_Strategy'\n", strategy->name);
-      abort();
+      NM_FATAL("# nmad: component %s given as strategy has no interface 'NewMad_Strategy'\n", strategy->name);
     }
   p_core->strategy_component = strategy;
   NM_DISPF("# nmad: strategy = %s\n", strategy->name);

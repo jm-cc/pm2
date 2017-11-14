@@ -137,7 +137,7 @@ PADICO_MODULE_COMPONENT(NewMad_dcfa_rcache,
 
 static void* nm_dcfa_rcache_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_dcfa_rcache*rcache = TBX_MALLOC(sizeof(struct nm_dcfa_rcache));
+  struct nm_dcfa_rcache*rcache = malloc(sizeof(struct nm_dcfa_rcache));
  /* init state */
   memset(&rcache->headers, 0, sizeof(rcache->headers));
   memset(&rcache->send, 0, sizeof(rcache->send));

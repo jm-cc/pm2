@@ -202,13 +202,13 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_mx,
 
 /** Instanciate functions */
 static void*nm_mx_instantiate(puk_instance_t instance, puk_context_t context){
-  struct nm_mx*status = TBX_MALLOC(sizeof (struct nm_mx));
+  struct nm_mx*status = malloc(sizeof (struct nm_mx));
   memset(status, 0, sizeof(struct nm_mx));
   return status;
 }
 
 static void nm_mx_destroy(void*_status){
-  TBX_FREE(_status);
+  free(_status);
 }
 
 const static char*nm_mx_get_driver_url(nm_drv_t p_drv)
@@ -276,7 +276,7 @@ static int nm_mx_query(nm_drv_t p_drv,
   struct nm_mx_drv*p_mx_drv = NULL;
   
   /* private data                                                 */
-  p_mx_drv	= TBX_MALLOC(sizeof (struct nm_mx_drv));
+  p_mx_drv	= malloc(sizeof (struct nm_mx_drv));
   if (!p_mx_drv) {
     err = -NM_ENOMEM;
     goto out;
@@ -427,7 +427,7 @@ static int nm_mx_init(nm_drv_t p_drv, struct nm_minidriver_capabilities_s*trk_ca
   
   /* open requested tracks */
   p_mx_drv->nb_trks = nb_trks;
-  p_mx_drv->trks_array = TBX_MALLOC(nb_trks * sizeof(struct nm_mx_trk));
+  p_mx_drv->trks_array = malloc(nb_trks * sizeof(struct nm_mx_trk));
   nm_trk_id_t trk_id;
   for(trk_id = 0; trk_id < nb_trks; trk_id++)
     {
@@ -449,9 +449,9 @@ static int nm_mx_close(nm_drv_t p_drv)
   nm_trk_id_t trk_id;
   for(trk_id = 0; trk_id < p_mx_drv->nb_trks; trk_id++)
     {
-      TBX_FREE(p_mx_drv->trks_array[trk_id].gate_map);
+      free(p_mx_drv->trks_array[trk_id].gate_map);
     }
-  TBX_FREE(p_mx_drv->trks_array);
+  free(p_mx_drv->trks_array);
 
   mx_ret	= mx_close_endpoint(p_mx_drv->ep);
   nm_mx_check_return("mx_close_endpoint", mx_ret);
@@ -464,12 +464,12 @@ static int nm_mx_close(nm_drv_t p_drv)
     nm_mx_check_return("mx_finalize", mx_ret);
     
     tbx_malloc_clean(mx_pw_mem);
-    TBX_FREE(board_use_count);
+    free(board_use_count);
   }
   
-  TBX_FREE(p_mx_drv);
+  free(p_mx_drv);
   
-  TBX_FREE(p_mx_drv->url);
+  free(p_mx_drv->url);
   p_mx_drv->url = NULL;
 
   nm_mx_adm_pkt_vect_delete(p_mx_drv->pending_adm);
@@ -490,7 +490,7 @@ static int nm_mx_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk_
   struct nm_mx_cnx *p_mx_cnx = &status->cnx_array[trk_id];
   
   /* ** fill gate_map */
-  p_mx_trk->gate_map = TBX_REALLOC(p_mx_trk->gate_map, sizeof(nm_gate_t) * (p_mx_trk->next_peer_id + 1));
+  p_mx_trk->gate_map = realloc(p_mx_trk->gate_map, sizeof(nm_gate_t) * (p_mx_trk->next_peer_id + 1));
   p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate;
   
   /* ** parse url */

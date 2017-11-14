@@ -145,7 +145,7 @@ main(int  argc,
 
 	bmi_context_id   context    = NULL;
 
-	context = TBX_MALLOC(sizeof(struct bmi_context));
+	context = malloc(sizeof(struct bmi_context));
     
 	ret = BMI_open_context(&context);
 	if (ret < 0) {
@@ -291,7 +291,7 @@ main(int  argc,
 	bmi_context_id*   context = NULL;
 	int               nb_h    = hosts->nb_hosts;
 
-	context = TBX_MALLOC(MAX_CONNEXION*sizeof(bmi_context_id*));
+	context = malloc(MAX_CONNEXION*sizeof(bmi_context_id*));
 
 	for(i = 0; i < nb_h; i++){
 	    ret = BMI_open_context(&context[i]);
@@ -301,7 +301,7 @@ main(int  argc,
 	    }
 	}
     
-	peer_addr = TBX_MALLOC(MAX_CONNEXION*sizeof(BMI_addr_t*));
+	peer_addr = malloc(MAX_CONNEXION*sizeof(BMI_addr_t*));
 
 	for(i=0 ;i < hosts->nb_hosts; i++){
 	    host = (hosts->host+i);
@@ -493,9 +493,9 @@ parse_args(int argc,
     struct hosts* hosts = NULL;
 
     /* create storage for the command line options */
-    hosts = TBX_MALLOC(sizeof(struct hosts));
+    hosts = malloc(sizeof(struct hosts));
     hosts->nb_hosts = 0;
-    hosts->host = TBX_MALLOC(sizeof(struct host) * MAX_CONNEXION);
+    hosts->host = malloc(sizeof(struct host) * MAX_CONNEXION);
 
     if (!hosts) {
 	goto parse_args_error;
@@ -558,9 +558,9 @@ parse_args(int argc,
     /* if an error occurs, just free everything and return NULL */
     if(hosts){
 	if(hosts->host){
-	    TBX_FREE(hosts->host);
+	    free(hosts->host);
 	}
-	TBX_FREE(hosts);
+	free(hosts);
     }
     return NULL;
 }

@@ -84,7 +84,7 @@ struct nm_cmdline_launcher_status_s
 
 static void*nm_cmdline_launcher_instantiate(puk_instance_t i, puk_context_t c)
 {
-  struct nm_cmdline_launcher_status_s*status = TBX_MALLOC(sizeof(struct nm_cmdline_launcher_status_s));
+  struct nm_cmdline_launcher_status_s*status = malloc(sizeof(struct nm_cmdline_launcher_status_s));
   status->p_session = NULL;
   status->p_gate = NM_GATE_NONE;
   status->is_server = 0;
@@ -99,7 +99,7 @@ static void nm_cmdline_launcher_destroy(void*_status)
     {
       fprintf(stderr, "# launcher: nm_session_destroy return err = %d\n", err);
     }
-  TBX_FREE(status);
+  free(status);
 }
 
 static int nm_cmdline_launcher_get_rank(void*_status)
@@ -153,7 +153,7 @@ static void nm_launcher_addr_recv(int sock, char**p_url)
       fprintf(stderr, "# launcher: cannot get address from peer (%s).\n", strerror(err));
       abort();
     }
-  char*url = TBX_MALLOC(len);
+  char*url = malloc(len);
  retry_recv2:
   rc = recv(sock, url, len, MSG_WAITALL);
   err = errno;
@@ -341,7 +341,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
     }
 
   if(remote_session_url != NULL)
-    TBX_FREE(remote_session_url);
+    free(remote_session_url);
 }
 
 

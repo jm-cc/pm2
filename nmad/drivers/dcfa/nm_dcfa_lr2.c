@@ -136,7 +136,7 @@ static void* nm_dcfa_lr2_instantiate(puk_instance_t instance, puk_context_t cont
   if(nm_dcfa_memalign > 0)
     posix_memalign((void**)&lr2, nm_dcfa_memalign, sizeof(struct nm_dcfa_lr2));
   else
-    lr2 = TBX_MALLOC(sizeof(struct nm_dcfa_lr2));
+    lr2 = malloc(sizeof(struct nm_dcfa_lr2));
   memset(&lr2->buffer, 0, sizeof(lr2->buffer));
   lr2->buffer.rack = 0;
   lr2->mr = NULL;
@@ -146,7 +146,7 @@ static void* nm_dcfa_lr2_instantiate(puk_instance_t instance, puk_context_t cont
 
 static void nm_dcfa_lr2_destroy(void*_status)
 {
-  TBX_FREE(_status);
+  free(_status);
   /* TODO */
 }
 

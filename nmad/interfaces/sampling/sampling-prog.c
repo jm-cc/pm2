@@ -695,8 +695,8 @@ int main(int argc, char **argv)
 
   samples = nm_sample_vect_new();
 
-  p_buffer_send = TBX_MALLOC(param_max_size);
-  p_buffer_recv = TBX_MALLOC(param_max_size);
+  p_buffer_send = malloc(param_max_size);
+  p_buffer_recv = malloc(param_max_size);
   nm_ns_fill_data(p_buffer_send);
 
   if(!is_server)
@@ -727,8 +727,8 @@ int main(int argc, char **argv)
   nm_launcher_session_close(p_session);
   nm_launcher_exit();
 
-  TBX_FREE(p_buffer_send);
-  TBX_FREE(p_buffer_recv);
+  free(p_buffer_send);
+  free(p_buffer_recv);
 
   return 0;
 }

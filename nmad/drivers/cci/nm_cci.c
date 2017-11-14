@@ -200,14 +200,14 @@ static void nm_cci_unregister(void*context, const void*ptr, void*key)
 /** Instanciate functions */
 static void*nm_cci_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_cci*status = TBX_MALLOC(sizeof(struct nm_cci));
+  struct nm_cci*status = malloc(sizeof(struct nm_cci));
   memset(status, 0, sizeof(struct nm_cci));
   return status;
 }
 
 static void nm_cci_destroy(void*_status)
 {
-  TBX_FREE(_status);
+  free(_status);
 }
 
 /** Url function */
@@ -222,7 +222,7 @@ static int nm_cci_query(nm_drv_t p_drv,
 			struct nm_driver_query_param *params TBX_UNUSED,
 			int nparam TBX_UNUSED)
 {
-  struct nm_cci_drv* p_cci_drv = TBX_MALLOC(sizeof(struct nm_cci_drv));
+  struct nm_cci_drv* p_cci_drv = malloc(sizeof(struct nm_cci_drv));
   memset(p_cci_drv, 0, sizeof(struct nm_cci_drv));
   p_drv->profile.latency = 10000;
   p_drv->profile.bandwidth = 1000;
@@ -288,14 +288,14 @@ static int nm_cci_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 static int nm_cci_exit(nm_drv_t p_drv)
 {
   struct nm_cci_drv*p_cci_drv = p_drv->priv;
-  TBX_FREE(p_cci_drv->url);
-  TBX_FREE(p_cci_drv);
+  free(p_cci_drv->url);
+  free(p_cci_drv);
   return NM_ESUCCESS;
 }
 
 static struct nm_cci_connection_s*nm_cci_connection_new(void)
 {
-  struct nm_cci_connection_s*conn = TBX_MALLOC(sizeof(struct nm_cci_connection_s));
+  struct nm_cci_connection_s*conn = malloc(sizeof(struct nm_cci_connection_s));
   memset(conn, 0, sizeof(struct nm_cci_connection_s));
   conn->connection = NULL;
   return conn;
@@ -349,7 +349,7 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 			conn->info.trk_small.unexpected = nm_cci_unexpected_list_new();
 		      }
 		    nm_cci_unexpected_t u = nm_cci_unexpected_new();
-		    u->ptr = TBX_MALLOC(size);
+		    u->ptr = malloc(size);
 		    u->size = size;
 		    memcpy(u->ptr, ptr, size);
 		    nm_cci_unexpected_list_push_back(conn->info.trk_small.unexpected, u);

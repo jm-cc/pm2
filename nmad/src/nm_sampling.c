@@ -81,7 +81,7 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, nm_drv_t p_drv)
       while(s);
       
       p_set->nb_samples = nb_entries;
-      p_set->bandwidth_samples = TBX_MALLOC(nb_entries * sizeof(double));
+      p_set->bandwidth_samples = malloc(nb_entries * sizeof(double));
       
       /* load the sampling file */
       fseek(sampling_file, 0L, SEEK_SET);
@@ -162,9 +162,9 @@ static void nm_ns_cleanup(void)
 {
   if(nm_ns.nb_drvs > 0)
     {
-      TBX_FREE(nm_ns.p_drvs_by_lat);
+      free(nm_ns.p_drvs_by_lat);
       nm_ns.p_drvs_by_lat = NULL;
-      TBX_FREE(nm_ns.p_drvs_by_bw);
+      free(nm_ns.p_drvs_by_bw);
       nm_ns.p_drvs_by_bw = NULL;
     }
 }
@@ -176,7 +176,7 @@ int nm_ns_update(struct nm_core*p_core, nm_drv_t p_drv)
 
   /* load samples from disk */
 #ifdef NMAD_SAMPLING
-  struct nm_sampling_set_s*p_set = TBX_MALLOC(sizeof(struct nm_sampling_set_s));
+  struct nm_sampling_set_s*p_set = malloc(sizeof(struct nm_sampling_set_s));
   nm_ns_parse_sampling(p_set, p_drv);
   if(nm_ns.sampling_sets == NULL)
     nm_ns.sampling_sets = puk_hashtable_new_ptr();
@@ -184,8 +184,8 @@ int nm_ns_update(struct nm_core*p_core, nm_drv_t p_drv)
 #endif
 
   /* sort drivers by bandwidth and latency */
-  nm_ns.p_drvs_by_bw = TBX_MALLOC(nm_ns.nb_drvs * sizeof(nm_drv_t ));
-  nm_ns.p_drvs_by_lat = TBX_MALLOC(nm_ns.nb_drvs * sizeof(nm_drv_t ));
+  nm_ns.p_drvs_by_bw = malloc(nm_ns.nb_drvs * sizeof(nm_drv_t ));
+  nm_ns.p_drvs_by_lat = malloc(nm_ns.nb_drvs * sizeof(nm_drv_t ));
   int i = 0;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {

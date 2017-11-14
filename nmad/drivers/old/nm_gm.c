@@ -160,13 +160,13 @@ PADICO_MODULE_BUILTIN(NewMad_Driver_gm, &nm_gm_load, NULL, NULL);
 
 
 static void*nm_gm_instantiate(puk_instance_t instance, puk_context_t context){
-  struct nm_gm*status = TBX_MALLOC(sizeof (struct nm_gm));
+  struct nm_gm*status = malloc(sizeof (struct nm_gm));
   memset(status, 0, sizeof(struct nm_gm));
   return status;
 }
 
 static void nm_gm_destroy(void*_status){
-  TBX_FREE(_status);
+  free(_status);
 }
 
 const static char*nm_gm_get_driver_url(nm_drv_t p_drv){
@@ -408,7 +408,7 @@ nm_gm_extract_info(char			 *trk_url,
 
         NM_TRACE_VAL("remote node_id (GM v2.0)", p_gm_cnx->node_id);
 
-        TBX_FREE(str);
+        free(str);
         str = NULL;
 
         return;
@@ -427,7 +427,7 @@ nm_gm_query			(nm_drv_t p_drv,
 	int err;
 
 	/* private data							*/
-	p_gm_drv	= TBX_MALLOC(sizeof (struct nm_gm_drv));
+	p_gm_drv	= malloc(sizeof (struct nm_gm_drv));
 	if (!p_gm_drv) {
 		err = -NM_ENOMEM;
 		goto out;
@@ -481,8 +481,8 @@ nm_gm_exit			(nm_drv_t p_drv) {
 	struct nm_gm_drv *p_gm_drv = p_drv->priv;
 
 	p_gm_drv->nb_gates--;
-        TBX_FREE(p_gm_drv->url);
-        TBX_FREE(p_gm_drv);
+        free(p_gm_drv->url);
+        free(p_gm_drv);
 
 	err = NM_ESUCCESS;
 
@@ -506,7 +506,7 @@ nm_gm_open_track		(struct nm_trk_rq	*p_trk_rq) {
         p_trk	= p_trk_rq->p_trk;
 
         /* private data							*/
-	p_gm_trk	= TBX_MALLOC(sizeof (struct nm_gm_trk));
+	p_gm_trk	= malloc(sizeof (struct nm_gm_trk));
         if (!p_gm_trk) {
                 err = -NM_ENOMEM;
                 goto out;
@@ -604,8 +604,8 @@ nm_gm_close_track		(struct nm_trk *p_trk) {
 	int err;
 
         p_gm_trk	= p_trk->priv;
-        TBX_FREE(p_trk->url);
-        TBX_FREE(p_gm_trk);
+        free(p_trk->url);
+        free(p_gm_trk);
 
 	err = NM_ESUCCESS;
 
@@ -642,12 +642,12 @@ nm_gm_connect		(void*_status,
                 if (p_gm_cnx->node_id > p_gm_trk->max_node_id) {
                         p_gm_trk->max_node_id	= p_gm_cnx->node_id;
                         p_gm_trk->gate_map	=
-                                TBX_REALLOC(p_gm_trk->gate_map,
+                                realloc(p_gm_trk->gate_map,
                                             sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
                 }
         } else {
                 p_gm_trk->max_node_id	= p_gm_cnx->node_id;
-                p_gm_trk->gate_map	= TBX_MALLOC(sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
+                p_gm_trk->gate_map	= malloc(sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
         }
 
         p_gm_trk->gate_map[p_gm_cnx->node_id]	= p_gate;
@@ -768,12 +768,12 @@ nm_gm_accept			(void*_status,
                 if (p_gm_cnx->node_id > p_gm_trk->max_node_id) {
                         p_gm_trk->max_node_id	= p_gm_cnx->node_id;
                         p_gm_trk->gate_map	=
-                                TBX_REALLOC(p_gm_trk->gate_map,
+                                realloc(p_gm_trk->gate_map,
                                             sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
                 }
         } else {
                 p_gm_trk->max_node_id	= p_gm_cnx->node_id;
-                p_gm_trk->gate_map	= TBX_MALLOC(sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
+                p_gm_trk->gate_map	= malloc(sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
         }
 
         p_gm_trk->gate_map[p_gm_cnx->node_id]	= p_gate;
@@ -824,7 +824,7 @@ nm_gm_post_send_iov		(void*_status,
         status	= _status;
         p_gm_cnx	= status->cnx_array + p_trk->id;
 
-        p_gm_pw		= TBX_MALLOC(sizeof(struct nm_gm_pkt_wrap));
+        p_gm_pw		= malloc(sizeof(struct nm_gm_pkt_wrap));
         p_pw->drv_priv	= p_gm_pw;
 
         p_gm_pw->p_gm_port	= p_gm_trk->p_gm_port;
@@ -883,7 +883,7 @@ nm_gm_post_recv_iov		(void*_status,
 
         p_gm_trk	= p_trk->priv;
 
-        p_gm_pw		= TBX_MALLOC(sizeof(struct nm_gm_pkt_wrap));
+        p_gm_pw		= malloc(sizeof(struct nm_gm_pkt_wrap));
         p_pw->drv_priv	= p_gm_pw;
 
         p_gm_pw->p_gm_port	= p_gm_trk->p_gm_port;
@@ -946,7 +946,7 @@ nm_gm_poll_send_iov    	(void*_status,
                 goto error;
         }
 
-        TBX_FREE(p_gm_pw);
+        free(p_gm_pw);
 	err = NM_ESUCCESS;
 
  out:
@@ -1025,7 +1025,7 @@ nm_gm_poll_recv_iov    	(void*_status,
                 p_pw->p_gate	= p_gm_trk->gate_map[remote_node_id];
         }
 
-        TBX_FREE(p_gm_pw);
+        free(p_gm_pw);
 	err = NM_ESUCCESS;
 
  out:

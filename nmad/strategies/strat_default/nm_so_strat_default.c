@@ -73,7 +73,7 @@ static int nm_strat_default_load(void)
  */
 static void*strat_default_instantiate(puk_instance_t ai, puk_context_t context)
 {
-  struct nm_strat_default_s*p_status = TBX_MALLOC(sizeof(struct nm_strat_default_s));
+  struct nm_strat_default_s*p_status = malloc(sizeof(struct nm_strat_default_s));
   const char*nm_max_small = puk_instance_getattr(ai, "nm_max_small");
   p_status->nm_max_small = atoi(nm_max_small);
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
@@ -85,7 +85,7 @@ static void*strat_default_instantiate(puk_instance_t ai, puk_context_t context)
  */
 static void strat_default_destroy(void*_status)
 {
-  TBX_FREE(_status);
+  free(_status);
 }
 
 /** Compute and apply the best possible packet rearrangement, then

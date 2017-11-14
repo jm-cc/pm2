@@ -125,7 +125,7 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   struct nm_dcfa_hca_s*p_hca = nm_dcfa_common.hca_table[index];
   if(p_hca)
     return p_hca;
-  p_hca = TBX_MALLOC(sizeof(struct nm_dcfa_hca_s));
+  p_hca = malloc(sizeof(struct nm_dcfa_hca_s));
 
   /* find IB device */
   int dev_number = index;

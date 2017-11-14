@@ -103,7 +103,7 @@ main(int  argc,
       exit(1);
     }
   }
-  context = TBX_MALLOC(sizeof(struct bmi_context));
+  context = malloc(sizeof(struct bmi_context));
   ret = BMI_open_context(context);
   if (ret < 0) {
     fprintf(stderr,"BMI_open_context() ret = %d\n", ret);
@@ -115,7 +115,7 @@ main(int  argc,
 
   if(opts->which == SERVER){
     /* create a buffer to recv into */
-    buf = TBX_MALLOC(len);
+    buf = malloc(len);
 
     if (buf == NULL) {
       fprintf(stderr, "BMI_memalloc() error\n");
@@ -137,7 +137,7 @@ main(int  argc,
     } while (ret !=  0);
     
     printf("message recue\t"); printf("buffer contents: %s\n", buf);
-    TBX_FREE(buf);
+    free(buf);
   } else {
     /*
      *  CLIENT
@@ -148,7 +148,7 @@ main(int  argc,
     fprintf(stdout,"Server address : %s\n", opts->hostid);
 #endif
     BMI_addr_lookup(&peer_addr, opts->hostid);
-    buf = TBX_MALLOC(len);
+    buf = malloc(len);
     if ( !buf ) {
       fprintf(stderr, "BMI_memalloc() error\n");
       exit(1);
@@ -169,11 +169,11 @@ main(int  argc,
       printf("ret = %d\n");
     } while (ret != 0);    
     printf("\nmessage envoye\n");
-    TBX_FREE(buf);
+    free(buf);
   }
 
   BMI_close_context(context);
-  TBX_FREE(context);
+  free(context);
   BMI_finalize();
   exit(0);
 }
@@ -288,9 +288,9 @@ parse_args_error:
         /* if an error occurs, just free everything and return NULL */
   if (opts) {
     if (opts->hostid) {
-      TBX_FREE(opts->hostid);
+      free(opts->hostid);
     }
-    TBX_FREE(opts);
+    free(opts);
   }
   return NULL;
 }

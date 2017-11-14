@@ -374,9 +374,9 @@ parse_args(int argc,
     struct hosts* hosts = NULL;
 
     /* create storage for the command line options */
-    hosts = TBX_MALLOC(sizeof(struct hosts));
+    hosts = malloc(sizeof(struct hosts));
     hosts->nb_hosts = 0;
-    hosts->host = TBX_MALLOC(sizeof(struct host) * MAX_CONNEXION);
+    hosts->host = malloc(sizeof(struct host) * MAX_CONNEXION);
 
     if (!hosts) {
 	goto parse_args_error;
@@ -439,9 +439,9 @@ parse_args(int argc,
     /* if an error occurs, just free everything and return NULL */
     if(hosts){
 	if(hosts->host){
-	    TBX_FREE(hosts->host);
+	    free(hosts->host);
 	}
-	TBX_FREE(hosts);
+	free(hosts);
     }
     return NULL;
 }

@@ -598,7 +598,7 @@ int nm_core_exit(nm_core_t p_core)
   nm_core_lock_destroy(p_core);
 
   nm_ns_exit(p_core);
-  TBX_FREE(p_core);
+  free(p_core);
 
   return NM_ESUCCESS;
 }

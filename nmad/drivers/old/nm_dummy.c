@@ -126,13 +126,13 @@ PADICO_MODULE_BUILTIN(NewMad_Driver_dummy, &nm_dummy_load, NULL, NULL);
 
 /** Instanciate functions */
 static void*nm_dummy_instantiate(puk_instance_t instance, puk_context_t context){
-  struct nm_dummy*status = TBX_MALLOC(sizeof (struct nm_dummy));
+  struct nm_dummy*status = malloc(sizeof (struct nm_dummy));
   memset(status, 0, sizeof(struct nm_dummy));
   return status;
 }
 
 static void nm_dummy_destroy(void*_status){
-  TBX_FREE(_status);
+  free(_status);
 }
 
 const static char*nm_dummy_get_driver_url(nm_drv_t p_drv){
@@ -152,7 +152,7 @@ nm_dummy_query			(nm_drv_t p_drv,
 	struct nm_dummy_drv*p_dummy_drv = NULL;
 
 	/* private data							*/
-	p_dummy_drv	= TBX_MALLOC(sizeof (struct nm_dummy_drv));
+	p_dummy_drv	= malloc(sizeof (struct nm_dummy_drv));
 	if (!p_dummy_drv) {
 		err = -NM_ENOMEM;
 		goto out;
@@ -191,8 +191,8 @@ nm_dummy_exit			(nm_drv_t p_drv) {
         struct nm_dummy_drv *p_dummy_drv = p_drv->priv;
 
 	p_dummy_drv->nb_gates --;
-        TBX_FREE(p_dummy_drv->url);
-        TBX_FREE(p_dummy_drv);
+        free(p_dummy_drv->url);
+        free(p_dummy_drv);
 
 	err = NM_ESUCCESS;
 
@@ -209,7 +209,7 @@ nm_dummy_open_track		(struct nm_trk_rq	*p_trk_rq) {
         p_trk	= p_trk_rq->p_trk;
 
         /* private data							*/
-	p_dummy_trk	= TBX_MALLOC(sizeof (struct nm_dummy_trk));
+	p_dummy_trk	= malloc(sizeof (struct nm_dummy_trk));
         if (!p_dummy_trk) {
                 err = -NM_ENOMEM;
                 goto out;
@@ -239,8 +239,8 @@ nm_dummy_close_track		(struct nm_trk *p_trk) {
 	int err;
 
         p_dummy_trk	= p_trk->priv;
-        TBX_FREE(p_trk->url);
-        TBX_FREE(p_dummy_trk);
+        free(p_trk->url);
+        free(p_dummy_trk);
 
 	err = NM_ESUCCESS;
 

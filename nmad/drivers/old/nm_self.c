@@ -111,7 +111,7 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_self,
 /** Instanciate functions */
 static void*nm_self_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_self*status = TBX_MALLOC(sizeof(struct nm_self));
+  struct nm_self*status = malloc(sizeof(struct nm_self));
   static int init_done = 0;
   if(init_done)
     {
@@ -126,7 +126,7 @@ static void*nm_self_instantiate(puk_instance_t instance, puk_context_t context)
 
 static void nm_self_destroy(void*_status)
 {
-  TBX_FREE(_status);
+  free(_status);
 }
 
 /** Url function */

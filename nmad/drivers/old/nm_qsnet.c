@@ -169,14 +169,14 @@ static const char*nm_qsnet_get_driver_url(nm_drv_t p_drv)
 /** Component instanciation */
 static void*nm_qsnet_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_qsnet*status = TBX_MALLOC(sizeof (struct nm_qsnet));
+  struct nm_qsnet*status = malloc(sizeof (struct nm_qsnet));
   memset(status, 0, sizeof(struct nm_qsnet));
   return status;
 }
 
 static void nm_qsnet_destroy(void*_status)
 {
-  TBX_FREE(_status);
+  free(_status);
 }
 
 /* prototypes
@@ -192,7 +192,7 @@ static int nm_qsnet_query(nm_drv_t p_drv, struct nm_driver_query_param *params, 
   struct nm_qsnet_drv*p_qsnet_drv = NULL;
   
   /* private data                                                 */
-  p_qsnet_drv	= TBX_MALLOC(sizeof (struct nm_qsnet_drv));
+  p_qsnet_drv	= malloc(sizeof (struct nm_qsnet_drv));
   if (!p_qsnet_drv) {
     err = -NM_ENOMEM;
     goto out;
@@ -254,7 +254,7 @@ static int nm_qsnet_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks
   
   /* open requested tracks */
   p_qsnet_drv->nb_trks = nb_trks;
-  p_qsnet_drv->trks_array = TBX_MALLOC(nb_trks * sizeof(struct nm_qsnet_trk));
+  p_qsnet_drv->trks_array = malloc(nb_trks * sizeof(struct nm_qsnet_trk));
   nm_trk_id_t trk_id;
   for(trk_id = 0; trk_id < nb_trks; trk_id++)
     {
@@ -309,7 +309,7 @@ static int nm_qsnet_close(nm_drv_t p_drv)
 {
   struct nm_qsnet_drv *p_qsnet_drv = p_drv->priv;
   int err = NM_ESUCCESS;
-  TBX_FREE( p_qsnet_drv->trks_array);
+  free( p_qsnet_drv->trks_array);
   return err;
 }
 
@@ -343,7 +343,7 @@ static int nm_qsnet_connect(void*_status, struct nm_cnx_rq *p_crq)
    */
   if (remote_proc >= p_qsnet_trk->gate_map_size)
     {
-      p_qsnet_trk->gate_map = TBX_REALLOC(p_qsnet_trk->gate_map, sizeof(nm_gate_t)*(remote_proc+1));
+      p_qsnet_trk->gate_map = realloc(p_qsnet_trk->gate_map, sizeof(nm_gate_t)*(remote_proc+1));
     }
   
   p_qsnet_trk->gate_map[remote_proc]	= p_gate;
@@ -407,7 +407,7 @@ static int nm_qsnet_accept(void*_status, struct nm_cnx_rq *p_crq)
    */
   if (remote_proc >= p_qsnet_trk->gate_map_size)
     {
-      p_qsnet_trk->gate_map = TBX_REALLOC(p_qsnet_trk->gate_map, sizeof(nm_gate_t) * (remote_proc+1));
+      p_qsnet_trk->gate_map = realloc(p_qsnet_trk->gate_map, sizeof(nm_gate_t) * (remote_proc+1));
     }
   
   p_qsnet_trk->gate_map[remote_proc]	= p_gate;

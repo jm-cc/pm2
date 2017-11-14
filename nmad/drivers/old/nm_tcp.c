@@ -213,7 +213,7 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_tcp,
 /** Instanciate functions */
 static void*nm_tcp_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_tcp*status = TBX_MALLOC(sizeof (struct nm_tcp));
+  struct nm_tcp*status = malloc(sizeof (struct nm_tcp));
   memset(status, 0, sizeof(struct nm_tcp));
 
   return status;
@@ -221,7 +221,7 @@ static void*nm_tcp_instantiate(puk_instance_t instance, puk_context_t context)
 
 static void nm_tcp_destroy(void*_status)
 {
-  TBX_FREE(_status);
+  free(_status);
 }
 
 /** Url function */
@@ -334,7 +334,7 @@ nm_tcp_query		(nm_drv_t p_drv,
 	NM_FATAL("nmad: driver tcp is deprecated.\n");
 	
 	/* private data							*/
-	struct nm_tcp_drv* p_tcp_drv = TBX_MALLOC(sizeof (struct nm_tcp_drv));
+	struct nm_tcp_drv* p_tcp_drv = malloc(sizeof (struct nm_tcp_drv));
 	if (!p_tcp_drv) {
 		err = -NM_ENOMEM;
 		goto out;
@@ -378,7 +378,7 @@ static int nm_tcp_init(nm_drv_t p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 
   /* open the requested number of tracks */
   p_tcp_drv->nb_trks = nb_trks;
-  p_tcp_drv->trks_array = TBX_MALLOC(nb_trks * sizeof(struct nm_tcp_trk));
+  p_tcp_drv->trks_array = malloc(nb_trks * sizeof(struct nm_tcp_trk));
   int i;
   for(i = 0; i < nb_trks; i++)
     {
@@ -408,18 +408,18 @@ extern int nm_tcp_exit(nm_drv_t p_drv)
 {
   struct nm_tcp_drv *p_tcp_drv = p_drv->priv;
   
-  TBX_FREE(p_tcp_drv->url);
+  free(p_tcp_drv->url);
 /*   SYSCALL(close(p_tcp_drv->server_fd)); */
   
   /* close tracks */
   int i;
   for(i = 0; i < p_tcp_drv->nb_trks; i++)
     {
-      TBX_FREE(p_tcp_drv->trks_array[i].poll_array);
-      TBX_FREE(p_tcp_drv->trks_array[i].gate_map);
+      free(p_tcp_drv->trks_array[i].poll_array);
+      free(p_tcp_drv->trks_array[i].gate_map);
     }
-  TBX_FREE(p_tcp_drv->trks_array);
-  TBX_FREE(p_tcp_drv);
+  free(p_tcp_drv->trks_array);
+  free(p_tcp_drv);
 
   return NM_ESUCCESS;
 }
@@ -466,7 +466,7 @@ static int nm_tcp_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk
 	  fprintf(stderr, "nmad: tcp- error while sending id to peer node.\n");
 	  abort();
 	}
-      TBX_FREE(parse_url);
+      free(parse_url);
     }
   else
     {
@@ -528,8 +528,8 @@ static int nm_tcp_connect(void*_status, nm_gate_t p_gate, nm_drv_t p_drv, nm_trk
   
   /* Increment the numer of gates */
   p_tcp_drv->nb_gates++;
-  p_tcp_trk->poll_array	= TBX_REALLOC(p_tcp_trk->poll_array, p_tcp_drv->nb_gates * sizeof(struct pollfd));
-  p_tcp_trk->gate_map	= TBX_REALLOC(p_tcp_trk->gate_map, p_tcp_drv->nb_gates * sizeof(nm_gate_t));
+  p_tcp_trk->poll_array	= realloc(p_tcp_trk->poll_array, p_tcp_drv->nb_gates * sizeof(struct pollfd));
+  p_tcp_trk->gate_map	= realloc(p_tcp_trk->gate_map, p_tcp_drv->nb_gates * sizeof(nm_gate_t));
 
   p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].fd = status->fd[trk_id];
   p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].events = POLLIN;
@@ -840,7 +840,7 @@ nm_tcp_send 	(void*_status,
         if (!p_tcp_pw) {
                 NM_TRACEF("setup vector iterator");
 
-                p_tcp_pw	= TBX_MALLOC(sizeof(struct nm_tcp_pkt_wrap));
+                p_tcp_pw	= malloc(sizeof(struct nm_tcp_pkt_wrap));
                 p_pw->drv_priv	= p_tcp_pw;
 		
 		struct nm_tcp_drv*p_tcp_drv = p_pw->p_drv->priv;
@@ -1012,7 +1012,7 @@ nm_tcp_send 	(void*_status,
 
  out_complete:
         if (p_pw->drv_priv) {
-                TBX_FREE(p_pw->drv_priv);
+                free(p_pw->drv_priv);
                 p_pw->drv_priv	= NULL;
         }
 
@@ -1053,7 +1053,7 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout)
   
   if (!p_tcp_pw) {
     NM_TRACEF("setup vector iterator");
-    p_tcp_pw	= TBX_MALLOC(sizeof(struct nm_tcp_pkt_wrap));
+    p_tcp_pw	= malloc(sizeof(struct nm_tcp_pkt_wrap));
     p_pw->drv_priv	= p_tcp_pw;
     
     struct nm_tcp_drv*p_tcp_drv = p_pw->p_drv->priv;
@@ -1269,7 +1269,7 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap_s *p_pw, int timeout)
   
  out_complete:
   if (p_pw->drv_priv) {
-    TBX_FREE(p_pw->drv_priv);
+    free(p_pw->drv_priv);
     p_pw->drv_priv	= NULL;
   }
   

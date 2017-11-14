@@ -93,7 +93,7 @@ struct nm_strat_decision_tree
  */
 static void*strat_decision_tree_instantiate(puk_instance_t ai, puk_context_t context)
 {
-  struct nm_strat_decision_tree*p_status = TBX_MALLOC(sizeof(struct nm_strat_decision_tree));
+  struct nm_strat_decision_tree*p_status = malloc(sizeof(struct nm_strat_decision_tree));
   const char*nm_max_small = puk_instance_getattr(ai, "nm_max_small");
   p_status->nm_max_small = atoi(nm_max_small);
   const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
@@ -124,7 +124,7 @@ static void strat_decision_tree_destroy(void*_status)
     }
   fclose(f);
   close(fd);
-  TBX_FREE(p_status);
+  free(p_status);
 }
 
 

@@ -143,7 +143,7 @@ static void* nm_dcfa_bycopy_instantiate(puk_instance_t instance, puk_context_t c
     }
   else
     {
-      bycopy = TBX_MALLOC(sizeof(struct nm_dcfa_bycopy));
+      bycopy = malloc(sizeof(struct nm_dcfa_bycopy));
     }
   memset(&bycopy->buffer, 0, sizeof(bycopy->buffer));
   bycopy->window.next_out = 1;

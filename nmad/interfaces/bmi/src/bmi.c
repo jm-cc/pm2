@@ -177,7 +177,7 @@ static void __bmi_launcher_addr_recv(int sock, char**p_url)
       fprintf(stderr, "# launcher: cannot get address from peer.\n");
       abort();
     }
-  char*url = TBX_MALLOC(len);
+  char*url = malloc(len);
   rc = recv(sock, url, len, MSG_WAITALL);
   if(rc < 0)
   {
@@ -644,7 +644,7 @@ BMI_open_context(bmi_context_id* context_id){
     }
     context_array[context_index] = 1;
 
-    *context_id = TBX_MALLOC(sizeof(struct bmi_context));
+    *context_id = malloc(sizeof(struct bmi_context));
     
 #ifdef MARCEL
     marcel_mutex_unlock(&context_mutex);
@@ -717,13 +717,13 @@ BMI_addr_lookup(BMI_addr_t *peer,
     if (!new_peer){
 
 	/* create a new reference for the addr */
-	new_peer= TBX_MALLOC(sizeof( struct bnm_peer));
+	new_peer= malloc(sizeof( struct bnm_peer));
 
 	if (!new_peer)  {
 	    goto bmi_addr_lookup_failure;
 	}
 	
-	new_peer->peername = (char *)TBX_MALLOC(strlen(id_string) + 1);
+	new_peer->peername = (char *)malloc(strlen(id_string) + 1);
 
 	if (!new_peer->peername)
 	    goto bmi_addr_lookup_failure;
@@ -745,11 +745,11 @@ BMI_addr_lookup(BMI_addr_t *peer,
 	marcel_mutex_unlock(&ref_mutex);
 #endif
 	
-	peer[0]           = TBX_MALLOC(sizeof(struct BMI_addr));
+	peer[0]           = malloc(sizeof(struct BMI_addr));
 
 	peer[0]->p_gate = new_peer->p_gate;
 
-	peer[0]->peername = TBX_MALLOC(strlen(id_string)+1);
+	peer[0]->peername = malloc(strlen(id_string)+1);
 	memmove(peer[0]->peername,new_peer->peername,strlen(id_string)+1);
 
     }
@@ -759,16 +759,16 @@ BMI_addr_lookup(BMI_addr_t *peer,
 #endif
     assert(*peer);
     
-    TBX_FREE((char*)new_peer->peername);
-    TBX_FREE(new_peer);
+    free((char*)new_peer->peername);
+    free(new_peer);
 
     return ret;
 
   bmi_addr_lookup_failure:
 
     if (new_peer){
-	TBX_FREE((char*)new_peer->peername);
-	TBX_FREE(new_peer);
+	free((char*)new_peer->peername);
+	free(new_peer);
     }
     return (ret);
 }

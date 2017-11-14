@@ -35,12 +35,12 @@ struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap_s*p_pw)
 	}
       if(p_pw->v == p_pw->prealloc_v)
 	{
-	  p_pw->v = TBX_MALLOC(p_pw->v_size * sizeof(struct iovec));
+	  p_pw->v = malloc(p_pw->v_size * sizeof(struct iovec));
 	  memcpy(p_pw->v, p_pw->prealloc_v, NM_SO_PREALLOC_IOV_LEN * sizeof(struct iovec));
 	}
       else
 	{
-	  p_pw->v = TBX_REALLOC(p_pw->v, p_pw->v_size * sizeof(struct iovec));
+	  p_pw->v = realloc(p_pw->v, p_pw->v_size * sizeof(struct iovec));
 	}
     }
   assert(p_pw->v_nb <= p_pw->v_size);
@@ -239,12 +239,12 @@ void nm_pw_free(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
     }
   if(flags & NM_PW_DYNAMIC_V0)
     {
-      TBX_FREE(p_pw->v[0].iov_base);
+      free(p_pw->v[0].iov_base);
     }
   /* clean whole iov */
   if(p_pw->v != p_pw->prealloc_v)
     {
-      TBX_FREE(p_pw->v);
+      free(p_pw->v);
     }
   
 #ifdef DEBUG

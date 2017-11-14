@@ -115,22 +115,20 @@ static void nm_session_init_drivers(void)
     {
       driver_env = "tcp";
     }
-
-  /* parse driver_string */
+  
+  /* ** parse driver_string */
   char*driver_string = strdup(driver_env); /* strtok writes into the string */
   char*token = strtok(driver_string, "+");
   while(token)
     {
       const char*driver_trk_small = NULL, *driver_trk_large = NULL;
       const char*driver_name = token;
-      char*index_string = strchr(driver_name, ':');
-      int index = -1;
-      if(index_string)
-	{
-	  *index_string = '\0';
-	  index_string++;
-	  index = atoi(index_string);
-	}
+      char*attr_string = strchr(driver_name, ':');
+      if(attr_string)
+        {
+	  *attr_string = '\0';
+	  attr_string++;
+        }
       if(strcmp(driver_name, "tcp") == 0)
 	{
 	  driver_trk_small =
@@ -219,28 +217,59 @@ static void nm_session_init_drivers(void)
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
 	}
-      else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0))
+      else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0) ||
+              (strcmp(driver_name, "mx") == 0))
 	{
-	  NM_FATAL("nmad: FATAL- no support for mx driver.\n");
+	  NM_FATAL("support for mx driver is deprecated.\n");
 	}
-      if(driver_trk_small)
-	{
-	  puk_component_t component_trk_small = puk_component_parse(driver_trk_small);
-	  if(component_trk_small == NULL)
-	    {
-	      NM_FATAL("nmad: failed to load component '%s'\n", driver_trk_small);
-	    }
-	  nm_session_add_driver(component_trk_small);
-	}
-      if(driver_trk_large)
-	{
-	  puk_component_t component_trk_large = puk_component_parse(driver_trk_large);
-	  if(component_trk_large == NULL)
-	    {
-	      NM_FATAL("nmad: failed to load component '%s'\n", driver_trk_large);
-	    }
-	  nm_session_add_driver(component_trk_large);
-	}
+      else
+        {
+          NM_FATAL("invalid driver '%s'.\n", driver_name)
+        }
+
+      /* ** parse components */
+      assert(driver_trk_small);
+      puk_component_t component_trk_small = puk_component_parse(driver_trk_small);
+      if(component_trk_small == NULL)
+        {
+          NM_FATAL("nmad: failed to load component '%s'\n", driver_trk_small);
+        }
+      assert(driver_trk_large);
+      puk_component_t component_trk_large = puk_component_parse(driver_trk_large);
+      if(component_trk_large == NULL)
+        {
+          NM_FATAL("nmad: failed to load component '%s'\n", driver_trk_large);
+        }
+     
+      /* ** parse & set attributes */
+      while(attr_string && *attr_string)
+        {
+          char*next_attr = strchr(attr_string, ':');
+          if(next_attr)
+            {
+              *next_attr = '\0';
+                  next_attr++;
+            }
+          const char*label = attr_string;
+          char*value = strchr(attr_string, '=');
+          if(value)
+            {
+              *value = '\0';
+              value++;
+            }
+          puk_context_t p_context_small = puk_component_get_context(component_trk_small,
+                                                                    puk_iface_NewMad_minidriver(), NULL);
+          puk_context_putattr(p_context_small, label, value);
+          puk_context_t p_context_large = puk_component_get_context(component_trk_large,
+                                                                    puk_iface_NewMad_minidriver(), NULL);
+          puk_context_putattr(p_context_large, label, value);
+          attr_string = next_attr;
+        }
+
+      /* ** load components */
+      nm_session_add_driver(component_trk_small);
+      nm_session_add_driver(component_trk_large);
+
       token = strtok(NULL, "+");
     }
   free(driver_string);

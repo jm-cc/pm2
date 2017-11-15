@@ -147,6 +147,14 @@ static void nm_psm2_destroy(void*_status)
 
 /* ********************************************************* */
 
+static inline void nm_psm2_check_error(int rc, const char*function)
+{
+  if(rc != PSM2_OK)
+    {
+      NM_FATAL("psm2: error %d in %s (%s).\n", rc, function, psm2_error_get_string(rc));
+    }
+}
+
 static void nm_psm2_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props)
 {
   p_props->capabilities.max_msg_size = UINT32_MAX;
@@ -166,7 +174,11 @@ static void nm_psm2_init(puk_context_t context, const void**p_url, size_t*p_url_
       p_psm2_process = malloc(sizeof(struct nm_psm2_process_s));
       nm_psm2_peer_vect_init(&p_psm2_process->peers);
       p_psm2_process->next_context_id = 1;
-      psm2_uuid_generate(p_psm2_process->uuid);
+      int i;
+      for(i = 0; i < 16; i++)
+        {
+          p_psm2_process->uuid[i] = 0x02;
+        }
       fprintf(stderr, "# psm2: uuid = %x%x%x%x:%x%x%x%x:%x%x%x%x:%x%x%x%x\n",
               p_psm2_process->uuid[0],  p_psm2_process->uuid[1],  p_psm2_process->uuid[2],  p_psm2_process->uuid[3],
               p_psm2_process->uuid[4],  p_psm2_process->uuid[5],  p_psm2_process->uuid[6],  p_psm2_process->uuid[7],
@@ -176,35 +188,23 @@ static void nm_psm2_init(puk_context_t context, const void**p_url, size_t*p_url_
       int ver_major = PSM2_VERNO_MAJOR;
       int ver_minor = PSM2_VERNO_MINOR;
       rc = psm2_init(&ver_major, &ver_minor);
-      if(rc != PSM2_OK)
-        {
-          NM_FATAL("psm2: error in init; rc = %d.\n", rc);
-        }
+      nm_psm2_check_error(rc, "psm2_init");
       uint32_t num_units = -1;
       psm2_ep_num_devunits(&num_units);
       NM_DISPF("# psm2: detected %u units\n", (unsigned)num_units);
       struct psm2_ep_open_opts options;
       rc = psm2_ep_open_opts_get_defaults(&options);
-      if(rc != PSM2_OK)
-        {
-          NM_FATAL("psm2: cannot get default options; rc = %d.\n", rc);
-        }
+      nm_psm2_check_error(rc, "psm2_ep_open_opts_get_defaults [ get default options ]");
       fprintf(stderr, "# psm2: options- unit = %d; affinity = %d; shm_mbytes = %d; sendbufs_num = %d\n",
               options.unit, options.affinity, options.shm_mbytes, options.sendbufs_num);
       rc = psm2_ep_open(p_psm2_process->uuid, &options, &p_psm2_process->myep, &p_psm2_process->myepid);
-      if(rc != PSM2_OK)
-        {
-          NM_FATAL("psm2: cannot open endpoint; rc = %d.\n", rc);
-        }
+      nm_psm2_check_error(rc, "psm2_ep_open [open endpoint ]");
     }
   p_psm2_context->p_process = p_psm2_process;
   p_psm2_context->url.context_id = p_psm2_process->next_context_id++;
   p_psm2_context->url.epid = p_psm2_process->myepid;
   rc = psm2_mq_init(p_psm2_process->myep, NM_PSM2_TAG_MASK_CONTEXT, NULL, 0, &p_psm2_context->mq);
-  if(rc != PSM2_OK)
-    {
-      NM_FATAL("psm2: error in MQ init.\n");
-    }
+  nm_psm2_check_error(rc, "psm2_mq_init");
   puk_context_set_status(context, p_psm2_context);
   *p_url = &p_psm2_context->url;
   *p_url_size = sizeof(struct nm_psm2_url_s);
@@ -250,10 +250,7 @@ static void nm_psm2_connect(void*_status, const void*_remote_url, size_t url_siz
   psm2_error_t error = 0;
   int rc = psm2_ep_connect(p_psm2_process->myep, 1, &p_remote_url->epid, NULL, &error,
                            &p_status->p_peer->epaddr, 0);
-  if(rc != PSM2_OK)
-    {
-      NM_FATAL("psm2: error in psm2_ep_connect()\n");
-    }
+  nm_psm2_check_error(rc, "psm2_ep_connect");
   struct nm_psm2_peer_id_s
   {
     struct nm_psm2_url_s url;
@@ -262,18 +259,18 @@ static void nm_psm2_connect(void*_status, const void*_remote_url, size_t url_siz
   psm2_mq_req_t sreq;
   rc = psm2_mq_isend(p_psm2_context->mq, p_status->p_peer->epaddr, 0 /* flags */,
                      NM_PSM2_TAG_INIT, &local_peer_id, sizeof(struct nm_psm2_peer_id_s), NULL, &sreq);
-  assert(rc == PSM2_OK);
+  nm_psm2_check_error(rc, "psm2_mq_isend");
   rc = psm2_mq_wait(&sreq, NULL);
-  assert(rc == PSM2_OK);
+  nm_psm2_check_error(rc, "psm2_mq_wait");
   while(p_status->p_peer->p_status == NULL)
     {
       psm2_mq_req_t rreq;
       struct nm_psm2_peer_id_s remote_peer_id = { 0 };
       rc = psm2_mq_irecv(p_psm2_context->mq, NM_PSM2_TAG_INIT, NM_PSM2_TAG_MASK_CONTEXT, 0 /* flags */,
                          &remote_peer_id, sizeof(struct nm_psm2_peer_id_s), NULL, &rreq);
-      assert(rc == PSM2_OK);
+      nm_psm2_check_error(rc, "psm2_mq_irecv");
       rc = psm2_mq_wait(&rreq, NULL);
-      assert(rc == PSM2_OK);
+      nm_psm2_check_error(rc, "psm2_mq_wait");
       if((remote_peer_id.url.epid == p_remote_url->epid) &&
          (remote_peer_id.url.context_id == p_remote_url->context_id))
         {
@@ -315,10 +312,7 @@ static void nm_psm2_send_post(void*_status, const struct iovec*v, int n)
   int rc = psm2_mq_isend(p_psm2_context->mq, p_status->p_peer->epaddr, 0 /* flags */,
                          NM_PSM2_TAG_BUILD(p_status->p_peer->url.context_id, p_status->p_peer->remote_peer_id),
                          v[0].iov_base, v[0].iov_len, NULL, &p_status->sreq);
-  if(rc != PSM2_OK)
-    {
-      NM_FATAL("psm2: error in psm2_mq_isend; rc = %d\n", rc)
-    }
+  nm_psm2_check_error(rc, "psm2_mq_isend");
 }
 
 static int nm_psm2_send_poll(void*_status)
@@ -354,6 +348,7 @@ static void nm_psm2_recv_iov_post(void*_status, struct iovec*v, int n)
   int rc = psm2_mq_irecv(p_psm2_context->mq, NM_PSM2_TAG_BUILD(p_status->p_peer->url.context_id, p_status->local_id),
                          NM_PSM2_TAG_MASK_FULL, 0 /* flags */,
                          v[0].iov_base, v[0].iov_len, NULL, &p_status->rreq);
+  nm_psm2_check_error(rc, "psm2_mq_irecv");
 }
 
 static int nm_psm2_recv_poll_one(void*_status)

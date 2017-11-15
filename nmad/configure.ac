@@ -176,34 +176,7 @@ AC_SUBST([requires_pioman])
 AC_SUBST(with_pioman)
 
 dnl -- ibverbs
-HAVE_INFINIBAND=no
-with_ibverbs=check
-AC_ARG_WITH([ibverbs],
-	    [AS_HELP_STRING([--with-ibverbs], [use Infiniband ibverbs @<:@default=check@:>@] )])
-if test "x${with_ibverbs}" != "xno" ; then
-    save_CPPFLAGS="${CPPFLAGS}"
-    CPPFLAGS="${CPPFLAGS} -I${IBHOME}/include"
-    AC_CHECK_HEADER(infiniband/verbs.h, 
-                    [ HAVE_INFINIBAND=yes ],
-                    [ HAVE_INFINIBAND=no  ])
-    CPPFLAGS="${save_CPPFLAGS}"
-    AC_SUBST(HAVE_INFINIBAND)
-    if test ${HAVE_INFINIBAND} = yes; then
-        nmad_drivers="${nmad_drivers} ibverbs"
-        if test "x$IBHOME" != "x" -a "x${IBHOME}" != "x/usr"; then
-      	   if test "x${IBLIBPATH}" = "x" ; then
-      	      IBLIBPATH=${IBHOME}/lib
-           fi
-      	   ibverbs_CPPLAGS="-I$IBHOME/include"
-      	   ibverbs_LIBS="-Wl,-rpath,${IBLIBPATH} -L${IBLIBPATH}"
-        fi
-	ibverbs_LIBS="${ibverbs_LIBS} -libverbs"
-	AC_SUBST([ibverbs_CPPFLAGS])
-	AC_SUBST([ibverbs_LIBS])
-    elif test "x${with_ibverbs}" != "xcheck"; then
-        AC_MSG_FAILURE([--with-ibverbs was given, but infiniband/verbs.h is not found])
-    fi
-fi
+AC_PADICO_CHECK_INFINIBAND
 
 dnl -- dcfa
 HAVE_DCFA=no
@@ -435,7 +408,7 @@ AC_ARG_ENABLE(romio,
 dnl -- nmad content
 dnl --
 
-nmad_drivers="${nmad_drivers} self local tcp psm2"
+nmad_drivers="${nmad_drivers} self local tcp psm2 ibverbs"
 nmad_strategies="${nmad_strategies} default aggreg split_balance decision_tree prio"
 nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session connector coll rpc"
 

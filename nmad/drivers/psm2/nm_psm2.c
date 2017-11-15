@@ -174,17 +174,23 @@ static void nm_psm2_init(puk_context_t context, const void**p_url, size_t*p_url_
       p_psm2_process = malloc(sizeof(struct nm_psm2_process_s));
       nm_psm2_peer_vect_init(&p_psm2_process->peers);
       p_psm2_process->next_context_id = 1;
-      int i;
-      for(i = 0; i < 16; i++)
+      const char*s_uuid = getenv("PADICO_BOOT_UUID");
+      if(s_uuid)
         {
-          p_psm2_process->uuid[i] = 0x02;
+          int len = strlen(s_uuid);
+          assert(len == 32);
+          void*uuid = puk_base16_decode(s_uuid, &len, NULL);
+          memcpy(p_psm2_process->uuid, uuid, 16);
         }
-      fprintf(stderr, "# psm2: uuid = %x%x%x%x:%x%x%x%x:%x%x%x%x:%x%x%x%x\n",
-              p_psm2_process->uuid[0],  p_psm2_process->uuid[1],  p_psm2_process->uuid[2],  p_psm2_process->uuid[3],
-              p_psm2_process->uuid[4],  p_psm2_process->uuid[5],  p_psm2_process->uuid[6],  p_psm2_process->uuid[7],
-              p_psm2_process->uuid[8],  p_psm2_process->uuid[9],  p_psm2_process->uuid[10], p_psm2_process->uuid[11],
-              p_psm2_process->uuid[12], p_psm2_process->uuid[13], p_psm2_process->uuid[14], p_psm2_process->uuid[15]
-              );
+      else
+        {
+          NM_WARN("psm2: no session UUID; generating default UUID.\n");
+          int i;
+          for(i = 0; i < 16; i++)
+            {
+              p_psm2_process->uuid[i] = 0x02;
+            }
+        }
       int ver_major = PSM2_VERNO_MAJOR;
       int ver_minor = PSM2_VERNO_MINOR;
       rc = psm2_init(&ver_major, &ver_minor);
@@ -195,8 +201,6 @@ static void nm_psm2_init(puk_context_t context, const void**p_url, size_t*p_url_
       struct psm2_ep_open_opts options;
       rc = psm2_ep_open_opts_get_defaults(&options);
       nm_psm2_check_error(rc, "psm2_ep_open_opts_get_defaults [ get default options ]");
-      fprintf(stderr, "# psm2: options- unit = %d; affinity = %d; shm_mbytes = %d; sendbufs_num = %d\n",
-              options.unit, options.affinity, options.shm_mbytes, options.sendbufs_num);
       rc = psm2_ep_open(p_psm2_process->uuid, &options, &p_psm2_process->myep, &p_psm2_process->myepid);
       nm_psm2_check_error(rc, "psm2_ep_open [open endpoint ]");
     }

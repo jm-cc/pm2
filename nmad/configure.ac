@@ -313,7 +313,8 @@ if test "x${with_psm}" != "xno"; then
       	CPPFLAGS="${CPPFLAGS} -I${PSM_DIR}/include"
     fi
     AC_CHECK_HEADER(psm.h, [ HAVE_PSM_H=yes ], [ HAVE_PSM_H=no ])
-    AC_CHECK_LIB(psm, psm_init, [ HAVE_LIBPSM=yes ], [ HAVE_LIBPSM=no ])
+    AC_SEARCH_LIBS(psm_init, [ psm psm_infinipath ], [ HAVE_LIBPSM=yes ], [ HAVE_LIBPSM=no ])
+    psm_lib="${ac_cv_search_psm_init}"
     if test ${HAVE_PSM_H} = yes -a ${HAVE_LIBPSM} = yes; then
         HAVE_PSM=yes
     else
@@ -326,7 +327,7 @@ if test "x${with_psm}" != "xno"; then
 	    psm_CPPFLAGS="-I${PSM_DIR}/include"
 	    psm_LIBS="-Wl,-rpath,${PSM_DIR}/lib -L${PSM_DIR}/lib"
 	fi
-	psm_LIBS="${psm_LIBS} -lpsm"
+	psm_LIBS="${psm_LIBS} ${psm_lib}"
 	AC_SUBST([psm_CPPFLAGS])
 	AC_SUBST([psm_LIBS])
     elif test "x${with_psm}" != "xcheck"; then

@@ -301,6 +301,39 @@ if test "x${with_cci}" != "xno" ; then
     fi
 fi
 
+dnl -- PSM
+HAVE_PSM=no
+AC_ARG_WITH([psm],
+	    [AS_HELP_STRING([--with-psm], [use Intel Performance Scaled Messasging (PSM) @<:@default=check@:>@] )],
+	    [], [ with_psm=check ])
+if test "x${with_psm}" != "xno"; then
+    save_CPPFLAGS="${CPPFLAGS}"
+    if test "x${with_psm}" != "xyes" -a "x${with_psm}" != "xcheck"; then
+        PSM_DIR="${with_psm}"
+      	CPPFLAGS="${CPPFLAGS} -I${PSM_DIR}/include"
+    fi
+    AC_CHECK_HEADER(psm.h, [ HAVE_PSM_H=yes ], [ HAVE_PSM_H=no ])
+    AC_CHECK_LIB(psm, psm_init, [ HAVE_LIBPSM=yes ], [ HAVE_LIBPSM=no ])
+    if test ${HAVE_PSM_H} = yes -a ${HAVE_LIBPSM} = yes; then
+        HAVE_PSM=yes
+    else
+	HAVE_PSM=no
+    fi
+    AC_SUBST(HAVE_PSM)
+    CPPFLAGS="${save_CPPFLAGS}"
+    if test ${HAVE_PSM} = yes; then
+	if test "x${PSM_DIR}" != "x" -a "x${PSM_DIR}" != "x/usr"; then
+	    psm_CPPFLAGS="-I${PSM_DIR}/include"
+	    psm_LIBS="-Wl,-rpath,${PSM_DIR}/lib -L${PSM_DIR}/lib"
+	fi
+	psm_LIBS="${psm_LIBS} -lpsm"
+	AC_SUBST([psm_CPPFLAGS])
+	AC_SUBST([psm_LIBS])
+    elif test "x${with_psm}" != "xcheck"; then
+    	AC_MSG_FAILURE([--with-psm was given but psm.h is not found.])
+    fi
+fi
+
 dnl -- PSM2
 HAVE_PSM2=no
 AC_ARG_WITH([psm2],
@@ -308,15 +341,20 @@ AC_ARG_WITH([psm2],
 	    [], [ with_psm2=check ])
 if test "x${with_psm2}" != "xno"; then
     save_CPPFLAGS="${CPPFLAGS}"
-    if test "x${with_psm2}" != "xyes"; then
+    if test "x${with_psm2}" != "xyes" -a "x${with_psm2}" != "xcheck"; then
         PSM2_DIR="${with_psm2}"
       	CPPFLAGS="${CPPFLAGS} -I${PSM2_DIR}/include"
     fi
-    AC_CHECK_HEADER(psm2.h, [ HAVE_PSM2=yes ], [HAVE_PSM2=no ])
-    CPPFLAGS="${save_CPPFLAGS}"
+    AC_CHECK_HEADER(psm2.h, [ HAVE_PSM2_H=yes ], [ HAVE_PSM2_H=no ])
+    AC_CHECK_LIB(psm2, psm2_init, [ HAVE_LIBPSM2=yes ], [ HAVE_LIBPSM2=no ])
+    if test ${HAVE_PSM2_H} = yes -a ${HAVE_LIBPSM2} = yes; then
+        HAVE_PSM2=yes
+    else
+	HAVE_PSM2=no
+    fi
     AC_SUBST(HAVE_PSM2)
+    CPPFLAGS="${save_CPPFLAGS}"
     if test ${HAVE_PSM2} = yes; then
-        nmad_drivers="${nmad_drivers} psm2"
 	if test "x${PSM2_DIR}" != "x" -a "x${PSM2_DIR}" != "x/usr"; then
 	    psm2_CPPFLAGS="-I${PSM2_DIR}/include"
 	    psm2_LIBS="-Wl,-rpath,${PSM2_DIR}/lib -L${PSM2_DIR}/lib"
@@ -396,7 +434,7 @@ AC_ARG_ENABLE(romio,
 dnl -- nmad content
 dnl --
 
-nmad_drivers="${nmad_drivers} self local tcp minidriver"
+nmad_drivers="${nmad_drivers} self local tcp psm2"
 nmad_strategies="${nmad_strategies} default aggreg split_balance decision_tree prio"
 nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session connector coll rpc"
 

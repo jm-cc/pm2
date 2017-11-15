@@ -4,9 +4,17 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_MOD = Minidriver_psm2
+TARGET_MOD =
 TARGET_BIN =
 TARGET_LIB =
+
+ifeq (@HAVE_PSM2@,yes)
+TARGET_MOD += Minidriver_psm2
+endif
+
+ifeq (@HAVE_PSM@,yes)
+TARGET_MOD += Minidriver_psm
+endif
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
@@ -15,10 +23,17 @@ INSTALL_LIB = $(TARGET_LIB)
 INSTALL_INCLUDE = 
 INSTALL_INIT =
 
-CPPFLAGS += @NMAD_CORE_CPPFLAGS@ @psm2_CPPFLAGS@
+CPPFLAGS += @NMAD_CORE_CPPFLAGS@ @psm2_CPPFLAGS@ @psm_CPPFLAGS@
 CFLAGS   += @NMAD_CORE_CFLAGS@
-MODLIBS  += @psm2_LIBS@
 
 include @abs_top_builddir@/common_rules.mk
 
+Minidriver_psm2: MODLIBS += @psm2_LIBS@
 Minidriver_psm2: nm_psm2.pic.o
+
+Minidriver_psm: MODLIBS += @psm_LIBS@
+Minidriver_psm: nm_psm.pic.o
+
+nm_psm.c: nm_psm2.c
+	sed -e 's/psm2/psm/g;s/PSM2/PSM/g' $(srcdir)/nm_psm2.c > nm_psm.c
+

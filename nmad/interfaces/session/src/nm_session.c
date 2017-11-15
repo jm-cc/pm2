@@ -243,6 +243,19 @@ static void nm_session_init_drivers(void)
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
 	}
+      else if(strcmp(driver_name, "psm") == 0)
+	{
+	  driver_trk_small = 
+	    "<puk:composite id=\"nm:minidriver_psm-small\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_psm\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  driver_trk_large =
+	    "<puk:composite id=\"nm:minidriver_psm-large\">"
+	    "  <puk:component id=\"0\" name=\"Minidriver_psm\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	}
       else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0) ||
               (strcmp(driver_name, "mx") == 0))
 	{

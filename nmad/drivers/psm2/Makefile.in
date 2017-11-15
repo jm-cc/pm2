@@ -36,6 +36,6 @@ Minidriver_psm: MODLIBS += @psm_LIBS@
 Minidriver_psm: nm_psm.pic.o
 
 nm_psm.c: nm_psm2.c
-	$(SHOWMK) "  [SED]     $@"
-	sed -e 's/psm2/psm/g;s/PSM2/PSM/g' $(srcdir)/nm_psm2.c > nm_psm.c
+	@$(SHOWMK) "  [SED]    $@"
+	$(Q)sed -e 's/psm2/psm/g;s/PSM2/PSM/g' $(srcdir)/nm_psm2.c > nm_psm.c
 

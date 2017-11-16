@@ -24,22 +24,22 @@
  *      memory region, then sent through RDMA into a pre-registered
  *      memory region of the peer node.
  *   -- adaptrdma: data is copied in a pre-allocated, pre-registered
- *      memory region, with an adaptive super-pipeline. Memory blocks are 
+ *      memory region, with an adaptive super-pipeline. Memory blocks are
  *      copied as long as the previous RDMA send doesn't complete.
  *      A guard check ensures that block size progression is at least
  *      2-base exponential to prevent artifacts to kill performance.
- *   -- regrdma: memory is registered on the fly on both sides, using 
+ *   -- regrdma: memory is registered on the fly on both sides, using
  *      a pipeline with variable block size. For each block, the
- *      receiver sends an ACK with RDMA info (raddr, rkey), then 
+ *      receiver sends an ACK with RDMA info (raddr, rkey), then
  *      zero-copy RDMA is performed.
- *   -- rcache: memory is registered on the fly on both sides, 
+ *   -- rcache: memory is registered on the fly on both sides,
  *      sequencially, using puk_mem_* functions from Puk-ABI that
  *      manage a cache.
  *
  * Method is chosen as follows:
  *   -- tracks for small messages always uses 'bycopy'
- *   -- tracks with rendez-vous use 'adaptrdma' for smaller messages 
- *      and 'regrdma' for larger messages. Usually, the threshold 
+ *   -- tracks with rendez-vous use 'adaptrdma' for smaller messages
+ *      and 'regrdma' for larger messages. Usually, the threshold
  *      is 224kB (from empirical results about registration/send overlap)
  *      on MT23108, and 2MB on ConnectX.
  *   -- tracks with rendez-vous use 'rcache' when ib_rcache is activated
@@ -106,7 +106,7 @@ static void nm_ibverbs_common_init(void)
     {
       tbx_checksum_t checksum = tbx_checksum_get(checksum_env);
       if(checksum == NULL)
-	NM_FATAL("# nmad: checksum algorithm *%s* not available.\n", checksum_env);
+	NM_FATAL("ibverbs: checksum algorithm *%s* not available.\n", checksum_env);
       _nm_ibverbs_checksum = checksum;
       NM_DISPF("# nmad ibverbs: checksum enabled (%s).\n", checksum->name);
     }
@@ -127,11 +127,11 @@ static void nm_ibverbs_common_init(void)
 struct nm_ibverbs_hca_s*nm_ibverbs_hca_from_context(puk_context_t context)
 {
   if(context == NULL)
-    NM_FATAL("nmad: ibverbs- no context for component.\n");
+    NM_FATAL("ibverbs: no context for component.\n");
   const char*device = puk_context_getattr(context, "ibv_device");
   const char*s_port = puk_context_getattr(context, "ibv_port");
   if(device == NULL || s_port == NULL)
-    NM_FATAL("nmad: ibverbs- cannot find ibv_device/ibv_port attributes.\n");
+    NM_FATAL("ibverbs: cannot find ibv_device/ibv_port attributes.\n");
   const int port = (strcmp(s_port, "auto") == 0) ? 1 : atoi(s_port);
   struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(device, port);
   return p_hca;
@@ -151,14 +151,14 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
       return p_hca;
     }
   const int autodetect = (strcmp(device, "auto") == 0);
-  
+
   p_hca = malloc(sizeof(struct nm_ibverbs_hca_s));
 
   /* find IB device */
   int dev_amount = -1;
   int dev_auto = 0;
   struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
-  if(!dev_list) 
+  if(!dev_list)
     {
       NM_FATAL("ibverbs: no device found.\n");
     }
@@ -187,7 +187,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
     {
       NM_FATAL("ibverbs: cannot find required device %s.\n", device);
     }
-  
+
   /* open IB context */
   p_hca->context = ibv_open_device(p_hca->ib_dev);
   if(p_hca->context == NULL)
@@ -227,7 +227,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
 	    }
 	  goto retry_autodetect;
 	}
-      
+
     }
   p_hca->lid = port_attr.lid;
   if(p_hca->lid == 0)
@@ -244,7 +244,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   p_hca->ib_caps.max_mr_size   = device_attr.max_mr_size;
   p_hca->ib_caps.page_size_cap = device_attr.page_size_cap;
   p_hca->ib_caps.max_msg_size  = port_attr.max_msg_sz;
-  
+
   int link_width = -1;
   switch(port_attr.active_width)
     {
@@ -291,7 +291,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   puk_hashtable_insert(nm_ibverbs_common.hca_table, &p_hca->key, p_hca);
 
   ibv_free_device_list(dev_list);
-  
+
   return p_hca;
 }
 
@@ -409,7 +409,7 @@ static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx_s*p_ibverbs_cnx, stru
 {
   /* init inbound CQ */
   p_ibverbs_cnx->if_cq = ibv_create_cq(p_hca->context, NM_IBVERBS_RX_DEPTH, NULL, NULL, 0);
-  if(p_ibverbs_cnx->if_cq == NULL) 
+  if(p_ibverbs_cnx->if_cq == NULL)
     {
       NM_FATAL("ibverbs: cannot create in CQ\n");
     }
@@ -636,7 +636,7 @@ uint32_t nm_ibverbs_copy_from_and_checksum(void*dest, nm_data_slicer_t*p_slicer,
   assert(!(!nm_data_slicer_isnull(p_slicer) && (src != NULL)));
   if(_nm_ibverbs_checksum && !nm_data_slicer_isnull(p_slicer))
     {
-      NM_FATAL("ibverbs: FATAL- checksums not supported yet with nm_data.\n");
+      NM_FATAL("ibverbs: checksums not supported yet with nm_data.\n");
     }
   if(!nm_data_slicer_isnull(p_slicer))
     {
@@ -655,7 +655,7 @@ uint32_t nm_ibverbs_copy_to_and_checksum(const void*src, nm_data_slicer_t*p_slic
   assert(!((!nm_data_slicer_isnull(p_slicer)) && (dest != NULL)));
   if(_nm_ibverbs_checksum && (p_slicer->p_data != NULL))
     {
-      NM_FATAL("ibverbs: FATAL- checksums not supported yet with nm_data.\n");
+      NM_FATAL("ibverbs: checksums not supported yet with nm_data.\n");
     }
   if(!nm_data_slicer_isnull(p_slicer))
     {

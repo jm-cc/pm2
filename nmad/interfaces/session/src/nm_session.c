@@ -115,7 +115,7 @@ static void nm_session_init_drivers(void)
     {
       driver_env = "tcp";
     }
-  
+
   /* ** parse driver_string */
   char*driver_string = strdup(driver_env); /* strtok writes into the string */
   char*token = strtok(driver_string, "+");
@@ -206,7 +206,7 @@ static void nm_session_init_drivers(void)
 	}
       else if(strcmp(driver_name, "shm") == 0)
 	{
-	  driver_trk_small = 
+	  driver_trk_small =
 	    "<puk:composite id=\"nm:minidriver_shm\">"
 	    "  <puk:component id=\"0\" name=\"Minidriver_shm\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
@@ -219,7 +219,7 @@ static void nm_session_init_drivers(void)
 	}
       else if(strcmp(driver_name, "cma") == 0)
 	{
-	  driver_trk_small = 
+	  driver_trk_small =
 	    "<puk:composite id=\"nm:minidriver_shm\">"
 	    "  <puk:component id=\"0\" name=\"Minidriver_shm\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
@@ -232,7 +232,7 @@ static void nm_session_init_drivers(void)
 	}
       else if(strcmp(driver_name, "psm2") == 0)
 	{
-	  driver_trk_small = 
+	  driver_trk_small =
 	    "<puk:composite id=\"nm:minidriver_psm2-small\">"
 	    "  <puk:component id=\"0\" name=\"Minidriver_psm2\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
@@ -245,7 +245,7 @@ static void nm_session_init_drivers(void)
 	}
       else if(strcmp(driver_name, "psm") == 0)
 	{
-	  driver_trk_small = 
+	  driver_trk_small =
 	    "<puk:composite id=\"nm:minidriver_psm-small\">"
 	    "  <puk:component id=\"0\" name=\"Minidriver_psm\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
@@ -271,15 +271,15 @@ static void nm_session_init_drivers(void)
       puk_component_t component_trk_small = puk_component_parse(driver_trk_small);
       if(component_trk_small == NULL)
         {
-          NM_FATAL("nmad: failed to load component '%s'\n", driver_trk_small);
+          NM_FATAL("session: failed to load component '%s'\n", driver_trk_small);
         }
       assert(driver_trk_large);
       puk_component_t component_trk_large = puk_component_parse(driver_trk_large);
       if(component_trk_large == NULL)
         {
-          NM_FATAL("nmad: failed to load component '%s'\n", driver_trk_large);
+          NM_FATAL("failed to load component '%s'\n", driver_trk_large);
         }
-     
+
       /* ** parse & set attributes */
       while(attr_string && *attr_string)
         {
@@ -417,7 +417,7 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
 int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_local_url)
 {
   assert(p_session != NULL);
-      
+
   /* load strategy */
   nm_session_init_strategy();
 
@@ -484,14 +484,14 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
     {
       nm_session.selector = &nm_session_default_selector;
     }
-  
+
   v = (*nm_session.selector)(url, nm_session.selector_arg);
   if(nm_drv_vect_empty(v))
     {
       NM_FATAL("# session: no common driver found for local (%s) and peer (%s) node. Abort.\n",
 	       nm_session.local_url, url);
    }
-  
+
   /* parse remote url, store in hashtable (driver_name -> driver_url) */
   puk_hashtable_t url_table = puk_hashtable_new_string();
   char*parse_string = strdup(url);
@@ -576,5 +576,3 @@ nm_session_t nm_session_lookup(nm_session_hash_t hashcode)
   struct nm_session_s*p_session = puk_hashtable_lookup(nm_session.sessions, &hashcode);
   return p_session;
 }
-
-

@@ -120,7 +120,7 @@ int nm_schedule(struct nm_core*p_core)
 #ifdef DEBUG
   static int scheduling_in_progress = 0;
   assert(!scheduling_in_progress);
-  scheduling_in_progress = 1;  
+  scheduling_in_progress = 1;
 #endif /* DEBUG */
 
   nm_core_progress(p_core);
@@ -244,7 +244,7 @@ static void nm_core_event_notify(nm_core_t p_core, const struct nm_core_event_s*
 		  assert(p_pending_event->event.status & NM_STATUS_UNEXPECTED);
 		  p_so_tag->recv_seq_number = next_seq;
 		  nm_core_pending_event_list_pop_front(&p_so_tag->pending_events);
-                  nm_core_dispatching_event_enqueue(p_core, &p_pending_event->event, 
+                  nm_core_dispatching_event_enqueue(p_core, &p_pending_event->event,
                                                     &p_pending_event->p_core_monitor->monitor);
 		  nm_core_pending_event_delete(p_pending_event);
 		  goto restart; /* retry to find another matching event */
@@ -385,7 +385,7 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
   component = puk_component_resolve(component_name);
   if(component == NULL)
     {
-      padico_fatal("nmad: failed to load component '%s'\n", component_name);
+      NM_FATAL("failed to load component '%s'\n", component_name);
     }
   return component;
 }
@@ -445,12 +445,12 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_ctrl_chunk_allocator_init(&p_core->ctrl_chunk_allocator, NM_REQ_CHUNK_QUEUE_SIZE);
 
   nm_pkt_wrap_lfqueue_init(&p_core->completed_pws);
-  
+
   nm_core_dispatching_event_allocator_init(&p_core->dispatching_event_allocator, 16);
   nm_core_dispatching_event_lfqueue_init(&p_core->dispatching_events);
 
   p_core->trk_table = puk_hashtable_new_ptr();
-  
+
   p_core->enable_schedopt = 1;
   p_core->strategy_component = NULL;
   if(getenv("NMAD_AUTO_FLUSH"))
@@ -496,7 +496,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_pkt_wrap_list_init(&p_core->pending_recv_list);
   nm_pkt_wrap_list_init(&p_core->pending_send_list);
 #endif /* PIOMAN */
-  
+
   *pp_core = p_core;
 
   return err;
@@ -507,7 +507,7 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
   puk_facet_t strat_facet = puk_component_get_facet_NewMad_Strategy(strategy, NULL);
   if(strat_facet == NULL)
     {
-      NM_FATAL("# nmad: component %s given as strategy has no interface 'NewMad_Strategy'\n", strategy->name);
+      NM_FATAL("component %s given as strategy has no interface 'NewMad_Strategy'\n", strategy->name);
     }
   p_core->strategy_component = strategy;
   NM_DISPF("# nmad: strategy = %s\n", strategy->name);
@@ -533,7 +533,7 @@ int nm_core_exit(nm_core_t p_core)
   nm_core_lock(p_core);
 
 #warning TODO- flush dispatching events before shutdown
-  
+
 #ifdef NMAD_PROFILE
   fprintf(stderr, "# ## profiling stats___________\n");
   fprintf(stderr, "# ## n_lock             = %lld\n", p_core->profiling.n_locks);
@@ -547,7 +547,7 @@ int nm_core_exit(nm_core_t p_core)
   fprintf(stderr, "# ## n_pw_out           = %lld\n", p_core->profiling.n_pw_out);
   fprintf(stderr, "# ## n_outoforder_event = %lld\n", p_core->profiling.n_outoforder_event);
   fprintf(stderr, "# ## n_event_queue_full = %lld\n", p_core->profiling.n_event_queue_full);
-  
+
 #endif /* NMAD_PROFILE */
 
   /* flush pending requests */
@@ -582,7 +582,7 @@ int nm_core_exit(nm_core_t p_core)
       nm_pw_ref_dec(p_pw);
     }
 #endif /* !PIOMAN */
-  
+
   /* Remove any remaining unexpected chunk */
   nm_unexpected_clean(p_core);
 
@@ -602,4 +602,3 @@ int nm_core_exit(nm_core_t p_core)
 
   return NM_ESUCCESS;
 }
-

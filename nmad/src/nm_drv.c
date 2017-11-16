@@ -41,14 +41,14 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
   p_core->nb_drivers++;
   if(!p_drv->minidriver_context)
     {
-      NM_FATAL("nmad: FATAL- cannot find context in minidriver component %s. Bad assembly.\n",
+      NM_FATAL("cannot find context in minidriver component %s. Bad assembly.\n",
 	       driver_component->name);
     }
 
   /* ** driver pre-init */
   if(!p_drv->driver->getprops)
     {
-      NM_FATAL("nmad: FATAL- driver %s has no 'getprops' method.\n", driver_component->name);
+      NM_FATAL("driver %s has no 'getprops' method.\n", driver_component->name);
     }
   (*p_drv->driver->getprops)(p_drv->minidriver_context, &p_drv->props);
 
@@ -57,7 +57,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
   if(!getenv("NMAD_NUIOA_DISABLE"))
     {
       hwloc_cpuset_t cpuset = p_drv->props.profile.cpuset;
-      if(cpuset != NULL 
+      if(cpuset != NULL
 	 && !hwloc_bitmap_isequal(cpuset, hwloc_topology_get_complete_cpuset(topology)))
 	{
 	  /* if this driver wants something */
@@ -101,7 +101,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
   /* ** driver init*/
   if(!p_drv->driver->init)
     {
-      NM_FATAL("nmad: FATAL- driver %s has no 'init' method.\n", p_drv->assembly->name);
+      NM_FATAL("driver %s has no 'init' method.\n", p_drv->assembly->name);
     }
   /* init driver & get url */
   const void*url = NULL;
@@ -158,7 +158,7 @@ void nm_core_driver_flush(struct nm_core*p_core)
 #endif /* PIOMAN */
 	}
     }
-  
+
   /* cancel pre-posted pw on trk #0 for each gate */
   nm_gate_t p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)
@@ -177,7 +177,7 @@ void nm_core_driver_flush(struct nm_core*p_core)
                   (*r->driver->recv_cancel)(r->_status);
                 }
 	      p_trk->p_pw_recv = NULL;
-	      
+
 #ifndef PIOMAN
 	      nm_pkt_wrap_list_remove(&p_core->pending_recv_list, p_pw);
 	      nm_pkt_wrap_list_push_back(pending_pw, p_pw);
@@ -192,9 +192,9 @@ void nm_core_driver_flush(struct nm_core*p_core)
 	  p_trk->p_pw_recv= NULL;
 	}
     }
-    
+
   /* cancel ltasks with core unlocked */
-  nm_core_unlock(p_core); 
+  nm_core_unlock(p_core);
   struct nm_pkt_wrap_s*p_pw = NULL;
   do
     {
@@ -263,4 +263,3 @@ void nm_core_driver_exit(struct nm_core*p_core)
     }
   while(p_drv);
 }
-

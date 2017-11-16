@@ -59,7 +59,7 @@ void nm_ltask_set_policy(void)
     }
   else
     {
-      padico_fatal("nmad: unknown pioman binding policy %s.\n", policy);
+      NM_FATAL("unknown pioman binding policy %s.\n", policy);
     }
 }
 
@@ -97,17 +97,17 @@ static piom_topo_obj_t nm_get_binding_policy(nm_drv_t p_drv)
 	case NM_POLICY_APP:
 	  p_drv->ltask_binding = piom_topo_current_obj();
 	  break;
-	  
+
 	case NM_POLICY_DEV:
 	  p_drv->ltask_binding = nm_piom_driver_binding(p_drv);
 	  break;
-	  
+
 	case NM_POLICY_ANY:
 	  p_drv->ltask_binding = NULL;
 	  break;
-	  
+
 	default:
-	  padico_fatal("nmad: pioman binding policy not defined.\n");
+	  NM_FATAL("pioman binding policy not defined.\n");
 	  break;
 	}
     }
@@ -214,13 +214,13 @@ void nm_ltask_submit_pw_recv(struct nm_pkt_wrap_s*p_pw)
       const int delay_usec = 0;  /* 2 * p_pw->p_drv->props.profile.latency */
       piom_ltask_set_blocking(&p_pw->ltask, &nm_ltask_pw_block_recv, delay_usec);
     }
-  piom_ltask_submit(&p_pw->ltask);	
+  piom_ltask_submit(&p_pw->ltask);
 }
 
 void nm_ltask_submit_pw_send(struct nm_pkt_wrap_s*p_pw)
 {
   piom_topo_obj_t ltask_binding = nm_get_binding_policy(p_pw->p_drv);
-  piom_ltask_create(&p_pw->ltask, &nm_ltask_pw_send, p_pw, 
+  piom_ltask_create(&p_pw->ltask, &nm_ltask_pw_send, p_pw,
 		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT);
   piom_ltask_set_binding(&p_pw->ltask, ltask_binding);
   piom_ltask_set_name(&p_pw->ltask, "nmad: pw_send");

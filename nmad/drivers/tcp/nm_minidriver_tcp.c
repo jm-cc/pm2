@@ -98,7 +98,7 @@ struct nm_tcp_pending_s
 PUK_VECT_TYPE(nm_tcp_pending, struct nm_tcp_pending_s);
 
 PUK_VECT_TYPE(nm_tcp_status, struct nm_tcp_s*);
-              
+
 /** 'tcp' driver per-context data. */
 struct nm_tcp_context_s
 {
@@ -289,13 +289,13 @@ static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size)
 	  fd = NM_SYS(accept)(p_tcp_context->server_fd, NULL, NULL);
 	  if(fd < 0)
 	    {
-	      NM_FATAL("nmad: tcp- error while accepting\n");
+	      NM_FATAL("tcp: error while accepting\n");
 	    }
 	  struct nm_tcp_peer_id_s id;
 	  int rc = NM_SYS(recv)(fd, &id, sizeof(id), MSG_WAITALL);
 	  if(rc != sizeof(id))
 	    {
-	      NM_FATAL("nmad: tcp- error while receiving peer node id.\n");
+	      NM_FATAL("tcp: error while receiving peer node id.\n");
 	    }
 	  if(strcmp(id.url, remote_url) != 0)
 	    {
@@ -336,7 +336,7 @@ static void nm_tcp_send_post(void*_status, const struct iovec*v, int n)
     }
   else if(rc < 0 || rc < size + sizeof(size))
     {
-      NM_FATAL("nmad: tcp- error %d while sending message (%s).\n", err, strerror(err));
+      NM_FATAL("tcp: error %d while sending message (%s).\n", err, strerror(err));
     }
 }
 
@@ -350,7 +350,7 @@ static void nm_tcp_recv_iov_post(void*_status, struct iovec*v, int n)
   struct nm_tcp_s*p_status = _status;
   if(n != 1)
     {
-      NM_FATAL("nmad: tcp- iovec not supported on recv side yet.\n");
+      NM_FATAL("tcp: iovec not supported on recv side yet.\n");
     }
   p_status->recv.v = v;
   p_status->recv.n = n;
@@ -374,16 +374,16 @@ static int nm_tcp_recv_poll_one(void*_status)
     }
   else if(rc < 0)
     {
-      NM_FATAL("nmad: tcp- error %d while reading header (%s).\n", err, strerror(err));
+      NM_FATAL("tcp: error %d while reading header (%s).\n", err, strerror(err));
     }
   else if(size > p_status->recv.v->iov_len)
     {
-      NM_FATAL("nmad: tcp- received more data than expected.\n");
+      NM_FATAL("tcp: received more data than expected.\n");
     }
   rc = NM_SYS(recv)(p_status->fd, p_status->recv.v->iov_base, size, MSG_WAITALL);
   if(rc < 0 || rc != size)
     {
-      NM_FATAL("nmad: tcp- error %d while reading data (%s).\n", err, strerror(err));
+      NM_FATAL("tcp: error %d while reading data (%s).\n", err, strerror(err));
     }
   return NM_ESUCCESS;
 }

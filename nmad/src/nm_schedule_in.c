@@ -29,7 +29,7 @@ static void nm_pw_poll_recv_any(struct nm_pkt_wrap_s*p_pw);
 /** Post a pw for recv on a driver.
  * either p_gate or p_drv may be NULL, but not both at the same time.
  */
-void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate, 
+void nm_core_post_recv(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate,
 		       nm_trk_id_t trk_id, nm_drv_t p_drv)
 {
   nm_pw_assign(p_pw, trk_id, p_drv, p_gate);
@@ -154,7 +154,7 @@ static void nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
   static struct timespec next_poll = { .tv_sec = 0, .tv_nsec = 0 };
 
   nm_core_nolock_assert(p_core);
-  
+
   NM_TRACEF("polling inbound request: gate %p, drv %p, trk %d",
 	    p_pw->p_gate,
 	    p_pw->p_drv,
@@ -202,7 +202,7 @@ static void nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
       err = (*r->driver->recv_poll_one)(r->_status);
     }
 #ifdef DEBUG
-  if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && 
+  if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) &&
      (p_pw->p_drv->driver->recv_iov_post == NULL) &&
      (p_pw->p_drv->driver->recv_buf_poll == NULL) &&
      (p_pw->p_drv->props.capabilities.supports_data))
@@ -212,7 +212,7 @@ static void nm_pw_poll_recv(struct nm_pkt_wrap_s*p_pw)
       nm_data_null_build(p_data);
     }
 #endif /* DEBUG */
-   
+
   if((err == NM_ESUCCESS) || (err == -NM_ECLOSED) || (err == -NM_ECANCELED))
     {
       if(err == -NM_ECLOSED)
@@ -238,40 +238,34 @@ static void nm_pw_post_recv(struct nm_pkt_wrap_s*p_pw)
   /* no locck needed; only this ltask is allow to touch the pw */
   nm_core_nolock_assert(p_core);
 
-  if(p_pw->p_gate)
+  assert(p_pw->p_gate);
+  assert(p_pw->p_trk == &p_pw->p_gate->trks[p_pw->trk_id]);
+  struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
+  if((p_pw->p_data != NULL) && (p_pw->v_nb == 0))
     {
-      assert(p_pw->p_trk == &p_pw->p_gate->trks[p_pw->trk_id]);
-      struct puk_receptacle_NewMad_minidriver_s*r = &p_pw->p_trk->receptacle;
-      if((p_pw->p_data != NULL) && (p_pw->v_nb == 0))
-	{
-	  /* pw content is only p_data */
-	  assert(r->driver->recv_data_post != NULL);
-	  (*r->driver->recv_data_post)(r->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
-	}
-      else
-	{
-	  /* no p_data, or data has been flattened */
-	  if(r->driver->recv_buf_poll)
-	    {
-	      p_pw->flags |= NM_PW_BUF_RECV;
-	    }
-	  else if(r->driver->recv_iov_post)
-	    {
-	      (*r->driver->recv_iov_post)(r->_status, &p_pw->v[0], p_pw->v_nb);
-	    }
-	  else
-	    {
-	      assert(r->driver->recv_data_post);
-	      struct nm_data_s*p_data = &p_pw->p_trk->rdata;
-	      assert(nm_data_isnull(p_data));
-	      nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
-	      (*r->driver->recv_data_post)(r->_status, p_data, 0 /* chunk_offset */, p_pw->length);
-	    }
-	}
-    } 
+      /* pw content is only p_data */
+      assert(r->driver->recv_data_post != NULL);
+      (*r->driver->recv_data_post)(r->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
+    }
   else
     {
-      NM_FATAL("nmad: FATAL- recv_any not implemented yet.\n");
+      /* no p_data, or data has been flattened */
+      if(r->driver->recv_buf_poll)
+        {
+          p_pw->flags |= NM_PW_BUF_RECV;
+        }
+      else if(r->driver->recv_iov_post)
+        {
+          (*r->driver->recv_iov_post)(r->_status, &p_pw->v[0], p_pw->v_nb);
+        }
+      else
+        {
+          assert(r->driver->recv_data_post);
+          struct nm_data_s*p_data = &p_pw->p_trk->rdata;
+          assert(nm_data_isnull(p_data));
+          nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
+          (*r->driver->recv_data_post)(r->_status, p_data, 0 /* chunk_offset */, p_pw->length);
+        }
     }
   p_pw->flags |= NM_PW_POSTED;
   nm_pw_poll_recv(p_pw);
@@ -304,4 +298,3 @@ void nm_drv_refill_recv(nm_drv_t p_drv, nm_gate_t p_gate)
       nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
     }
 }
-

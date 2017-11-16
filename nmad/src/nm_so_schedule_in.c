@@ -481,7 +481,7 @@ int nm_core_unpack_peek(struct nm_core*p_core, struct nm_req_s*p_unpack, const s
 		    done += chunk_len;
 		  }
 	      }
-	      break;	      
+	      break;
 	    case NM_PROTO_RDV:
 	      {
 		const nm_header_ctrl_generic_t*p_ctrl_header = (const nm_header_ctrl_generic_t*)p_chunk->p_header;
@@ -799,7 +799,7 @@ static void nm_small_data_handler(struct nm_core*p_core, nm_gate_t p_gate, struc
     }
 }
 
-/** Process a received rendez-vous request (NM_PROTO_RDV)- 
+/** Process a received rendez-vous request (NM_PROTO_RDV)-
  * either p_unpack may be NULL (storing unexpected) or p_pw (unpacking unexpected)
  */
 static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_req_s*p_unpack,
@@ -896,7 +896,7 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
   const nm_seq_t seq = header->seq;
   struct nm_req_s*p_pack = NULL;
   struct nm_gtag_s*p_gtag = nm_gtag_get(&p_ack_pw->p_gate->tags, tag);
-  
+
   puk_list_foreach(nm_req, p_pack, &p_gtag->pending_packs)
     {
       assert(nm_core_tag_eq(p_pack->tag, tag));
@@ -922,7 +922,7 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
 }
 
 /** decode one chunk of headers.
- * @returns the number of processed bytes in global header, 
+ * @returns the number of processed bytes in global header,
  */
 int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate)
 {
@@ -941,7 +941,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	rc = h->hlen;
       }
       break;
-      
+
     case NM_PROTO_SHORT_DATA:
       {
 	const struct nm_header_short_data_s*h = ptr;
@@ -950,7 +950,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	rc = NM_HEADER_SHORT_DATA_SIZE + h->len;
       }
       break;
-      
+
     case NM_PROTO_DATA:
       {
 	const struct nm_header_data_s*h = ptr;
@@ -964,7 +964,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	nm_small_data_handler(p_core, p_gate, &p_unpack, h, p_pw);
       }
       break;
-      
+
     case NM_PROTO_RDV:
       {
 	const struct nm_header_ctrl_rdv_s*h = ptr;
@@ -973,7 +973,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	nm_rdv_handler(p_core, p_gate, p_unpack, h, p_pw);
       }
       break;
-      
+
     case NM_PROTO_RTR:
       {
 	const struct nm_header_ctrl_rtr_s*h = ptr;
@@ -981,7 +981,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	nm_rtr_handler(p_pw, h);
       }
       break;
-      
+
     case NM_PROTO_ACK:
       {
 	const struct nm_header_ctrl_ack_s*h = ptr;
@@ -989,7 +989,7 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	nm_ack_handler(p_pw, h);
       }
       break;
-      
+
     case NM_PROTO_STRAT:
       {
 	const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
@@ -1000,14 +1000,14 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
 	  }
 	else
 	  {
-	    padico_fatal("nmad: strategy cannot process NM_PROTO_STRAT.\n");
+	    NM_FATAL("strategy cannot process NM_PROTO_STRAT.\n");
 	  }
 	rc = h->size;
       }
       break;
-      
+
     default:
-      padico_fatal("nmad: received header with invalid proto_id 0x%02X\n", proto_id);
+      NM_FATAL("received header with invalid proto_id 0x%02X\n", proto_id);
       break;
     }
   return rc;
@@ -1041,7 +1041,7 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
       nm_gate_disconnected(p_core, p_gate, p_drv);
       return;
     }
-  
+
   if(p_pw->trk_id == NM_TRK_SMALL)
     {
       /* ** Small packets - track #0 *********************** */
@@ -1087,5 +1087,3 @@ void nm_pw_process_complete_recv(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
   nm_strat_rdv_accept(p_gate);
   /* Hum... Well... We're done guys! */
 }
-
-

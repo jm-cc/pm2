@@ -204,6 +204,8 @@ static void nm_psm2_init(puk_context_t context, const void**p_url, size_t*p_url_
       struct psm2_ep_open_opts options;
       rc = psm2_ep_open_opts_get_defaults(&options);
       nm_psm2_check_error(rc, "psm2_ep_open_opts_get_defaults [ get default options ]");
+      /* force options */
+      options.affinity = 0;
       rc = psm2_ep_open(p_psm2_process->uuid, &options, &p_psm2_process->myep, &p_psm2_process->myepid);
       nm_psm2_check_error(rc, "psm2_ep_open [open endpoint ]");
     }

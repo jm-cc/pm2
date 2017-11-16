@@ -42,17 +42,17 @@ check: tests
 -include $(TESTS_RESULTS)
 
 tests:
-	@( \
-          TESTS_RESULTS=`tempfile -p nmad-` ; \
-	  echo "# automatically generated tests results" > $${TESTS_RESULTS} ; \
-	  echo "TESTS_SUCCESS = "                       >> $${TESTS_RESULTS} ; \
-	  echo "TESTS_FAILED = "                        >> $${TESTS_RESULTS} ; \
-	  for d in $(EXAMPLE_DIRS); do \
-              echo "  [TESTS]  in $$d/"; \
-              $(MAKE) -C $$d tests TESTS_RESULTS=$${TESTS_RESULTS} ; \
-          done ; \
-          $(MAKE) show-tests-results TESTS_RESULTS=$${TESTS_RESULTS} ; \
-	  /bin/rm $${TESTS_RESULTS} 2> /dev/null \
+	@( 	 								\
+          TESTS_RESULTS=`mktemp --suffix=-nmad-tests` ;			       	\
+	  echo "# automatically generated tests results" > $${TESTS_RESULTS} ; 	\
+	  echo "TESTS_SUCCESS = "                       >> $${TESTS_RESULTS} ; 	\
+	  echo "TESTS_FAILED = "                        >> $${TESTS_RESULTS} ; 	\
+	  for d in $(EXAMPLE_DIRS); do 						\
+              echo "  [TESTS]  in $$d/"; 					\
+              $(MAKE) -C $$d tests TESTS_RESULTS=$${TESTS_RESULTS} ; 		\
+          done ; 								\
+          $(MAKE) show-tests-results TESTS_RESULTS=$${TESTS_RESULTS} ; 		\
+	  /bin/rm $${TESTS_RESULTS} 2> /dev/null 				\
 	)
 
 

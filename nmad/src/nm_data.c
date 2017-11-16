@@ -206,7 +206,7 @@ static void nm_data_chunk_extractor_apply(void*ptr, nm_len_t len, void*_context)
     {
       /* data in chunk */
       const nm_len_t block_offset = (p_context->done < chunk_offset) ? (chunk_offset - p_context->done) : 0;
-      const nm_len_t block_len = (chunk_offset + chunk_len > p_context->done + len) ? 
+      const nm_len_t block_len = (chunk_offset + chunk_len > p_context->done + len) ?
 	(len - block_offset) : (chunk_offset + chunk_len - p_context->done - block_offset);
       (*p_context->apply)(ptr + block_offset, block_len, p_context->_context);
     }
@@ -224,7 +224,7 @@ void nm_data_chunk_extractor_traversal(const struct nm_data_s*p_data, nm_len_t c
 	}
 	else
 	  {
-	    struct nm_data_chunk_extractor_s chunk_extractor = 
+	    struct nm_data_chunk_extractor_s chunk_extractor =
 	      { .chunk_offset = chunk_offset, .chunk_len = chunk_len, .done = 0,
 		.apply = apply, ._context = _context };
 	    nm_data_traversal_apply(p_data, &nm_data_chunk_extractor_apply, &chunk_extractor);
@@ -762,15 +762,16 @@ uint32_t nm_data_checksum(const struct nm_data_s*p_data)
 struct nm_data_pkt_packer_s
 {
   struct nm_pkt_wrap_s*p_pw; /**< the pw to fill */
-  nm_len_t skip;
-  uint16_t*p_prev_len;     /**< previous block */
+  nm_len_t skip;             /**< skip offset so far */
+  uint16_t*p_prev_len;       /**< previous block */
+  int no_iovec;              /**< driver does not support iovecs */
 };
 static void nm_data_pkt_pack_apply(void*ptr, nm_len_t len, void*_context)
 {
   struct nm_data_pkt_packer_s*p_context = _context;
   struct nm_pkt_wrap_s*p_pw = p_context->p_pw;
   struct iovec*v0 = &p_pw->v[0];
-  if(len < NM_DATA_IOV_THRESHOLD)
+  if((p_context->no_iovec) || (len < NM_DATA_IOV_THRESHOLD))
     {
       /* small data in header */
       assert(len <= UINT16_MAX);
@@ -827,7 +828,7 @@ void nm_data_pkt_pack(struct nm_pkt_wrap_s*p_pw, nm_core_tag_t tag, nm_seq_t seq
   nm_header_init_pkt_data(h, tag, seq, flags, chunk_len, chunk_offset);
   v0->iov_len  += NM_HEADER_PKT_DATA_SIZE;
   p_pw->length += NM_HEADER_PKT_DATA_SIZE;
-  struct nm_data_pkt_packer_s packer = { .p_pw = p_pw, .skip = 0, .p_prev_len = NULL };
+  struct nm_data_pkt_packer_s packer = { .p_pw = p_pw, .skip = 0, .p_prev_len = NULL, .no_iovec = p_pw->p_drv->props.capabilities.no_iovec };
   nm_data_chunk_extractor_traversal(p_data, chunk_offset, chunk_len, &nm_data_pkt_pack_apply, &packer);
   v0 = &p_pw->v[0]; /* pw->v may have moved- update */
   assert(v0->iov_len <= UINT16_MAX);
@@ -870,7 +871,7 @@ static void nm_data_pkt_unpack_apply(void*ptr, nm_len_t len, void*_context)
 	    {
 	      rbuffer = rptr + 2;
 	      rptr += rlen + sizeof(uint16_t);
-	    }	  
+	    }
 	  else
 	    {
 	      const uint16_t*p_skip = rptr + 2;

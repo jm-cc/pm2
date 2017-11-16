@@ -143,7 +143,7 @@ static inline void nm_pw_init(struct nm_pkt_wrap_s *p_pw)
   p_pw->chunk_offset = 0;
 
   p_pw->ref_count = 1;
-  
+
 #ifdef PIOMAN
   piom_ltask_init(&p_pw->ltask);
 #endif
@@ -221,6 +221,8 @@ struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_core*p_core, struct nm_
   const nm_len_t hlen = sizeof(struct nm_header_global_s);
   p_pw->v[0].iov_len += hlen;
   p_pw->length += hlen;
+  p_pw->p_trk = p_trk;
+  p_pw->p_drv = p_trk->p_drv;
   return p_pw;
 }
 
@@ -246,7 +248,7 @@ void nm_pw_free(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
     {
       free(p_pw->v);
     }
-  
+
 #ifdef DEBUG
   /* make sure no one can use this pw anymore ! */
   memset(p_pw, 0, sizeof(struct nm_pkt_wrap_s));
@@ -382,7 +384,7 @@ void nm_pw_pack_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
       if(req_chunk_flags & NM_REQ_CHUNK_FLAG_USE_COPY)
 	p_pw->flags |= NM_PW_DATA_COPY;
     }
-}			  
+}
 
 /** Append a chunk of data to the pkt wrapper being built for sending.
  *
@@ -415,4 +417,3 @@ int nm_pw_finalize(struct nm_pkt_wrap_s *p_pw)
   p_pw->flags |= NM_PW_FINALIZED;
   return NM_ESUCCESS;
 }
-

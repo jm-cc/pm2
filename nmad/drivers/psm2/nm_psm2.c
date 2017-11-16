@@ -43,7 +43,6 @@ static int  nm_psm2_send_poll(void*_status);
 static void nm_psm2_recv_iov_post(void*_status,  struct iovec*v, int n);
 static int  nm_psm2_recv_poll_one(void*_status);
 static int  nm_psm2_recv_poll_any(puk_context_t p_context, void**_status);
-static int  nm_psm2_recv_wait_any(puk_context_t p_context, void**_status);
 static int  nm_psm2_recv_cancel_any(puk_context_t p_context);
 
 static const struct nm_minidriver_iface_s nm_psm2_minidriver =
@@ -59,7 +58,7 @@ static const struct nm_minidriver_iface_s nm_psm2_minidriver =
     .recv_data_post  = NULL,
     .recv_poll_one   = &nm_psm2_recv_poll_one,
     .recv_poll_any   = &nm_psm2_recv_poll_any,
-    .recv_wait_any   = NULL, /* &nm_psm2_recv_wait_any, */
+    .recv_wait_any   = NULL,
     .recv_cancel     = NULL,
     .recv_cancel_any = &nm_psm2_recv_cancel_any
   };
@@ -145,7 +144,6 @@ static void*nm_psm2_instantiate(puk_instance_t instance, puk_context_t context)
 static void nm_psm2_destroy(void*_status)
 {
   struct nm_psm2_s*p_status = _status;
-  struct nm_psm2_context_s*p_psm2_context = p_status->p_psm2_context;
   free(p_status);
 }
 
@@ -327,7 +325,6 @@ static void nm_psm2_send_post(void*_status, const struct iovec*v, int n)
 static int nm_psm2_send_poll(void*_status)
 {
   struct nm_psm2_s*p_status = _status;
-  struct nm_psm2_context_s*p_psm2_context = p_status->p_psm2_context;
   int rc = psm2_mq_test(&p_status->sreq, NULL);
   if(rc == PSM2_OK)
     {
@@ -364,7 +361,6 @@ static void nm_psm2_recv_iov_post(void*_status, struct iovec*v, int n)
 static int nm_psm2_recv_poll_one(void*_status)
 {
   struct nm_psm2_s*p_status = _status;
-  struct nm_psm2_context_s*p_psm2_context = p_status->p_psm2_context;
   int rc = psm2_mq_test(&p_status->rreq, NULL);
   if(rc == PSM2_OK)
     {
@@ -421,16 +417,8 @@ static int nm_psm2_recv_poll_any(puk_context_t p_context, void**_status)
     }
 }
 
-static int nm_psm2_recv_wait_any(puk_context_t p_context, void**_status)
-{
-  return -NM_ENOTIMPL;
-}
-
 static int nm_psm2_recv_cancel_any(puk_context_t p_context)
 {
-  struct nm_psm2_context_s*p_psm2_context = puk_context_get_status(p_context);
-
-  /* TODO */
-
+  /* nothing to do */
   return NM_ESUCCESS;
 }

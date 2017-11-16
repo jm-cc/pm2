@@ -69,11 +69,11 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
 	  hwloc_bitmap_asprintf(&s_drv_cpuset, p_drv->props.profile.cpuset);
 	  if((rc == 0) && !hwloc_bitmap_isequal(current, hwloc_topology_get_complete_cpuset(topology)))
 	    {
-	      NM_DISPF("# nmad: nuioa- thread already bound to %s. Not binding to %s.\n", s_current, s_drv_cpuset);
+	      NM_DISPF("nuioa- thread already bound to %s. Not binding to %s.\n", s_current, s_drv_cpuset);
 	    }
 	  else
 	    {
-	      NM_DISPF("# nmad: nuioa- driver '%s' has a preferred location. Binding to %s.\n",
+	      NM_DISPF("nuioa- driver '%s' has a preferred location. Binding to %s.\n",
 		       p_drv->assembly->name, s_drv_cpuset);
 	      rc = hwloc_set_cpubind(topology, p_drv->props.profile.cpuset, HWLOC_CPUBIND_THREAD);
 	      if(rc)
@@ -87,15 +87,15 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
 	}
       else
 	{
-	  NM_DISPF("# nmad: nuioa- driver '%s' has no preferred location. Not binding.\n", p_drv->assembly->name);
+	  NM_DISPF("nuioa- driver '%s' has no preferred location. Not binding.\n", p_drv->assembly->name);
 	}
     }
   else
     {
-      NM_DISPF("# nmad: nuioa- disabled by user\n");
+      NM_DISPF("nuioa- disabled by user\n");
     }
 #else /* PM2_TOPOLOGY */
-  NM_DISPF("# nmad: nuioa- hwloc not available\n");
+  NM_DISPF("nuioa- hwloc not available\n");
 #endif /* PM2_TOPOLOGY */
 
   /* ** driver init*/
@@ -122,7 +122,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver_component,
       p_drv->props.capabilities.max_msg_size = NM_LEN_MAX;
     }
 
-  NM_DISPF("# nmad: driver name = %s; url = %s; max_msg_size = %llu\n",
+  NM_DISPF("loaded driver '%s'; url = '%s'; max_msg_size = %llu\n",
 	   driver_component->name, *p_url, (unsigned long long)p_drv->props.capabilities.max_msg_size);
   *pp_drv = p_drv;
   return NM_ESUCCESS;

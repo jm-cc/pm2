@@ -456,7 +456,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   if(getenv("NMAD_AUTO_FLUSH"))
     {
       p_core->enable_auto_flush = 1;
-      NM_DISPF("# nmad: auto-flush on send enabled.\n");
+      NM_DISPF("auto-flush on send enabled.\n");
     }
   else
     {
@@ -467,9 +467,9 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
     {
 #ifdef DEBUG
       p_core->enable_isend_csum = 1;
-      NM_DISPF("# nmad: isend integrity check enabled.\n");
+      NM_DISPF("isend integrity check enabled.\n");
 #else
-      NM_WARN("# nmad: isend integrity check available only in DEBUG mode.\n");
+      NM_WARN("isend integrity check available only in DEBUG mode.\n");
 #endif
     }
 
@@ -510,7 +510,7 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
       NM_FATAL("component %s given as strategy has no interface 'NewMad_Strategy'\n", strategy->name);
     }
   p_core->strategy_component = strategy;
-  NM_DISPF("# nmad: strategy = %s\n", strategy->name);
+  NM_DISPF("loaded strategy '%s'\n", strategy->name);
   return NM_ESUCCESS;
 }
 

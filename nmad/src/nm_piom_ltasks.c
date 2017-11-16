@@ -41,10 +41,10 @@ void nm_ltask_set_policy(void)
       const char*padico_host_count = getenv("PADICO_HOST_COUNT");
       int mcount = padico_host_count ? atoi(padico_host_count) : 1;
       policy = (mcount > 1) ? "app" : "dev";
-      NM_DISPF("# nmad: use default pioman binding policy for %d process/node.\n", mcount);
+      NM_DISPF("use default pioman binding policy for %d process/node.\n", mcount);
     }
 
-  NM_DISPF("# nmad: set pioman binding policy = %s\n", policy);
+  NM_DISPF("set pioman binding policy = %s\n", policy);
   if(strcmp(policy, "app") == 0)
     {
       ltask_policy.location = NM_POLICY_APP;
@@ -75,7 +75,7 @@ static piom_topo_obj_t nm_piom_driver_binding(nm_drv_t p_drv)
       assert(o != NULL);
       binding = o;
       hwloc_obj_snprintf(s_binding, sizeof(s_binding), piom_topo_get(), binding, "#", 0);
-      NM_DISPF("# nmad: network %s binding: %s.\n", p_drv->assembly->name, s_binding);
+      NM_DISPF("network %s binding: %s.\n", p_drv->assembly->name, s_binding);
     }
   if(binding == NULL)
     {

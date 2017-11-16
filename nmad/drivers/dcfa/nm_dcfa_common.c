@@ -24,22 +24,22 @@
  *      memory region, then sent through RDMA into a pre-registered
  *      memory region of the peer node.
  *   -- adaptrdma: data is copied in a pre-allocated, pre-registered
- *      memory region, with an adaptive super-pipeline. Memory blocks are 
+ *      memory region, with an adaptive super-pipeline. Memory blocks are
  *      copied as long as the previous RDMA send doesn't complete.
  *      A guard check ensures that block size progression is at least
  *      2-base exponential to prevent artifacts to kill performance.
- *   -- regrdma: memory is registered on the fly on both sides, using 
+ *   -- regrdma: memory is registered on the fly on both sides, using
  *      a pipeline with variable block size. For each block, the
- *      receiver sends an ACK with RDMA info (raddr, rkey), then 
+ *      receiver sends an ACK with RDMA info (raddr, rkey), then
  *      zero-copy RDMA is performed.
- *   -- rcache: memory is registered on the fly on both sides, 
+ *   -- rcache: memory is registered on the fly on both sides,
  *      sequencially, using puk_mem_* functions from Puk-ABI that
  *      manage a cache.
  *
  * Method is chosen as follows:
  *   -- tracks for small messages always uses 'bycopy'
- *   -- tracks with rendez-vous use 'adaptrdma' for smaller messages 
- *      and 'regrdma' for larger messages. Usually, the threshold 
+ *   -- tracks with rendez-vous use 'adaptrdma' for smaller messages
+ *      and 'regrdma' for larger messages. Usually, the threshold
  *      is 224kB (from empirical results about registration/send overlap)
  *      on MT23108, and 2MB on ConnectX.
  *   -- tracks with rendez-vous use 'rcache' when ib_rcache is activated
@@ -93,19 +93,19 @@ static void nm_dcfa_common_init(void)
       if(checksum == NULL)
 	NM_FATAL("# nmad: checksum algorithm *%s* not available.\n", checksum_env);
       _nm_dcfa_checksum = checksum;
-      NM_DISPF("# nmad dcfa: checksum enabled (%s).\n", checksum->name);
+      NM_DISPF("dcfa- checksum enabled (%s).\n", checksum->name);
     }
   const char*align_env = getenv("NMAD_IBVERBS_ALIGN");
   if(align_env != NULL)
     {
       nm_dcfa_alignment = atoi(align_env);
-      NM_DISPF("# nmad dcfa: alignment forced to %d\n", nm_dcfa_alignment);
+      NM_DISPF("dcfa- alignment forced to %d\n", nm_dcfa_alignment);
     }
   const char*memalign_env = getenv("NMAD_IBVERBS_MEMALIGN");
   if(memalign_env != NULL)
     {
       nm_dcfa_memalign = atoi(memalign_env);
-      NM_DISPF("# nmad dcfa: memalign forced to %d\n", nm_dcfa_memalign);
+      NM_DISPF("dcfa- memalign forced to %d\n", nm_dcfa_memalign);
     }
 }
 
@@ -131,7 +131,7 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   int dev_number = index;
   int dev_amount = 1;
   struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
-  if(!dev_list) 
+  if(!dev_list)
     {
       fprintf(stderr, "nmad: FATAL- dcfa: no device found.\n");
       abort();
@@ -142,7 +142,7 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
       abort();
     }
   p_hca->ib_dev = dev_list[dev_number];
-  
+
   /* open IB context */
   p_hca->context = ibv_open_device(p_hca->ib_dev);
   if(p_hca->context == NULL)
@@ -152,9 +152,9 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
     }
 
   ibv_free_device_list(dev_list);
-  
+
   /* get IB context attributes */
-  /*  struct ibv_device_attr device_attr; 
+  /*  struct ibv_device_attr device_attr;
   int rc = ibv_query_device(p_hca->context, NULL);
   if(rc != 0)
     {
@@ -212,14 +212,14 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   */
   p_hca->ib_caps.data_rate = link_width * link_rate;
 
-  NM_DISPF("# nmad dcfa: device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
+  NM_DISPF("dcfa- device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
 	   "dcfa" /*ibv_get_device_name(p_hca->ib_dev)*/, link_width, s_link_rate, p_hca->ib_caps.data_rate, p_hca->lid);
 #ifdef DEBUG
   /*
-  NM_DISPF("# nmad dcfa:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
+  NM_DISPF("dcfa-   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
 	   p_hca->ib_caps.max_qp, p_hca->ib_caps.max_qp_wr,
 	   p_hca->ib_caps.max_cq, p_hca->ib_caps.max_cqe);
-  NM_DISPF("# nmad dcfa:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
+  NM_DISPF("dcfa-   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
 	   p_hca->ib_caps.max_mr,
 	   (unsigned long long) p_hca->ib_caps.max_mr_size,
 	   (unsigned long long) p_hca->ib_caps.page_size_cap,
@@ -326,7 +326,7 @@ static void nm_dcfa_cnx_qp_create(struct nm_dcfa_cnx*p_ibverbs_cnx, struct nm_dc
 {
   /* init inbound CQ */
   p_ibverbs_cnx->if_cq = ibv_create_cq(p_hca->context, NM_DCFA_RX_DEPTH);
-  if(p_ibverbs_cnx->if_cq == NULL) 
+  if(p_ibverbs_cnx->if_cq == NULL)
     {
       fprintf(stderr, "nmad: FATAL- dcfa: cannot create in CQ\n");
       abort();
@@ -553,4 +553,3 @@ uint32_t nm_dcfa_memcpy_and_checksum(void*_dest, const void*_src, nm_len_t len)
     }
   return 0;
 }
-

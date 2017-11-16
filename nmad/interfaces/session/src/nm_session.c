@@ -175,7 +175,7 @@ static void nm_session_init_drivers(void)
 		"  <puk:component id=\"0\" name=\"NewMad_ibverbs_rcache\"/>"
 		"  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 		"</puk:composite>";
-	      NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
+	      NM_DISPF("ibverbs- rcache forced by environment.\n");
 	    }
 	}
       else if(strcmp(driver_name, "ibcopy") == 0)

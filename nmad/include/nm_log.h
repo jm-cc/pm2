@@ -24,12 +24,15 @@
 #define NM_DISPF(str, ...)						\
   {									\
     if(!(getenv("NMAD_QUIET") || getenv("PADICO_QUIET")))		\
-      fprintf(stderr, str, ## __VA_ARGS__);				\
+      {                                                                 \
+        fprintf(stderr, "# nmad: ");                                    \
+        fprintf(stderr, str, ## __VA_ARGS__);				\
+      }                                                                 \
   }
 
 #define NM_WARN(...)							\
   {									\
-    fprintf(stderr, "# nmad: WARNING- (%s)-", __func__);		\
+    fprintf(stderr, "# nmad: WARNING- (%s()-", __func__);               \
     fprintf(stderr, __VA_ARGS__);					\
     fprintf(stderr, "\n");						\
   }
@@ -40,7 +43,7 @@
 #define NM_TRACE_STR(str, str2)	NM_TRACEF("%s: %s", str, str2)
 
 #define NM_FATAL(...) {							\
-    fprintf(stderr, "\n# nmad: FATAL- %s\n\t", __func__);		\
+    fprintf(stderr, "\n# nmad: FATAL- error in %s()\n\t", __func__);    \
     fprintf(stderr, __VA_ARGS__);					\
     fprintf(stderr, "\n\n");						\
     void*buffer[100];							\

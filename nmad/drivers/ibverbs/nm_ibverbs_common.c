@@ -108,19 +108,19 @@ static void nm_ibverbs_common_init(void)
       if(checksum == NULL)
 	NM_FATAL("ibverbs: checksum algorithm *%s* not available.\n", checksum_env);
       _nm_ibverbs_checksum = checksum;
-      NM_DISPF("# nmad ibverbs: checksum enabled (%s).\n", checksum->name);
+      NM_DISPF("ibverbs- checksum enabled (%s).\n", checksum->name);
     }
   const char*align_env = getenv("NMAD_IBVERBS_ALIGN");
   if(align_env != NULL)
     {
       nm_ibverbs_alignment = atoi(align_env);
-      NM_DISPF("# nmad ibverbs: alignment forced to %d\n", nm_ibverbs_alignment);
+      NM_DISPF("ibverbs- alignment forced to %d\n", nm_ibverbs_alignment);
     }
   const char*memalign_env = getenv("NMAD_IBVERBS_MEMALIGN");
   if(memalign_env != NULL)
     {
       nm_ibverbs_memalign = atoi(memalign_env);
-      NM_DISPF("# nmad ibverbs: memalign forced to %d\n", nm_ibverbs_memalign);
+      NM_DISPF("ibverbs- memalign forced to %d\n", nm_ibverbs_memalign);
     }
 }
 
@@ -266,13 +266,13 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
     }
   p_hca->ib_caps.data_rate = link_width * link_rate;
 
-  NM_DISPF("# nmad ibverbs: device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
+  NM_DISPF("ibverbs- device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
 	   ibv_get_device_name(p_hca->ib_dev), link_width, s_link_rate, p_hca->ib_caps.data_rate, p_hca->lid);
 #ifdef DEBUG
-  NM_DISPF("# nmad ibverbs:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
+  NM_DISPF("ibverbs-   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
 	   p_hca->ib_caps.max_qp, p_hca->ib_caps.max_qp_wr,
 	   p_hca->ib_caps.max_cq, p_hca->ib_caps.max_cqe);
-  NM_DISPF("# nmad ibverbs:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
+  NM_DISPF("ibverbs-   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
 	   p_hca->ib_caps.max_mr,
 	   (unsigned long long) p_hca->ib_caps.max_mr_size,
 	   (unsigned long long) p_hca->ib_caps.page_size_cap,

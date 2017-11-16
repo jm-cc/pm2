@@ -67,7 +67,7 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, nm_drv_t p_drv)
   sampling_file = fopen(sampling_file_path, "r");
   if(sampling_file)
     {
-      NM_DISPF("# sampling: reading sampling file %s...\n", sampling_file_path);
+      NM_DISPF("sampling- reading sampling file %s...\n", sampling_file_path);
       /* count sampling entries */
       int nb_entries = 0;
       char *s = NULL;
@@ -79,10 +79,10 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, nm_drv_t p_drv)
 	    nb_entries++;
 	}
       while(s);
-      
+
       p_set->nb_samples = nb_entries;
       p_set->bandwidth_samples = malloc(nb_entries * sizeof(double));
-      
+
       /* load the sampling file */
       fseek(sampling_file, 0L, SEEK_SET);
       int cur_entry = 0;
@@ -92,17 +92,17 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, nm_drv_t p_drv)
 	  s = fgets(str, LINE_SIZE, sampling_file);
 	  if(!s)
 	    break;
-	  
+
 	  if(!isdigit(str[0]))
 	    continue;
-	  
+
 	  s = strchr(str, '\t') + 1;
-	  
+
 	  p_set->bandwidth_samples[cur_entry++] = atof(s);
 	}
-      
+
       fclose(sampling_file);
-      
+
       /* compute latency and bandwidth */
       p_set->bw = p_set->bandwidth_samples[nb_entries - 1];
       const int lat_idx = (LAT_IDX > (nb_entries - 1)) ? 0 : LAT_IDX;
@@ -110,13 +110,13 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, nm_drv_t p_drv)
     }
   else
     {
-      NM_DISPF("# sampling: file <%s> does not exist. Taking default capabilities of driver.\n",
+      NM_DISPF("sampling- file <%s> does not exist. Taking default capabilities of driver.\n",
 	       sampling_file_path);
       p_set->nb_samples = 0;
       p_set->bandwidth_samples = NULL;
       p_set->bw  = p_drv->props.profile.bandwidth;
       p_set->lat = p_drv->props.profile.latency / 1000.0;
-      NM_DISPF("# sampling: capabilities for driver %s; lat = %5.2f usec.; bw = %5.2f MB/s\n",
+      NM_DISPF("sampling- capabilities for driver %s; lat = %5.2f usec.; bw = %5.2f MB/s\n",
 	       p_drv->assembly->name, p_set->lat, p_set->bw);
     }
 
@@ -233,12 +233,12 @@ double nm_ns_evaluate_bw(nm_drv_t p_drv, int length)
       int sample_id = 0;
       double coef = 0;
       int sampling_start_id = 0;
-      
+
       frexp(2, &sampling_start_id);
       coef = frexp(length, &sample_id);
-      
+
       sample_id -= sampling_start_id;
-      
+
       return samples[sample_id] + coef * (samples[sample_id] - samples[sample_id - 1]);
     }
   else
@@ -332,4 +332,3 @@ int nm_ns_multiple_split_ratio(nm_len_t len, struct nm_core *p_core, struct nm_g
 
   return NM_ESUCCESS;
 }
-

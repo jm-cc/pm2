@@ -366,7 +366,7 @@ void nm_pw_pack_req_chunk(struct nm_pkt_wrap_s*__restrict__ p_pw,
 	  assert((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (chunk_len < 255) && (chunk_offset == 0));
 	  nm_pw_add_short_data(p_pw, tag, seq, p_data, chunk_len);
 	}
-      else if(req_chunk_flags & NM_REQ_CHUNK_FLAG_USE_COPY)
+      else if(p_pw->p_drv->props.capabilities.no_iovec || (req_chunk_flags & NM_REQ_CHUNK_FLAG_USE_COPY))
 	{
 	  /* Data immediately follows its header */
 	  nm_pw_add_data_in_header(p_pw, tag, seq, p_data, chunk_len, chunk_offset, proto_flags);

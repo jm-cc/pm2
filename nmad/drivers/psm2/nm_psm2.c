@@ -58,7 +58,7 @@ static const struct nm_minidriver_iface_s nm_psm2_minidriver =
     .recv_iov_post   = &nm_psm2_recv_iov_post,
     .recv_data_post  = NULL,
     .recv_poll_one   = &nm_psm2_recv_poll_one,
-    .recv_poll_any   = NULL, /* &nm_psm2_recv_poll_any, */
+    .recv_poll_any   = &nm_psm2_recv_poll_any,
     .recv_wait_any   = NULL, /* &nm_psm2_recv_wait_any, */
     .recv_cancel     = NULL,
     .recv_cancel_any = &nm_psm2_recv_cancel_any
@@ -74,12 +74,16 @@ PADICO_MODULE_COMPONENT(Minidriver_psm2,
 
 /* ********************************************************* */
 
-#define NM_PSM2_TAG_BUILD(CONTEXT_ID, PEER_ID)\
+#define NM_PSM2_TAG_BUILD(CONTEXT_ID, PEER_ID)                          \
   ( ( ((uint64_t)(CONTEXT_ID)) << 32 ) | ((uint64_t)(PEER_ID)) )
 
 #define NM_PSM2_TAG_INIT         NM_PSM2_TAG_BUILD(0xFFFF, 0)
 #define NM_PSM2_TAG_MASK_CONTEXT NM_PSM2_TAG_BUILD(-1, 0)
 #define NM_PSM2_TAG_MASK_FULL    NM_PSM2_TAG_BUILD(-1, -1)
+#define NM_PSM2_TAG_GET_PEER_ID(TAG)            \
+  ((TAG) & 0xFFFFFFFF)
+#define NM_PSM2_TAG_GET_CONTEXT_ID(TAG)         \
+  (((TAG) >> 32) & 0xFFFFFFFF)
 
 struct nm_psm2_url_s
 {
@@ -158,7 +162,7 @@ static inline void nm_psm2_check_error(int rc, const char*function)
 static void nm_psm2_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props)
 {
   p_props->capabilities.max_msg_size = UINT32_MAX;
-  p_props->capabilities.has_recv_any = 0;
+  p_props->capabilities.has_recv_any = 1;
   p_props->capabilities.supports_wait_any = 0;
   p_props->capabilities.prefers_wait_any = 0;
   p_props->profile.latency = 500;
@@ -197,7 +201,7 @@ static void nm_psm2_init(puk_context_t context, const void**p_url, size_t*p_url_
       nm_psm2_check_error(rc, "psm2_init");
       uint32_t num_units = -1;
       psm2_ep_num_devunits(&num_units);
-      NM_DISPF("# psm2: detected %u units\n", (unsigned)num_units);
+      NM_DISPF("# nmad: detected %u psm2 units\n", (unsigned)num_units);
       struct psm2_ep_open_opts options;
       rc = psm2_ep_open_opts_get_defaults(&options);
       nm_psm2_check_error(rc, "psm2_ep_open_opts_get_defaults [ get default options ]");
@@ -349,7 +353,8 @@ static void nm_psm2_recv_iov_post(void*_status, struct iovec*v, int n)
   struct nm_psm2_s*p_status = _status;
   struct nm_psm2_context_s*p_psm2_context = p_status->p_psm2_context;
   assert(n == 1);
-  int rc = psm2_mq_irecv(p_psm2_context->mq, NM_PSM2_TAG_BUILD(p_status->p_peer->url.context_id, p_status->local_id),
+  int rc = psm2_mq_irecv(p_psm2_context->mq,
+                         NM_PSM2_TAG_BUILD(p_status->p_peer->url.context_id, p_status->local_id),
                          NM_PSM2_TAG_MASK_FULL, 0 /* flags */,
                          v[0].iov_base, v[0].iov_len, NULL, &p_status->rreq);
   nm_psm2_check_error(rc, "psm2_mq_irecv");
@@ -369,9 +374,13 @@ static int nm_psm2_recv_poll_one(void*_status)
       psm2_poll(p_psm2_process->myep);
       rc = psm2_mq_test(&p_status->rreq, NULL);
       if(rc == PSM2_OK)
-        return NM_ESUCCESS;
+        {
+          return NM_ESUCCESS;
+        }
       else
-        return -NM_EAGAIN;
+        {
+          return -NM_EAGAIN;
+        }
     }
   else
     {
@@ -380,23 +389,40 @@ static int nm_psm2_recv_poll_one(void*_status)
     }
 }
 
-static int nm_psm2_recv_any_common(puk_context_t p_context, void**_status, int timeout)
-{
-  struct nm_psm2_s*p_status = NULL;
-  struct nm_psm2_context_s*p_psm2_context = puk_context_get_status(p_context);
-
-  /* TODO */
-  return NM_ESUCCESS;
-}
-
 static int nm_psm2_recv_poll_any(puk_context_t p_context, void**_status)
 {
-  return nm_psm2_recv_any_common(p_context, _status, 0);
+  struct nm_psm2_context_s*p_psm2_context = puk_context_get_status(p_context);
+  psm2_mq_status_t req_status;
+  int rc = psm2_mq_iprobe(p_psm2_context->mq,
+                           NM_PSM2_TAG_BUILD(p_psm2_context->url.context_id, 0),
+                           NM_PSM2_TAG_MASK_CONTEXT,
+                           &req_status);
+  if(rc == PSM2_OK)
+    {
+      const uint32_t peer_id = NM_PSM2_TAG_GET_PEER_ID(req_status.msg_tag);
+      assert(peer_id >= 0);
+      assert(peer_id < nm_psm2_peer_vect_size(p_psm2_process->peers));
+      const struct nm_psm2_peer_s*p_peer = nm_psm2_peer_vect_at(&p_psm2_process->peers, peer_id);
+      struct nm_psm2_s*p_status = p_peer->p_status;
+      *_status = p_status;
+      return NM_ESUCCESS;
+    }
+  else if(rc == PSM2_MQ_INCOMPLETE)
+    {
+      psm2_poll(p_psm2_process->myep);
+      *_status = NULL;
+      return -NM_EAGAIN;
+    }
+  else
+    {
+      nm_psm2_check_error(rc, "psm2_mq_improbe");
+      return -NM_EUNKNOWN;
+    }
 }
 
 static int nm_psm2_recv_wait_any(puk_context_t p_context, void**_status)
 {
-  return nm_psm2_recv_any_common(p_context, _status, -1);
+  return -NM_ENOTIMPL;
 }
 
 static int nm_psm2_recv_cancel_any(puk_context_t p_context)

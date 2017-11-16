@@ -47,6 +47,7 @@ struct nm_minidriver_capabilities_s
   int supports_buf_recv; /**< driver supported buffer-based recv */
   int supports_wait_any; /**< drivers supports passive wait_any */
   int prefers_wait_any;  /**< wait_any must be prefered for this driver */
+  int no_iovec;          /**< driver does not support iovec (i.e. iov len == 1 only) */
   int has_recv_any;      /**< driver accepts receive from NM_GATE_ANY */
   int min_period;        /**< minimum delay between poll (in microseconds) */
   int is_exportable;     /**< blocking calls may be exported by PIOMan */
@@ -60,7 +61,7 @@ struct nm_minidriver_properties_s
 };
 
 /** Interface driver for the 'NewMad_minidriver' component interface.
- * A driver interface simpler than NewMad_Driver, that do not rely 
+ * A driver interface simpler than NewMad_Driver, that do not rely
  * on nmad core structures, making driver fully encapsulated.
  */
 struct nm_minidriver_iface_s
@@ -73,14 +74,14 @@ struct nm_minidriver_iface_s
   void (*init)(puk_context_t context, const void**drv_url, size_t*url_size);
   /** close the driver */
   void (*close)(puk_context_t context);
-  
+
   /* ** connection establishment */
 
   /** connect this instance to the remote url  */
   void (*connect)(void*_status, const void*remote_url, size_t url_size);
   /* TODO- disconnect */
   /* TODO- register error handler for fault-tolerance */
-  
+
   /* ** sending primitives */
 
   /** post a send for data described by iovec */
@@ -89,7 +90,7 @@ struct nm_minidriver_iface_s
   void (*send_data)(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
   /** poll a send operation already posted */
   int  (*send_poll)(void*_status);
-  /** prefetch data in driver buffers before send_post 
+  /** prefetch data in driver buffers before send_post
    * @note currently broken; obsoleted by buffer-based send (see below)
    */
   void (*send_prefetch)(void*_status, const void*ptr, nm_len_t size);

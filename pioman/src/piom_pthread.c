@@ -50,7 +50,7 @@ struct piom_pthread_threadstate_s
 
 #endif /* PIOMAN_PTHREAD */
 
-    
+
 #ifdef PIOMAN_PTHREAD
 static void __piom_pthread_setname(const char*name)
 {
@@ -72,7 +72,7 @@ static pthread_t*__piom_pthread_create(const pthread_attr_t*attr, void*(*start_r
 	}
     return thread;
 }
-				 
+
 static void*__piom_ltask_timer_worker(void*_dummy)
 {
     const long timeslice_nsec = piom_parameters.timer_period * 1000;
@@ -276,9 +276,11 @@ void piom_pthread_init_ltasks(void)
 			( piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ALL)
 			)
 			{
-			    char string[128];
-			    hwloc_obj_snprintf(string, sizeof(string), topo, o, "#", 0);
-			    PIOM_DISP("idle worker #%d on %s (granularity = %d usec.)\n", i, string, piom_parameters.idle_granularity);
+			    char s_level[128];
+			    char s_attr[128];
+			    hwloc_obj_type_snprintf(s_level, sizeof(s_level), o, 0);
+			    hwloc_obj_attr_snprintf(s_attr, sizeof(s_attr), o, "#", 0);
+			    PIOM_DISP("idle worker #%d on %s %s (granularity = %d usec.)\n", i, s_level, s_attr, piom_parameters.idle_granularity);
 			    piom_ltask_queue_t*queue = piom_topo_get_queue(o);
 			    pthread_attr_t attr;
 			    pthread_attr_init(&attr);

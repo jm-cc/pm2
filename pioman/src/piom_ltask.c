@@ -95,9 +95,11 @@ void piom_ltask_queue_init(piom_ltask_queue_t*queue, piom_topo_obj_t binding)
     __piom_ltask.all_queues = realloc(__piom_ltask.all_queues, sizeof(struct piom_ltask_queue*)*(__piom_ltask.n_queues + 1));
     __piom_ltask.all_queues[__piom_ltask.n_queues] = queue;
 #if defined(PIOMAN_TOPOLOGY_HWLOC)
-    char s_binding[128];
-    hwloc_obj_snprintf(s_binding, sizeof(s_binding), piom_topo_get(), queue->binding, "#", 0);
-    PIOM_DISP("queue #%d on %s\n", __piom_ltask.n_queues, s_binding);
+    char s_level[128];
+    char s_attr[128];
+    hwloc_obj_type_snprintf(s_level, sizeof(s_level), queue->binding, 0);
+    hwloc_obj_attr_snprintf(s_attr, sizeof(s_attr), queue->binding, "#", 0);
+    PIOM_DISP("queue #%d on %s %s\n", __piom_ltask.n_queues, s_level, s_attr);
 #endif /* PIOMAN_TOPOLOGY_HWLOC */
     __piom_ltask.n_queues++;
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
@@ -127,7 +129,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 				  (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
 	    if(task == NULL)
 		{
-		    if(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING) 
+		    if(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING)
 			{
 			    /* no more task to run, set the queue as stopped */
 			    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
@@ -215,7 +217,7 @@ static void piom_ltask_queue_schedule(piom_ltask_queue_t*queue, int full)
 				    return;
 				}
 #endif /* UNLOCK_QUEUES */
-			} 
+			}
 		    else if((prestate & PIOM_LTASK_STATE_SUCCESS) ||
 			    (prestate & PIOM_LTASK_STATE_CANCELLED))
 			{
@@ -308,8 +310,8 @@ void piom_init_ltasks(void)
     piom_topo_init_ltasks();
 
     /* ** Start polling */
-    
-#ifdef PIOMAN_PTHREAD 
+
+#ifdef PIOMAN_PTHREAD
     piom_pthread_init_ltasks();
 #endif /* PIOMAN_PTHREAD */
 
@@ -332,7 +334,7 @@ void piom_exit_ltasks(void)
 #ifdef PIOMAN_TRACE
 	    piom_trace_flush();
 #endif /* PIOMAN_TRACE */
-#ifdef PIOMAN_PTHREAD 
+#ifdef PIOMAN_PTHREAD
 	    piom_pthread_exit_ltasks();
 #endif /* PIOMAN_PTHREAD */
 	    piom_topo_exit_ltasks();
@@ -517,4 +519,3 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
 	}
     ltask->state = PIOM_LTASK_STATE_TERMINATED;
 }
-

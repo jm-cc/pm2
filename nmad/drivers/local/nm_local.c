@@ -109,7 +109,7 @@ PUK_VECT_TYPE(nm_local_pending, struct nm_local_pending_s);
 
 static void*nm_local_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_local_s*p_status = padico_malloc(sizeof(struct nm_local_s));
+  struct nm_local_s*p_status = malloc(sizeof(struct nm_local_s));
   struct nm_local_context_s*p_local_context = puk_context_get_status(context);
   p_status->fd = -1;
   p_status->p_local_context = p_local_context;
@@ -131,7 +131,7 @@ static void nm_local_destroy(void*_status)
   while (ret > 0 || ((ret == -1 && errno == EAGAIN)));
   /* safely close fd when EOS is reached */
   NM_SYS(close)(p_status->fd);
-  padico_free(p_status);
+  free(p_status);
 }
 
 /* ********************************************************* */
@@ -144,7 +144,7 @@ static void nm_local_getprops(puk_context_t context, struct nm_minidriver_proper
 
 static void nm_local_init(puk_context_t context, const void**drv_url, size_t*url_size)
 {
-  struct nm_local_context_s*p_local_context = padico_malloc(sizeof(struct nm_local_context_s));
+  struct nm_local_context_s*p_local_context = malloc(sizeof(struct nm_local_context_s));
   p_local_context->addr.sun_family = AF_UNIX;
   snprintf(p_local_context->addr.sun_path, sizeof(p_local_context->addr.sun_path),
 	   "/tmp/nmad_local_%s.%d.%p", getenv("LOGNAME"), getpid(), p_local_context);
@@ -173,8 +173,8 @@ static void nm_local_close(puk_context_t context)
   struct nm_local_context_s*p_local_context = puk_context_get_status(context);
   NM_SYS(unlink)(p_local_context->addr.sun_path);
   puk_context_set_status(context, NULL);
-  padico_free(p_local_context->url);
-  padico_free(p_local_context);
+  free(p_local_context->url);
+  free(p_local_context);
 }
 
 static void nm_local_connect(void*_status, const void*remote_url, size_t url_size)

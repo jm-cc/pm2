@@ -334,7 +334,7 @@ void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca)
 
 struct nm_ibverbs_cnx_s*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca)
 {
-  struct nm_ibverbs_cnx_s*p_ibverbs_cnx = padico_malloc(sizeof(struct nm_ibverbs_cnx_s));
+  struct nm_ibverbs_cnx_s*p_ibverbs_cnx = malloc(sizeof(struct nm_ibverbs_cnx_s));
   memset(p_ibverbs_cnx, 0, sizeof(struct nm_ibverbs_cnx_s));
   nm_ibverbs_cnx_qp_create(p_ibverbs_cnx, p_hca);
   p_ibverbs_cnx->local_addr.lid = p_hca->lid;

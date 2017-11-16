@@ -132,7 +132,7 @@ struct nm_tcp_s
 
 static void*nm_tcp_instantiate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_tcp_s*p_status = padico_malloc(sizeof(struct nm_tcp_s));
+  struct nm_tcp_s*p_status = malloc(sizeof(struct nm_tcp_s));
   struct nm_tcp_context_s*p_tcp_context = puk_context_get_status(context);
   p_status->fd = -1;
   p_status->error = 0;
@@ -159,7 +159,7 @@ static void nm_tcp_destroy(void*_status)
   while (ret > 0 || ((ret == -1 && errno == EAGAIN)));
   /* safely close fd when EOS is reached */
   NM_SYS(close)(p_status->fd);
-  padico_free(p_status);
+  free(p_status);
 }
 
 /* ********************************************************* */
@@ -183,7 +183,7 @@ static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properti
 static void nm_tcp_init(puk_context_t context, const void**drv_url, size_t*url_size)
 {
   uint16_t port = 0;
-  struct nm_tcp_context_s*p_tcp_context = padico_malloc(sizeof(struct nm_tcp_context_s));
+  struct nm_tcp_context_s*p_tcp_context = malloc(sizeof(struct nm_tcp_context_s));
   p_tcp_context->addr.sin_family = AF_INET;
   p_tcp_context->addr.sin_addr.s_addr = htonl(INADDR_ANY);
   p_tcp_context->addr.sin_port = htons(port);
@@ -228,8 +228,8 @@ static void nm_tcp_close(puk_context_t context)
   struct nm_tcp_context_s*p_tcp_context = puk_context_get_status(context);
   NM_SYS(close)(p_tcp_context->server_fd);
   puk_context_set_status(context, NULL);
-  padico_free(p_tcp_context->url);
-  padico_free(p_tcp_context);
+  free(p_tcp_context->url);
+  free(p_tcp_context);
 }
 
 static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size)

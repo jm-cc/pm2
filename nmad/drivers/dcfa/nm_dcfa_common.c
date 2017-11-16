@@ -257,7 +257,7 @@ void nm_dcfa_hca_get_profile(int index, struct nm_drv_profile_s*p_profile)
 
 struct nm_dcfa_cnx*nm_dcfa_cnx_new(struct nm_dcfa_hca_s*p_hca)
 {
-  struct nm_dcfa_cnx*p_ibverbs_cnx = padico_malloc(sizeof(struct nm_dcfa_cnx));
+  struct nm_dcfa_cnx*p_ibverbs_cnx = malloc(sizeof(struct nm_dcfa_cnx));
   memset(p_ibverbs_cnx, 0, sizeof(struct nm_dcfa_cnx));
   nm_dcfa_cnx_qp_create(p_ibverbs_cnx, p_hca);
   p_ibverbs_cnx->local_addr.lid = p_hca->lid;

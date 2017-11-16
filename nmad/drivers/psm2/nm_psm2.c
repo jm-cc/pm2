@@ -163,6 +163,7 @@ static void nm_psm2_getprops(puk_context_t context, struct nm_minidriver_propert
 {
   p_props->capabilities.max_msg_size = UINT32_MAX;
   p_props->capabilities.has_recv_any = 1;
+  p_props->capabilities.no_iovec = 1;
   p_props->capabilities.supports_wait_any = 0;
   p_props->capabilities.prefers_wait_any = 0;
   p_props->profile.latency = 500;
@@ -401,7 +402,7 @@ static int nm_psm2_recv_poll_any(puk_context_t p_context, void**_status)
     {
       const uint32_t peer_id = NM_PSM2_TAG_GET_PEER_ID(req_status.msg_tag);
       assert(peer_id >= 0);
-      assert(peer_id < nm_psm2_peer_vect_size(p_psm2_process->peers));
+      assert(peer_id < nm_psm2_peer_vect_size(&p_psm2_process->peers));
       const struct nm_psm2_peer_s*p_peer = nm_psm2_peer_vect_at(&p_psm2_process->peers, peer_id);
       struct nm_psm2_s*p_status = p_peer->p_status;
       *_status = p_status;

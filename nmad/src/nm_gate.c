@@ -76,6 +76,7 @@ void nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate, nm_drv_vect_t*p_drvs
       puk_hashtable_insert(p_core->trk_table, p_trk->receptacle._status, p_trk);
       p_trk->p_pw_send = NULL;
       p_trk->p_pw_recv = NULL;
+      nm_pkt_wrap_list_init(&p_trk->pending_pw_send);
       nm_data_null_build(&p_trk->sdata);
       nm_data_null_build(&p_trk->rdata);
       p_trk->kind = nm_trk_undefined;

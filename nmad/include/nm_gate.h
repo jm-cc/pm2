@@ -52,6 +52,7 @@ struct nm_trk_s
   puk_instance_t instance;                          /**< driver instance */
   struct nm_pkt_wrap_s*p_pw_recv;                   /**< the active pw for recv on the given trk */
   struct nm_pkt_wrap_s*p_pw_send;                   /**< the active pw for send on the given trk */
+  struct nm_pkt_wrap_list_s pending_pw_send;        /**< pw ready to post, waiting for track to be free */
   struct nm_data_s sdata, rdata;                    /**< nm_data for above pw, in case in needs to be flatten on the fly */
   enum nm_trk_kind_e
     {

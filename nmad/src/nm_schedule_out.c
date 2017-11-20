@@ -103,19 +103,26 @@ void nm_core_post_send(struct nm_pkt_wrap_s*p_pw, nm_gate_t p_gate, nm_trk_id_t 
     }
   /* append pkt to scheduler post list */
   struct nm_trk_s*p_trk = p_pw->p_trk;
-  assert(p_trk->p_pw_send == NULL);
-  p_trk->p_pw_send = p_pw;
+  if(p_trk->p_pw_send == NULL)
+    {
+      p_trk->p_pw_send = p_pw;
 #ifdef PIOMAN
-  nm_ltask_submit_pw_send(p_pw);
+      nm_ltask_submit_pw_send(p_pw);
 #else
-  nm_pw_post_send(p_pw);
+      nm_pw_post_send(p_pw);
 #endif
+    }
+  else
+    {
+      nm_pkt_wrap_list_push_back(&p_trk->pending_pw_send, p_pw);
+    }
 }
 
 /** Process a complete successful outgoing request.
  */
 void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_pw)
 {
+  struct nm_trk_s*const p_trk = p_pw->p_trk;
   nm_gate_t const p_gate = p_pw->p_gate;
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_pw_out);
@@ -170,6 +177,16 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 	}
     }
   nm_pw_ref_dec(p_pw);
+  if(!nm_pkt_wrap_list_empty(&p_trk->pending_pw_send))
+    {
+      p_pw = nm_pkt_wrap_list_pop_front(&p_trk->pending_pw_send);
+      p_trk->p_pw_send = p_pw;
+#ifdef PIOMAN
+      nm_ltask_submit_pw_send(p_pw);
+#else
+      nm_pw_post_send(p_pw);
+#endif
+    }
   nm_strat_try_and_commit(p_gate);
 }
 

@@ -298,8 +298,11 @@ int mpi_op_free(MPI_Op*op)
   TYPE_FUNC(MPI_UINT64_T,         uint64_t);			\
   TYPE_FUNC(MPI_AINT,             MPI_Aint);			\
   TYPE_FUNC(MPI_OFFSET,           MPI_Offset);			\
-  TYPE_FUNC(MPI_C_BOOL,           _Bool);			\
   TYPE_FUNC(MPI_COUNT,            MPI_Count);
+
+/** apply a macro to boolean <MPI type, C type> pairs */
+#define NM_MPI_TYPES_APPLY_LOGICAL(TYPE_FUNC)                   \
+  TYPE_FUNC(MPI_C_BOOL,           _Bool);			
 
 /** apply a macro to floating point <MPI type, C type> pairs */
 #define NM_MPI_TYPES_APPLY_FLOATS(TYPE_FUNC)			\
@@ -350,6 +353,7 @@ static void nm_mpi_op_max(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 	break;
       }
     }
+#undef CASE_OP_MAX
 }
 
 static void nm_mpi_op_min(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -370,6 +374,7 @@ static void nm_mpi_op_min(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 	break;
       }
     }
+#undef CASE_OP_MIN
 }
 
 static void nm_mpi_op_sum(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -390,6 +395,7 @@ static void nm_mpi_op_sum(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 	break;
       }
     }
+#undef CASE_OP_SUM
 }
 
 static void nm_mpi_op_prod(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -410,6 +416,7 @@ static void nm_mpi_op_prod(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 	break;
       }
     }
+#undef CASE_OP_PROD
 }
 
 static void nm_mpi_op_land(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -420,8 +427,8 @@ static void nm_mpi_op_land(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 	  )
   switch(*type)
     {
+      NM_MPI_TYPES_APPLY_LOGICAL(CASE_OP_LAND);
       NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_LAND);
-      NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_LAND);
 
     default : 
       {
@@ -429,6 +436,7 @@ static void nm_mpi_op_land(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 	break;
       }
     }
+#undef CASE_OP_LAND
 }
 
 static void nm_mpi_op_band(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -447,6 +455,7 @@ static void nm_mpi_op_band(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 	break;
       }
     }
+#undef CASE_OB_BAND
 }
 
 static void nm_mpi_op_lor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -457,8 +466,8 @@ static void nm_mpi_op_lor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 	  )
   switch(*type)
     {
+      NM_MPI_TYPES_APPLY_LOGICAL(CASE_OP_LOR);
       NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_LOR);
-      NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_LOR);
 
     default: 
       {
@@ -466,6 +475,7 @@ static void nm_mpi_op_lor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 	break;
       }
     }
+#undef CASE_OP_LOR
 }
 
 static void nm_mpi_op_bor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -484,6 +494,7 @@ static void nm_mpi_op_bor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
 	break;
       }
     }
+#undef CASE_OP_BOR
 }
 
 static void nm_mpi_op_lxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -498,6 +509,7 @@ static void nm_mpi_op_lxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 	  )
   switch(*type)
     {
+      NM_MPI_TYPES_APPLY_LOGICAL(CASE_OP_LXOR);
       NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_LXOR);
 
     default:
@@ -506,6 +518,7 @@ static void nm_mpi_op_lxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 	break;
       }
     }
+#undef CASE_OP_LXOR
 }
 
 static void nm_mpi_op_bxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -524,6 +537,7 @@ static void nm_mpi_op_bxor(void*invec, void*inoutvec, int*len, MPI_Datatype*type
 	break;
       }
     }
+#undef CASE_OP_BXOR
 }
 
 static void nm_mpi_op_maxloc(void*invec, void*inoutvec, int*len, MPI_Datatype*type)
@@ -686,6 +700,7 @@ static void nm_mpi_op_replace(void*invec, void*inoutvec, int*len, MPI_Datatype*t
 
   switch(*type)
     {
+      NM_MPI_TYPES_APPLY_LOGICAL(CASE_OP_REPLACE);
       NM_MPI_TYPES_APPLY_INTEGERS(CASE_OP_REPLACE);
       NM_MPI_TYPES_APPLY_FLOATS(CASE_OP_REPLACE);
       NM_MPI_TYPES_APPLY_COMPLEX(CASE_OP_REPLACE);
@@ -705,6 +720,7 @@ static void nm_mpi_op_replace(void*invec, void*inoutvec, int*len, MPI_Datatype*t
 	break;
       }
     }
+#undef CASE_OP_REPLACE
 }
 
 static void nm_mpi_op_no_op(void*invec, void*inoutvec, int*len, MPI_Datatype*type){}

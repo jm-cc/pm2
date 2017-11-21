@@ -89,7 +89,6 @@ static void strat_split_balance_destroy(void*_status)
    return next packet to send */
 static void strat_split_balance_try_and_commit(void *_status, nm_gate_t p_gate)
 {
-  struct nm_strat_split_balance*p_status = _status;
   struct nm_core*p_core = p_gate->p_core;
   int n = 0;
   nm_drv_t const*p_drvs = NULL;

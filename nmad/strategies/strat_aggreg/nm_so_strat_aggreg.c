@@ -90,7 +90,6 @@ static void strat_aggreg_destroy(void*_status)
  */
 static void strat_aggreg_try_and_commit(void *_status, nm_gate_t p_gate)
 {
-  struct nm_strat_aggreg_s*p_status = _status;
   struct nm_trk_s*p_trk_small = &p_gate->trks[NM_TRK_SMALL];
   struct nm_drv_s*p_drv = p_trk_small->p_drv;
   struct nm_core*p_core = p_drv->p_core;

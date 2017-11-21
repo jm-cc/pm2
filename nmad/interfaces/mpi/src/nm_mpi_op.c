@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2016 (see AUTHORS file)
+ * Copyright (C) 2006-2017 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -302,7 +302,8 @@ int mpi_op_free(MPI_Op*op)
 
 /** apply a macro to boolean <MPI type, C type> pairs */
 #define NM_MPI_TYPES_APPLY_LOGICAL(TYPE_FUNC)                   \
-  TYPE_FUNC(MPI_C_BOOL,           _Bool);			
+  TYPE_FUNC(MPI_C_BOOL,           _Bool);			\
+  TYPE_FUNC(MPI_LOGICAL,          int);
 
 /** apply a macro to floating point <MPI type, C type> pairs */
 #define NM_MPI_TYPES_APPLY_FLOATS(TYPE_FUNC)			\

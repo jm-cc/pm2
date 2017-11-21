@@ -276,9 +276,9 @@ void piom_pthread_init_ltasks(void)
 			( piom_parameters.idle_distrib == PIOM_BIND_DISTRIB_ALL)
 			)
 			{
-			    char string[128];
-			    hwloc_obj_snprintf(string, sizeof(string), topo, o, "#", 0);
-			    PIOM_DISP("idle worker #%d on %s (granularity = %d usec.)\n", i, string, piom_parameters.idle_granularity);
+			    char s_obj[128];
+			    hwloc_obj_type_snprintf(s_obj, sizeof(s_obj), o, 0);
+			    PIOM_DISP("idle worker #%d on %s #%d (granularity = %d usec.)\n", i, s_obj, o->logical_index, piom_parameters.idle_granularity);
 			    piom_ltask_queue_t*queue = piom_topo_get_queue(o);
 			    pthread_attr_t attr;
 			    pthread_attr_init(&attr);

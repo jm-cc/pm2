@@ -297,7 +297,7 @@ void piom_pthread_init_ltasks(void)
 			    int rc = hwloc_set_thread_cpubind(topo, *idle_thread, o->cpuset, HWLOC_CPUBIND_THREAD);
 			    if(rc != 0)
 				{
-				    PIOM_WARN("hwloc_set_thread_cpubind failed.\n");
+				    PIOM_WARN("hwloc_set_thread_cpubind failed; rc = %d; errno = %d (%s).\n", rc, errno, strerror(errno));
 				}
 			}
 		    i++;

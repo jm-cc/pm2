@@ -153,7 +153,7 @@ static inline int nm_sr_send_dest(nm_session_t p_session, nm_sr_request_t*p_requ
 static inline void nm_sr_send_set_priority(nm_session_t p_session, nm_sr_request_t*p_request, int priority);
 
 /** minimum priority level */
-#define NM_SR_PRIORITY_MIN 0
+#define NM_SR_PRIORITY_MIN INT_MIN
 /** maximum priority level */
 #define NM_SR_PRIORITY_MAX INT_MAX
 

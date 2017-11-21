@@ -70,12 +70,12 @@ static piom_topo_obj_t nm_piom_driver_binding(nm_drv_t p_drv)
   hwloc_cpuset_t cpuset = p_drv->props.profile.cpuset;
   if(cpuset != NULL)
     {
-      char s_binding[64];
+      char s_binding[128];
       hwloc_obj_t o = hwloc_get_obj_covering_cpuset(piom_topo_get(), cpuset);
       assert(o != NULL);
       binding = o;
-      hwloc_obj_snprintf(s_binding, sizeof(s_binding), piom_topo_get(), binding, "#", 0);
-      NM_DISPF("network %s binding: %s.\n", p_drv->assembly->name, s_binding);
+      hwloc_obj_type_snprintf(s_binding, sizeof(s_binding), binding, 0);
+      NM_DISPF("network %s binding: %s #%d.\n", p_drv->assembly->name, s_binding, binding->logical_index);
     }
   if(binding == NULL)
     {

@@ -35,7 +35,8 @@ static struct
     {
 	.initialized = 0,
 	.n_queues    = 0,
-	.poll_level  = 0
+	.poll_level  = 0,
+	.all_queues  = NULL
     };
 
 /* ********************************************************* */
@@ -300,9 +301,8 @@ void piom_ltask_blocking_invoke(struct piom_ltask*task)
 
 void piom_init_ltasks(void)
 {
-    if(__piom_ltask.initialized)
+   if(__piom_ltask.initialized)
 	return;
-    __piom_ltask.initialized++;
 
     /* ** create queues */
     piom_topo_init_ltasks();
@@ -316,6 +316,8 @@ void piom_init_ltasks(void)
 #ifdef PIOMAN_ABT
     piom_abt_init_ltasks();
 #endif /* PIOMAN_ABT */
+
+    __piom_ltask.initialized++;
 }
 
 void piom_exit_ltasks(void)

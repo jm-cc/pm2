@@ -414,7 +414,7 @@ void piom_ltask_schedule(int point)
 		}
 	    else if(point == PIOM_POLL_POINT_TIMER || point == PIOM_POLL_POINT_FORCED)
 		{
-		    /* timer poll- poll all tasks from all queues */
+		    /* timer poll & forced- poll all tasks from all queues */
 		    int i;
 		    for(i = 0; i < __piom_ltask.n_queues; i++)
 			{
@@ -425,7 +425,7 @@ void piom_ltask_schedule(int point)
 		}
 	    else
 		{
-		    /* other points (idle, forced)- poll local queue */
+		    /* other points (idle, hook)- poll local queue */
 		    piom_ltask_queue_t*queue = piom_topo_get_queue(piom_topo_current_obj());
 		    assert(queue != NULL);
 		    piom_ltask_queue_schedule(queue, 1);

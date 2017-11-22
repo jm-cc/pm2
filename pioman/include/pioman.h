@@ -78,6 +78,8 @@ extern void pioman_exit(void);
 #define PIOM_POLL_POINT_FORCED 0x10
 /** poll in a busy wait */
 #define PIOM_POLL_POINT_BUSY   0x20
+/** poll in a hook */
+#define PIOM_POLL_POINT_HOOK   0x40
 /** @} */
 
 /** Polling point forced from the application.

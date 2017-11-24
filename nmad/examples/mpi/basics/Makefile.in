@@ -51,6 +51,8 @@ test-nm_mpi_datatype: TEST_FILTER = sort
 
 test-nm_mpi_freedatatype: TEST_FILTER = sort
 
+test-nm_mpi_persistent: TEST_FILTER = sort
+
 test-nm_mpi_communicator: TEST_FILTER = sort
 
 test-nm_mpi_anysource: NMAD_NODES = 8

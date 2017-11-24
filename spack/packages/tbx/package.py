@@ -14,6 +14,7 @@ class Tbx(AutotoolsPackage):
     depends_on('autoconf')
     depends_on('libtool')
     depends_on('automake')
+    depends_on('hwloc')
     
     def configure_args(self):
         spec = self.spec

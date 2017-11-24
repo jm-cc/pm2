@@ -19,6 +19,7 @@ class Pioman(AutotoolsPackage):
     depends_on('tbx')
     depends_on('pkgconfig')
     depends_on('autoconf')
+    depends_on('hwloc')
 
     build_directory = 'pioman-build'
     

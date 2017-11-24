@@ -2,7 +2,7 @@ from spack import *
 import platform
 
 class Nmad(AutotoolsPackage):
-    """NewMadeleine communicaiton library"""
+    """NewMadeleine communication library"""
     homepage = "http://pm2.gforge.inria.fr/nmad/"
 
     version('trunk', svn='https://scm.gforge.inria.fr/anonscm/svn/pm2/trunk/nmad')
@@ -20,10 +20,13 @@ class Nmad(AutotoolsPackage):
 
     depends_on('tbx')
     depends_on('puk')
+    depends_on('hwloc')
     depends_on('pioman', when='+pioman')
     depends_on('pkgconfig')
     depends_on("expat")
     depends_on('autoconf')
+
+    provides('mpi', when='+mpi')
 
     build_directory = 'nmad-build'
     
@@ -45,5 +48,9 @@ class Nmad(AutotoolsPackage):
     def autoreconf(self, spec, prefix):
         autogen = Executable("./autogen.sh")
         autogen()
-            
         
+    def setup_dependent_environment(self, spack_env, run_env, dependent_spec):
+        spack_env.set('MPICC',  join_path(self.prefix.bin, 'mpicc.madmpi'))
+        spack_env.set('MPICXX', join_path(self.prefix.bin, 'mpicxx.madmpi'))
+        spack_env.set('MPIF77', join_path(self.prefix.bin, 'mpif77.madmpi'))
+        spack_env.set('MPIF90', join_path(self.prefix.bin, 'mpif90.madmpi'))

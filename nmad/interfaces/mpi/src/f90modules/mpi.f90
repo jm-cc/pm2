@@ -5,4 +5,6 @@
 !
         USE MPI1
 
+        USE MPI2
+        
         END MODULE MPI

@@ -66,8 +66,9 @@ $(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.
         # change dir end gen mod in . because -M<dir> is not portable
 
 # dirty ordered modules because of no make dep for Fortran
-$(madmpi_f90_builddir)/mpi.mod: | $(madmpi_f90_builddir)/mpi1.mod
+$(madmpi_f90_builddir)/mpi.mod: | $(madmpi_f90_builddir)/mpi1.mod $(madmpi_f90_builddir)/mpi2.mod
 $(madmpi_f90_builddir)/mpi1.mod: | $(madmpi_f90_builddir)/mpi_constants.mod
+$(madmpi_f90_builddir)/mpi2.mod: | $(madmpi_f90_builddir)/mpi_constants.mod
 
 install: install-link
 

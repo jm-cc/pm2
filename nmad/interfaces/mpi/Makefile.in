@@ -41,7 +41,7 @@ FC      := @FC@
 FFLAGS  := @FFLAGS@ -I@nmad_srcdir@/interfaces/mpi/include
 ifneq (@nmad_fortran_target@,none)
 CFLAGS  += -I$(madmpi_f90_builddir)
-MADMPI_F90_FILES := mpi_constants mpi1 mpi
+MADMPI_F90_FILES := mpi_constants mpi1 mpi2 mpi
 MADMPI_F90_SRC   := $(patsubst %, $(madmpi_f90_srcdir)/%.f90,   $(MADMPI_F90_FILES))
 MADMPI_F90_MODS  := $(patsubst %, $(madmpi_f90_builddir)/%.mod, $(MADMPI_F90_FILES))
 MADMPI_F90_OBJS  := $(patsubst %, $(madmpi_f90_builddir)/%.o,   $(MADMPI_F90_FILES))

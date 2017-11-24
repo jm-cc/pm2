@@ -1,26 +1,19 @@
 from spack import *
 import platform
 
-class Puk(AutotoolsPackage):
-    """Puk Padico micro-kernel"""
+class Tbx(AutotoolsPackage):
+    """TBX pm2 toolbox"""
     homepage = "http://pm2.gforge.inria.fr/"
 
-    version('trunk', svn='https://scm.gforge.inria.fr/anonscm/svn/padico/PadicoTM/trunk/PadicoTM/Puk')
+    version('trunk', svn='https://scm.gforge.inria.fr/anonscm/svn/pm2/trunk/tbx')
 
-    resource(
-        name='building-tools',
-        svn='https://scm.gforge.inria.fr/anonscm/svn/padico/PadicoTM/trunk/PadicoTM/building-tools',
-        destination='.'
-    )
-    
     variant('debug', default=False, description='Build in debug mode')
     variant('optimize', default=True, description='Build in optimized mode')
 
     depends_on('pkgconfig')
-    depends_on("expat")
     depends_on('autoconf')
-
-    build_directory = 'puk-build'
+    depends_on('libtool')
+    depends_on('automake')
     
     def configure_args(self):
         spec = self.spec
@@ -36,8 +29,4 @@ class Puk(AutotoolsPackage):
 
         return config_args
     
-    def autoreconf(self, spec, prefix):
-        autogen = Executable("./autogen.sh")
-        autogen()
-            
         

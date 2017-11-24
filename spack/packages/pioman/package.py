@@ -1,11 +1,11 @@
 from spack import *
 import platform
 
-class Puk(AutotoolsPackage):
-    """Puk Padico micro-kernel"""
-    homepage = "http://pm2.gforge.inria.fr/"
+class Pioman(AutotoolsPackage):
+    """Pioman I/O manager"""
+    homepage = "http://pm2.gforge.inria.fr/pioman/"
 
-    version('trunk', svn='https://scm.gforge.inria.fr/anonscm/svn/padico/PadicoTM/trunk/PadicoTM/Puk')
+    version('trunk', svn='https://scm.gforge.inria.fr/anonscm/svn/pm2/trunk/pioman')
 
     resource(
         name='building-tools',
@@ -16,17 +16,17 @@ class Puk(AutotoolsPackage):
     variant('debug', default=False, description='Build in debug mode')
     variant('optimize', default=True, description='Build in optimized mode')
 
+    depends_on('tbx')
     depends_on('pkgconfig')
-    depends_on("expat")
     depends_on('autoconf')
 
-    build_directory = 'puk-build'
+    build_directory = 'pioman-build'
     
     def configure_args(self):
         spec = self.spec
 
         config_args = [
-            '--disable-trace',
+            '--with-pthread',
             ]
         
         config_args.extend([

@@ -16,9 +16,7 @@ INSTALL_PREFIX := @nmad_root@
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 CC       := @nmad_root@/bin/mpicc
-CFLAGS   := 
 LD       := $(CC)
-LDFLAGS  :=
 LIBS     :=
 CC_DEP   := $(CC) -MM
 

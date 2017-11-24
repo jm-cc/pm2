@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <execinfo.h>
+#include <unistd.h>
 
 #define NM_DISPF(str, ...)						\
   {									\

@@ -432,41 +432,58 @@ int mpi_probe(int source, int tag, MPI_Comm comm, MPI_Status *status)
   return err;
 }
 
-int mpi_send_init(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
+int mpi_send_init(const void*buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
-  nm_mpi_request_t *p_req = nm_mpi_request_alloc();
-  *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-  if(tbx_unlikely(tag == MPI_ANY_TAG))
+  if(p_comm == NULL)
     {
-      NM_MPI_FATAL_ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-      return MPI_ERR_INTERN;
+      return MPI_ERR_COMM;
     }
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    {
+      return MPI_ERR_TYPE;
+    }
+  if((tag < 0) || (tag == MPI_ANY_TAG))
+    {
+      return MPI_ERR_TAG;
+    }
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc();
   p_req->request_type = NM_MPI_REQUEST_SEND;
   p_req->status |= NM_MPI_REQUEST_PERSISTENT;
-  p_req->p_datatype = nm_mpi_datatype_get(datatype);
+  p_req->p_datatype = p_datatype;
   p_req->sbuf = buf;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->communication_mode = NM_MPI_MODE_IMMEDIATE;
   p_req->p_comm = p_comm;
   int err = nm_mpi_isend_init(p_req, dest, p_comm);
+  *request = p_req->id;
   return err;
 }
 
 int mpi_recv_init(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)
 {
-  nm_mpi_request_t*p_req = nm_mpi_request_alloc();
-  *request = p_req->id;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL)
+    {
+      return MPI_ERR_COMM;
+    }
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    {
+      return MPI_ERR_TYPE;
+    }
+  nm_mpi_request_t*p_req = nm_mpi_request_alloc();
   p_req->request_type = NM_MPI_REQUEST_RECV;
   p_req->status |= NM_MPI_REQUEST_PERSISTENT;
-  p_req->p_datatype = nm_mpi_datatype_get(datatype);
+  p_req->p_datatype = p_datatype;
   p_req->rbuf = buf;
   p_req->count = count;
   p_req->user_tag = nm_mpi_check_tag(tag);
   p_req->p_comm = p_comm;
   int err = nm_mpi_irecv_init(p_req, source, p_comm);
+  *request = p_req->id;
   return err;
 }
 

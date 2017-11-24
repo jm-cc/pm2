@@ -86,8 +86,7 @@ void nm_mpi_coll_wait(nm_mpi_request_t*p_req)
     {
       NM_MPI_FATAL_ERROR("nm_mpi_request_wait returned %d in collective.\n", err);
     }
-  nm_mpi_request_complete(p_req);
-  nm_mpi_request_free(p_req);
+  nm_mpi_request_complete(p_req, NULL);
 }
 
 

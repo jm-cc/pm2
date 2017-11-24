@@ -196,9 +196,7 @@ int mpi_wait(MPI_Request*request, MPI_Status*status)
     {
       err = nm_mpi_set_status(p_req, status);
     }
-  nm_mpi_request_complete(p_req);
-  nm_mpi_request_free(p_req);
-  *request = MPI_REQUEST_NULL;
+  nm_mpi_request_complete(p_req, request);
   return err;
 }
 
@@ -227,8 +225,7 @@ int mpi_waitall(int count, MPI_Request*array_of_requests, MPI_Status*array_of_st
 	{
 	  err = nm_mpi_set_status(p_req, &array_of_statuses[i]);
 	}
-      nm_mpi_request_complete(p_req);
-      nm_mpi_request_free(p_req);
+      nm_mpi_request_complete(p_req, &array_of_requests[i]);
       if(err != NM_ESUCCESS)
 	{
 	  break;
@@ -285,9 +282,7 @@ int mpi_test(MPI_Request*request, int*flag, MPI_Status*status)
 	{
 	  err = nm_mpi_set_status(p_req, status);
 	}
-      nm_mpi_request_complete(p_req);
-      nm_mpi_request_free(p_req);
-      *request = MPI_REQUEST_NULL;
+      nm_mpi_request_complete(p_req, request);
     }
   else
     { /* err == -NM_EAGAIN */
@@ -465,6 +460,7 @@ int mpi_start(MPI_Request*request)
 {
   nm_mpi_request_t *p_req = nm_mpi_request_get(*request);
   int err = MPI_SUCCESS;
+  assert(p_req != NULL);
   assert(p_req->request_type != NM_MPI_REQUEST_ZERO);
   assert(p_req->status & NM_MPI_REQUEST_PERSISTENT);
   if(p_req->request_type == NM_MPI_REQUEST_SEND)
@@ -501,18 +497,24 @@ int mpi_startall(int count, MPI_Request *array_of_requests)
 /* ********************************************************* */
 /* ** core test/wait/complete functions used to build MPI level primitives */
 
-/** notify request completion */
+/** notify request completion & free request */
 __PUK_SYM_INTERNAL
-void nm_mpi_request_complete(nm_mpi_request_t*p_req)
+void nm_mpi_request_complete(nm_mpi_request_t*p_req, MPI_Request*request)
 {
   if(!(p_req->status & NM_MPI_REQUEST_PERSISTENT))
     {
       p_req->request_type = NM_MPI_REQUEST_ZERO;
-    }
-  /* Release one active communication for that type */
-  if(p_req->p_datatype->id >= _NM_MPI_DATATYPE_OFFSET)
-    {
-      nm_mpi_datatype_ref_dec(p_req->p_datatype);
+      /* Release one active communication for that type */
+      if(p_req->p_datatype->id >= _NM_MPI_DATATYPE_OFFSET)
+        {
+          nm_mpi_datatype_ref_dec(p_req->p_datatype);
+        }
+      if(request)
+        {
+          assert(*request == p_req->id);
+          *request = MPI_REQUEST_NULL;
+        }
+      nm_mpi_request_free(p_req);
     }
 }
 

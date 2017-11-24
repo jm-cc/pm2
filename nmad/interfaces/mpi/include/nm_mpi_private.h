@@ -932,7 +932,7 @@ int nm_mpi_request_test(nm_mpi_request_t *p_req);
 
 int nm_mpi_request_wait(nm_mpi_request_t *p_req);
 
-void nm_mpi_request_complete(nm_mpi_request_t*p_req);
+void nm_mpi_request_complete(nm_mpi_request_t*p_req, MPI_Request*request);
 
 /* Send/recv/status functions */
 

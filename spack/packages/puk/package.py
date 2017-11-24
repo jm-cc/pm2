@@ -3,7 +3,7 @@ import platform
 
 class Puk(AutotoolsPackage):
     """Puk Padico micro-kernel"""
-    homepage = "http://pm2.gforge.inria.fr/pm2/"
+    homepage = "http://pm2.gforge.inria.fr/"
 
     version('trunk', svn='https://scm.gforge.inria.fr/anonscm/svn/padico/PadicoTM/trunk/PadicoTM/Puk')
 

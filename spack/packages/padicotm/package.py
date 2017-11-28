@@ -17,23 +17,23 @@ class Padicotm(AutotoolsPackage):
     variant('optimize', default=True, description='Build in optimized mode')
     variant('pioman', default=True, description='Build with pioman')
 
-    depends_on('nmad')
     depends_on('puk')
     depends_on('pioman', when='+pioman')
     depends_on('pkgconfig')
-    depends_on('autoconf')
+    depends_on('autoconf', type='build')
 
-    build_directory = 'padicotm-build'
+    build_directory = 'build'
     
     def configure_args(self):
         spec = self.spec
 
         config_args = [
             '--without-pukabi',
+            '--with-pioman' if '+pioman' in spec else '--without-pioman',
             ]
         
         config_args.extend([
-            "--%s-debug"         % ('enable' if '+debug'     in spec else 'disable'),
+            "--%s-debug"         % ('enable' if '+debug'    in spec else 'disable'),
             "--%s-optimize"      % ('enable' if '+optimize' in spec else 'disable'),
         ])
 

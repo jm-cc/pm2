@@ -3,7 +3,7 @@ import platform
 
 class Nmad(AutotoolsPackage):
     """NewMadeleine communication library"""
-    homepage = "http://pm2.gforge.inria.fr/nmad/"
+    homepage = "http://pm2.gforge.inria.fr/newmadeleine/"
 
     version('trunk', svn='https://scm.gforge.inria.fr/anonscm/svn/pm2/trunk/nmad')
 
@@ -17,18 +17,20 @@ class Nmad(AutotoolsPackage):
     variant('optimize', default=True, description='Build in optimized mode')
     variant('mpi', default=True, description='Build MadMPI')
     variant('pioman', default=True, description='Build with pioman')
+    variant('padicotm', default=True, description='Build with PadicoTM')
 
     depends_on('tbx')
     depends_on('puk')
     depends_on('hwloc')
     depends_on('pioman', when='+pioman')
+    depends_on('padicotm', when='+padicotm')
     depends_on('pkgconfig')
-    depends_on("expat")
-    depends_on('autoconf')
+    depends_on('autoconf', type='build')
 
     provides('mpi', when='+mpi')
+    provides('madmpi', when='+mpi')
 
-    build_directory = 'nmad-build'
+    build_directory = 'build'
     
     def configure_args(self):
         spec = self.spec
@@ -36,10 +38,12 @@ class Nmad(AutotoolsPackage):
         config_args = [
             '--without-pukabi',
             '--disable-sampling',
+            '--with-padicotm' if '+padicotm' in spec else '--without-padicotm',
+            '--with-pioman' if '+pioman' in spec else '--without-pioman',
             ]
         
         config_args.extend([
-            "--%s-debug"         % ('enable' if '+debug'     in spec else 'disable'),
+            "--%s-debug"         % ('enable' if '+debug'    in spec else 'disable'),
             "--%s-optimize"      % ('enable' if '+optimize' in spec else 'disable'),
         ])
 

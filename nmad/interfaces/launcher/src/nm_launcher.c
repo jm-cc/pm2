@@ -139,7 +139,7 @@ int nm_launcher_init_checked(int *argc, char**argv, const struct nm_abi_config_s
     }
 
   const char*launcher_name =
-    (puk_mod_getbyname("PadicoTM") != NULL) ? "NewMad_Launcher_newmadico" : "NewMad_Launcher_cmdline";
+    (puk_mod_getbyname("PadicoTM") != NULL) ? "NewMad_Launcher_madico" : "NewMad_Launcher_cmdline";
 
   /*
    * NewMad initialization is performed by component 'NewMad_Launcher_*'

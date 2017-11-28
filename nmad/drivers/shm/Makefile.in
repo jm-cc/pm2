@@ -1,0 +1,38 @@
+# @configure_input@
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+include @abs_top_builddir@/common_vars.mk
+
+TARGET_BIN =
+TARGET_LIB =
+TARGET_MOD =
+SUBDIRS =
+
+INSTALL_BIN = $(TARGET_BIN)
+INSTALL_LIB = $(TARGET_LIB)
+INSTALL_INCLUDE =
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
+
+CPPFLAGS += @NMAD_CORE_CPPFLAGS@
+CFLAGS   += @NMAD_CORE_CFLAGS@
+
+ifeq (@with_padicotm@,yes)
+  CFLAGS     += @padicotm_CFLAGS@
+  MODLIBS    += @padicotm_LIBS@
+  TARGET_MOD += Minidriver_shm Minidriver_CMA Minidriver_largeshm
+endif
+
+include @abs_top_builddir@/common_rules.mk
+
+Minidriver_shm: MODLIBS += --requires Shm
+Minidriver_shm: nm_minidriver_shm.pic.o
+
+Minidriver_largeshm: MODLIBS += --requires Shm
+Minidriver_largeshm: nm_minidriver_largeshm.pic.o
+
+Minidriver_CMA: MODLIBS += --requires Shm
+Minidriver_CMA: nm_minidriver_cma.pic.o
+

@@ -13,6 +13,7 @@ m4_include([misc.m4])
 m4_include([out.m4])
 m4_include([compiler.m4])
 m4_include([features.m4])
+m4_include([./nmad.m4])
 
 dnl -- directories
 dnl --------------------------------------------------------
@@ -159,21 +160,11 @@ fi
 AC_SUBST([requires_pukabi])
 AC_SUBST(with_pukabi)
 
+dnl -- PadicoTM
+AC_NMAD_PADICOTM
+
 dnl -- PIOMan
-AC_ARG_WITH([pioman],
-	    [AS_HELP_STRING([--with-pioman], [use pioman I/O manager @<:@default=no@:>@] )])
-AC_MSG_CHECKING([for PIOMan])
-if test "x${with_pioman}" = "xyes"; then
-  AC_MSG_RESULT([yes])
-  PKG_CHECK_MODULES([pioman], [ pioman ])
-  requires_pioman="pioman"
-  AC_DEFINE([NMAD_PIOMAN], [1], [use Pioman progression engine])
-else
-  AC_MSG_RESULT([no])
-  requires_pioman=
-fi
-AC_SUBST([requires_pioman])
-AC_SUBST(with_pioman)
+AC_NMAD_PIOMAN
 
 dnl -- ibverbs
 AC_PADICO_CHECK_INFINIBAND
@@ -350,9 +341,9 @@ AC_ARG_ENABLE(romio,
 dnl -- nmad content
 dnl --
 
-nmad_drivers="${nmad_drivers} self local tcp psm2 ibverbs"
+nmad_drivers="${nmad_drivers} self local tcp psm2 ibverbs psp shm"
 nmad_strategies="${nmad_strategies} default aggreg split_balance decision_tree prio"
-nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session connector coll rpc"
+nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session connector coll rpc madico"
 
 nmad_alldirs=
 for d in ${nmad_drivers}; do

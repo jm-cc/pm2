@@ -4,7 +4,7 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_MOD = NewMad_Driver_cci
+TARGET_MOD =
 TARGET_BIN =
 TARGET_LIB =
 
@@ -17,7 +17,12 @@ INSTALL_INIT =
 
 CPPFLAGS += @NMAD_CORE_CPPFLAGS@
 CFLAGS   += @NMAD_CORE_CFLAGS@
-MODLIBS  += @cci_LIBS@
+
+ifeq (@HAVE_CCI@,yes)
+  TARGET_MOD += NewMad_Driver_cci
+  CPPFLAGS   += @cci_CPPFLAGS@
+  LIBS       += @cci_LIBS@
+endif
 
 include @abs_top_builddir@/common_rules.mk
 

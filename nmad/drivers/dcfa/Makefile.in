@@ -4,7 +4,7 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-TARGET_MOD = NewMad_dcfa_bycopy NewMad_dcfa_rcache NewMad_dcfa_common NewMad_dcfa_lr2
+TARGET_MOD =
 TARGET_BIN =
 TARGET_LIB =
 
@@ -15,9 +15,15 @@ INSTALL_LIB = $(TARGET_LIB)
 INSTALL_INCLUDE = 
 INSTALL_INIT =
 
-CPPFLAGS += @NMAD_CORE_CPPFLAGS@ @dcfa_CPPFLAGS@
+CPPFLAGS += @NMAD_CORE_CPPFLAGS@
 CFLAGS   += @NMAD_CORE_CFLAGS@
-MODLIBS  += @dcfa_LIBS@ --requires NewMad_Connector
+MODLIBS  += --requires NewMad_Connector
+
+ifeq (@HAVE_DCFA@,yes)
+  CPPFLAGS   += @dcfa_CPPFLAGS@
+  LIBS       += @dcfa_LIBS@
+  TARGET_MOD += NewMad_dcfa_bycopy NewMad_dcfa_rcache NewMad_dcfa_common NewMad_dcfa_lr2
+endif
 
 include @abs_top_builddir@/common_rules.mk
 

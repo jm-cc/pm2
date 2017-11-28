@@ -16,11 +16,11 @@ class Puk(AutotoolsPackage):
     variant('debug', default=False, description='Build in debug mode')
     variant('optimize', default=True, description='Build in optimized mode')
 
-    depends_on('pkgconfig')
     depends_on("expat")
-    depends_on('autoconf')
+    depends_on('pkgconfig', type='build')
+    depends_on('autoconf', type='build')
 
-    build_directory = 'puk-build'
+    build_directory = 'build'
     
     def configure_args(self):
         spec = self.spec

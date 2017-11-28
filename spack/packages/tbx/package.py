@@ -10,17 +10,17 @@ class Tbx(AutotoolsPackage):
     variant('debug', default=False, description='Build in debug mode')
     variant('optimize', default=True, description='Build in optimized mode')
 
-    depends_on('pkgconfig')
-    depends_on('autoconf')
-    depends_on('libtool')
-    depends_on('automake')
+    depends_on('pkgconfig', type='build')
+    depends_on('autoconf', type='build')
+    depends_on('libtool', type='build')
+    depends_on('automake', type='build')
     depends_on('hwloc')
     
     def configure_args(self):
         spec = self.spec
 
         config_args = [
-            '--disable-trace',
+            '--with-hwloc',
             ]
         
         config_args.extend([

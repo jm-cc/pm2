@@ -19,7 +19,7 @@ class Padicotm(AutotoolsPackage):
 
     depends_on('puk')
     depends_on('pioman', when='+pioman')
-    depends_on('pkgconfig')
+    depends_on('pkgconfig', type='build')
     depends_on('autoconf', type='build')
 
     build_directory = 'build'

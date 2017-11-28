@@ -15,19 +15,20 @@ class Pioman(AutotoolsPackage):
     
     variant('debug', default=False, description='Build in debug mode')
     variant('optimize', default=True, description='Build in optimized mode')
+    variant('pthread', default=True, description='use pthreads')
 
     depends_on('tbx')
-    depends_on('pkgconfig')
-    depends_on('autoconf')
     depends_on('hwloc')
+    depends_on('pkgconfig', type='build')
+    depends_on('autoconf', type='build')
 
-    build_directory = 'pioman-build'
+    build_directory = 'build'
     
     def configure_args(self):
         spec = self.spec
 
         config_args = [
-            '--with-pthread',
+            '--with-pthread' if '+pthread' in spec else '--without-pthread',
             ]
         
         config_args.extend([

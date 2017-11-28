@@ -18,15 +18,18 @@ class Nmad(AutotoolsPackage):
     variant('mpi', default=True, description='Build MadMPI')
     variant('pioman', default=True, description='Build with pioman')
     variant('padicotm', default=True, description='Build with PadicoTM')
+    variant('pthread', default=True, description='Build with pthread support and async progression')
 
     depends_on('tbx')
     depends_on('puk')
     depends_on('hwloc')
     depends_on('pioman', when='+pioman')
-    depends_on('padicotm', when='+padicotm')
-    depends_on('pkgconfig')
+    depends_on('pioman+pthread', when='+pthread')
+    depends_on('padicotm~pioman', when='+padicotm ~pioman')
+    depends_on('padicotm+pioman', when='+padicotm +pioman')
+    depends_on('pkgconfig', type='build')
     depends_on('autoconf', type='build')
-
+    
     provides('mpi', when='+mpi')
     provides('madmpi', when='+mpi')
 

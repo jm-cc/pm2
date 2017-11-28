@@ -20,8 +20,8 @@ CPPFLAGS += @NMAD_CORE_CPPFLAGS@
 CFLAGS   += @NMAD_CORE_CFLAGS@
 
 ifeq (@with_padicotm@,yes)
-  CFLAGS     += @padicotm_CFLAGS@
-  MODLIBS    += @padicotm_LIBS@
+  CFLAGS     += @PadicoTM_CFLAGS@
+  MODLIBS    += @PadicoTM_LIBS@
   TARGET_MOD += Minidriver_shm Minidriver_CMA Minidriver_largeshm
 endif
 

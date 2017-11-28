@@ -8,7 +8,7 @@ AC_DEFUN([AC_NMAD_PADICOTM],
 	     [AS_HELP_STRING([--without-padicotm], [do not use PadicoTM @<:@default=with-padicotm@:>@] )] )
            if test "x${with_padicotm}" != "xno"; then
     	     with_padicotm=yes
-    	     PKG_CHECK_MODULES([padicotm], [ PadicoTM ])
+    	     PKG_CHECK_MODULES([PadicoTM], [ PadicoTM ])
              AC_MSG_CHECKING([whether PadicoTM needs pioman])
              if pkg-config PadicoTM --print-requires | grep -q -- '^pioman$'; then
                need_pioman=yes

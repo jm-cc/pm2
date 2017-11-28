@@ -7,10 +7,6 @@ TARGET_MOD =
 TARGET_BIN =
 TARGET_LIB =
 
-ifeq (@with_padicotm@,yes)
-TARGET_MOD += NewMad_Launcher_madico PSP-NMad Control-minidriver PSP-minidriver
-endif
-
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
 INSTALL_BIN = $(TARGET_BIN)
@@ -18,16 +14,22 @@ INSTALL_LIB = $(TARGET_LIB)
 INSTALL_INCLUDE =
 INSTALL_INIT =
 
-CPPFLAGS += @NMAD_CORE_CPPFLAGS@  @padicotm_CFLAGS@
+CPPFLAGS += @NMAD_CORE_CPPFLAGS@ 
 CFLAGS   += @NMAD_CORE_CFLAGS@
 LDFLAGS  += @NMAD_CORE_LDFLAGS@
-LIBS     += -L@nmad_builddir@ @NMAD_LIBS@ @padicotm_LIBS@
+
+ifeq (@with_padicotm@,yes)
+  TARGET_MOD += NewMad_Launcher_madico PSP-NMad Control-minidriver PSP-minidriver
+  CFLAGS   += @PadicoTM_CFLAGS@
+  LIBS     += @PadicoTM_LIBS@
+endif
 
 include @abs_top_builddir@/common_rules.mk
 
 NewMad_Launcher_madico: MODLIBS += --requires AddrDB --requires PadicoControl --requires NetSelector
 NewMad_Launcher_madico: nm_madico_launcher.pic.o
 
+PSP-NMad: LIBS += -L@nmad_builddir@ @NMAD_LIBS@
 PSP-NMad: MODLIBS += --requires Topology --requires PSP --requires AddrDB --requires PadicoControl
 PSP-NMad: psp_nmad.pic.o
 

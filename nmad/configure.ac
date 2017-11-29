@@ -18,7 +18,7 @@ m4_include([./nmad.m4])
 dnl -- directories
 dnl --------------------------------------------------------
 
-AC_PADICO_PACKAGE([NewMadeleine], [newmadeleine])
+AC_PADICO_PACKAGE([NewMadeleine], [nmad])
 
 dnl -- build dir
 AC_MSG_CHECKING([nmad build directory])

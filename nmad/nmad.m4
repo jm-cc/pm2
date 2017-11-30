@@ -19,7 +19,7 @@ AC_DEFUN([AC_NMAD_PADICOTM],
            fi
            AC_SUBST([with_padicotm])
 	   AC_MSG_CHECKING([for PadicoTM root])
-	   padicotm_root="`pkg-config --variable=prefix`"
+	   padicotm_root="`pkg-config --variable=prefix PadicoTM`"
 	   if test ! -r ${padicotm_root}/bin/padico-launch; then
 	     AC_MSG_ERROR([cannot find PadicoTM in ${padicotm_root}])
 	   fi

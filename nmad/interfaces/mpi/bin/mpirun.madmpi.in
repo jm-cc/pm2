@@ -86,5 +86,5 @@ elif [ $# = 1 ]; then
     esac
 fi
 
-exec @nmad_root@/bin/padico-launch -q ${args} "$@"
+exec @padicotm_root@/bin/padico-launch -q ${args} "$@"
 

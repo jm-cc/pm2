@@ -4,8 +4,8 @@ dnl -- PadicoTM
 dnl --
 AC_DEFUN([AC_NMAD_PADICOTM],
 	 [
-	   AC_ARG_WITH([nmad],
-	     [AS_HELP_STRING([--without-padicotm], [do not use PadicoTM @<:@default=with-padicotm@:>@] )] )
+	   AC_ARG_WITH([padicotm],
+	     [AS_HELP_STRING([--with-padicotm], [use PadicoTM as launcher @<:@default=yes@:>@] )] )
            if test "x${with_padicotm}" != "xno"; then
     	     with_padicotm=yes
     	     PKG_CHECK_MODULES([PadicoTM], [ PadicoTM ])
@@ -17,7 +17,14 @@ AC_DEFUN([AC_NMAD_PADICOTM],
              fi
 	     AC_MSG_RESULT([$need_pioman])
            fi
-           AC_SUBST(with_padicotm)
+           AC_SUBST([with_padicotm])
+	   AC_MSG_CHECKING([for PadicoTM root])
+	   padicotm_root="`pkg-config --variable=prefix`"
+	   if test ! -r ${padicotm_root}/bin/padico-launch; then
+	     AC_MSG_ERROR([cannot find PadicoTM in ${padicotm_root}])
+	   fi
+	   AC_MSG_RESULT([${padicotm_root}])
+	   AC_SUBST([padicotm_root])
 	 ])
 
 dnl -- PIOMan

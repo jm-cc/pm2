@@ -22,7 +22,8 @@
 #endif
 #ifdef NMAD_PADICOTM
 #include <Padico/PadicoTM.h>
-#endif
+#include <Padico/PadicoBootLib.h>
+#endif /* NMAD_PADICOTM */
 
 #ifdef PUKABI
 #include <Padico/Puk-ABI.h>
@@ -130,20 +131,7 @@ int nm_launcher_init_checked(int *argc, char**argv, const struct nm_abi_config_s
   padico_puk_add_path(NMAD_ROOT);
 
 #ifdef NMAD_PADICOTM
-  if(getenv("PADICO_NOPRELOAD") != NULL)
-    {
-      padico_puk_add_path(PADICOTM_ROOT);
-      padico_rc_t rc = padico_puk_mod_resolve(&launcher.boot_mod, "PadicoBootLib");
-      if((launcher.boot_mod == NULL) || padico_rc_iserror(rc))
-	{
-	  NM_FATAL("launcher: cannot resolve module PadicoBootLib.\n");
-	}
-      rc = padico_puk_mod_load(launcher.boot_mod);
-      if(padico_rc_iserror(rc))
-	{
-	  NM_FATAL("launcher: cannot load module PadicoBootLib.\n");
-	}
-    }
+  launcher.boot_mod = padico_lib_init();
 #endif /* NMAD_PADICOTM */
 
   const char*launcher_name =
@@ -220,7 +208,7 @@ int nm_launcher_exit(void)
   launcher.instance = NULL;
   if(launcher.boot_mod)
     {
-      padico_puk_mod_unload(launcher.boot_mod);
+      padico_lib_finalize(launcher.boot_mod);
       launcher.boot_mod = NULL;
     }
   if(launcher.puk_init)

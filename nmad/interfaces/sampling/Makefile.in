@@ -11,6 +11,7 @@ SUBDIRS =
 
 INSTALL_BIN     = $(TARGET_BIN) nmad-sample
 INSTALL_LIB     = $(TARGET_LIB)
+INSTALL_MOD     = $(TARGET_MOD)
 INSTALL_INCLUDE = 
 
 INSTALL_PREFIX := @nmad_root@

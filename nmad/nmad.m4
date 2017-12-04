@@ -8,6 +8,7 @@ AC_DEFUN([AC_NMAD_PADICOTM],
 	     [AS_HELP_STRING([--with-padicotm], [use PadicoTM as launcher @<:@default=yes@:>@] )] )
            if test "x${with_padicotm}" != "xno"; then
     	     with_padicotm=yes
+             AC_DEFINE([NMAD_PADICOTM], [1], [use PadicoTM as launcher])
     	     PKG_CHECK_MODULES([PadicoTM], [ PadicoTM ])
              AC_MSG_CHECKING([whether PadicoTM needs pioman])
              if pkg-config PadicoTM --print-requires | grep -q -- '^pioman$'; then

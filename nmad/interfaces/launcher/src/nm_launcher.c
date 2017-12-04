@@ -20,6 +20,9 @@
 #ifdef PIOMAN
 #include <pioman.h>
 #endif
+#ifdef NMAD_PADICOTM
+#include <Padico/PadicoTM.h>
+#endif
 
 #ifdef PUKABI
 #include <Padico/Puk-ABI.h>
@@ -123,9 +126,13 @@ int nm_launcher_init_checked(int *argc, char**argv, const struct nm_abi_config_s
       padico_puk_init(0, NULL);
       launcher.puk_init = 1;
     }
+  
+  padico_puk_add_path(NMAD_ROOT);
 
+#ifdef NMAD_PADICOTM
   if(getenv("PADICO_NOPRELOAD") != NULL)
     {
+      padico_puk_add_path(PADICOTM_ROOT);
       padico_rc_t rc = padico_puk_mod_resolve(&launcher.boot_mod, "PadicoBootLib");
       if((launcher.boot_mod == NULL) || padico_rc_iserror(rc))
 	{
@@ -137,6 +144,7 @@ int nm_launcher_init_checked(int *argc, char**argv, const struct nm_abi_config_s
 	  NM_FATAL("launcher: cannot load module PadicoBootLib.\n");
 	}
     }
+#endif /* NMAD_PADICOTM */
 
   const char*launcher_name =
     (puk_mod_getbyname("PadicoTM") != NULL) ? "NewMad_Launcher_madico" : "NewMad_Launcher_cmdline";

@@ -14,8 +14,6 @@ INSTALL_MOD       = $(TARGET_MOD)
 INSTALL_INCLUDE  += $(wildcard $(srcdir)/include/*.h) $(wildcard @nmad_builddir@/include/*.h)
 INSTALL_PKGCONFIG = nmad.pc
 
-INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
-
 TARGETS = $(TARGET_BIN) $(TARGET_LIB) subdirs
 
 # ## dirs with their own Makefile- build as subdirs

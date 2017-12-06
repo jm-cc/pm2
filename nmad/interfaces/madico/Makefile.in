@@ -27,11 +27,10 @@ endif
 
 include @abs_top_builddir@/common_rules.mk
 
-NewMad_Launcher_madico: MODLIBS += --requires AddrDB --requires PadicoControl --requires NetSelector
+NewMad_Launcher_madico: MODLIBS += --requires AddrDB --requires PadicoControl --requires NetSelector -L@nmad_builddir@ @NMAD_LIBS@
 NewMad_Launcher_madico: nm_madico_launcher.pic.o
 
-PSP-NMad: LIBS += -L@nmad_builddir@ @NMAD_LIBS@
-PSP-NMad: MODLIBS += --requires Topology --requires PSP --requires AddrDB --requires PadicoControl
+PSP-NMad: MODLIBS += --requires Topology --requires PSP --requires AddrDB --requires PadicoControl -L@nmad_builddir@ @NMAD_LIBS@
 PSP-NMad: psp_nmad.pic.o
 
 Control-minidriver: MODLIBS += --requires AddrDB

@@ -23,11 +23,17 @@ mpirun [<mpirun_option>...] <progname> [<option>...]
             Take the list of possible machines to run on from the
             file <file>.  This is a list of all available machines;
             use -np <np> to request a specific number of machines.
-    -hosts <node>[,<node>...]
+    -host <node>[,<node>...]
             Take the list of possible machines to run on from the
             comma-separated list of machines given.
     -np|-n <n>
             specify the number of processors to run on
+    -wdir <dir>
+            set current directory to <dir> before starting program
+    -config <file>
+            Configuration file for multiple binaries. Each line of file
+            <file> contains a comma-separated list of ranks followed by
+            the program name.
     -v      Verbose - throw in some comments
     -q      Quiet -- suppress all messages on stdout
     -debug  Start processes under the gdb debugger.
@@ -35,7 +41,7 @@ mpirun [<mpirun_option>...] <progname> [<option>...]
     -p      Pause after program exit, do not close consoles
     -D<label>=<value>
             Define environment variable <label> with value <value> in 
-            each process base environnment.
+            each process environnment.
 
 For advanced configuration, such as debug, valgrind, eztrace, lib
 preload, process binding, see padico-launch --help

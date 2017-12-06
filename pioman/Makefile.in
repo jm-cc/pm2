@@ -13,7 +13,6 @@ INSTALL_BIN       = $(TARGET_BIN)
 INSTALL_LIB       = $(TARGET_LIB)
 INSTALL_INCLUDE  += $(filter-out $(srcdir)/include/piom_private.h, $(wildcard $(srcdir)/include/*.h)) piom_config.h
 INSTALL_PKGCONFIG = pioman.pc
-INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
 CPPFLAGS += -I@srcdir@/include
 CFLAGS   += @PIOMAN_CFLAGS@ @PIOMAN_BUILD_CFLAGS@

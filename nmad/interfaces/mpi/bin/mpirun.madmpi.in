@@ -15,31 +15,36 @@
 
 usage() {
     cat <<EOF
-mpirun [<mpirun_option>...] <progname> [<option>...]
+mpirun [<option>...] <progname> [<args>...]
 
-  <mpirun_option>:
-    -h      This help
-    -machinefile <file>
+<options>:
+  -h        Display this help
+  -machinefile <file>
             Take the list of possible machines to run on from the
             file <file>.  This is a list of all available machines;
             use -np <np> to request a specific number of machines.
-    -host <node>[,<node>...]
+  -host <node>[,<node>...]
             Take the list of possible machines to run on from the
             comma-separated list of machines given.
-    -np|-n <n>
-            specify the number of processors to run on
-    -wdir <dir>
-            set current directory to <dir> before starting program
-    -config <file>
+  -np|-n <n>
+            Specify the number of processors to run on
+  -pernode
+            On each node, launch one process. This is the default behavior
+            if no -n <np> is given.
+  -npernode <pernode>
+            On each node, launch <pernode> processes.
+  -wdir <dir>
+            Set current directory to <dir> before starting program
+  -config <file>
             Configuration file for multiple binaries. Each line of file
             <file> contains a comma-separated list of ranks followed by
             the program name.
-    -v      Verbose - throw in some comments
-    -q      Quiet -- suppress all messages on stdout
-    -debug  Start processes under the gdb debugger.
-    -c      Starts each processus in a graphical console
-    -p      Pause after program exit, do not close consoles
-    -D<label>=<value>
+  -v        Verbose: throw in some comments
+  -q        Quiet: suppress all messages on stdout
+  -debug    Start processes under the gdb debugger.
+  -c        Starts each processus in a graphical console
+  -p        Pause after program exit, do not close consoles
+  -D<label>=<value>
             Define environment variable <label> with value <value> in 
             each process environnment.
 
@@ -50,13 +55,13 @@ On exit, mpirun returns a status of zero unless mpirun detected a problem, in
 which case it returns a non-zero status.
 
 Environment variables:
-   - NMAD_DRIVER
+ - NMAD_DRIVER
             specifies the network driver to use. By default, the 
             network is auto-detected.
-   - NMAD_STRATEGY
+ - NMAD_STRATEGY
             specifies the scheduler strategy to be used. By
             default, the strategy 'aggreg' is used.
-   - MPIEXEC_TIMEOUT
+ - MPIEXEC_TIMEOUT
             maximum number of second the job is allowed to run.
             Unlimited by default.
 EOF

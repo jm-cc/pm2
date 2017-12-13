@@ -432,7 +432,10 @@ while true; do
 done
 exec 3<&-
 
-
+echo "# Generating module... ${prefix}/share/modules/pm2/$(basename ${flavor} .conf)"
+mkdir -p ${prefix}/share/modules/pm2
+sed -e "s,@prefix@,${prefix},g" < ${self_path}/module.in > ${prefix}/share/modules/pm2/$(basename ${flavor} .conf)
+echo
 echo "# You can now customize your environment with:"
 echo
 case "$SHELL" in

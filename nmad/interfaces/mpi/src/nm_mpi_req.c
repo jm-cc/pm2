@@ -202,8 +202,10 @@ int mpi_wait(MPI_Request*request, MPI_Status*status)
 
 int mpi_waitall(int count, MPI_Request*array_of_requests, MPI_Status*array_of_statuses)
 {
-  if(count <= 0)
+  if(count < 0)
     return MPI_ERR_COUNT;
+  else if(count == 0)
+    return MPI_SUCCESS;
   nm_sr_request_t**p_nm_requests = malloc(count * sizeof(nm_sr_request_t*));
   int err = NM_ESUCCESS;
   int i;

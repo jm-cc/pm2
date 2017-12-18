@@ -19,7 +19,13 @@ static MPI_Request*reqs = NULL;
 
 static void mpi_bench_reqs_burst_init(void*buf, size_t len)
 {
-  reqs = realloc(reqs, len * sizeof(MPI_Request));
+  reqs = malloc(len * sizeof(MPI_Request));
+}
+
+static void mpi_bench_reqs_burst_finalize(void)
+{
+  free(reqs);
+  reqs = NULL;
 }
 
 static void mpi_bench_reqs_burst_server(void*buf, size_t len)
@@ -81,6 +87,7 @@ const struct mpi_bench_s mpi_bench_reqs_burst =
     .label     = "mpi_bench_reqs_burst",
     .name      = "MPI reqs_burst ping",
     .init      = &mpi_bench_reqs_burst_init,
+    .finalize  = &mpi_bench_reqs_burst_finalize,
     .server    = &mpi_bench_reqs_burst_server,
     .client    = &mpi_bench_reqs_burst_client,
     .setparam  = NULL,

@@ -19,7 +19,13 @@ static MPI_Request*reqs = NULL;
 
 static void mpi_bench_reqs_tags_init(void*buf, size_t len)
 {
-  reqs = realloc(reqs, len * sizeof(MPI_Request));
+  reqs = malloc(len * sizeof(MPI_Request));
+}
+
+static void mpi_bench_reqs_tags_finalize(void)
+{
+  free(reqs);
+  reqs = NULL;
 }
 
 static void mpi_bench_reqs_tags_server(void*buf, size_t len)
@@ -83,6 +89,7 @@ const struct mpi_bench_s mpi_bench_reqs_tags =
     .label     = "mpi_bench_reqs_tags",
     .name      = "MPI reqs_tags ping",
     .init      = &mpi_bench_reqs_tags_init,
+    .finalize  = &mpi_bench_reqs_tags_finalize,
     .server    = &mpi_bench_reqs_tags_server,
     .client    = &mpi_bench_reqs_tags_client,
     .setparam  = NULL,

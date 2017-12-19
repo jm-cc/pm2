@@ -85,12 +85,13 @@ bench_list_rmaoverlap="mpi_bench_rmaoverlap_put_origin mpi_bench_rmaoverlap_put_
 bench_list_sendrecv="mpi_bench_sendrecv mpi_bench_send_overhead mpi_bench_noncontig${noncontig_suffix} mpi_bench_multi mpi_bench_multi_hetero"
 bench_list_rma="mpi_bench_rma_put_active mpi_bench_rma_put_passive mpi_bench_rma_accumulate_active mpi_bench_rma_put_noncontig${param_delimiter}32 mpi_bench_rma_get_active"
 bench_list_refrma="mpi_bench_rmaoverlap_accumulate%0 mpi_bench_rmaoverlap_put_origin%0 mpi_bench_rmaoverlap_put_target%0 mpi_bench_rmaoverlap_put_passive%0 mpi_bench_rmaoverlap_get_active%0 mpi_bench_rmaoverlap_put_active%0 mpi_bench_rmaoverlap_put_noncontig%0"
+bench_list_reqs="mpi_bench_reqs_burst mpi_bench_reqs_tags mpi_bench_reqs_shuffle"
 
 echo
 echo "# ## generating normalized files..."
 echo
 detected_bench_list=
-for b in ${bench_list_sendrecv} ${bench_list_rma} ${bench_list_refrma} ${bench_list_overlap} ${bench_list_rmaoverlap}; do
+for b in ${bench_list_sendrecv} ${bench_list_rma} ${bench_list_refrma} ${bench_list_overlap} ${bench_list_rmaoverlap} ${bench_list_reqs}; do
     if grep -q "# bench: ${b} begin" ${file}; then
 	echo "# processing bench: ${b}"
 	outfile=${outdir}/${b}.dat

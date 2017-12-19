@@ -49,6 +49,10 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
 	{
 	  /* first chunk in pack */
 	  p_core->n_packs++;
+#ifdef NMAD_PROFILE
+          if(p_core->n_packs > p_core->profiling.max_packs)
+            p_core->profiling.max_packs = p_core->n_packs;
+#endif /* NMAD_PROFILE */
 	  p_pack->p_gtag = nm_gtag_get(&p_pack->p_gate->tags, p_pack->tag);
 	  const nm_seq_t seq = nm_seq_next(p_pack->p_gtag->send_seq_number);
 	  p_pack->p_gtag->send_seq_number = seq;
@@ -485,6 +489,8 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   p_core->profiling.n_strat_apply = 0;
   p_core->profiling.n_outoforder_event = 0;
   p_core->profiling.n_event_queue_full = 0;
+  p_core->profiling.max_unpacks = 0;
+  p_core->profiling.max_packs   = 0;
 #endif /* NMAD_PROFILE */
 
 #ifdef PIOMAN
@@ -547,6 +553,8 @@ int nm_core_exit(nm_core_t p_core)
   fprintf(stderr, "# ## n_pw_out           = %lld\n", p_core->profiling.n_pw_out);
   fprintf(stderr, "# ## n_outoforder_event = %lld\n", p_core->profiling.n_outoforder_event);
   fprintf(stderr, "# ## n_event_queue_full = %lld\n", p_core->profiling.n_event_queue_full);
+  fprintf(stderr, "# ## max_packs          = %ld\n", p_core->profiling.max_packs);
+  fprintf(stderr, "# ## max_unpacks        = %ld\n", p_core->profiling.max_unpacks);
 
 #endif /* NMAD_PROFILE */
 

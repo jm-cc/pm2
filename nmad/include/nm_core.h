@@ -30,7 +30,7 @@ struct nm_core
   piom_spinlock_t lock;                         /**< lock to protect req lists in core */
   struct piom_ltask ltask;                      /**< task used for main core progress */
 #endif  /* PIOMAN */
-  
+
   puk_component_t strategy_component;           /**< selected strategy */
 
   struct nm_gate_list_s gate_list;              /**< list of gates. */
@@ -42,7 +42,7 @@ struct nm_core
   struct nm_pkt_wrap_list_s pending_send_list;  /**< active pw for send to poll */
   struct nm_pkt_wrap_list_s pending_recv_list;  /**< active pw for recv to poll */
 #endif /* !PIOMAN */
- 
+
   struct nm_req_chunk_lfqueue_s pack_submissions;  /**< list of new pack reqs (lock-free submission list) */
   struct nm_req_chunk_allocator_s req_chunk_allocator;   /**< allocator for req_chunk elements */
   struct nm_ctrl_chunk_allocator_s ctrl_chunk_allocator; /**< allocator for control chunks */
@@ -56,14 +56,14 @@ struct nm_core
   struct nm_core_monitor_vect_s monitors;          /**< monitors for upper layers to track events in nmad core */
 
   puk_hashtable_t trk_table;                       /**< trk table hashed by component status; used for reverse lookup */
-  
+
   struct nm_core_dispatching_event_allocator_s dispatching_event_allocator;
   struct nm_core_dispatching_event_lfqueue_s dispatching_events;
 
   int enable_schedopt;                          /**< whether schedopt is enabled atop drivers */
   int enable_auto_flush;                        /**< automatic flush after each pack_submit */
   int enable_isend_csum;                        /**< check message integrity between isend submission & completion */
-  
+
 #ifdef NMAD_PROFILE
   struct
   {
@@ -78,6 +78,8 @@ struct nm_core
     long long n_strat_apply;
     long long n_outoforder_event;
     long long n_event_queue_full;
+    long max_unpacks;
+    long max_packs;
   } profiling;
 #endif /* NMAD_PROFILE */
 };

@@ -574,6 +574,10 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
     }
   nm_profile_inc(p_core->profiling.n_unpacks);
   p_core->n_unpacks++;
+#ifdef NMAD_PROFILE
+  if(p_core->n_unpacks > p_core->profiling.max_unpacks)
+    p_core->profiling.max_unpacks = p_core->n_unpacks;
+#endif /* NMAD_PROFILE */
   nm_core_polling_level(p_core);
   struct nm_unexpected_s*p_unexpected = nm_unexpected_find_matching(p_core, p_unpack);
   if(p_unexpected && (p_unpack->unpack.expected_len == NM_LEN_UNDEFINED))

@@ -81,6 +81,7 @@ void nm_core_pack_submit(struct nm_core*p_core, struct nm_req_s*p_pack)
       nm_req_chunk_init(&p_pack->req_chunk, p_pack, 0, size);
       nm_req_chunk_submit(p_core, &p_pack->req_chunk);
     }
+  nm_profile_inc(p_core->profiling.n_packs);
   if(p_core->enable_auto_flush)
     {
       nm_core_flush(p_core);
@@ -150,7 +151,7 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 		}
 	    }
 #endif /* DEBUG */
-	  
+
 	  const int is_sync = (p_pack->flags & NM_REQ_FLAG_PACK_SYNCHRONOUS);
 	  const int acked = (is_sync && nm_status_test(p_pack, NM_STATUS_ACK_RECEIVED));
 	  const int finalized = (acked || !is_sync);
@@ -171,7 +172,7 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 	  nm_core_status_event(p_pw->p_gate->p_core, &event, p_pack);
 	}
       else if(p_pack->pack.done > p_pack->pack.len)
-	{ 
+	{
 	  NM_FATAL("more bytes sent than posted (should have been = %lu; actually sent = %lu)\n",
 		       p_pack->pack.len, p_pack->pack.done);
 	}
@@ -296,9 +297,9 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
   /* put the request in the list of pending requests; no lock needed since no thread without pioman */
   nm_pkt_wrap_list_push_back(&p_core->pending_send_list, p_pw);
 #endif /* PIOMAN */
-  
+
   nm_pw_poll_send(p_pw);
-  
+
 }
 
 #if 0 /* #ifndef PIOMAN */
@@ -311,7 +312,7 @@ void nm_out_prefetch(struct nm_core*p_core)
     {
       return;
     }
-  
+
   nm_gate_t p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
@@ -326,8 +327,6 @@ void nm_out_prefetch(struct nm_core*p_core)
 	      p_pw->flags |= NM_PW_PREFETCHED;
 	    }
 	}
-    }  
+    }
 }
 #endif /* PIOMAN */
-
-

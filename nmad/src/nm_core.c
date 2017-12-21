@@ -482,6 +482,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   p_core->profiling.n_packs      = 0;
   p_core->profiling.n_unpacks    = 0;
   p_core->profiling.n_unexpected = 0;
+  p_core->profiling.n_rdvs       = 0;
   p_core->profiling.n_pw_out     = 0;
   p_core->profiling.n_pw_in      = 0;
   p_core->profiling.n_try_and_commit = 0;
@@ -550,6 +551,7 @@ int nm_core_exit(nm_core_t p_core)
   fprintf(stderr, "# ## n_packs            = %lld\n", p_core->profiling.n_packs);
   fprintf(stderr, "# ## n_unpacks          = %lld\n", p_core->profiling.n_unpacks);
   fprintf(stderr, "# ## n_unexpected       = %lld\n", p_core->profiling.n_unexpected);
+  fprintf(stderr, "# ## n_rdvs             = %lld\n", p_core->profiling.n_rdvs);
   fprintf(stderr, "# ## n_pw_in            = %lld\n", p_core->profiling.n_pw_in);
   fprintf(stderr, "# ## n_pw_out           = %lld\n", p_core->profiling.n_pw_out);
   fprintf(stderr, "# ## max_packs          = %ld\n",  p_core->profiling.max_packs);

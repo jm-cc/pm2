@@ -72,6 +72,7 @@ struct nm_core
     long long n_packs;
     long long n_unpacks;
     long long n_unexpected;
+    long long n_rdvs;
     long long n_pw_out;
     long long n_pw_in;
     long long n_try_and_commit;

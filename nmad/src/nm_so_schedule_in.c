@@ -814,6 +814,7 @@ static void nm_rdv_handler(struct nm_core*p_core, nm_gate_t p_gate, struct nm_re
   if(nm_core_unpack_ready_to_receive(p_core, p_unpack,
 				     p_gate, (void*)h, chunk_offset, chunk_len, h->tag_id, h->seq, p_pw))
     {
+      nm_profile_inc(p_core->profiling.n_rdvs);
       assert(p_unpack->p_gate != NULL);
       assert(!nm_data_isnull(&p_unpack->data));
       nm_core_unpack_flags_decode(p_unpack, h->proto_id & NM_PROTO_FLAG_MASK, chunk_offset, chunk_len);

@@ -117,6 +117,15 @@ AC_ARG_ENABLE(trace,
 	      ],
 	      [])
 
+dnl -- NMAD_PROFILE
+AC_ARG_ENABLE(profile,
+	      [AS_HELP_STRING([--enable-profile], [Enable nmad stats & profiling]) ],
+	      [ if test $enableval = yes; then
+	            AC_DEFINE([NMAD_PROFILE], 1, [enable stats & profiling])
+	        fi
+	      ],
+	      [])
+
 dnl -- TODO: fine_grain_lock
 
 

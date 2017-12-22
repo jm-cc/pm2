@@ -112,7 +112,7 @@ AC_ARG_ENABLE(trace,
 	      [AS_HELP_STRING([--enable-trace], [Enable PAJE trace]) ],
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([NMAD_TRACE], 1, [enable trace])
-		    nmad_interfaces="${nmad_interfaces} trace"
+		    need_gtg=yes
 	        fi
 	      ],
 	      [])
@@ -127,9 +127,9 @@ PKG_PROG_PKG_CONFIG
 
 dnl -- gtg
 AC_ARG_WITH([gtg],
-	[AS_HELP_STRING([--with-gtg], [build with GTG traces @<:@default=no@:>@] )])
-AC_MSG_CHECKING([for gtg])
-if test "x${with_gtg}" = "xyes"; then
+	[AS_HELP_STRING([--with-gtg], [build with GTG traces @<:@default=auto@:>@] )])
+AC_MSG_CHECKING([whether we need gtg])
+if test "x${need_gtg}" = "xyes"; then
    AC_MSG_RESULT([yes])
    PKG_CHECK_MODULES([gtg],    [ gtg ])
 else

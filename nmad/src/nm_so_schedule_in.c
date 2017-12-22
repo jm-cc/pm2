@@ -225,6 +225,7 @@ static inline void nm_core_unpack_check_completion(struct nm_core*p_core, struct
 	};
       nm_core_status_event(p_core, &event, p_unpack);
       p_core->n_unpacks--;
+      nm_trace_var(NM_TRACE_SCOPE_CORE, NM_TRACE_EVENT_VAR_N_UNPACKS, p_core->n_unpacks, NULL);
       nm_core_polling_level(p_core);
       *pp_unpack = NULL;
       /* check for out-of-order packets already received on this tag */
@@ -574,6 +575,7 @@ void nm_core_unpack_submit(struct nm_core*p_core, struct nm_req_s*p_unpack, nm_r
     }
   nm_profile_inc(p_core->profiling.n_unpacks);
   p_core->n_unpacks++;
+  nm_trace_var(NM_TRACE_SCOPE_CORE, NM_TRACE_EVENT_VAR_N_UNPACKS, p_core->n_unpacks, NULL);
 #ifdef NMAD_PROFILE
   if(p_core->n_unpacks > p_core->profiling.max_unpacks)
     p_core->profiling.max_unpacks = p_core->n_unpacks;
@@ -918,6 +920,7 @@ static void nm_ack_handler(struct nm_pkt_wrap_s *p_ack_pw, const struct nm_heade
 	    {
 	      nm_req_list_remove(&p_gtag->pending_packs, p_pack);
 	      p_core->n_packs--;
+              nm_trace_var(NM_TRACE_SCOPE_CORE, NM_TRACE_EVENT_VAR_N_PACKS, p_core->n_packs, NULL);
 	    }
 	  nm_core_status_event(p_core, &event, p_pack);
 	  nm_core_polling_level(p_core);

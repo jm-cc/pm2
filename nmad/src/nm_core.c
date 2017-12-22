@@ -49,6 +49,7 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
 	{
 	  /* first chunk in pack */
 	  p_core->n_packs++;
+          nm_trace_var(NM_TRACE_SCOPE_CORE, NM_TRACE_EVENT_VAR_N_PACKS, p_core->n_packs, NULL);
 #ifdef NMAD_PROFILE
           if(p_core->n_packs > p_core->profiling.max_packs)
             p_core->profiling.max_packs = p_core->n_packs;

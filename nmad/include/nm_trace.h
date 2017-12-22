@@ -19,9 +19,11 @@
 typedef enum nm_trace_scope_e
   {
     _NM_TRACE_SCOPE_NONE      = 0x00,
-    NM_TRACE_SCOPE_CORE       = 0x01,
-    NM_TRACE_SCOPE_PW         = 0x02,
-    NM_TRACE_SCOPE_CONNECTION = 0x04,
+    NM_TRACE_SCOPE_REQS       = 0x01,
+    NM_TRACE_SCOPE_CORE       = 0x02,
+    NM_TRACE_SCOPE_PW         = 0x04,
+    NM_TRACE_SCOPE_CONNECTION = 0x08,
+    NM_TRACE_SCOPE_DRIVER     = 0x10
   }
   nm_trace_scope_t;
 
@@ -32,18 +34,8 @@ typedef int nm_trace_event_t;
 #define NM_TRACE_EVENT_DISCONNECT      ((nm_trace_event_t)1)
 #define NM_TRACE_EVENT_TRY_COMMIT      ((nm_trace_event_t)2)
 
-#define NM_TRACE_EVENT_Pw_Outlist ((nm_trace_event_t)3)
-#define NM_TRACE_EVENT_VAR_CO_Outlist_Pw_Size ((nm_trace_event_t)4)
-#define NM_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw ((nm_trace_event_t)5)
-#define NM_TRACE_EVENT_VAR_CO_Next_Pw_Size ((nm_trace_event_t)6)
-#define NM_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area ((nm_trace_event_t)7)
-#define NM_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Header_Area ((nm_trace_event_t)8)
-
-#define NM_TRACE_EVENT_Pw_Submited ((nm_trace_event_t)9)
-#define NM_TRACE_EVENT_VAR_CO_Pw_Submitted_Seq ((nm_trace_event_t)10)
-#define NM_TRACE_EVENT_VAR_CO_Gdrv_Profile_Latency ((nm_trace_event_t)11)
-#define NM_TRACE_EVENT_VAR_CO_Gdrv_Profile_Bandwidth ((nm_trace_event_t)12)
-#define NM_TRACE_EVENT_VAR_CO_Pw_Submitted_Size ((nm_trace_event_t)13)
+#define NM_TRACE_EVENT_VAR_N_PACKS     ((nm_trace_event_t)3)
+#define NM_TRACE_EVENT_VAR_N_UNPACKS   ((nm_trace_event_t)4)
 
 #ifdef NMAD_TRACE
 
@@ -51,20 +43,11 @@ void nm_trace_var(nm_trace_scope_t scope, nm_trace_event_t  event, int _value, s
 void nm_trace_state(nm_trace_scope_t scope, nm_trace_event_t event, struct nm_gate_s*p_gate);
 void nm_trace_event(nm_trace_scope_t scope, nm_trace_event_t event, void* _value, struct nm_gate_s*p_gate);
 
-#else
+#else /* NMAD_TRACE */
 
-static inline void nm_trace_event(nm_trace_scope_t scope, nm_trace_event_t event, void*_value, struct nm_gate_s*p_gate)
-{
-  /* empty */
-}
-static inline void nm_trace_var(nm_trace_scope_t scope, nm_trace_event_t  event, int _value, struct nm_gate_s*p_gate)
-{
-  /* empty */
-}
-static inline void nm_trace_state(nm_trace_scope_t scope, nm_trace_event_t event, struct nm_gate_s*p_gate)
-{
-  /* empty */
-}
+#define nm_trace_event(SCOPE, EVENT, VALUE, GATE)
+#define nm_trace_var(SCOPE, EVENT, VALUE, GATE)
+#define nm_trace_state(SCOPE, EVENT, VALUE, GATE)
 
 #endif /* NMAD_TRACE */
 

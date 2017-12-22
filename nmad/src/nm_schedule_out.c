@@ -167,6 +167,7 @@ void nm_pw_process_complete_send(struct nm_core*p_core, struct nm_pkt_wrap_s*p_p
 		  nm_req_list_remove(&p_pack->p_gtag->pending_packs, p_pack);
 		}
 	      p_core->n_packs--;
+              nm_trace_var(NM_TRACE_SCOPE_CORE, NM_TRACE_EVENT_VAR_N_PACKS, p_core->n_packs, p_pack->p_gate);
 	      nm_core_polling_level(p_core);
 	    }
 	  nm_core_status_event(p_pw->p_gate->p_core, &event, p_pack);

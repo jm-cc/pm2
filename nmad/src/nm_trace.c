@@ -97,27 +97,19 @@ static void nm_trace_flush(void)
 
   /* create trace types */
   CHECK_RETURN (addContType ("Container_Core", "0", "Container_Core"));
-  CHECK_RETURN (addContType ("Container_Global", "Container_Core", "Container_Global"));
   CHECK_RETURN (addContType ("Container_Connections", "Container_Core", "Container_Connections"));
-  CHECK_RETURN (addContType ("Container_Connection", "Container_Connections", "Container_Connection"));
 
   CHECK_RETURN (addEventType ("Event_Try_And_Commit", "Container_Connection", "Event_Try_And_Commit"));
 
-  CHECK_RETURN (addVarType ("Var_Outlist_Pw_Size", "Var_Outlist_Pw_Size", "Container_Connection"));
-  CHECK_RETURN (addVarType ("Var_Outlist_Nb_Pw", "Var_Outlist_Nb_Pw", "Container_Connection"));
-  CHECK_RETURN (addVarType ("Var_Next_Pw_Size", "Var_Next_Pw_Size", "Container_Connection"));
-  CHECK_RETURN (addVarType ("Var_Next_Pw_Remaining_Data_Area", "Var_Next_Pw_Remaining_Data_Area", "Container_Connection"));
+  CHECK_RETURN (addVarType ("Var_n_packs", "Var_n_packs", "Container_Core"));
+  CHECK_RETURN (addVarType ("Var_n_unpacks", "Var_n_unpacks", "Container_Core"));
 
   CHECK_RETURN (addEventType ("Event_Pw_Submited", "Container_Connection", "Event_Pw_Submited"));
 
-  CHECK_RETURN (addVarType ("Var_Pw_Submited_Size", "Var_Pw_Submited_Size", "Container_Connection"));
-  CHECK_RETURN (addVarType ("Var_Gdrv_Profile_Latency", "Var_Gdrv_Profile_Latency", "Container_Connection"));
-  CHECK_RETURN (addVarType ("Var_Gdrv_Profile_bandwidth", "Var_Gdrv_Profile_bandwidth", "Container_Connection"));
-
   /* init GTG containers */
   addContainer(0.0, "C_CORE", "Container_Core", "0", "C_CORE", "0");
-  CHECK_RETURN (addContainer(0.0, "C_GLOBAL", "Container_Global", "C_CORE", "C_GLOBAL", "0"));
-  CHECK_RETURN (addContainer(0.0, "C_CONNECTIONS", "Container_Connections", "C_CORE", "C_CONNECTIONS", "0"));
+  addContainer(0.0, "C_PW", "Container_PW", "C_CORE", "C_PW", "0");
+  addContainer(0.0, "C_CONNECTIONS", "Container_Connections", "C_CORE", "C_CONNECTIONS", "0");
 
   int cpt_try_and_commit = 0;
   int cpt_pw_submited = 0;
@@ -156,51 +148,29 @@ static void nm_trace_flush(void)
       switch(e->event)
 	{
 	case NM_TRACE_EVENT_CONNECT:
-	  CHECK_RETURN (addContainer(d, cont_name,"Container_Connection", "C_CONNECTIONS", cont_name, "0"));
+	  CHECK_RETURN(addContainer(d, cont_name,"Container_Connection", "C_CONNECTIONS", cont_name, "0"));
 	  break;
+
+	case NM_TRACE_EVENT_DISCONNECT:
+	  CHECK_RETURN(addEvent(d, "Container_Connection", cont_name, value));
+          break;
+          
 	case NM_TRACE_EVENT_TRY_COMMIT:
 	  sprintf(value, "%d", cpt_try_and_commit);
 	  cpt_try_and_commit++;
 	  CHECK_RETURN (addEvent(d, "Event_Try_And_Commit", cont_name, value));
 	  break;
-	case NM_TRACE_EVENT_Pw_Submited:
-	  sprintf(value, "%d", cpt_pw_submited);
-	  cpt_pw_submited++;
-	  CHECK_RETURN (addEvent(d, "Event_Pw_Submited", cont_name, value));
-	  break;
-	case NM_TRACE_EVENT_VAR_CO_Pw_Submitted_Size:
+          
+	case NM_TRACE_EVENT_VAR_N_PACKS:
 	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN(setVar(d, "Var_Pw_Submited_Size", cont_name, _var));
-	  CHECK_RETURN(subVar(d, "Var_Outlist_Pw_Size", cont_name, _var));
+	  CHECK_RETURN(setVar(d, "Var_n_packs", cont_name, _var));
 	  break;
-	case NM_TRACE_EVENT_VAR_CO_Gdrv_Profile_Latency:
+
+	case NM_TRACE_EVENT_VAR_N_UNPACKS:
 	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN(setVar(d, "Var_Gdrv_Profile_Latency", cont_name, _var));
+	  CHECK_RETURN(setVar(d, "Var_n_unpacks", cont_name, _var));
 	  break;
-	case NM_TRACE_EVENT_VAR_CO_Gdrv_Profile_Bandwidth:
-	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN(setVar(d, "Var_Gdrv_Profile_bandwidth", cont_name, _var));
-	  break;
-	case NM_TRACE_EVENT_Pw_Outlist:
-	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN (addEvent(d, "Event_Pw_Outlist", cont_name, NULL));
-	  break;
-	case NM_TRACE_EVENT_VAR_CO_Outlist_Pw_Size:
-	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN(addVar(d, "Var_Outlist_Pw_Size", cont_name, _var));
-	  break;
-	case NM_TRACE_EVENT_VAR_CO_Outlist_Nb_Pw:
-	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN(setVar(d, "Var_Outlist_Nb_Pw", cont_name, _var));
-	  break;
-	case NM_TRACE_EVENT_VAR_CO_Next_Pw_Size:
-	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN(setVar(d, "Var_Next_Pw_Size", cont_name, _var));
-	  break;
-	case NM_TRACE_EVENT_VAR_CO_Next_Pw_Remaining_Data_Area:
-	  _var = (uintptr_t)e->value;
-	  CHECK_RETURN(setVar(d, "Var_Next_Pw_Remaining_Data_Area", cont_name, _var));
-	  break;
+
 	default:
 	  break;
 	}

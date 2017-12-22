@@ -40,6 +40,7 @@
 #include <nm_log.h>
 
 #include <nm_parameters.h>
+#include <nm_trace.h>
 
 #include <Padico/Module.h>
 

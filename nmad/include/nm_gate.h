@@ -98,7 +98,7 @@ struct nm_gate_s
   /** large messages waiting for Track 1 (or 2) to be free- list of pw */
   struct nm_pkt_wrap_list_s pending_large_recv;
   /** large messages waiting for RTRs- list of pw, lookup by [gate,tag,seq,chunk_offset] */
-  struct nm_pkt_wrap_list_s pending_large_send;       
+  struct nm_pkt_wrap_list_s pending_large_send;
 
   /** Strategy components elements */
   struct puk_receptacle_NewMad_Strategy_s strategy_receptacle;
@@ -112,10 +112,6 @@ struct nm_gate_s
 
   /** NM core object. */
   struct nm_core *p_core;
-
-#ifdef NMAD_TRACE
-  int trace_connections_id;
-#endif /* NMAD_TRACE */
 };
 
 PUK_LIST_CREATE_FUNCS(nm_gate);

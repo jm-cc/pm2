@@ -17,26 +17,26 @@
 
 #ifdef NMAD_TRACE
 
-
-#define NM_TRACE_MAX (1024*1024*8)
-
-#include <nm_trace.h>
 #include <stdio.h>
 #include <GTG.h>
 #include <tbx.h>
 
-#define CHECK_RETURN(val) {if (val!=TRACE_SUCCESS){fprintf (stderr, "Function failed line %d. Leaving \n", __LINE__);exit (-1);}}
+/** maximum number of events */
+#define NM_TRACE_MAX (1024*1024*8)
+
+#define CHECK_RETURN(val) { if (val!=TRACE_SUCCESS){NM_FATAL("trace: function failed line %d.\n", __LINE__);} }
 
 static void nm_trace_exit(void) __attribute__((destructor));
 static void nm_trace_init(void) __attribute__((constructor));
 
+/** a trace event */
 struct nm_trace_entry_s
 {
-  tbx_tick_t tick;
-  nm_trace_topo_t topo;
+  tbx_tick_t tick;         /**< absolute time of event */
+  nm_trace_scope_t scope;  /**< scope of trace event */
   nm_trace_event_t event;
-  void* value;
-  int   cpt_connections;
+  void*value;
+  nm_gate_t p_gate;
 };
 
 static struct
@@ -55,36 +55,30 @@ static struct nm_trace_entry_s*nm_trace_get_entry(void)
 }
 
 
-void nm_trace_event(nm_trace_topo_t _topo, nm_trace_event_t _event, void* _value, int _cpt_connections)
+void nm_trace_event(nm_trace_scope_t scope, nm_trace_event_t event, void*value, nm_gate_t p_gate)
 {
-  struct nm_trace_entry_s* entry = nm_trace_get_entry();
-  if(entry) 
+  struct nm_trace_entry_s*p_entry = nm_trace_get_entry();
+  if(p_entry)
     {
-      TBX_GET_TICK(entry->tick);
-      entry->event = _event;
-      entry->topo  = _topo;
-      entry->value = _value; 
-      entry->cpt_connections = _cpt_connections;
+      TBX_GET_TICK(p_entry->tick);
+      p_entry->event  = event;
+      p_entry->scope  = scope;
+      p_entry->value  = value;
+      p_entry->p_gate = p_gate;
     }
 }
 
-void nm_trace_state(nm_trace_topo_t _topo, nm_trace_event_t _event, int _cpt_connections)
+void nm_trace_state(nm_trace_scope_t scope, nm_trace_event_t event, nm_gate_t p_gate)
 {
-  nm_trace_event(_topo, _event, NULL, _cpt_connections);
-}
-
-void nm_trace_container(nm_trace_topo_t _topo, nm_trace_event_t _event, int _cpt_connections)
-{
-  nm_trace_event(_topo, _event, NULL, _cpt_connections);
+  nm_trace_event(scope, event, NULL, p_gate);
 }
 
 
-void nm_trace_var(nm_trace_topo_t _topo, nm_trace_event_t  _event, int _value, int _cpt_connections)
+void nm_trace_var(nm_trace_scope_t scope, nm_trace_event_t event, int _value, nm_gate_t p_gate)
 {
-  void* value = (void*)((uintptr_t)_value);
-  nm_trace_event(_topo, _event, value, _cpt_connections);
+  void*value = (void*)((uintptr_t)_value);
+  nm_trace_event(scope, event, value, p_gate);
 }
-
 
 void nm_trace_flush(void)
 {
@@ -94,15 +88,15 @@ void nm_trace_flush(void)
   fprintf(stderr, "# nmad: flush traces (%d entries)\n", __nm_trace.last);
   flushed = 1;
 
-    /* Initialisation */
-  char trace_name[256]; 
+  /* init GTG */
+  char trace_name[256];
   char hostname[256];
   gethostname(hostname, 256);
   sprintf(trace_name, "nmad_%s", hostname);
   setTraceType(PAJE);
   CHECK_RETURN (initTrace (trace_name, 0, GTG_FLAG_NONE));
 
-  /* Creating type */
+  /* create trace types */
   CHECK_RETURN (addContType ("Container_Core", "0", "Container_Core"));
   CHECK_RETURN (addContType ("Container_Global", "Container_Core", "Container_Global"));
   CHECK_RETURN (addContType ("Container_Connections", "Container_Core", "Container_Connections"));
@@ -121,10 +115,10 @@ void nm_trace_flush(void)
   CHECK_RETURN (addVarType ("Var_Gdrv_Profile_Latency", "Var_Gdrv_Profile_Latency", "Container_Connection"));
   CHECK_RETURN (addVarType ("Var_Gdrv_Profile_bandwidth", "Var_Gdrv_Profile_bandwidth", "Container_Connection"));
 
-  /* Init Container */
-  addContainer(0.0, "C_CORE", "Container_Core", "0", "C_CORE", "0"); 
-  CHECK_RETURN (addContainer(0.0, "C_GLOBAL", "Container_Global", "C_CORE", "C_GLOBAL", "0")); 
-  CHECK_RETURN (addContainer(0.0, "C_CONNECTIONS", "Container_Connections", "C_CORE", "C_CONNECTIONS", "0")); 
+  /* init GTG containers */
+  addContainer(0.0, "C_CORE", "Container_Core", "0", "C_CORE", "0");
+  CHECK_RETURN (addContainer(0.0, "C_GLOBAL", "Container_Global", "C_CORE", "C_GLOBAL", "0"));
+  CHECK_RETURN (addContainer(0.0, "C_CONNECTIONS", "Container_Connections", "C_CORE", "C_CONNECTIONS", "0"));
 
   int cpt_try_and_commit = 0;
   int cpt_pw_submited = 0;
@@ -134,35 +128,35 @@ void nm_trace_flush(void)
     {
       const struct nm_trace_entry_s* e = &__nm_trace.entries[i];
       const double d = TBX_TIMING_DELAY(__nm_trace.orig, e->tick) / 1000000.0;
-      
+
       char level_label[128];
-      switch(e->topo)
+      switch(e->scope)
 	{
-	case NM_TRACE_TOPO_GLOBAL:
-	  sprintf(level_label, "GLOBAL");
+	case NM_TRACE_SCOPE_CORE:
+	  sprintf(level_label, "CORE");
 	  break;
-	case NM_TRACE_TOPO_CONNECTIONS:
-	  sprintf(level_label, "CONNECTIONS");
+	case NM_TRACE_SCOPE_PW:
+	  sprintf(level_label, "PW");
 	  break;
-	case NM_TRACE_TOPO_CONNECTION:
-	  sprintf(level_label, "CONNECTION_%d", e->cpt_connections);
+	case NM_TRACE_SCOPE_CONNECTION:
+	  sprintf(level_label, "CONNECTION_%p", e->p_gate);
 	  break;
 	default:
 	  sprintf(level_label, "(unkown)");
 	  break;
 	}
-      
+
       char cont_name[64];
       char state_type[128];
       int _var;
       char value[256];
-      
+
       sprintf(cont_name, "C_%s", level_label);
       sprintf(state_type, "State_%s", level_label);
-      
+
       switch(e->event)
 	{
-	case NM_TRACE_EVENT_NEW_CONNECTION:
+	case NM_TRACE_EVENT_CONNECT:
 	  CHECK_RETURN (addContainer(d, cont_name,"Container_Connection", "C_CONNECTIONS", cont_name, "0"));
 	  break;
 	case NM_TRACE_EVENT_TRY_COMMIT:

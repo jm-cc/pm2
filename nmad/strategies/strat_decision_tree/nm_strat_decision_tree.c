@@ -23,7 +23,6 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <nm_trace.h>
 #include <nm_private.h>
 #include <Padico/Module.h>
 
@@ -141,7 +140,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
 
   /* ******************************************************* */
 #if 0
-  /* old tracing code- disabled for now, since value traced here 
+  /* old tracing code- disabled for now, since value traced here
    * do not make sense anymore in the new strategy model.
    */
   {
@@ -150,7 +149,7 @@ static void strat_decision_tree_try_and_commit(void*_status, nm_gate_t p_gate)
     int smaller_pw_size = NM_SO_MAX_UNEXPECTED;
     int max_reamaining_data_area = 0;
     struct nm_pkt_wrap_s *p_pw_trace = NULL;
-    
+
     if(!nm_pkt_wrap_list_empty(&p_gate->out_list))
       {
 	puk_list_foreach(p_pw_trace, &p_gate->out_list)
@@ -237,7 +236,7 @@ static void strat_decision_tree_rdv_accept(void*_status, nm_gate_t p_gate)
       if(p_trk_large->p_pw_recv == NULL)
 	{
 	  /* The large-packet track is available- post recv and RTR */
-	  struct nm_rdv_chunk chunk = 
+	  struct nm_rdv_chunk chunk =
 	    { .len = p_pw->length, .trk_id = NM_TRK_LARGE };
 	  nm_pkt_wrap_list_remove(&p_gate->pending_large_recv, p_pw);
 	  nm_tactic_rtr_pack(p_gate->p_core, p_pw, 1, &chunk);

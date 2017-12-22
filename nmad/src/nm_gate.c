@@ -15,10 +15,6 @@
 
 #include <nm_private.h>
 
-#ifdef NMAD_TRACE
-#include <nm_trace.h>
-#endif /* NMAD_TRACE */
-
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(NewMad_Core);
 
@@ -42,16 +38,11 @@ void nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate, nm_drv_vect_t*p_drvs
 
   nm_req_chunk_list_init(&p_gate->req_chunk_list);
   nm_ctrl_chunk_list_init(&p_gate->ctrl_chunk_list);
-  
+
   p_gate->strategy_instance = puk_component_instantiate(p_core->strategy_component);
   puk_instance_indirect_NewMad_Strategy(p_gate->strategy_instance, NULL,
 					&p_gate->strategy_receptacle);
   nm_gate_list_push_back(&p_core->gate_list, p_gate);
-
-#ifdef NMAD_TRACE
-  static int nm_trace_gate_count = 0;
-  p_gate->trace_connections_id = nm_trace_gate_count++;
-#endif /* NMAD_TRACE */
 
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
   if(r->driver->connect)
@@ -109,10 +100,7 @@ void nm_core_gate_connect(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_dr
   /* pre-fill recv on trk #0 */
   if(p_trk->kind == nm_trk_small)
     nm_drv_refill_recv(p_drv, p_gate);
-#ifdef NMAD_TRACE
-  nm_trace_container(NM_TRACE_TOPO_CONNECTION, NM_TRACE_EVENT_NEW_CONNECTION, p_gate->trace_connections_id);
-#endif /* NMAD_TRACE */
-
+  nm_trace_event(NM_TRACE_SCOPE_CONNECTION, NM_TRACE_EVENT_CONNECT, p_gate, p_gate);
   nm_core_unlock(p_core);
 }
 
@@ -120,6 +108,7 @@ void nm_core_gate_connect(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_dr
  */
 void nm_gate_disconnected(struct nm_core*p_core, nm_gate_t p_gate, nm_drv_t p_drv)
 {
+  nm_trace_event(NM_TRACE_SCOPE_CONNECTION, NM_TRACE_EVENT_DISCONNECT, p_gate, p_gate);
   p_gate->status = NM_GATE_STATUS_DISCONNECTING;
   int connected = 0;
   NM_FOR_EACH_GATE(p_gate, p_core)

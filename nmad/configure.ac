@@ -1,5 +1,18 @@
 dnl -*- mode: Autoconf;-*-
-dnl -- configure.ac for nmad
+dnl -- @file configure.ac for nmad
+
+dnl -- NewMadeleine
+dnl -- Copyright (C) 2006-2017 (see AUTHORS file)
+dnl --
+dnl -- This program is free software; you can redistribute it and/or modify
+dnl -- it under the terms of the GNU General Public License as published by
+dnl -- the Free Software Foundation; either version 2 of the License, or (at
+dnl -- your option) any later version.
+dnl --
+dnl -- This program is distributed in the hope that it will be useful, but
+dnl -- WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+dnl -- General Public License for more details.
 
 
 AC_PREREQ(2.50)
@@ -125,9 +138,6 @@ AC_ARG_ENABLE(profile,
 	        fi
 	      ],
 	      [])
-
-dnl -- TODO: fine_grain_lock
-
 
 dnl -- external packages
 dnl --------------------------------------------------------

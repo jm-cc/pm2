@@ -47,7 +47,6 @@ typedef int nm_trace_event_t;
 
 #ifdef NMAD_TRACE
 
-void nm_trace_flush(void);
 void nm_trace_var(nm_trace_scope_t scope, nm_trace_event_t  event, int _value, struct nm_gate_s*p_gate);
 void nm_trace_state(nm_trace_scope_t scope, nm_trace_event_t event, struct nm_gate_s*p_gate);
 void nm_trace_event(nm_trace_scope_t scope, nm_trace_event_t event, void* _value, struct nm_gate_s*p_gate);

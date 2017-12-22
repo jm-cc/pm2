@@ -73,14 +73,13 @@ void nm_trace_state(nm_trace_scope_t scope, nm_trace_event_t event, nm_gate_t p_
   nm_trace_event(scope, event, NULL, p_gate);
 }
 
-
 void nm_trace_var(nm_trace_scope_t scope, nm_trace_event_t event, int _value, nm_gate_t p_gate)
 {
   void*value = (void*)((uintptr_t)_value);
   nm_trace_event(scope, event, value, p_gate);
 }
 
-void nm_trace_flush(void)
+static void nm_trace_flush(void)
 {
   static int flushed = 0;
   if(flushed)

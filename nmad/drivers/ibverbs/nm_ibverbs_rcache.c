@@ -44,6 +44,8 @@ void puk_mem_set_handlers(puk_mem_register_t reg, puk_mem_unregister_t unreg);
 const struct puk_mem_reg_s*puk_mem_reg(void*context, const void*ptr, size_t len);
 /** marks registration entry as 'unused' */
 void puk_mem_unreg(const struct puk_mem_reg_s*reg);
+
+static int puk_mem_cache_evict(void);
 #endif /* PUKABI */
 
 #include <Padico/Module.h>
@@ -142,10 +144,20 @@ static const struct puk_component_driver_s nm_ibverbs_rcache_component =
 static void*nm_ibverbs_mem_reg(void*context, const void*ptr, size_t len)
 {
   struct ibv_pd*pd = context;
-  struct ibv_mr*mr = ibv_reg_mr(pd, (void*)ptr, len, 
-				IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+  struct ibv_mr*mr = NULL;
+ retry:
+  mr = ibv_reg_mr(pd, (void*)ptr, len, 
+                  IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(mr == NULL)
     {
+#ifdef MINI_PUKABI
+      if(errno == ENOMEM)
+        {
+          int evicted = puk_mem_cache_evict();
+          if(evicted)
+            goto retry;
+        }
+#endif /* MINI_PUKABI */
       NM_FATAL("ibverbs: error %d (%s) while registering memory- ptr = %p; len = %d.\n",
                errno, strerror(errno), ptr, (int)len);
     }
@@ -408,18 +420,9 @@ static void puk_mem_cache_flush(struct puk_mem_reg_s*r)
   r->refcount = 0;
 }
 
-static struct puk_mem_reg_s*puk_mem_slot_lookup(void)
+static int puk_mem_cache_evict(void)
 {
   static unsigned int victim = 0;
-  int i;
-  for(i = 0; i < PUK_MEM_CACHE_SIZE; i++)
-    {
-      struct puk_mem_reg_s*r = &puk_mem.cache[i];
-      if(r->ptr == NULL && r->len == 0)
-	{
-	  return r;
-	}
-    }
   const int victim_first = victim;
   victim = (victim + 1) % PUK_MEM_CACHE_SIZE;
   struct puk_mem_reg_s*r = &puk_mem.cache[victim];
@@ -430,10 +433,34 @@ static struct puk_mem_reg_s*puk_mem_slot_lookup(void)
     }
   if(r->refcount > 0)
     {
-      return NULL;
+      return 0;
     }
-  puk_mem_cache_flush(r);
-  return r;
+  if(r->ptr != NULL)
+    {
+      puk_mem_cache_flush(r);
+      return 1;
+    }
+  return 0;
+}
+
+static struct puk_mem_reg_s*puk_mem_slot_lookup(void)
+{
+  int i;
+ retry:
+  for(i = 0; i < PUK_MEM_CACHE_SIZE; i++)
+    {
+      struct puk_mem_reg_s*r = &puk_mem.cache[i];
+      if(r->ptr == NULL && r->len == 0)
+	{
+	  return r;
+	}
+    }
+  int evicted = puk_mem_cache_evict();
+  if(evicted)
+    {
+      goto retry;
+    }
+  return NULL;
 }
 
 extern void puk_mem_dump(void)

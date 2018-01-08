@@ -146,7 +146,8 @@ static void*nm_ibverbs_mem_reg(void*context, const void*ptr, size_t len)
 				IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(mr == NULL)
     {
-      NM_FATAL("ibverbs: error while registering memory- ptr = %p; len = %d.\n", ptr, (int)len);
+      NM_FATAL("ibverbs: error %d (%s) while registering memory- ptr = %p; len = %d.\n",
+               errno, strerror(errno), ptr, (int)len);
     }
   return mr;
 }
@@ -156,7 +157,7 @@ static void nm_ibverbs_mem_unreg(void*context, const void*ptr, void*key)
   int rc = ibv_dereg_mr(mr);
   if(rc != 0)
     {
-      NM_FATAL("ibverbs: error while deregistering memory.\n");
+      NM_FATAL("ibverbs: error %d (%s) while deregistering memory.\n", rc, strerror(rc));
     }
 }
 

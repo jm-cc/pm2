@@ -200,7 +200,7 @@ static void nm_psm2_init(puk_context_t context, const void**p_url, size_t*p_url_
       nm_psm2_check_error(rc, "psm2_init");
       uint32_t num_units = -1;
       psm2_ep_num_devunits(&num_units);
-      NM_DISPF("pasm2- detected %u psm2 units\n", (unsigned)num_units);
+      NM_DISPF("psm2- detected %u psm2 units\n", (unsigned)num_units);
       struct psm2_ep_open_opts options;
       rc = psm2_ep_open_opts_get_defaults(&options);
       nm_psm2_check_error(rc, "psm2_ep_open_opts_get_defaults [ get default options ]");

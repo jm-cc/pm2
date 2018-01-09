@@ -194,8 +194,8 @@ static void nm_session_init_drivers(void)
       else if(strcmp(driver_name, "ibrcache") == 0)
 	{
 	  driver_trk_small =
-	    "<puk:composite id=\"nm:minidriver_ibverbs_bycopy\">"
-	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
+	    "<puk:composite id=\"nm:minidriver_ibverbs_bybuf\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bybuf\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
           driver_trk_large =

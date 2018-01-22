@@ -34,10 +34,12 @@ NM_MPI_ALIAS(MPI_Recv,      mpi_recv);
 NM_MPI_ALIAS(MPI_Irecv,     mpi_irecv);
 NM_MPI_ALIAS(MPI_Sendrecv,  mpi_sendrecv);
 NM_MPI_ALIAS(MPI_Sendrecv_replace, mpi_sendrecv_replace);
-NM_MPI_ALIAS(MPI_Iprobe,    mpi_iprobe);
-NM_MPI_ALIAS(MPI_Probe,     mpi_probe);
-NM_MPI_ALIAS(MPI_Send_init, mpi_send_init);
-NM_MPI_ALIAS(MPI_Recv_init, mpi_recv_init);
+NM_MPI_ALIAS(MPI_Iprobe,           mpi_iprobe);
+NM_MPI_ALIAS(MPI_Probe,            mpi_probe);
+NM_MPI_ALIAS(MPI_Send_init,        mpi_send_init);
+NM_MPI_ALIAS(MPI_Rsend_init,       mpi_rsend_init);
+NM_MPI_ALIAS(MPI_Ssend_init,       mpi_ssend_init);
+NM_MPI_ALIAS(MPI_Recv_init,        mpi_recv_init);
 
 /* ********************************************************* */
 
@@ -461,6 +463,69 @@ int mpi_send_init(const void*buf, int count, MPI_Datatype datatype, int dest, in
   *request = p_req->id;
   return err;
 }
+
+int mpi_rsend_init(const void*buf, int count, MPI_Datatype datatype,
+                   int dest, int tag, MPI_Comm comm, MPI_Request*request)
+{
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL)
+    {
+      return MPI_ERR_COMM;
+    }
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    {
+      return MPI_ERR_TYPE;
+    }
+  if((tag < 0) || (tag == MPI_ANY_TAG))
+    {
+      return MPI_ERR_TAG;
+    }
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc();
+  p_req->request_type = NM_MPI_REQUEST_SEND;
+  p_req->status |= NM_MPI_REQUEST_PERSISTENT;
+  p_req->p_datatype = p_datatype;
+  p_req->sbuf = buf;
+  p_req->count = count;
+  p_req->user_tag = nm_mpi_check_tag(tag);
+  p_req->communication_mode = NM_MPI_MODE_IMMEDIATE;
+  p_req->p_comm = p_comm;
+  int err = nm_mpi_isend_init(p_req, dest, p_comm);
+  *request = p_req->id;
+  return err;
+}
+
+int mpi_ssend_init(const void*buf, int count, MPI_Datatype datatype,
+                   int dest, int tag, MPI_Comm comm, MPI_Request*request)
+{
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL)
+    {
+      return MPI_ERR_COMM;
+    }
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    {
+      return MPI_ERR_TYPE;
+    }
+  if((tag < 0) || (tag == MPI_ANY_TAG))
+    {
+      return MPI_ERR_TAG;
+    }
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc();
+  p_req->request_type = NM_MPI_REQUEST_SEND;
+  p_req->status |= NM_MPI_REQUEST_PERSISTENT;
+  p_req->p_datatype = p_datatype;
+  p_req->sbuf = buf;
+  p_req->count = count;
+  p_req->user_tag = nm_mpi_check_tag(tag);
+  p_req->communication_mode = NM_MPI_MODE_SYNCHRONOUS;
+  p_req->p_comm = p_comm;
+  int err = nm_mpi_isend_init(p_req, dest, p_comm);
+  *request = p_req->id;
+  return err;
+}
+
 
 int mpi_recv_init(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)
 {

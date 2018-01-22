@@ -43,6 +43,13 @@ int MPI_Send_init(const void* buf,
                   MPI_Comm comm,
                   MPI_Request *request);
 
+int MPI_Rsend_init(const void*buf, int count, MPI_Datatype datatype,
+                   int dest, int tag, MPI_Comm comm, MPI_Request*request);
+
+int MPI_Ssend_init(const void*buf, int count, MPI_Datatype datatype,
+                   int dest, int tag, MPI_Comm comm, MPI_Request*request);
+
+  
 /**
  * Creates a persistent communication request for a receive operation.
  * @param buf initial address of receive buffer

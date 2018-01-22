@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014-2016 (see AUTHORS file)
+ * Copyright (C) 2014-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ NM_MPI_ALIAS(MPI_Scatterv,       mpi_scatterv);
 NM_MPI_ALIAS(MPI_Alltoall,       mpi_alltoall);
 NM_MPI_ALIAS(MPI_Alltoallv,      mpi_alltoallv);
 NM_MPI_ALIAS(MPI_Reduce,         mpi_reduce);
+NM_MPI_ALIAS(MPI_Scan,           mpi_scan);
 NM_MPI_ALIAS(MPI_Allreduce,      mpi_allreduce);
 NM_MPI_ALIAS(MPI_Reduce_scatter, mpi_reduce_scatter);
 
@@ -460,9 +461,9 @@ int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatyp
       NM_MPI_FATAL_ERROR("Operation %d not implemented\n", op);
       return MPI_ERR_INTERN;
     }
-  if (nm_comm_rank(p_comm->p_nm_comm) == root)
+  if(nm_comm_rank(p_comm->p_nm_comm) == root)
     {
-      // Get the input buffers of all the processes
+      /* Get the input buffers of all the processes */
       int i;
       const int slot_size = count * nm_mpi_datatype_size(p_datatype);
       char*gather_buf = malloc(size * slot_size);
@@ -477,12 +478,12 @@ int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatyp
 	  if(i == root) continue;
 	  nm_mpi_coll_wait(requests[i]);
 	}
-      // input buffer from self
+      /* input buffer from self */
       if(sendbuf == MPI_IN_PLACE)
 	memcpy(&gather_buf[root * slot_size], recvbuf, slot_size);
       else
 	memcpy(&gather_buf[root * slot_size], sendbuf, slot_size);
-      // Do the reduction operation
+      /* Do the reduction operation */
       memcpy(recvbuf, &gather_buf[slot_size * (size - 1)], slot_size);
       for(i = size - 2; i >= 0; i--)
 	{
@@ -500,6 +501,54 @@ int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatyp
       return MPI_SUCCESS;
     }
 }
+
+int mpi_scan(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+{
+  const int tag = NM_MPI_TAG_PRIVATE_SCAN;
+  if(op == MPI_OP_NULL || op == MPI_REPLACE || op == MPI_NO_OP)
+    {
+      return MPI_ERR_OP;
+    }
+  if(comm == MPI_COMM_NULL)
+    {
+      return MPI_ERR_COMM;
+    }
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  nm_mpi_operator_t*p_operator = nm_mpi_operator_get(op);
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  assert(p_datatype->is_contig);
+  assert(p_datatype->size == p_datatype->extent);
+  if(p_operator->function == NULL)
+    {
+      NM_MPI_FATAL_ERROR("Operation %d not implemented\n", op);
+      return MPI_ERR_INTERN;
+    }
+  const int rank = nm_comm_rank(p_comm->p_nm_comm);
+  const int slot_size = count * nm_mpi_datatype_size(p_datatype);
+  char*buf = NULL;
+  nm_mpi_request_t*p_sreq = NULL;
+  nm_mpi_request_t*p_rreq = NULL;
+  if(rank > 0)
+    {
+      buf = malloc(slot_size);
+      p_rreq = nm_mpi_coll_irecv(buf, count, p_datatype, rank - 1, tag, p_comm);
+    }
+  if(sendbuf != MPI_IN_PLACE)
+    memcpy(recvbuf, sendbuf, slot_size);
+  if(rank > 0)
+    {
+      nm_mpi_coll_wait(p_rreq);
+      (*p_operator->function)(buf, recvbuf, &count, &datatype);
+      FREE_AND_SET_NULL(buf);
+    }
+  if(rank !=  nm_comm_size(p_comm->p_nm_comm) - 1)
+    {
+      p_sreq = nm_mpi_coll_isend(recvbuf, count, p_datatype, rank + 1, tag, p_comm);
+      nm_mpi_coll_wait(p_sreq);
+    }
+  return MPI_SUCCESS;
+}
+
 
 int mpi_allreduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {

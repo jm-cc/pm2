@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2014 (see AUTHORS file)
+ * Copyright (C) 2006-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -255,6 +255,8 @@ int MPI_Reduce(const void*sendbuf,
                MPI_Op op,
                int root,
                MPI_Comm comm);
+
+int MPI_Scan(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 
 /**
  * Combines the elements provided in the input buffer of each process

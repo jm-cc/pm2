@@ -106,6 +106,10 @@ void nm_mpi_attr_get(puk_hashtable_t p_attrs, struct nm_mpi_keyval_s*p_keyval, v
       *p_attr_value = puk_hashtable_lookup(p_attrs, p_keyval);
       *flag = 1;
     }
+  else
+    {
+      *flag = 0;
+    }
 }
 
 __PUK_SYM_INTERNAL

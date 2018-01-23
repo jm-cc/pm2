@@ -66,6 +66,23 @@ nm_mpi_request_t*nm_mpi_request_alloc(void)
   return p_req;
 }
 
+/** allocate a send request and fill all fields with default values */
+__PUK_SYM_INTERNAL
+nm_mpi_request_t*nm_mpi_request_alloc_send(nm_mpi_communication_mode_t comm_mode, int count, const void*sbuf,
+                                           struct nm_mpi_datatype_s*p_datatype, int tag, struct nm_mpi_communicator_s*p_comm)
+{
+  struct nm_mpi_request_s*p_req = nm_mpi_request_alloc();
+  p_req->request_type       = NM_MPI_REQUEST_SEND;
+  p_req->communication_mode = comm_mode;
+  p_req->count              = count;
+  p_req->sbuf               = sbuf;
+  p_req->p_datatype         = p_datatype;
+  p_req->user_tag           = tag;
+  p_req->p_comm             = p_comm;
+  p_req->status             = NM_MPI_STATUS_NONE;
+  return p_req;
+}
+
 __PUK_SYM_INTERNAL
 void nm_mpi_request_free(nm_mpi_request_t*p_req)
 {

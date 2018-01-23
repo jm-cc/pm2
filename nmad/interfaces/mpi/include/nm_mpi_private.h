@@ -927,6 +927,9 @@ void nm_mpi_info_update(const struct nm_mpi_info_s*p_info_up, struct nm_mpi_info
 
 nm_mpi_request_t*nm_mpi_request_alloc(void);
 
+nm_mpi_request_t*nm_mpi_request_alloc_send(nm_mpi_communication_mode_t comm_mode, int count, const void*sbuf,
+                                       struct nm_mpi_datatype_s*p_datatype, int tag, struct nm_mpi_communicator_s*p_comm);
+
 void nm_mpi_request_free(nm_mpi_request_t* req);
 
 nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id);

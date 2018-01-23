@@ -133,7 +133,7 @@ typedef struct nm_mpi_errhandler_s
 #define NM_MPI_TAG_PRIVATE_RMA_UNLOCK    ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x05)) /**< unlock request */
 #define NM_MPI_TAG_PRIVATE_RMA_UNLOCK_R  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x06)) /**< unlock ACK */
 /** If dynamic window, tells if target address is valid */
-#define NM_MPI_TAG_PRIVATE_RMA_OP_CHECK  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x0F)) 
+#define NM_MPI_TAG_PRIVATE_RMA_OP_CHECK  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE_SYNC | 0x0F))
 #define NM_MPI_TAG_PRIVATE_RMA_PUT       ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x1))
 #define NM_MPI_TAG_PRIVATE_RMA_GET_REQ   ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x2))
 #define NM_MPI_TAG_PRIVATE_RMA_ACC       ((nm_tag_t)(NM_MPI_TAG_PRIVATE_RMA_BASE | 0x3)) /**< accumulate */
@@ -158,7 +158,7 @@ typedef void (nm_mpi_delete_subroutine_t)(int*id, int*keyval, void*attribute_val
 
 /** generic C type for comm/win/types attributes */
 typedef int (nm_mpi_attr_copy_fn_t)(int id, int comm_keyval, void*extra_state, void*attribute_val_in, void*attribute_val_out, int*flag);
-typedef int (nm_mpi_attr_delete_fn_t)(MPI_Comm comm, int comm_keyval, void*attribute_val, void*extra_state); 
+typedef int (nm_mpi_attr_delete_fn_t)(MPI_Comm comm, int comm_keyval, void*attribute_val, void*extra_state);
 
 /** a keyval used to index comm/types/win attributes */
 struct nm_mpi_keyval_s
@@ -239,6 +239,7 @@ typedef int8_t nm_mpi_status_t;
 /** @name Extended modes */
 /* @{ */
 typedef int8_t nm_mpi_communication_mode_t;
+#define NM_MPI_MODE_NONE           ((nm_mpi_communication_mode_t)0)
 #define NM_MPI_MODE_IMMEDIATE      ((nm_mpi_communication_mode_t)-1)
 #define NM_MPI_MODE_READY          ((nm_mpi_communication_mode_t)-2)
 #define NM_MPI_MODE_SYNCHRONOUS    ((nm_mpi_communication_mode_t)-3)
@@ -642,11 +643,11 @@ struct nm_mpi_window_s
   /** window attributes, hashed by keyval descriptor */
   puk_hashtable_t attrs;
   /**   SEQUENCE/EPOCH NUMBER MANAGEMENT   */
-  /** sequence number for thread safety and message scheduling 
+  /** sequence number for thread safety and message scheduling
    *  /!\ WARNING : As this number is on a 16 bits uint, if a lot of
    *  operations are issued (more than 65536 per epoch for one
    *  target), there is a risk for mismatching responses.
-   */  
+   */
   uint16_t next_seq;
   /** epoch management */
   nm_mpi_win_epoch_t*access;
@@ -930,6 +931,9 @@ nm_mpi_request_t*nm_mpi_request_alloc(void);
 nm_mpi_request_t*nm_mpi_request_alloc_send(nm_mpi_communication_mode_t comm_mode, int count, const void*sbuf,
                                        struct nm_mpi_datatype_s*p_datatype, int tag, struct nm_mpi_communicator_s*p_comm);
 
+nm_mpi_request_t*nm_mpi_request_alloc_recv(int count, void*rbuf,
+                                           struct nm_mpi_datatype_s*p_datatype, int tag, struct nm_mpi_communicator_s*p_comm);
+
 void nm_mpi_request_free(nm_mpi_request_t* req);
 
 nm_mpi_request_t*nm_mpi_request_get(MPI_Fint req_id);
@@ -1198,7 +1202,7 @@ static inline nm_tag_t nm_mpi_rma_mpi_op_to_tag(MPI_Op op)
 {
   return (nm_tag_t)((((nm_tag_t)op) << 4) & 0xF0);
 }
- 
+
 /**
  * Create the tag for private rma operations, without the window encoded
  * id.
@@ -1207,7 +1211,7 @@ static inline nm_tag_t nm_mpi_rma_create_usertag(uint16_t seq, int user_tag)
 {
   return nm_mpi_rma_seq_to_tag(seq) + (((nm_tag_t)user_tag) & 0xFC0000FF);
 }
- 
+
 /**
  * Create the tag for private rma operations, with the first 32 bits used for window
  * id.

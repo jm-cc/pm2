@@ -83,6 +83,23 @@ nm_mpi_request_t*nm_mpi_request_alloc_send(nm_mpi_communication_mode_t comm_mode
   return p_req;
 }
 
+/** allocate a recv request and fill all fields with default values */
+__PUK_SYM_INTERNAL
+nm_mpi_request_t*nm_mpi_request_alloc_recv(int count, void*rbuf,
+                                           struct nm_mpi_datatype_s*p_datatype, int tag, struct nm_mpi_communicator_s*p_comm)
+{
+  struct nm_mpi_request_s*p_req = nm_mpi_request_alloc();
+  p_req->request_type       = NM_MPI_REQUEST_RECV;
+  p_req->communication_mode = NM_MPI_MODE_NONE;
+  p_req->count              = count;
+  p_req->rbuf               = rbuf;
+  p_req->p_datatype         = p_datatype;
+  p_req->user_tag           = tag;
+  p_req->p_comm             = p_comm;
+  p_req->status             = NM_MPI_STATUS_NONE;
+  return p_req;
+}
+
 __PUK_SYM_INTERNAL
 void nm_mpi_request_free(nm_mpi_request_t*p_req)
 {
@@ -118,7 +135,7 @@ static int nm_mpi_set_status(nm_mpi_request_t*p_req, struct mpi_status_s*status)
 	  err = nm_sr_recv_source(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad, &p_gate);
 	  status->MPI_SOURCE = nm_mpi_communicator_get_dest(p_req->p_comm, p_gate);
 	}
-      else 
+      else
 	{
 	  status->MPI_SOURCE = p_req->request_source;
 	}
@@ -462,7 +479,7 @@ int mpi_cancel(MPI_Request*request)
 	  err = MPI_ERR_UNSUPPORTED_OPERATION;
 	}
     }
-  else 
+  else
     {
       NM_MPI_FATAL_ERROR("Request type %d incorrect\n", p_req->request_type);
     }
@@ -490,7 +507,7 @@ int mpi_start(MPI_Request*request)
     {
       err = nm_mpi_irecv_start(p_req);
     }
-  else 
+  else
     {
       NM_MPI_FATAL_ERROR("Unknown persistent request type: %d\n", p_req->request_type);
       err = MPI_ERR_INTERN;

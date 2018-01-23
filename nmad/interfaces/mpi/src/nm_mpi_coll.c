@@ -57,14 +57,7 @@ nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype
 __PUK_SYM_INTERNAL
 nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int source, int tag, nm_mpi_communicator_t*p_comm)
 {
-  nm_mpi_request_t*p_req = nm_mpi_request_alloc();
-  p_req->request_type            = NM_MPI_REQUEST_RECV;
-  p_req->p_datatype              = p_datatype;
-  p_req->rbuf                    = buffer;
-  p_req->count                   = count;
-  p_req->user_tag                = tag;
-  p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
-  p_req->p_comm                  = p_comm;
+  nm_mpi_request_t*p_req = nm_mpi_request_alloc_recv(count, buffer, p_datatype, tag, p_comm);
   int err = nm_mpi_irecv(p_req, source, p_comm);
   if(err != MPI_SUCCESS)
     {
@@ -590,7 +583,7 @@ int mpi_reduce_scatter(const void*sendbuf, void*recvbuf, const int*recvcounts, M
       memcpy(recvbuf, reducebuf, recvcounts[0] * p_datatype->extent);
       FREE_AND_SET_NULL(requests);
     }
-  else 
+  else
     {
       nm_mpi_request_t*p_req = nm_mpi_coll_irecv(recvbuf, recvcounts[nm_comm_rank(p_comm->p_nm_comm)], p_datatype, 0, tag, p_comm);
       nm_mpi_coll_wait(p_req);
@@ -601,5 +594,3 @@ int mpi_reduce_scatter(const void*sendbuf, void*recvbuf, const int*recvcounts, M
     }
   return MPI_SUCCESS;
 }
-
-

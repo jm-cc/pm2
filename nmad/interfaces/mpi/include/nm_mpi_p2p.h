@@ -109,7 +109,13 @@ int MPI_Bsend(const void *buffer,
               int tag,
               MPI_Comm comm);
 
-
+int MPI_Irsend(const void*buf,
+               int count,
+               MPI_Datatype datatype,
+               int dest,
+               int tag,
+               MPI_Comm comm,
+               MPI_Request*request);
 /**
  * Performs a standard-mode, blocking receive.
  * @param buffer initial address of receive buffer
@@ -222,7 +228,7 @@ int MPI_Waitany(int count,
 
 int MPI_Waitsome(int incount,
 		 MPI_Request *array_of_requests,
-		 int *outcount, 
+		 int *outcount,
 		 int *array_of_indices,
 		 MPI_Status *array_of_statuses);
 
@@ -352,7 +358,7 @@ int MPI_Get_elements_x(const MPI_Status*status,
 		       MPI_Count*count);
 
 int MPI_Test_cancelled(const MPI_Status*status, int*flag);
-  
+
 
 /* @}*/
 /* @}*/

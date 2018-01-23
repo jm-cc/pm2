@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014-2016 (see AUTHORS file)
+ * Copyright (C) 2014-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ static struct nm_sr_monitor_s nm_mpi_datatype_requests_monitor =
     .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
     .p_gate     = NM_ANY_GATE,
     .tag        = NM_MPI_TAG_PRIVATE_TYPE_ADD,
-    .tag_mask   = NM_MPI_TAG_PRIVATE_BASE | 0x0F };
+    .tag_mask   = NM_MPI_TAG_PRIVATE_BASE | 0xFF };
 
 /** store builtin datatypes */
 static void nm_mpi_datatype_store(int id, size_t size, int elements, const char*name);
@@ -471,7 +471,7 @@ static void nm_mpi_datatype_request_monitor(nm_sr_event_t event, const nm_sr_eve
 static void nm_mpi_datatype_request_recv(nm_sr_event_t event, const nm_sr_event_info_t*info, void*ref)
 {
   const nm_tag_t             tag = info->recv_unexpected.tag;
-  if(NM_MPI_TAG_PRIVATE_TYPE_ADD == (tag & (NM_MPI_TAG_PRIVATE_BASE | 0x0F)))
+  if(NM_MPI_TAG_PRIVATE_TYPE_ADD == (tag & (NM_MPI_TAG_PRIVATE_BASE | 0xFF)))
     {
       const nm_gate_t           from = info->recv_unexpected.p_gate;      
       const size_t               len = info->recv_unexpected.len;
@@ -535,7 +535,7 @@ int nm_mpi_datatype_send(nm_gate_t gate, nm_mpi_datatype_t*p_datatype)
   nm_tag += 1; /* Keeps the sequence number */
   nm_sr_recv_init(p_session, &req);
   nm_sr_recv_unpack_contiguous(p_session, &req, NULL, 0);
-  nm_sr_recv_irecv(p_session, &req, gate, nm_tag, NM_MPI_TAG_PRIVATE_BASE | 0xFFFF0F);
+  nm_sr_recv_irecv(p_session, &req, gate, nm_tag, NM_MPI_TAG_PRIVATE_BASE | 0xFFFFFF);
   err = nm_sr_rwait(p_session, &req);
   /* Insert into exchanged hashtable */
   nm_mpi_datatype_exchange_insert(gate, p_datatype->id, p_datatype->hash);

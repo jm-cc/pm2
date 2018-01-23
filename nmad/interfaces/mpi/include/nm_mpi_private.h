@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2017 (see AUTHORS file)
+ * Copyright (C) 2006-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -103,7 +103,7 @@ typedef struct nm_mpi_errhandler_s
 #define NM_MPI_TAG_PRIVATE_SCAN          ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x1A))
 #define NM_MPI_TAG_PRIVATE_REDUCESCATTER ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x1B))
 #define NM_MPI_TAG_PRIVATE_ALLGATHER     ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x1C))
-#define NM_MPI_TAG_PRIVATE_TYPE_ADD      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x21)) /**< add a datatype */
+#define NM_MPI_TAG_PRIVATE_TYPE_ADD      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x21)) /**< add a datatype; tag is 0xF0XXXX21 where XXXX is seq number (16 bits) */
 #define NM_MPI_TAG_PRIVATE_TYPE_ADD_ACK  ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x22)) /**< answer to add request */
 #define NM_MPI_TAG_PRIVATE_WIN_INIT      ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x23))
 #define NM_MPI_TAG_PRIVATE_WIN_FENCE     ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x24))

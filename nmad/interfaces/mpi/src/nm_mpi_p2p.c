@@ -49,7 +49,7 @@ static inline void nm_mpi_get_tag(nm_mpi_communicator_t*p_comm, int user_tag, nm
   if(user_tag == MPI_ANY_TAG)
     {
       *nm_tag   = 0;
-      *tag_mask = NM_MPI_TAG_PRIVATE_BASE; /* mask out private tags */
+      *tag_mask = NM_MPI_TAG_USER_MASK; /* mask out private tags */
     }
   else
     {

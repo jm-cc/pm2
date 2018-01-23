@@ -89,6 +89,7 @@ typedef struct nm_mpi_errhandler_s
 
 /** Maximum value of the tag specified by the end-user */
 #define NM_MPI_TAG_MAX                   ((nm_tag_t)(0x7FFFFFFF))
+#define NM_MPI_TAG_USER_MASK             ((nm_tag_t)(0x80000000))
 /** Mask for private tags */
 #define NM_MPI_TAG_PRIVATE_BASE          ((nm_tag_t)(0xF0000000))
 #define NM_MPI_TAG_PRIVATE_BARRIER       ((nm_tag_t)(NM_MPI_TAG_PRIVATE_BASE | 0x11))

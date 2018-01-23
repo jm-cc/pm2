@@ -233,16 +233,16 @@ typedef int8_t nm_mpi_request_type_t;
 
 typedef int8_t nm_mpi_status_t;
 #define NM_MPI_STATUS_NONE        ((nm_mpi_status_t)0x00)
-#define NM_MPI_REQUEST_CANCELLED  ((nm_mpi_status_t)0x01) /**< request has been cancelled */
-#define NM_MPI_REQUEST_PERSISTENT ((nm_mpi_status_t)0x02) /**< request is persistent */
+#define NM_MPI_REQUEST_CANCELLED  ((nm_mpi_status_t)0x04) /**< request has been cancelled */
+#define NM_MPI_REQUEST_PERSISTENT ((nm_mpi_status_t)0x08) /**< request is persistent */
 
 /** @name Extended modes */
 /* @{ */
 typedef int8_t nm_mpi_communication_mode_t;
-#define NM_MPI_MODE_NONE           ((nm_mpi_communication_mode_t)0)
-#define NM_MPI_MODE_IMMEDIATE      ((nm_mpi_communication_mode_t)-1)
-#define NM_MPI_MODE_READY          ((nm_mpi_communication_mode_t)-2)
-#define NM_MPI_MODE_SYNCHRONOUS    ((nm_mpi_communication_mode_t)-3)
+#define NM_MPI_MODE_NONE           ((nm_mpi_communication_mode_t)0x00)
+#define NM_MPI_MODE_IMMEDIATE      ((nm_mpi_communication_mode_t)0x10)
+#define NM_MPI_MODE_READY          ((nm_mpi_communication_mode_t)0x20)
+#define NM_MPI_MODE_SYNCHRONOUS    ((nm_mpi_communication_mode_t)0x40)
 /* @} */
 
 #define _NM_MPI_MAX_DATATYPE_SIZE 64

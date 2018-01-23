@@ -228,22 +228,15 @@ typedef struct nm_mpi_win_epoch_s nm_mpi_win_epoch_t;
 /** Type of a communication request */
 typedef int8_t nm_mpi_request_type_t;
 #define NM_MPI_REQUEST_ZERO       ((nm_mpi_request_type_t)0x00)
-#define NM_MPI_REQUEST_SEND       ((nm_mpi_request_type_t)0x01)
-#define NM_MPI_REQUEST_RECV       ((nm_mpi_request_type_t)0x02)
+#define NM_MPI_REQUEST_RECV       ((nm_mpi_request_type_t)0x01)
+#define NM_MPI_REQUEST_SEND       ((nm_mpi_request_type_t)0x02)
+#define NM_MPI_REQUEST_RSEND      ((nm_mpi_request_type_t)0x12)
+#define NM_MPI_REQUEST_SSEND      ((nm_mpi_request_type_t)0x22)
 
 typedef int8_t nm_mpi_status_t;
 #define NM_MPI_STATUS_NONE        ((nm_mpi_status_t)0x00)
 #define NM_MPI_REQUEST_CANCELLED  ((nm_mpi_status_t)0x04) /**< request has been cancelled */
 #define NM_MPI_REQUEST_PERSISTENT ((nm_mpi_status_t)0x08) /**< request is persistent */
-
-/** @name Extended modes */
-/* @{ */
-typedef int8_t nm_mpi_communication_mode_t;
-#define NM_MPI_MODE_NONE           ((nm_mpi_communication_mode_t)0x00)
-#define NM_MPI_MODE_IMMEDIATE      ((nm_mpi_communication_mode_t)0x10)
-#define NM_MPI_MODE_READY          ((nm_mpi_communication_mode_t)0x20)
-#define NM_MPI_MODE_SYNCHRONOUS    ((nm_mpi_communication_mode_t)0x40)
-/* @} */
 
 #define _NM_MPI_MAX_DATATYPE_SIZE 64
 
@@ -259,8 +252,6 @@ typedef struct nm_mpi_request_s
   nm_sr_request_t request_nmad;
   /** type of the request */
   nm_mpi_request_type_t request_type;
-  /** communication mode to be used when exchanging data */
-  nm_mpi_communication_mode_t communication_mode;
   /** status of request */
   nm_mpi_status_t status;
   /** tag given by the user*/
@@ -928,8 +919,8 @@ void nm_mpi_info_update(const struct nm_mpi_info_s*p_info_up, struct nm_mpi_info
 
 nm_mpi_request_t*nm_mpi_request_alloc(void);
 
-nm_mpi_request_t*nm_mpi_request_alloc_send(nm_mpi_communication_mode_t comm_mode, int count, const void*sbuf,
-                                       struct nm_mpi_datatype_s*p_datatype, int tag, struct nm_mpi_communicator_s*p_comm);
+nm_mpi_request_t*nm_mpi_request_alloc_send(nm_mpi_request_type_t type, int count, const void*sbuf,
+                                           struct nm_mpi_datatype_s*p_datatype, int tag, struct nm_mpi_communicator_s*p_comm);
 
 nm_mpi_request_t*nm_mpi_request_alloc_recv(int count, void*rbuf,
                                            struct nm_mpi_datatype_s*p_datatype, int tag, struct nm_mpi_communicator_s*p_comm);

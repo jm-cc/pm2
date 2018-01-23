@@ -65,7 +65,7 @@ int nm_mpi_isend_init(nm_mpi_request_t*p_req, int dest, nm_mpi_communicator_t*p_
   int err = MPI_SUCCESS;
   nm_gate_t p_gate = nm_mpi_communicator_get_gate(p_comm, dest);
   nm_mpi_datatype_ref_inc(p_req->p_datatype);
-  assert(p_req->request_type == NM_MPI_REQUEST_SEND);
+  assert(p_req->request_type & NM_MPI_REQUEST_SEND);
   if(p_gate == NULL)
     {
       NM_MPI_FATAL_ERROR("Cannot find rank %d in comm %p.\n", dest, p_comm);
@@ -79,7 +79,7 @@ __PUK_SYM_INTERNAL
 int nm_mpi_isend_start(nm_mpi_request_t*p_req)
 {
   int err = MPI_SUCCESS;
-  assert(p_req->request_type == NM_MPI_REQUEST_SEND);
+  assert(p_req->request_type & NM_MPI_REQUEST_SEND);
   nm_tag_t nm_tag, tag_mask;
   nm_mpi_get_tag(p_req->p_comm, p_req->user_tag, &nm_tag, &tag_mask);
   nm_session_t p_session = nm_mpi_communicator_get_session(p_req->p_comm);
@@ -92,24 +92,22 @@ int nm_mpi_isend_start(nm_mpi_request_t*p_req)
   nm_mpi_data_build(&data, (void*)p_req->sbuf, p_req->p_datatype, p_req->count);
   nm_sr_send_init(p_session, &(p_req->request_nmad));
   nm_sr_send_pack_data(p_session, &(p_req->request_nmad), &data);
-  switch(p_req->communication_mode)
+  switch(p_req->request_type)
     {
-    case NM_MPI_MODE_IMMEDIATE:
+    case NM_MPI_REQUEST_SEND:
       err = nm_sr_send_isend(p_session, &(p_req->request_nmad), p_req->gate, nm_tag);
       break;
-    case NM_MPI_MODE_READY:
+    case NM_MPI_REQUEST_RSEND:
       err = nm_sr_send_rsend(p_session, &(p_req->request_nmad), p_req->gate, nm_tag);
       break;
-    case NM_MPI_MODE_SYNCHRONOUS:
+    case NM_MPI_REQUEST_SSEND:
       err = nm_sr_send_issend(p_session, &(p_req->request_nmad), p_req->gate, nm_tag);
       break;
     default:
-      NM_MPI_FATAL_ERROR("madmpi: unkown mode %d for isend", p_req->communication_mode);
+      NM_MPI_FATAL_ERROR("madmpi: unkown type 0x%x for isend", p_req->request_type);
       break;
     }
   p_req->request_error = err;
-  if(p_req->request_type != NM_MPI_REQUEST_ZERO)
-    p_req->request_type = NM_MPI_REQUEST_SEND;
   return err;
 }
 
@@ -202,7 +200,7 @@ int mpi_isend(const void*buffer, int count, MPI_Datatype datatype, int dest, int
     {
       return MPI_ERR_TAG;
     }
-  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_MODE_IMMEDIATE, count, buffer, p_datatype, tag, p_comm);
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_REQUEST_SEND, count, buffer, p_datatype, tag, p_comm);
   *request = p_req->id;
   int err = nm_mpi_isend(p_req, dest, p_comm);
   return err;
@@ -224,7 +222,7 @@ int mpi_issend(const void*buffer, int count, MPI_Datatype datatype, int dest, in
     {
       return MPI_ERR_TAG;
     }
-  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_MODE_SYNCHRONOUS, count, buffer, p_datatype, tag, p_comm);
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_REQUEST_SSEND, count, buffer, p_datatype, tag, p_comm);
   *request = p_req->id;
   int err = nm_mpi_isend(p_req, dest, p_comm);
   return err;
@@ -246,7 +244,7 @@ int mpi_irsend(const void*buffer, int count, MPI_Datatype datatype, int dest, in
     {
       return MPI_ERR_TAG;
     }
-  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_MODE_READY, count, buffer, p_datatype, tag, p_comm);
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_REQUEST_RSEND, count, buffer, p_datatype, tag, p_comm);
   *request = p_req->id;
   int err = nm_mpi_isend(p_req, dest, p_comm);
   return err;
@@ -436,7 +434,7 @@ int mpi_send_init(const void*buffer, int count, MPI_Datatype datatype, int dest,
     {
       return MPI_ERR_TAG;
     }
-  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_MODE_IMMEDIATE, count, buffer, p_datatype, tag, p_comm);
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_REQUEST_SEND, count, buffer, p_datatype, tag, p_comm);
   p_req->status |= NM_MPI_REQUEST_PERSISTENT;
   int err = nm_mpi_isend_init(p_req, dest, p_comm);
   *request = p_req->id;
@@ -459,7 +457,7 @@ int mpi_rsend_init(const void*buffer, int count, MPI_Datatype datatype, int dest
     {
       return MPI_ERR_TAG;
     }
-  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_MODE_READY, count, buffer, p_datatype, tag, p_comm);
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_REQUEST_RSEND, count, buffer, p_datatype, tag, p_comm);
   p_req->status |= NM_MPI_REQUEST_PERSISTENT;
   int err = nm_mpi_isend_init(p_req, dest, p_comm);
   *request = p_req->id;
@@ -482,7 +480,7 @@ int mpi_ssend_init(const void*buffer, int count, MPI_Datatype datatype, int dest
     {
       return MPI_ERR_TAG;
     }
-  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_MODE_SYNCHRONOUS, count, buffer, p_datatype, tag, p_comm);
+  nm_mpi_request_t *p_req = nm_mpi_request_alloc_send(NM_MPI_REQUEST_SSEND, count, buffer, p_datatype, tag, p_comm);
   p_req->status |= NM_MPI_REQUEST_PERSISTENT;
   int err = nm_mpi_isend_init(p_req, dest, p_comm);
   *request = p_req->id;

@@ -83,7 +83,7 @@ static        void     nm_mpi_datatype_request_monitor(nm_sr_event_t event,
 static        void     nm_mpi_datatype_request_free(nm_sr_event_t event, const nm_sr_event_info_t*info,
 						    void*ref);
 
-static struct nm_sr_monitor_s nm_mpi_datatype_requests_monitor = 
+static struct nm_sr_monitor_s nm_mpi_datatype_requests_monitor =
   { .p_notifier = &nm_mpi_datatype_request_recv,
     .event_mask = NM_SR_EVENT_RECV_UNEXPECTED,
     .p_gate     = NM_ANY_GATE,
@@ -172,7 +172,7 @@ void nm_mpi_datatype_init(void)
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(MPI_COMM_WORLD);
   nm_session_t       p_session = nm_mpi_communicator_get_session(p_comm);
   nm_sr_session_monitor_set(p_session, &nm_mpi_datatype_requests_monitor);
-  
+
   /* Initialise the basic datatypes */
 
   /* C types */
@@ -208,7 +208,7 @@ void nm_mpi_datatype_init(void)
   nm_mpi_datatype_store(MPI_C_FLOAT_COMPLEX,    sizeof(float _Complex), 1, "MPI_C_FLOAT_COMPLEX");
   nm_mpi_datatype_store(MPI_C_DOUBLE_COMPLEX,   sizeof(double _Complex), 1, "MPI_C_DOUBLE_COMPLEX");
   nm_mpi_datatype_store(MPI_C_LONG_DOUBLE_COMPLEX, sizeof(long double _Complex), 1, "MPI_C_LONG_DOUBLE_COMPLEX");
-  
+
   /* FORTRAN types */
   nm_mpi_datatype_store(MPI_CHARACTER,          sizeof(char), 1, "MPI_CHARACTER");
   nm_mpi_datatype_store(MPI_LOGICAL,            sizeof(float), 1, "MPI_LOGICAL");
@@ -457,7 +457,6 @@ static void nm_mpi_datatype_request_monitor(nm_sr_event_t event, const nm_sr_eve
   p_req_resp->user_tag                = tag;
   p_req_resp->p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
   p_req_resp->request_type            = NM_MPI_REQUEST_RECV;
-  p_req_resp->communication_mode      = NM_MPI_MODE_IMMEDIATE;
   nm_sr_send_init(p_session, &p_req_resp->request_nmad);
   nm_sr_send_pack_contiguous(p_session, &p_req_resp->request_nmad, NULL, 0);
   nm_sr_request_set_ref(&p_req_resp->request_nmad, p_req_resp);
@@ -465,7 +464,7 @@ static void nm_mpi_datatype_request_monitor(nm_sr_event_t event, const nm_sr_eve
 			&nm_mpi_datatype_request_free);
   nm_sr_send_isend(p_session, &p_req_resp->request_nmad, p_req_resp->gate, tag);
   FREE_AND_SET_NULL(p_req->rbuf);
-  nm_mpi_request_free(p_req);  
+  nm_mpi_request_free(p_req);
 }
 
 static void nm_mpi_datatype_request_recv(nm_sr_event_t event, const nm_sr_event_info_t*info, void*ref)
@@ -473,7 +472,7 @@ static void nm_mpi_datatype_request_recv(nm_sr_event_t event, const nm_sr_event_
   const nm_tag_t             tag = info->recv_unexpected.tag;
   if(NM_MPI_TAG_PRIVATE_TYPE_ADD == (tag & (NM_MPI_TAG_PRIVATE_BASE | 0xFF)))
     {
-      const nm_gate_t           from = info->recv_unexpected.p_gate;      
+      const nm_gate_t           from = info->recv_unexpected.p_gate;
       const size_t               len = info->recv_unexpected.len;
       const nm_session_t   p_session = info->recv_unexpected.p_session;
       nm_mpi_request_t        *p_req = nm_mpi_request_alloc();
@@ -483,7 +482,6 @@ static void nm_mpi_datatype_request_recv(nm_sr_event_t event, const nm_sr_event_
       p_req->user_tag                = tag;
       p_req->p_datatype              = nm_mpi_datatype_get(MPI_BYTE);
       p_req->request_type            = NM_MPI_REQUEST_RECV;
-      p_req->communication_mode      = NM_MPI_MODE_IMMEDIATE;
       nm_sr_recv_init(p_session, &p_req->request_nmad);
       nm_sr_recv_unpack_contiguous(p_session, &p_req->request_nmad, p_req->rbuf, p_req->count);
       nm_sr_request_set_ref(&p_req->request_nmad, p_req);
@@ -681,7 +679,7 @@ int mpi_type_get_extent_x(MPI_Datatype datatype, MPI_Count*lb, MPI_Count*extent)
     *extent = p_datatype->extent;
   return MPI_SUCCESS;
 }
-  
+
 int mpi_type_extent(MPI_Datatype datatype, MPI_Aint*extent)
 {
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
@@ -973,7 +971,7 @@ int mpi_type_indexed(int count, int *array_of_blocklengths, int *array_of_displa
   return MPI_SUCCESS;
 }
 
-int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype) 
+int mpi_type_hindexed(int count, int *array_of_blocklengths, MPI_Aint *array_of_displacements, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
   int i;
   nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_get(oldtype);
@@ -1238,7 +1236,7 @@ int mpi_type_create_darray(int size, int rank, int ndims,
   NM_MPI_WARNING("madmpi: MPI_Type_create_darray()- unsupported.\n");
   return MPI_ERR_OTHER;
 }
-  
+
 
 int mpi_type_create_struct(int count, int array_of_blocklengths[], MPI_Aint array_of_displacements[], MPI_Datatype array_of_types[], MPI_Datatype *newtype)
 {
@@ -1353,7 +1351,7 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 	array_of_datatypes[0] = p_datatype->DUP.p_old_type->id;
       }
       break;
-      
+
     case MPI_COMBINER_RESIZED:
       {
 	if(max_datatypes < 1)
@@ -1364,7 +1362,7 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 	array_of_datatypes[0] = p_datatype->RESIZED.p_old_type->id;
       }
       break;
-      
+
     case MPI_COMBINER_VECTOR:
       {
 	if(max_datatypes < 1)
@@ -1377,7 +1375,7 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 	array_of_datatypes[0] = p_datatype->VECTOR.p_old_type->id;
       }
       break;
-      
+
     case MPI_COMBINER_HVECTOR:
       {
 	if(max_datatypes < 1)
@@ -1392,7 +1390,7 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 	array_of_datatypes[0] = p_datatype->HVECTOR.p_old_type->id;
       }
       break;
-      
+
     case MPI_COMBINER_INDEXED:
       {
 	if(max_datatypes < 1)
@@ -1409,7 +1407,7 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 	  }
       }
       break;
-      
+
     case MPI_COMBINER_HINDEXED:
       {
 	if(max_datatypes < 1)
@@ -1428,7 +1426,7 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 	  }
       }
       break;
-      
+
     case MPI_COMBINER_INDEXED_BLOCK:
       {
 	if(max_datatypes < 1)
@@ -1445,7 +1443,7 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 	  }
       }
       break;
-      
+
     case MPI_COMBINER_HINDEXED_BLOCK:
       {
 	if(max_datatypes < 1)
@@ -1464,7 +1462,7 @@ int mpi_type_get_contents(MPI_Datatype datatype, int max_integers, int max_addre
 	  }
       }
       break;
-      
+
     case MPI_COMBINER_SUBARRAY:
       NM_MPI_FATAL_ERROR("MPI_Type_get_contents()- SUBARRAY not supported yet.\n");
       break;
@@ -1575,7 +1573,7 @@ static void nm_mpi_datatype_free_internal(nm_mpi_datatype_t*p_datatype, int ref_
 	  int i;
 	  for(i = 0; i < p_datatype->count; i++)
 	    nm_mpi_datatype_ref_dec(p_datatype->STRUCT.p_map[i].p_old_type);
-	}	  
+	}
       if(p_datatype->STRUCT.p_map != NULL)
 	FREE_AND_SET_NULL(p_datatype->STRUCT.p_map);
       break;
@@ -1637,7 +1635,7 @@ static void nm_mpi_datatype_destroy(nm_mpi_datatype_t*p_datatype)
     {									\
       NM_MPI_DATATYPE_TRAVERSAL_LOOP_PLAIN(P_OLD_TYPE, BLOCKLENGTH, LPTR); \
     }
- 
+
 /** apply a function to every chunk of data in datatype */
 static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_apply_t apply, void*_context)
 {
@@ -1659,7 +1657,7 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 	    {
 	    case MPI_COMBINER_CONTIGUOUS:
 	      {
-		const struct nm_data_mpi_datatype_s sub = 
+		const struct nm_data_mpi_datatype_s sub =
 		  { .ptr = ptr, .p_datatype = p_datatype->CONTIGUOUS.p_old_type, .count = p_datatype->count };
 		nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 	      }
@@ -1667,7 +1665,7 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 
 	    case MPI_COMBINER_DUP:
 	      {
-		const struct nm_data_mpi_datatype_s sub = 
+		const struct nm_data_mpi_datatype_s sub =
 		  { .ptr = ptr, .p_datatype = p_datatype->DUP.p_old_type, .count = 1 };
 		nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 	      }
@@ -1675,12 +1673,12 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 
 	    case MPI_COMBINER_RESIZED:
 	      {
-		const struct nm_data_mpi_datatype_s sub = 
+		const struct nm_data_mpi_datatype_s sub =
 		  { .ptr = ptr, .p_datatype = p_datatype->RESIZED.p_old_type, .count = 1 };
 		nm_mpi_datatype_traversal_apply(&sub, apply, _context);
 	      }
 	      break;
-	      
+
 	    case MPI_COMBINER_VECTOR:
 	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->VECTOR.p_old_type,
 					     p_datatype->VECTOR.blocklength,
@@ -1689,10 +1687,10 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 
 	    case MPI_COMBINER_HVECTOR:
 	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->HVECTOR.p_old_type,
-					     p_datatype->HVECTOR.blocklength, 
+					     p_datatype->HVECTOR.blocklength,
 					     ptr + j * p_datatype->HVECTOR.hstride);
 	      break;
-	      
+
 	    case MPI_COMBINER_INDEXED:
 	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->INDEXED.p_old_type,
 					     p_datatype->INDEXED.p_map[j].blocklength,
@@ -1710,7 +1708,7 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 					     p_datatype->INDEXED_BLOCK.blocklength,
 					     ptr + p_datatype->INDEXED_BLOCK.array_of_displacements[j] * p_datatype->INDEXED_BLOCK.p_old_type->extent);
 	      break;
-	      
+
 	    case MPI_COMBINER_HINDEXED_BLOCK:
 	      NM_MPI_DATATYPE_TRAVERSAL_LOOP(p_datatype->HINDEXED_BLOCK.p_old_type,
 					     p_datatype->HINDEXED_BLOCK.blocklength,
@@ -1768,7 +1766,7 @@ static void nm_mpi_datatype_traversal_apply(const void*_content, const nm_data_a
 		  }
 	      }
 	      break;
-	      
+
 	    case MPI_COMBINER_NAMED:
 	      /* we should not be there: NAMED types are supposed to be contiguous/copmpact and caught by optimized path */
 	      (*apply)(ptr, p_datatype->size, _context);
@@ -1900,7 +1898,7 @@ struct nm_mpi_datatype_filter_memcpy_s
 {
   void*pack_ptr; /**< pointer on packed data in memory */
 };
-/** Pack data to memory 
+/** Pack data to memory
  */
 static void nm_mpi_datatype_pack_memcpy(void*data_ptr, nm_len_t size, void*_status)
 {
@@ -1970,7 +1968,7 @@ static void nm_mpi_datatype_wrapper_traversal_apply(const void*_content, nm_data
   nm_mpi_datatype_traversal_apply((void*)&p_data->data, apply, _context);
 }
 
-/** apply a serialization function to a datatype 
+/** apply a serialization function to a datatype
  */
 static void nm_mpi_datatype_serial_traversal_apply(const void*_content, nm_data_apply_t apply, void*_context)
 {
@@ -2043,7 +2041,7 @@ static void nm_mpi_datatype_serial_traversal_apply(const void*_content, nm_data_
   (*apply)((void*)p_datatype->p_serialized, p_datatype->ser_size, _context);
 }
 
-/** deserialize a datatype 
+/** deserialize a datatype
  */
 __PUK_SYM_INTERNAL
 void nm_mpi_datatype_deserialize(nm_mpi_datatype_ser_t*p_datatype, MPI_Datatype*newtype)
@@ -2071,7 +2069,7 @@ void nm_mpi_datatype_deserialize(nm_mpi_datatype_ser_t*p_datatype, MPI_Datatype*
     case MPI_COMBINER_VECTOR:
       {
 	nm_mpi_datatype_t*p_oldtype = nm_mpi_datatype_hashtable_get(p_datatype->p.VECTOR.old_type);
-	MPI_Type_vector(p_datatype->count, p_datatype->p.VECTOR.blocklength, p_datatype->p.VECTOR.stride, p_oldtype->id, newtype);	
+	MPI_Type_vector(p_datatype->count, p_datatype->p.VECTOR.blocklength, p_datatype->p.VECTOR.stride, p_oldtype->id, newtype);
       }
       break;
     case MPI_COMBINER_HVECTOR:

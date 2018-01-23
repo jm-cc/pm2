@@ -68,12 +68,12 @@ nm_mpi_request_t*nm_mpi_request_alloc(void)
 
 /** allocate a send request and fill all fields with default values */
 __PUK_SYM_INTERNAL
-nm_mpi_request_t*nm_mpi_request_alloc_send(nm_mpi_communication_mode_t comm_mode, int count, const void*sbuf,
+nm_mpi_request_t*nm_mpi_request_alloc_send(nm_mpi_request_type_t type, int count, const void*sbuf,
                                            struct nm_mpi_datatype_s*p_datatype, int tag, struct nm_mpi_communicator_s*p_comm)
 {
+  assert(type & NM_MPI_REQUEST_SEND);
   struct nm_mpi_request_s*p_req = nm_mpi_request_alloc();
-  p_req->request_type       = NM_MPI_REQUEST_SEND;
-  p_req->communication_mode = comm_mode;
+  p_req->request_type       = type;
   p_req->count              = count;
   p_req->sbuf               = sbuf;
   p_req->p_datatype         = p_datatype;
@@ -90,7 +90,6 @@ nm_mpi_request_t*nm_mpi_request_alloc_recv(int count, void*rbuf,
 {
   struct nm_mpi_request_s*p_req = nm_mpi_request_alloc();
   p_req->request_type       = NM_MPI_REQUEST_RECV;
-  p_req->communication_mode = NM_MPI_MODE_NONE;
   p_req->count              = count;
   p_req->rbuf               = rbuf;
   p_req->p_datatype         = p_datatype;
@@ -460,7 +459,7 @@ int mpi_cancel(MPI_Request*request)
 	  err = MPI_ERR_UNKNOWN;
 	}
     }
-  else if(p_req->request_type == NM_MPI_REQUEST_SEND)
+  else if(p_req->request_type & NM_MPI_REQUEST_SEND)
     {
       if(nm_sr_stest(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad) == NM_ESUCCESS)
 	{
@@ -566,7 +565,7 @@ int nm_mpi_request_test(nm_mpi_request_t*p_req)
     {
       err = nm_sr_rtest(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
     }
-  else if(p_req->request_type == NM_MPI_REQUEST_SEND)
+  else if(p_req->request_type & NM_MPI_REQUEST_SEND)
     {
       err = nm_sr_stest(nm_mpi_communicator_get_session(p_req->p_comm), &p_req->request_nmad);
     }
@@ -585,7 +584,7 @@ int nm_mpi_request_wait(nm_mpi_request_t*p_req)
     {
       err = MPI_SUCCESS;
     }
-  else if((p_req->request_type == NM_MPI_REQUEST_RECV) || (p_req->request_type == NM_MPI_REQUEST_SEND))
+  else if((p_req->request_type == NM_MPI_REQUEST_RECV) || (p_req->request_type & NM_MPI_REQUEST_SEND))
     {
       nm_sr_request_wait(&p_req->request_nmad);
       err = MPI_SUCCESS;

@@ -44,8 +44,8 @@ NM_MPI_ALIAS(MPI_Reduce_scatter, mpi_reduce_scatter);
 __PUK_SYM_INTERNAL
 nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm)
 {
-  nm_mpi_request_t*p_req = nm_mpi_request_alloc_send(NM_MPI_REQUEST_SEND, count, buffer,
-                                                     p_datatype, tag, p_comm);
+  assert(tag & NM_MPI_TAG_PRIVATE_MASK);
+  nm_mpi_request_t*p_req = nm_mpi_request_alloc_send(NM_MPI_REQUEST_SEND, count, buffer, p_datatype, tag, p_comm);
   int err = nm_mpi_isend(p_req, dest, p_comm);
   if(err != MPI_SUCCESS)
     {
@@ -57,6 +57,7 @@ nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype
 __PUK_SYM_INTERNAL
 nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int source, int tag, nm_mpi_communicator_t*p_comm)
 {
+  assert(tag & NM_MPI_TAG_PRIVATE_MASK);
   nm_mpi_request_t*p_req = nm_mpi_request_alloc_recv(count, buffer, p_datatype, tag, p_comm);
   int err = nm_mpi_irecv(p_req, source, p_comm);
   if(err != MPI_SUCCESS)

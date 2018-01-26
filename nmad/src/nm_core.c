@@ -103,6 +103,7 @@ void nm_core_progress(struct nm_core*p_core)
       if(!nm_gate_isactive(p_gate))
         {
           nm_active_gate_list_remove(&p_core->active_gates, p_gate);
+          nm_active_gate_list_cell_setnull(p_gate); /* mark cell as not enqueued in any list */
         }
     }
 }

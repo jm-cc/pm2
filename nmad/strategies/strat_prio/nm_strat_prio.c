@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2017 (see AUTHORS file)
+ * Copyright (C) 2006-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -223,6 +223,7 @@ static void strat_prio_try_and_commit(void*_status, nm_gate_t p_gate)
   strat_prio_flush_reqs(p_status, p_gate);
   
   struct nm_prio_queue_s*p_prio_queue = strat_prio_queue_normalize(p_status);
+  p_gate->strat_todo = (p_prio_queue != NULL);
   
   /* ** issue a new packet */
   if((p_trk_small->p_pw_send == NULL) &&

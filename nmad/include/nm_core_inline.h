@@ -101,7 +101,7 @@ static inline int nm_gate_isactive(struct nm_gate_s*p_gate)
 static inline void nm_gate_set_active(struct nm_gate_s*p_gate)
 {
   nm_core_lock_assert(p_gate->p_core);
-  if(nm_gate_isactive(p_gate) && nm_active_gate_list_cell_isnull(p_gate))
+  if(nm_active_gate_list_cell_isnull(p_gate) && nm_gate_isactive(p_gate))
     {
       nm_active_gate_list_push_back(&p_gate->p_core->active_gates, p_gate);
     }
@@ -141,6 +141,7 @@ static inline void nm_strat_pack_ctrl(nm_gate_t p_gate, nm_header_ctrl_generic_t
       p_ctrl_chunk->ctrl = *p_header;
       nm_ctrl_chunk_list_push_back(&p_gate->ctrl_chunk_list, p_ctrl_chunk);
     }
+  nm_gate_set_active(p_gate);
 }
 
 static inline void nm_core_pw_completions_flush(struct nm_core*p_core)

@@ -89,6 +89,23 @@ static inline void nm_pw_ref_dec(struct nm_pkt_wrap_s *p_pw)
     }
 }
 
+static inline int nm_gate_isactive(struct nm_gate_s*p_gate)
+{
+  return( (!nm_req_chunk_list_empty(&p_gate->req_chunk_list)) ||
+          (!nm_ctrl_chunk_list_empty(&p_gate->ctrl_chunk_list)) ||
+          (p_gate->strat_todo) ||
+          (!nm_pkt_wrap_list_empty(&p_gate->pending_large_recv)));
+}
+
+/** mark gate as having active requests */
+static inline void nm_gate_set_active(struct nm_gate_s*p_gate)
+{
+  nm_core_lock_assert(p_gate->p_core);
+  if(nm_gate_isactive(p_gate) && nm_active_gate_list_cell_isnull(p_gate))
+    {
+      nm_active_gate_list_push_back(&p_gate->p_core->active_gates, p_gate);
+    }
+}
 
 /** Schedule and post new outgoing buffers */
 static inline void nm_strat_try_and_commit(nm_gate_t p_gate)

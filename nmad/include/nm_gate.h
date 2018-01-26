@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2017 (see AUTHORS file)
+ * Copyright (C) 2006-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,6 +75,7 @@ typedef enum nm_gate_status_e nm_gate_status_t;
 
 
 PUK_LIST_DECLARE_TYPE(nm_gate);
+PUK_LIST_DECLARE_TYPE2(nm_active_gate, struct nm_gate_s);
 
 /** Connection to another process.
  */
@@ -82,7 +83,8 @@ struct nm_gate_s
 {
   /** link to store gates in the core gate_list */
   PUK_LIST_LINK(nm_gate);
-
+  PUK_LIST_LINK(nm_active_gate);
+  
   /** current status of the gate (connected / not connected) */
   nm_gate_status_t status;
 
@@ -103,6 +105,7 @@ struct nm_gate_s
   /** Strategy components elements */
   struct puk_receptacle_NewMad_Strategy_s strategy_receptacle;
   puk_instance_t strategy_instance;
+  int strat_todo; /**< strategy has work to do*/
 
   /** send reqs posted to the gate */
   struct nm_req_chunk_list_s req_chunk_list;
@@ -111,12 +114,13 @@ struct nm_gate_s
   struct nm_ctrl_chunk_list_s ctrl_chunk_list;
 
   /** NM core object. */
-  struct nm_core *p_core;
+  struct nm_core*p_core;
 };
 
 PUK_LIST_CREATE_FUNCS(nm_gate);
+PUK_LIST_CREATE_FUNCS(nm_active_gate);
 
-#define NM_FOR_EACH_GATE(P_GATE, P_CORE) \
+#define NM_FOR_EACH_GATE(P_GATE, P_CORE)                        \
   puk_list_foreach(nm_gate, P_GATE, &(P_CORE)->gate_list)
 
 #endif /* NM_GATE_H */

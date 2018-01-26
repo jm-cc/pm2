@@ -42,6 +42,8 @@ void nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate, nm_drv_vect_t*p_drvs
   p_gate->strategy_instance = puk_component_instantiate(p_core->strategy_component);
   puk_instance_indirect_NewMad_Strategy(p_gate->strategy_instance, NULL,
 					&p_gate->strategy_receptacle);
+  p_gate->strat_todo = 0;
+  nm_active_gate_list_cell_setnull(p_gate);
   nm_gate_list_push_back(&p_core->gate_list, p_gate);
 
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;

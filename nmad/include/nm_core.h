@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2017 (see AUTHORS file)
+ * Copyright (C) 2006-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ struct nm_core
   struct nm_unexpected_core_list_s unexpected;     /**< global list of unexpected chunks */
   struct nm_pkt_wrap_lfqueue_s completed_pws;      /**< queue of completed pw waiting for event dispatch */
   struct nm_core_monitor_vect_s monitors;          /**< monitors for upper layers to track events in nmad core */
+  struct nm_active_gate_list_s active_gates;       /**< list of gates with active requests */
 
   puk_hashtable_t trk_table;                       /**< trk table hashed by component status; used for reverse lookup */
 

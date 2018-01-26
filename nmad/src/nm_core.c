@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2017 (see AUTHORS file)
+ * Copyright (C) 2006-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,6 +74,7 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
 	{
 	  nm_req_chunk_list_push_back(&p_pack->p_gate->req_chunk_list, p_req_chunk);
 	}
+      nm_gate_set_active(p_pack->p_gate);
       nm_core_polling_level(p_core);
       p_req_chunk = nm_req_chunk_lfqueue_dequeue_single_reader(&p_core->pack_submissions);
     }
@@ -84,13 +85,13 @@ static inline void nm_core_pack_submissions_flush(struct nm_core*p_core)
  */
 void nm_core_progress(struct nm_core*p_core)
 {
-  nm_gate_t p_gate = NULL;
   nm_core_lock_assert(p_core);
   nm_profile_inc(p_core->profiling.n_strat_apply);
   nm_core_pack_submissions_flush(p_core);
   nm_core_pw_completions_flush(p_core);
-  /* apply strategy on each gate */
-  NM_FOR_EACH_GATE(p_gate, p_core)
+  /* apply strategy on each active gate */
+  nm_gate_t p_gate = NULL, p_tmp_gate;
+  puk_list_foreach_safe(nm_active_gate, p_gate, p_tmp_gate, &p_core->active_gates)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
@@ -99,6 +100,10 @@ void nm_core_progress(struct nm_core*p_core)
 	  /* process postponed recv requests */
 	  nm_strat_rdv_accept(p_gate);
 	}
+      if(!nm_gate_isactive(p_gate))
+        {
+          nm_active_gate_list_remove(&p_core->active_gates, p_gate);
+        }
     }
 }
 
@@ -430,6 +435,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   memset(p_core, 0, sizeof(struct nm_core));
 
   nm_gate_list_init(&p_core->gate_list);
+  nm_active_gate_list_init(&p_core->active_gates);
   nm_drv_list_init(&p_core->driver_list);
   p_core->nb_drivers = 0;
 

@@ -93,13 +93,14 @@ void nm_core_progress(struct nm_core*p_core)
   nm_gate_t p_gate = NULL, p_tmp_gate;
   puk_list_foreach_safe(nm_active_gate, p_gate, p_tmp_gate, &p_core->active_gates)
     {
+      assert(nm_active_gate_list_contains(&p_core->active_gates, p_gate));
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-	{
-	  /* schedule new requests on all gates */
-	  nm_strat_try_and_commit(p_gate);
-	  /* process postponed recv requests */
-	  nm_strat_rdv_accept(p_gate);
-	}
+        {
+          /* schedule new requests on all gates */
+          nm_strat_try_and_commit(p_gate);
+          /* process postponed recv requests */
+          nm_strat_rdv_accept(p_gate);
+        }
       if(!nm_gate_isactive(p_gate))
         {
           nm_active_gate_list_remove(&p_core->active_gates, p_gate);

@@ -97,13 +97,22 @@ static inline int nm_gate_isactive(struct nm_gate_s*p_gate)
           (!nm_pkt_wrap_list_empty(&p_gate->pending_large_recv)));
 }
 
+static inline int nm_gate_is_in_active_list(struct nm_core*p_core, struct nm_gate_s*p_gate)
+{
+  return ((p_gate == nm_active_gate_list_begin(&p_core->active_gates)) ||
+          (!nm_active_gate_list_cell_isnull(p_gate)));
+}
+
 /** mark gate as having active requests */
 static inline void nm_gate_set_active(struct nm_gate_s*p_gate)
 {
   nm_core_lock_assert(p_gate->p_core);
-  if(nm_active_gate_list_cell_isnull(p_gate) && nm_gate_isactive(p_gate))
+  if( (!nm_gate_is_in_active_list(p_gate->p_core, p_gate)) &&
+      nm_gate_isactive(p_gate))
     {
+      assert(!nm_active_gate_list_contains(&p_gate->p_core->active_gates, p_gate));
       nm_active_gate_list_push_back(&p_gate->p_core->active_gates, p_gate);
+      assert(nm_gate_is_in_active_list(p_gate->p_core, p_gate));
     }
 }
 

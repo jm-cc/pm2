@@ -160,19 +160,16 @@ int main(int argc, char **argv)
                 }
         }
 
-        fprintf(stdout, "# (%s): My rank is %d\n", host_name, comm_rank);
-
         ping_side	= !(comm_rank & 1);
         rank_dst	= ping_side?(comm_rank | 1):(comm_rank & ~1);
 
         if (ping_side)
 	  {
-	    fprintf(stdout, "# (%d): ping with %d\n", comm_rank, rank_dst);
-	    fprintf(stdout, "# warming up...\n");
+	    fprintf(stdout, "# (%s): my rank = %d; ping %d\n", host_name, comm_rank, rank_dst);
 	  } 
 	else 
 	  {
-	    fprintf(stdout, "# (%d): pong with %d\n", comm_rank, rank_dst);
+	    fprintf(stdout, "# (%s): my rank = %d; pong %d\n", host_name, comm_rank, rank_dst);
 	  }
 
 

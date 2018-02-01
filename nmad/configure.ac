@@ -316,7 +316,7 @@ for e in `( cd ${nmad_srcdir}; find examples -name Makefile.in )`; do
 done
 
 AC_PADICO_OUT_SH([interfaces/sampling/nmad-sample])
-out_mk="${out_mk} Makefile examples/Makefile nmad.pc eztrace_nmad_core.tpl doc/Doxyfile"
+out_mk="${out_mk} Makefile examples/Makefile nmad-tests.mk nmad.pc eztrace_nmad_core.tpl doc/Doxyfile"
 
 AC_PADICO_OUT_COMMON_MK
 AC_PADICO_OUTPUT

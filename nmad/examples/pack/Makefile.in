@@ -29,5 +29,5 @@ $(TARGET_BIN): %: %.pic.o
 TESTS += nm_pack_latency nm_pack_large_small_large_small
 BENCH += nm_pack_latency nm_pack_ping nm_pack_ping_anysrc
 
-include @nmad_srcdir@/nmad-tests.mk
+include @abs_top_builddir@/nmad-tests.mk
 

@@ -35,5 +35,5 @@ LIBS     :=
 
 TESTS += pi3f90
 
-include @nmad_srcdir@/nmad-tests.mk
+include @abs_top_builddir@/nmad-tests.mk
 

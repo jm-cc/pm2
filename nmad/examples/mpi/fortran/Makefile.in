@@ -34,6 +34,6 @@ LIBS     :=
 
 TESTS += basics fdatatype fpi
 
-include @nmad_srcdir@/nmad-tests.mk
+include @abs_top_builddir@/nmad-tests.mk
 
 test-fdatatype: NMAD_NODES = 4

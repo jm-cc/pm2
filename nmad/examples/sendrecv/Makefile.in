@@ -31,7 +31,7 @@ nm_sr_iovec: CFLAGS += -g
 
 BENCH += nm_sr_latency nm_sr_self
 
-include @nmad_srcdir@/nmad-tests.mk
+include @abs_top_builddir@/nmad-tests.mk
 
 test-nm_sr_star: NMAD_NODES = 4
 

@@ -27,7 +27,7 @@ $(TARGET_BIN): nm_bench_%: nm_bench_%.pic.o nm_bench_generic.pic.o
 
 BENCH += nm_bench_sendrecv 
 
-include @nmad_srcdir@/nmad-tests.mk
+include @abs_top_builddir@/nmad-tests.mk
 
 
 

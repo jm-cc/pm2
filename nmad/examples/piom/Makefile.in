@@ -27,4 +27,4 @@ $(TARGET_BIN): %: %.pic.o
 
 BENCH += nm_piom_offload nm_piom_1toN
 
-include @nmad_srcdir@/nmad-tests.mk
+include @abs_top_builddir@/nmad-tests.mk

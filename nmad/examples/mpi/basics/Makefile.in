@@ -28,8 +28,7 @@ $(TARGET_BIN): %: %.pic.o
 TESTS +=
 BENCH += nm_mpi_bench nm_mpi_latency
 
-include @nmad_srcdir@/nmad-tests.mk
-
+include @abs_top_builddir@/nmad-tests.mk
 
 test-nm_mpi_star: NMAD_NODES = 4
 

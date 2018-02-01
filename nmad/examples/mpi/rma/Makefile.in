@@ -30,7 +30,7 @@ $(TARGET_BIN): %: %.pic.o
 TESTS +=
 BENCH += 
 
-include @nmad_srcdir@/nmad-tests.mk
+include @abs_top_builddir@/nmad-tests.mk
 
 test-nm_mpi_pscw_put: NMAD_NODES = 2
 

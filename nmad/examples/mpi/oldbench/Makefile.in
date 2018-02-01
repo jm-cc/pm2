@@ -30,8 +30,7 @@ include @puk_root@/etc/common_rules.mk
 TESTS +=
 BENCH += 
 
-include @nmad_srcdir@/nmad-tests.mk
-
+include @abs_top_builddir@/nmad-tests.mk
 
 nm_mpi_para_ping: mpi_para_ping.pic.o
 

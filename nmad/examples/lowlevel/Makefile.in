@@ -29,5 +29,5 @@ $(TARGET_BIN): %: %.pic.o
 TESTS += 
 BENCH += nm_driver_latency nm_core_latency
 
-include @nmad_srcdir@/nmad-tests.mk
+include @abs_top_builddir@/nmad-tests.mk
 

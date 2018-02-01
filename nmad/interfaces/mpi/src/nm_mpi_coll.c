@@ -490,7 +490,7 @@ int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatyp
     }
 }
 
-int mpi_scan(void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+int mpi_scan(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_SCAN;
   if(op == MPI_OP_NULL || op == MPI_REPLACE || op == MPI_NO_OP)

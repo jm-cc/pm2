@@ -63,6 +63,13 @@ nm_mpi_request_t*nm_mpi_request_alloc(void)
   nm_mpi_request_t*p_req = nm_mpi_handle_request_alloc(&nm_mpi_requests);
   nm_mpi_request_list_cell_init(p_req);
   p_req->status = 0;
+#ifdef NMAD_PROFILE
+  __sync_fetch_and_add(&nm_mpi_profile.cur_req_total, 1);
+  if(nm_mpi_profile.cur_req_total > nm_mpi_profile.max_req_total)
+    {
+      nm_mpi_profile.max_req_total = nm_mpi_profile.cur_req_total;
+    }
+#endif /* NMAD_PROFILE */
   return p_req;
 }
 
@@ -80,6 +87,13 @@ nm_mpi_request_t*nm_mpi_request_alloc_send(nm_mpi_request_type_t type, int count
   p_req->user_tag           = tag;
   p_req->p_comm             = p_comm;
   p_req->status             = NM_MPI_STATUS_NONE;
+#ifdef NMAD_PROFILE
+  __sync_fetch_and_add(&nm_mpi_profile.cur_req_send, 1);
+  if(nm_mpi_profile.cur_req_send > nm_mpi_profile.max_req_send)
+    {
+      nm_mpi_profile.max_req_send = nm_mpi_profile.cur_req_send;
+    }
+#endif /* NMAD_PROFILE */
   return p_req;
 }
 
@@ -96,12 +110,34 @@ nm_mpi_request_t*nm_mpi_request_alloc_recv(int count, void*rbuf,
   p_req->user_tag           = tag;
   p_req->p_comm             = p_comm;
   p_req->status             = NM_MPI_STATUS_NONE;
+#ifdef NMAD_PROFILE
+  __sync_fetch_and_add(&nm_mpi_profile.cur_req_recv, 1);
+  if(nm_mpi_profile.cur_req_recv > nm_mpi_profile.max_req_recv)
+    {
+      nm_mpi_profile.max_req_recv = nm_mpi_profile.cur_req_recv;
+    }
+#endif /* NMAD_PROFILE */
   return p_req;
 }
 
 __PUK_SYM_INTERNAL
 void nm_mpi_request_free(nm_mpi_request_t*p_req)
 {
+#ifdef NMAD_PROFILE
+  __sync_fetch_and_sub(&nm_mpi_profile.cur_req_total, 1);
+  if(p_req->request_type & NM_MPI_REQUEST_RECV)
+    {
+      __sync_fetch_and_sub(&nm_mpi_profile.cur_req_recv, 1);
+    }
+  else if(p_req->request_type & NM_MPI_REQUEST_SEND)
+    {
+      __sync_fetch_and_sub(&nm_mpi_profile.cur_req_send, 1);
+    }
+  else
+    {
+      fprintf(stderr, "# unexpected request type = 0x%x\n", p_req->request_type);
+    }
+#endif /* NMAD_PROFILE */
   /* set request to zero to help debug */
   p_req->request_type = NM_MPI_REQUEST_ZERO;
   nm_mpi_handle_request_free(&nm_mpi_requests, p_req);
@@ -161,7 +197,6 @@ int mpi_request_free(MPI_Request*request)
   int rc = nm_mpi_request_test(p_req);
   if(rc == NM_ESUCCESS || rc == -NM_ENOTPOSTED)
     {
-      p_req->request_type = NM_MPI_REQUEST_ZERO;
       nm_mpi_request_free(p_req);
     }
   else
@@ -538,7 +573,6 @@ void nm_mpi_request_complete(nm_mpi_request_t*p_req, MPI_Request*request)
 {
   if(!(p_req->status & NM_MPI_REQUEST_PERSISTENT))
     {
-      p_req->request_type = NM_MPI_REQUEST_ZERO;
       /* Release one active communication for that type */
       if(p_req->p_datatype->id >= _NM_MPI_DATATYPE_OFFSET)
         {

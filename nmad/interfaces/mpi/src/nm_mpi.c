@@ -25,6 +25,9 @@ PADICO_MODULE_BUILTIN(MadMPI, NULL, NULL, NULL);
 
 static int init_done = 0, finalize_done = 0;
 static int thread_level = 0;
+#ifdef NMAD_PROFILE
+__PUK_SYM_INTERNAL struct nm_mpi_profiling_s nm_mpi_profile = { 0 };
+#endif /* NMAD_PROFILE */
 
 NM_MPI_HANDLE_TYPE(errhandler, struct nm_mpi_errhandler_s, _NM_MPI_ERRHANDLER_OFFSET, 8);
 static struct nm_mpi_handle_errhandler_s nm_mpi_errhandlers;
@@ -239,6 +242,13 @@ int mpi_finalized(int*flag)
 
 int mpi_finalize(void)
 {
+#ifdef NMAD_PROFILE
+  int rank = -1;
+  nm_launcher_get_rank(&rank);
+  fprintf(stderr, "# ## MadMPI profiling for rank #%d__________\n", rank);
+  fprintf(stderr, "# max_req_send = %d; max_req_recv = %d; max_req_total = %d\n",
+          nm_mpi_profile.max_req_send, nm_mpi_profile.max_req_recv, nm_mpi_profile.max_req_total);
+#endif /* NMAD_PROFILE */
   mpi_barrier(MPI_COMM_WORLD);
   nm_mpi_rma_exit();
   nm_mpi_win_exit();

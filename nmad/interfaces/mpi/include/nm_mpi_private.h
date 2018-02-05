@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 
 #include <Padico/Puk.h>
+#include <nm_private_config.h>
 #include <nm_public.h>
 #include <nm_core_interface.h>
 #include <nm_sendrecv_interface.h>
@@ -675,6 +676,17 @@ struct nm_mpi_window_s
 /* @} */
 
 /* @} */
+
+#ifdef NMAD_PROFILE
+/** performance analysis information */
+struct nm_mpi_profiling_s
+{
+  int cur_req_send, max_req_send;
+  int cur_req_recv, max_req_recv;
+  int cur_req_total, max_req_total;
+};
+extern struct nm_mpi_profiling_s nm_mpi_profile;
+#endif /* NMAD_PROFILE */
 
 /* ********************************************************* */
 

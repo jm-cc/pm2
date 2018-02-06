@@ -1,1 +1,0 @@
-Ask the marcel scheduler to allocate extra VPs to run communication daemon threads. These extra VPs are exclusively 'reserved' for this purpose.

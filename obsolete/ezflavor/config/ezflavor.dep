@@ -1,3 +1,0 @@
-Provide: module
-Conflict: module
-Conflict: init

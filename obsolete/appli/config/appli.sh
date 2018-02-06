@@ -1,2 +1,0 @@
-PM2_APPLI_LIBNAME=appli
-

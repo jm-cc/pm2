@@ -1,2 +1,0 @@
-PM2_FUT2PAJE_PROGNAME=fut2paje
-

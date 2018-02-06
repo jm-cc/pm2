@@ -1,3 +1,0 @@
-Provide: bubblelib_linkmode
-Provide: static_libs
-Conflict: bubblelib_linkmode

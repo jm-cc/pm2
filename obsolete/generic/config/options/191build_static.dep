@@ -1,3 +1,0 @@
-Provide: @lib@_linkmode
-Provide: static_libs
-Conflict: @lib@_linkmode

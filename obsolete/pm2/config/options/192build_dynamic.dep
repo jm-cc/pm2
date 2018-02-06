@@ -1,3 +1,0 @@
-Provide: pm2_linkmode
-Provide: dynamic_libs
-Conflict: pm2_linkmode

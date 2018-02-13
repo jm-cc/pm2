@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015-2017 (see AUTHORS file)
+ * Copyright (C) 2015-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -242,7 +242,7 @@ void mpi_bench_init(int*argc, char***argv, int threads)
     {
       char hostname[256];
       gethostname(hostname, 256);
-      printf("# MadMPI benchmark - copyright (C) 2015-2016 INRIA\n");
+      printf("# MadMPI benchmark - copyright (C) 2015-2018 INRIA\n");
       printf("# This program comes with ABSOLUTELY NO WARRANTY.\n"
 	     "# This is free software, and you are welcome to redistribute it\n"
 	     "# under certain conditions; see file 'COPYING' for details.\n#\n");
@@ -258,7 +258,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
     {
       static const char*mpi_bench_rtt_labels[3] =
 	{
-	  [ MPI_BENCH_RTT_HALF ]   = "one-way",
+	  [ MPI_BENCH_RTT_HALF ]   = "one-way (half roundtrip)",
 	  [ MPI_BENCH_RTT_FULL ]   = "round-trip",
 	  [ MPI_BENCH_RTT_SUBLAT ] = "full minus ack"
 	};

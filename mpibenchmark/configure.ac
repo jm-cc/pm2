@@ -28,7 +28,10 @@ AC_PADICO_GNU_MAKE
 AC_PADICO_COMPILER
 AC_PADICO_CDEP
 AC_PADICO_LINKER
-AX_MPI
+AX_MPI([have_mpi=1], [have_mpi=0])
+if test "x${have_mpi}" != "x1"; then
+   AC_MSG_ERROR([ cannot find a valid MPI installation ])
+fi
 AX_OPENMP([HAVE_OPENMP=yes], [HAVE_OPENMP=no])
 AC_SUBST([HAVE_OPENMP])
 AC_SUBST([OPENMP_CFLAGS])

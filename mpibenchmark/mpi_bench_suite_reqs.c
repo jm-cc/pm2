@@ -28,7 +28,7 @@ int main(int argc, char**argv)
   struct mpi_bench_param_s params =
     {
       .start_len   = 1,
-      .end_len     = 500000,
+      .end_len     = 5000,
       .multiplier  = MULT_DEFAULT,
       .increment   = INCR_DEFAULT,
       .iterations  = LOOPS_DEFAULT,

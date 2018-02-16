@@ -12,11 +12,11 @@ BENCH_RMA      := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_rm
 BENCH_RMAOVERLAP := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_rmaoverlap_*.c))
 BENCH_REQS       := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_reqs_*.c))
 
-BENCH_ALL      := $(BENCH_BASE) $(BENCH_OVERLAP) $(BENCH_DATATYPE) $(BENCH_THREAD) $(BENCH_NOISE) $(BENCH_RMA) $(BENCH_RMAOVERLAP) $(BENCH_REQS)
+BENCH_ALL      := $(BENCH_BASE) $(BENCH_OVERLAP) $(BENCH_DATATYPE) $(BENCH_THREAD) $(BENCH_NOISE) $(BENCH_RMA) $(BENCH_RMAOVERLAP) $(BENCH_REQS) 
 
 BENCH_SUITES   := mpi_bench_suite_base mpi_bench_suite_overlap mpi_bench_suite_thread mpi_bench_suite_rma mpi_bench_suite_rmaoverlap mpi_bench_suite_reqs
 
-TARGET_BIN = $(BENCH_ALL) $(BENCH_SUITES)
+TARGET_BIN = $(BENCH_ALL) $(BENCH_SUITES) mpi_bench_flood
 TARGET_LIB =
 SUBDIRS =
 
@@ -60,6 +60,8 @@ mpi_bench_suite_rma: $(patsubst %, %.o, mpi_bench_suite_rma mpi_bench_generic $(
 mpi_bench_suite_rmaoverlap: $(patsubst %, %.o, mpi_bench_suite_rmaoverlap mpi_bench_generic $(BENCH_RMA) $(BENCH_RMAOVERLAP) $(BENCH_BASE))
 
 mpi_bench_suite_reqs: $(patsubst %, %.o, mpi_bench_suite_reqs mpi_bench_generic $(BENCH_REQS))
+
+mpi_bench_flood: mpi_bench_flood.o
 
 ifeq (@HAVE_OPENMP@,yes)
 BENCH_OPENMP = mpi_bench_noise_omp_nocomm mpi_bench_thread_NtoN mpi_bench_suite_thread

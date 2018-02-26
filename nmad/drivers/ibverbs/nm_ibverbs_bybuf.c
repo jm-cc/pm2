@@ -213,6 +213,10 @@ static void nm_ibverbs_bybuf_destroy(void*_status)
 static void nm_ibverbs_bybuf_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props)
 {
   assert(context != NULL);
+  if(NM_IBVERBS_BYBUF_BLOCKSIZE > UINT16_MAX)
+    {
+      NM_FATAL("ibverbs: inconsistency detected in blocksize for 16 bits offsets.");
+    }
   struct nm_ibverbs_bybuf_context_s*p_bybuf_context = malloc(sizeof(struct nm_ibverbs_bybuf_context_s));
   p_bybuf_context->p_hca = nm_ibverbs_hca_from_context(context);
   puk_context_set_status(context, p_bybuf_context);

@@ -22,7 +22,7 @@
 #include "mpi_bench_generic.h"
 
 #define SIZE (400 * 1024)
-#define ITERS 1000
+#define ITERS 10
 
 int main(int argc, char **argv)
 {
@@ -36,36 +36,47 @@ int main(int argc, char **argv)
   char*rbuf = malloc(SIZE);
   memset(sbuf, 0, SIZE);
 
+  if(rank == 0)
+    {
+      fprintf(stderr, "# commsize | time/iter (usec.) | bw \n");
+    }
+  
   MPI_Request*rreqs = malloc(commsize * sizeof(MPI_Request));
   MPI_Request*sreqs = malloc(commsize * sizeof(MPI_Request));
   mpi_bench_tick_t t1, t2;
-  mpi_bench_get_tick(&t1);
-  int i, j;
-  for(i = 0; i < ITERS; i++)
+  int c, i, j;
+  for(c = 2 ; c < commsize; c++)
     {
-      if(rank ==0)
-        fprintf(stderr, "# iter = %d\n", i);
-      for(j = 0; j < commsize - 1; j++)
-        {
-          const int dest = (rank + j) % commsize;
-          const int from = (rank - j + commsize) % commsize;
-          const int tag = j;
-
-          MPI_Isend(sbuf, SIZE, MPI_CHAR, dest, tag, MPI_COMM_WORLD, &sreqs[j]);
-          MPI_Irecv(rbuf, SIZE, MPI_CHAR, from, tag, MPI_COMM_WORLD, &rreqs[j]);
-
-        }
-      for(j = 0; j < commsize - 1; j++)
-        {
-          MPI_Wait(&sreqs[j], MPI_STATUS_IGNORE);
-          MPI_Wait(&rreqs[j], MPI_STATUS_IGNORE);
-        }
-    }
-  mpi_bench_get_tick(&t2);
-  const double d = mpi_bench_timing_delay(&t1, &t2);
-  if(rank == 0)
-    {
-      fprintf(stderr, "# time = %g usec. (%g usec. / iter)\n", d, d/(double)ITERS);
+      if(rank < c)
+	{
+	  mpi_bench_get_tick(&t1);
+	  for(i = 0; i < ITERS; i++)
+	    {
+	      for(j = 0; j < c - 1; j++)
+		{
+		  const int dest = (rank + j) % c;
+		  const int from = (rank - j + c) % c;
+		  const int tag = j;
+		  
+		  MPI_Isend(sbuf, SIZE, MPI_CHAR, dest, tag, MPI_COMM_WORLD, &sreqs[j]);
+		  MPI_Irecv(rbuf, SIZE, MPI_CHAR, from, tag, MPI_COMM_WORLD, &rreqs[j]);
+		  
+		}
+	      for(j = 0; j < c - 1; j++)
+		{
+		  MPI_Wait(&sreqs[j], MPI_STATUS_IGNORE);
+		  MPI_Wait(&rreqs[j], MPI_STATUS_IGNORE);
+		}
+	      mpi_bench_get_tick(&t2);
+	    }
+	  const double d = mpi_bench_timing_delay(&t1, &t2);
+	  if(rank == 0)
+	    {
+	      const double d_iter = d / (double)ITERS;
+	      const double bw = (SIZE * (c - 1) / (d_iter));
+	      fprintf(stderr, "%8d       %9.2lf     %9.2lf\n", c, d_iter, bw);
+	    }
+	}
     }
   
   MPI_Finalize();

@@ -55,7 +55,7 @@ int main(int argc, char **argv)
           MPI_Irecv(rbuf, SIZE, MPI_CHAR, from, tag, MPI_COMM_WORLD, &rreqs[j]);
 
         }
-      for(j = 0; j < commsize; j++)
+      for(j = 0; j < commsize - 1; j++)
         {
           MPI_Wait(&sreqs[j], MPI_STATUS_IGNORE);
           MPI_Wait(&rreqs[j], MPI_STATUS_IGNORE);

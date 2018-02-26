@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2017 (see AUTHORS file)
+ * Copyright (C) 2006-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -177,6 +177,19 @@ static void nm_session_init_drivers(void)
 		"</puk:composite>";
 	      NM_DISPF("ibverbs- rcache forced by environment.\n");
 	    }
+	}
+      else if(strcmp(driver_name, "ibsr") == 0)
+	{
+	  driver_trk_small =
+	    "<puk:composite id=\"nm:minidriver_ibverbs_sr\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_sr\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  driver_trk_large =
+	    "<puk:composite id=\"nm:minidriver_ibverbs_lr2\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_lr2\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
 	}
       else if(strcmp(driver_name, "ibcopy") == 0)
 	{

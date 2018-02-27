@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2010-2013 (see AUTHORS file)
+ * Copyright (C) 2010-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,7 +78,6 @@ struct nm_ibverbs_cnx_addr_s
   struct nm_ibverbs_segment_s segment;
 };
 
-
 /** Global state of the HCA */
 struct nm_ibverbs_hca_s
 {
@@ -86,7 +85,6 @@ struct nm_ibverbs_hca_s
   struct ibv_context*context; /**< global IB context */
   struct ibv_pd*pd;           /**< global IB protection domain */
   uint16_t lid;               /**< local IB LID */
-  struct ibv_srq*p_srq;       /**< shared receive queue (if supported by device) */
   struct
   {
     int max_qp;               /**< maximum number of QP */
@@ -101,13 +99,23 @@ struct nm_ibverbs_hca_s
     int data_rate;
   } ib_caps;
   int refcount;
-  struct nm_ibverbs_hca_key_s
+  struct nm_ibverbs_hca_key_s /**< hash key to detect sharing of HCAs between contexts */
   {
     const char*device;
     int port;
   } key;
 };
 
+/** an nmad context for a HCA */
+struct nm_ibverbs_context_s
+{
+  struct nm_ibverbs_hca_s*p_hca;
+  struct ibv_srq*p_srq;       /**< shared receive queue (if supported by device) */
+  struct
+  {
+    int use_srq;              /**< whether QP will use SRQs for receive */
+  } ib_opts;
+};
 
 /** an IB connection for a given trk/gate pair */
 struct nm_ibverbs_cnx_s
@@ -146,6 +154,10 @@ void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 
 void nm_ibverbs_cnx_connect(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
+
+struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context);
+
+void nm_ibverbs_context_delete(struct nm_ibverbs_context_s*p_ibverbs_context);
 
 
 /* ** RDMA toolbox ***************************************** */

@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2017 (see AUTHORS file)
+ * Copyright (C) 2006-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -124,6 +124,43 @@ static void nm_ibverbs_common_init(void)
     }
 }
 
+/** get in ibverbs context from a puk context */
+struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context)
+{
+  struct nm_ibverbs_context_s*p_ibverbs_context = malloc(sizeof(struct nm_ibverbs_context_s));
+  const char*s_srq = puk_context_getattr(p_context, "ibv_srq");
+  p_ibverbs_context->p_hca = nm_ibverbs_hca_from_context(p_context);
+  p_ibverbs_context->p_srq = NULL;
+  if(s_srq != NULL)
+    {
+      if(p_ibverbs_context->p_hca->ib_caps.max_srq > 0)
+        {
+          struct ibv_srq_init_attr srq_attr = { .srq_context  = p_ibverbs_context,
+                                                .attr.max_wr  = NM_IBVERBS_RX_DEPTH,
+                                                .attr.max_sge = NM_IBVERBS_MAX_SG_RQ };
+          p_ibverbs_context->p_srq = ibv_create_srq(p_ibverbs_context->p_hca->pd, &srq_attr);
+          if(p_ibverbs_context->p_srq == NULL)
+            {
+              NM_WARN("ibverbs: cannot allocate SRQ.\n");
+              p_ibverbs_context->p_srq = NULL;
+            }
+        }
+      else
+        {
+          NM_FATAL("ibverbs: user asked for SRQ, but device does not support SRQ.\n");
+        }
+    }
+  return p_ibverbs_context;
+}
+
+void nm_ibverbs_context_delete(struct nm_ibverbs_context_s*p_ibverbs_context)
+{
+  if(p_ibverbs_context->p_srq != NULL)
+    ibv_destroy_srq(p_ibverbs_context->p_srq);
+  nm_ibverbs_hca_release(p_ibverbs_context->p_hca);
+  free(p_ibverbs_context);
+}
+
 struct nm_ibverbs_hca_s*nm_ibverbs_hca_from_context(puk_context_t context)
 {
   if(context == NULL)
@@ -149,7 +186,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
     {
       p_hca->refcount++;
       return p_hca;
-    }
+      }  
   const int autodetect = (strcmp(device, "auto") == 0);
 
   p_hca = malloc(sizeof(struct nm_ibverbs_hca_s));
@@ -287,22 +324,6 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
     {
       NM_FATAL("ibverbs: cannot allocate IB protection domain.\n");
     }
-  if(p_hca->ib_caps.max_srq > 0)
-    {
-      struct ibv_srq_init_attr srq_attr = { .srq_context = p_hca,
-                                            .attr.max_wr = NM_IBVERBS_RX_DEPTH,
-                                            .attr.max_sge = NM_IBVERBS_MAX_SG_RQ };
-      p_hca->p_srq = ibv_create_srq(p_hca->pd, &srq_attr);
-      if(p_hca->p_srq == NULL)
-        {
-          NM_WARN("ibverbs: cannot allocate SRQ.\n");
-          p_hca->p_srq = NULL;
-        }
-    }
-  else
-    {
-      p_hca->p_srq = NULL;
-    }
   p_hca->refcount = 1;
   p_hca->key.device = strdup(device);
   p_hca->key.port = port;
@@ -343,8 +364,6 @@ void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca)
     {
       assert(puk_hashtable_probe(nm_ibverbs_common.hca_table, &p_hca->key));
       puk_hashtable_remove(nm_ibverbs_common.hca_table, &p_hca->key);
-      if(p_hca->p_srq != NULL)
-        ibv_destroy_srq(p_hca->p_srq);
       ibv_dealloc_pd(p_hca->pd);
       ibv_close_device(p_hca->context);
       free(p_hca);

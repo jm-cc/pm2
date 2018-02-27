@@ -39,7 +39,7 @@ PUK_VECT_TYPE(nm_ibverbs_sr_status, struct nm_ibverbs_sr_s*);
 /** context for ibverbs sr */
 struct nm_ibverbs_sr_context_s
 {
-  struct nm_ibverbs_hca_s*p_hca;
+  struct nm_ibverbs_context_s*p_ibverbs_context;
   struct nm_connector_s*p_connector;
   struct nm_ibverbs_sr_status_vect_s p_statuses;
   int round_robin;
@@ -171,9 +171,9 @@ static void nm_ibverbs_sr_getprops(puk_context_t context, struct nm_minidriver_p
       NM_FATAL("ibverbs: inconsistency detected in blocksize for 16 bits offsets.");
     }
   struct nm_ibverbs_sr_context_s*p_ibverbs_sr_context = malloc(sizeof(struct nm_ibverbs_sr_context_s));
-  p_ibverbs_sr_context->p_hca = nm_ibverbs_hca_from_context(context);
+  p_ibverbs_sr_context->p_ibverbs_context = nm_ibverbs_context_new(context);
   puk_context_set_status(context, p_ibverbs_sr_context);
-  nm_ibverbs_hca_get_profile(p_ibverbs_sr_context->p_hca, &p_props->profile);
+  nm_ibverbs_hca_get_profile(p_ibverbs_sr_context->p_ibverbs_context->p_hca, &p_props->profile);
   p_props->capabilities.supports_data     = 0;
   p_props->capabilities.supports_buf_send = 1;
   p_props->capabilities.supports_buf_recv = 1;
@@ -197,7 +197,7 @@ static void nm_ibverbs_sr_close(puk_context_t context)
 {
   struct nm_ibverbs_sr_context_s*p_ibverbs_sr_context = puk_context_get_status(context);
   nm_connector_destroy(p_ibverbs_sr_context->p_connector);
-  nm_ibverbs_hca_release(p_ibverbs_sr_context->p_hca);
+  nm_ibverbs_context_delete(p_ibverbs_sr_context->p_ibverbs_context);
   puk_context_set_status(context, NULL);
   free(p_ibverbs_sr_context);
 }
@@ -207,8 +207,8 @@ static void nm_ibverbs_sr_connect(void*_status, const void*remote_url, size_t ur
 {
   struct nm_ibverbs_sr_s*p_ibverbs_sr = _status;
   struct nm_ibverbs_sr_context_s*p_ibverbs_sr_context = puk_context_get_status(p_ibverbs_sr->context);
-  p_ibverbs_sr->p_cnx = nm_ibverbs_cnx_new(p_ibverbs_sr_context->p_hca);
-  p_ibverbs_sr->mr = ibv_reg_mr(p_ibverbs_sr_context->p_hca->pd, &p_ibverbs_sr->buffer, sizeof(p_ibverbs_sr->buffer),
+  p_ibverbs_sr->p_cnx = nm_ibverbs_cnx_new(p_ibverbs_sr_context->p_ibverbs_context->p_hca);
+  p_ibverbs_sr->mr = ibv_reg_mr(p_ibverbs_sr_context->p_ibverbs_context->p_hca->pd, &p_ibverbs_sr->buffer, sizeof(p_ibverbs_sr->buffer),
                            IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(p_ibverbs_sr->mr == NULL)
     {

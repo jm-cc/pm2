@@ -241,6 +241,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   p_hca->ib_caps.max_cq        = device_attr.max_cq;
   p_hca->ib_caps.max_cqe       = device_attr.max_cqe;
   p_hca->ib_caps.max_mr        = device_attr.max_mr;
+  p_hca->ib_caps.max_srq       = device_attr.max_srq;
   p_hca->ib_caps.max_mr_size   = device_attr.max_mr_size;
   p_hca->ib_caps.page_size_cap = device_attr.page_size_cap;
   p_hca->ib_caps.max_msg_size  = port_attr.max_msg_sz;
@@ -269,9 +270,10 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   NM_DISPF("ibverbs- device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
 	   ibv_get_device_name(p_hca->ib_dev), link_width, s_link_rate, p_hca->ib_caps.data_rate, p_hca->lid);
 #ifdef DEBUG
-  NM_DISPF("ibverbs-   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
+  NM_DISPF("ibverbs-   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d; max_srq=%d\n",
 	   p_hca->ib_caps.max_qp, p_hca->ib_caps.max_qp_wr,
-	   p_hca->ib_caps.max_cq, p_hca->ib_caps.max_cqe);
+	   p_hca->ib_caps.max_cq, p_hca->ib_caps.max_cqe,
+           p_hca->ib_caps.max_srq);
   NM_DISPF("ibverbs-   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
 	   p_hca->ib_caps.max_mr,
 	   (unsigned long long) p_hca->ib_caps.max_mr_size,
@@ -284,6 +286,22 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(const char*device, int port)
   if(p_hca->pd == NULL)
     {
       NM_FATAL("ibverbs: cannot allocate IB protection domain.\n");
+    }
+  if(p_hca->ib_caps.max_srq > 0)
+    {
+      struct ibv_srq_init_attr srq_attr = { .srq_context = p_hca,
+                                            .attr.max_wr = NM_IBVERBS_RX_DEPTH,
+                                            .attr.max_sge = NM_IBVERBS_MAX_SG_RQ };
+      p_hca->p_srq = ibv_create_srq(p_hca->pd, &srq_attr);
+      if(p_hca->p_srq == NULL)
+        {
+          NM_WARN("ibverbs: cannot allocate SRQ.\n");
+          p_hca->p_srq = NULL;
+        }
+    }
+  else
+    {
+      p_hca->p_srq = NULL;
     }
   p_hca->refcount = 1;
   p_hca->key.device = strdup(device);
@@ -325,6 +343,8 @@ void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca)
     {
       assert(puk_hashtable_probe(nm_ibverbs_common.hca_table, &p_hca->key));
       puk_hashtable_remove(nm_ibverbs_common.hca_table, &p_hca->key);
+      if(p_hca->p_srq != NULL)
+        ibv_destroy_srq(p_hca->p_srq);
       ibv_dealloc_pd(p_hca->pd);
       ibv_close_device(p_hca->context);
       free(p_hca);

@@ -86,6 +86,7 @@ struct nm_ibverbs_hca_s
   struct ibv_context*context; /**< global IB context */
   struct ibv_pd*pd;           /**< global IB protection domain */
   uint16_t lid;               /**< local IB LID */
+  struct ibv_srq*p_srq;       /**< shared receive queue (if supported by device) */
   struct
   {
     int max_qp;               /**< maximum number of QP */
@@ -93,6 +94,7 @@ struct nm_ibverbs_hca_s
     int max_cq;               /**< maximum number of CQ */
     int max_cqe;              /**< maximum number of entries per CQ */
     int max_mr;               /**< maximum number of MR */
+    int max_srq;              /**< maximum number of SRQs; 0 if not supported */
     uint64_t max_mr_size;     /**< maximum size for a MR */
     uint64_t page_size_cap;   /**< maximum page size for device */
     uint64_t max_msg_size;    /**< maximum message size */

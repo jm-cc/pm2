@@ -82,7 +82,6 @@ struct nm_ibverbs_bybuf_s
   
   struct
   {
-    void*buf;                 /**< buffer to store recevived data */
     nm_len_t chunk_len;       /**< length of chunk to send */
   } recv;
   
@@ -183,7 +182,6 @@ static void* nm_ibverbs_bybuf_instantiate(puk_instance_t instance, puk_context_t
   p_bybuf->window.credits  = NM_IBVERBS_BYBUF_RBUF_NUM;
   p_bybuf->window.to_ack   = 0;
   p_bybuf->mr              = NULL;
-  p_bybuf->recv.buf        = NULL;
   p_bybuf->send.done       = NM_LEN_UNDEFINED;
   p_bybuf->send.chunk_len  = NM_LEN_UNDEFINED;
   p_bybuf->context         = context;
@@ -386,7 +384,6 @@ static int nm_ibverbs_bybuf_recv_buf_poll(void*_status, void**p_buffer, nm_len_t
   if(p_packet->header.status != 0)
     {
       assert((p_packet->header.status & NM_IBVERBS_BYBUF_STATUS_DATA) != 0);
-      assert(p_bybuf->recv.buf == NULL);
       const int offset = p_packet->header.offset;
       assert(offset >= 0);
       assert(offset <= NM_IBVERBS_BYBUF_DATA_SIZE);
@@ -430,20 +427,11 @@ static void nm_ibverbs_bybuf_recv_buf_release(void*_status)
     }
   p_bybuf->window.next_in = (p_bybuf->window.next_in + 1) % NM_IBVERBS_BYBUF_RBUF_NUM;
   nm_ibverbs_rdma_poll(p_bybuf->p_cnx);
-  p_bybuf->recv.buf = NULL;
   nm_ibverbs_send_flush(p_bybuf->p_cnx, NM_IBVERBS_WRID_ACK);
 }
 
 static int nm_ibverbs_bybuf_recv_cancel(void*_status)
 {
   struct nm_ibverbs_bybuf_s*__restrict__ p_bybuf = _status;
-  if(p_bybuf->recv.buf != NULL)
-    {
-      p_bybuf->recv.buf = NULL;
-      return NM_ESUCCESS;
-    }
-  else
-    {
-      return -NM_ENOTPOSTED;
-    }
+  return NM_ESUCCESS;
 }

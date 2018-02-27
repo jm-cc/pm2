@@ -26,28 +26,12 @@
 /* *** method: 'sr' ************************************ */
 
 #define NM_IBVERBS_SR_BLOCKSIZE (24 * 1024)
-#define NM_IBVERBS_SR_RBUF_NUM  8
-
-#define NM_IBVERBS_SR_BUFSIZE     (NM_IBVERBS_SR_BLOCKSIZE - sizeof(struct nm_ibverbs_sr_header_s))
-#define NM_IBVERBS_SR_DATA_SIZE    NM_IBVERBS_SR_BUFSIZE
-
-#define NM_IBVERBS_SR_CREDITS_THR ((NM_IBVERBS_SR_RBUF_NUM / 2) + 1)
-
-#define NM_IBVERBS_SR_STATUS_EMPTY   0x00  /**< no message in buffer */
-#define NM_IBVERBS_SR_STATUS_DATA    0x01  /**< data in buffer (sent by copy) */
-
-struct nm_ibverbs_sr_header_s
-{
-  uint16_t offset;         /**< data offset (packet_size = BUFSIZE - offset) */
-  uint8_t  ack;            /**< credits acknowledged */
-  volatile uint8_t status; /**< binary mask- describes the content of the message */
-}  __attribute__((packed));
+#define NM_IBVERBS_SR_BUFSIZE     NM_IBVERBS_SR_BLOCKSIZE 
 
 /** An "on the wire" packet for 'sr' minidriver */
 struct nm_ibverbs_sr_packet_s
 {
   char data[NM_IBVERBS_SR_BUFSIZE];
-  struct nm_ibverbs_sr_header_s header;
 } __attribute__((packed));
 
 PUK_VECT_TYPE(nm_ibverbs_sr_status, struct nm_ibverbs_sr_s*);
@@ -68,8 +52,7 @@ struct nm_ibverbs_sr_s
   struct
   {
     struct nm_ibverbs_sr_packet_s sbuf;
-    struct nm_ibverbs_sr_packet_s rbuf[NM_IBVERBS_SR_RBUF_NUM];
-    volatile uint16_t rack, sack;     /**< credits acknowledgement (recv, send) */
+    struct nm_ibverbs_sr_packet_s rbuf;
   } buffer;
   
   struct
@@ -142,7 +125,6 @@ static void* nm_ibverbs_sr_instantiate(puk_instance_t instance, puk_context_t co
   struct nm_ibverbs_sr_context_s*p_ibverbs_sr_context = puk_context_get_status(context);
  /* check parameters consistency */
   assert(sizeof(struct nm_ibverbs_sr_packet_s) % 1024 == 0);
-  assert(NM_IBVERBS_SR_CREDITS_THR > NM_IBVERBS_SR_RBUF_NUM / 2);
   /* init */
   struct nm_ibverbs_sr_s*p_ibverbs_sr = NULL;
   if(nm_ibverbs_memalign > 0)
@@ -196,7 +178,7 @@ static void nm_ibverbs_sr_getprops(puk_context_t context, struct nm_minidriver_p
   p_props->capabilities.supports_buf_send = 1;
   p_props->capabilities.supports_buf_recv = 1;
   p_props->capabilities.has_recv_any      = 0;
-  p_props->capabilities.max_msg_size      = NM_IBVERBS_SR_DATA_SIZE;
+  p_props->capabilities.max_msg_size      = NM_IBVERBS_SR_BUFSIZE;
 }
 
 static void nm_ibverbs_sr_init(puk_context_t context, const void**p_url, size_t*p_url_size)
@@ -258,14 +240,14 @@ static void nm_ibverbs_sr_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_
   struct nm_ibverbs_sr_s*__restrict__ p_ibverbs_sr = _status;
   assert(p_ibverbs_sr->send.chunk_len == NM_LEN_UNDEFINED);
   *p_buffer = &p_ibverbs_sr->buffer.sbuf;
-  *p_len = NM_IBVERBS_SR_DATA_SIZE;
+  *p_len = NM_IBVERBS_SR_BUFSIZE;
 }
 
 static void nm_ibverbs_sr_buf_send_post(void*_status, nm_len_t len)
 {
   struct nm_ibverbs_sr_s*__restrict__ p_ibverbs_sr = _status;
   p_ibverbs_sr->send.chunk_len = len;
-  assert(len <= NM_IBVERBS_SR_DATA_SIZE);
+  assert(len <= NM_IBVERBS_SR_BUFSIZE);
  
   struct ibv_sge list =
     {
@@ -327,7 +309,7 @@ static int nm_ibverbs_sr_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_
 {
   int err = -NM_EUNKNOWN;
   struct nm_ibverbs_sr_s*__restrict__ p_ibverbs_sr = _status;  
-  struct nm_ibverbs_sr_packet_s*__restrict__ p_packet = &p_ibverbs_sr->buffer.rbuf[0];
+  struct nm_ibverbs_sr_packet_s*__restrict__ p_packet = &p_ibverbs_sr->buffer.rbuf;
 
   if(p_ibverbs_sr->recv.chunk_len == NM_LEN_UNDEFINED)
     {

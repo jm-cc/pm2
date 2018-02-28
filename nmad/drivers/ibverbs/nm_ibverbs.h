@@ -110,10 +110,11 @@ struct nm_ibverbs_hca_s
 struct nm_ibverbs_context_s
 {
   struct nm_ibverbs_hca_s*p_hca;
-  struct ibv_srq*p_srq;       /**< shared receive queue (if supported by device) */
+  struct ibv_srq*p_srq;           /**< shared receive queue (if supported by device) */
+  struct ibv_cq*srq_cq;           /**< CQ used for SRQs */
   struct
   {
-    int use_srq;              /**< whether QP will use SRQs for receive */
+    int use_srq;                  /**< whether QP will use SRQs for receive */
   } ib_opts;
 };
 
@@ -147,6 +148,8 @@ void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca);
 
 void nm_ibverbs_hca_get_profile(struct nm_ibverbs_hca_s*p_hca, struct nm_drv_profile_s*p_profile);
 
+struct nm_ibverbs_cnx_s*nm_ibverbs_cnx_create(struct nm_ibverbs_context_s*p_ibverbs_context);
+
 struct nm_ibverbs_cnx_s*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca);
 
 void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
@@ -159,6 +162,8 @@ struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context);
 
 void nm_ibverbs_context_delete(struct nm_ibverbs_context_s*p_ibverbs_context);
 
+struct ibv_mr*nm_ibverbs_reg_mr(const struct nm_ibverbs_hca_s*p_hca, void*buf, size_t size,
+                                struct nm_ibverbs_segment_s*p_segment);
 
 /* ** RDMA toolbox ***************************************** */
 

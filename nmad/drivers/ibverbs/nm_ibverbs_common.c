@@ -73,7 +73,7 @@ int nm_ibverbs_memalign  = 4096;
 
 /* ********************************************************* */
 
-static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx_s*p_ibverbs_cnx, struct nm_ibverbs_hca_s*p_hca);
+static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx_s*p_ibverbs_cnx, struct nm_ibverbs_context_s*p_ibverbs_context, struct nm_ibverbs_hca_s*p_hca);
 static void nm_ibverbs_cnx_qp_reset(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 static void nm_ibverbs_cnx_qp_init(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 static void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
@@ -128,6 +128,7 @@ static void nm_ibverbs_common_init(void)
 struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context)
 {
   struct nm_ibverbs_context_s*p_ibverbs_context = malloc(sizeof(struct nm_ibverbs_context_s));
+  memset(p_ibverbs_context, 0, sizeof(struct nm_ibverbs_context_s));
   const char*s_srq = puk_context_getattr(p_context, "ibv_srq");
   p_ibverbs_context->p_hca = nm_ibverbs_hca_from_context(p_context);
   p_ibverbs_context->p_srq = NULL;
@@ -144,6 +145,13 @@ struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context)
               NM_WARN("ibverbs: cannot allocate SRQ.\n");
               p_ibverbs_context->p_srq = NULL;
             }
+          p_ibverbs_context->srq_cq = ibv_create_cq(p_ibverbs_context->p_hca->context, NM_IBVERBS_RX_DEPTH,
+                                                    p_ibverbs_context, NULL, 0);
+          if(p_ibverbs_context->srq_cq == NULL)
+            {
+              NM_FATAL("ibverbs: cannot create CQ.\n");
+            }
+          p_ibverbs_context->ib_opts.use_srq = 1;
         }
       else
         {
@@ -370,16 +378,25 @@ void nm_ibverbs_hca_release(struct nm_ibverbs_hca_s*p_hca)
     }
 }
 
+struct nm_ibverbs_cnx_s*nm_ibverbs_cnx_create(struct nm_ibverbs_context_s*p_ibverbs_context)
+{
+  struct nm_ibverbs_cnx_s*p_ibverbs_cnx = malloc(sizeof(struct nm_ibverbs_cnx_s));
+  memset(p_ibverbs_cnx, 0, sizeof(struct nm_ibverbs_cnx_s));
+  nm_ibverbs_cnx_qp_create(p_ibverbs_cnx, p_ibverbs_context, p_ibverbs_context->p_hca);
+  p_ibverbs_cnx->local_addr.lid = p_ibverbs_context->p_hca->lid;
+  p_ibverbs_cnx->local_addr.qpn = p_ibverbs_cnx->qp->qp_num;
+  p_ibverbs_cnx->local_addr.psn = lrand48() & 0xffffff;
+  return p_ibverbs_cnx;
+}
 
 struct nm_ibverbs_cnx_s*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca)
 {
   struct nm_ibverbs_cnx_s*p_ibverbs_cnx = malloc(sizeof(struct nm_ibverbs_cnx_s));
   memset(p_ibverbs_cnx, 0, sizeof(struct nm_ibverbs_cnx_s));
-  nm_ibverbs_cnx_qp_create(p_ibverbs_cnx, p_hca);
+  nm_ibverbs_cnx_qp_create(p_ibverbs_cnx, NULL, p_hca);
   p_ibverbs_cnx->local_addr.lid = p_hca->lid;
   p_ibverbs_cnx->local_addr.qpn = p_ibverbs_cnx->qp->qp_num;
   p_ibverbs_cnx->local_addr.psn = lrand48() & 0xffffff;
-
   return p_ibverbs_cnx;
 }
 
@@ -393,9 +410,24 @@ void nm_ibverbs_cnx_connect(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 void nm_ibverbs_cnx_close(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 {
   ibv_destroy_qp(p_ibverbs_cnx->qp);
-  ibv_destroy_cq(p_ibverbs_cnx->if_cq);
+  if(p_ibverbs_cnx->if_cq != NULL)
+    {
+      ibv_destroy_cq(p_ibverbs_cnx->if_cq);
+    }
   ibv_destroy_cq(p_ibverbs_cnx->of_cq);
   free(p_ibverbs_cnx);
+}
+
+struct ibv_mr*nm_ibverbs_reg_mr(const struct nm_ibverbs_hca_s*p_hca, void*buf, size_t size,
+                                struct nm_ibverbs_segment_s*p_segment)
+{
+  struct ibv_mr*p_mr = ibv_reg_mr(p_hca->pd, buf, size, IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+  if(p_mr != NULL)
+    {
+      p_segment->raddr = (uintptr_t)buf;
+      p_segment->rkey = p_mr->rkey;
+    }
+  return p_mr;
 }
 
 void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
@@ -444,13 +476,24 @@ void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx_s*p_ibverbs_cnx)
 /* ** state transitions for QP finite-state automaton */
 
 /** create QP and both CQs */
-static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx_s*p_ibverbs_cnx, struct nm_ibverbs_hca_s*p_hca)
+static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx_s*p_ibverbs_cnx,
+                                     struct nm_ibverbs_context_s*p_ibverbs_context,
+                                     struct nm_ibverbs_hca_s*p_hca)
 {
-  /* init inbound CQ */
-  p_ibverbs_cnx->if_cq = ibv_create_cq(p_hca->context, NM_IBVERBS_RX_DEPTH, NULL, NULL, 0);
-  if(p_ibverbs_cnx->if_cq == NULL)
+  const int use_srq = (p_ibverbs_context != NULL) && p_ibverbs_context->ib_opts.use_srq;
+  
+  if(use_srq)
     {
-      NM_FATAL("ibverbs: cannot create in CQ\n");
+      p_ibverbs_cnx->if_cq = NULL;
+    }
+  else
+    {
+      /* init inbound CQ */
+      p_ibverbs_cnx->if_cq = ibv_create_cq(p_hca->context, NM_IBVERBS_RX_DEPTH, NULL, NULL, 0);
+      if(p_ibverbs_cnx->if_cq == NULL)
+        {
+          NM_FATAL("ibverbs: cannot create in CQ\n");
+        }
     }
   /* init outbound CQ */
   p_ibverbs_cnx->of_cq = ibv_create_cq(p_hca->context, NM_IBVERBS_TX_DEPTH, NULL, NULL, 0);
@@ -461,7 +504,8 @@ static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx_s*p_ibverbs_cnx, stru
   /* create QP */
   struct ibv_qp_init_attr qp_init_attr = {
     .send_cq = p_ibverbs_cnx->of_cq,
-    .recv_cq = p_ibverbs_cnx->if_cq,
+    .recv_cq = use_srq ? p_ibverbs_context->srq_cq : p_ibverbs_cnx->if_cq,
+    .srq     = use_srq ? p_ibverbs_context->p_srq : NULL,
     .cap     = {
       .max_send_wr     = NM_IBVERBS_TX_DEPTH,
       .max_recv_wr     = NM_IBVERBS_RX_DEPTH,

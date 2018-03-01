@@ -178,11 +178,11 @@ static void nm_session_init_drivers(void)
 	      NM_DISPF("ibverbs- rcache forced by environment.\n");
 	    }
 	}
-      else if(strcmp(driver_name, "ibsr") == 0)
+      else if(strcmp(driver_name, "ibsrq") == 0)
 	{
 	  driver_trk_small =
-	    "<puk:composite id=\"nm:minidriver_ibverbs_sr\">"
-	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_sr\"/>"
+	    "<puk:composite id=\"nm:minidriver_ibverbs_srq\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_srq\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
 	  driver_trk_large =

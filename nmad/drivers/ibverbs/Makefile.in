@@ -9,7 +9,7 @@ TARGET_BIN =
 TARGET_LIB =
 
 ifeq (@HAVE_INFINIBAND@,yes)
-TARGET_MOD += NewMad_ibverbs_common NewMad_ibverbs_bycopy NewMad_ibverbs_lr2 NewMad_ibverbs_rcache NewMad_ibverbs_adaptrdma NewMad_ibverbs_bybuf NewMad_ibverbs_sr
+TARGET_MOD += NewMad_ibverbs_common NewMad_ibverbs_bycopy NewMad_ibverbs_lr2 NewMad_ibverbs_rcache NewMad_ibverbs_adaptrdma NewMad_ibverbs_bybuf NewMad_ibverbs_srq
 endif
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
@@ -34,8 +34,8 @@ NewMad_ibverbs_bycopy: nm_ibverbs_bycopy.pic.o
 NewMad_ibverbs_bybuf: MODLIBS += --requires NewMad_ibverbs_common
 NewMad_ibverbs_bybuf: nm_ibverbs_bybuf.pic.o
 
-NewMad_ibverbs_sr: MODLIBS += --requires NewMad_ibverbs_common
-NewMad_ibverbs_sr: nm_ibverbs_sr.pic.o
+NewMad_ibverbs_srq: MODLIBS += --requires NewMad_ibverbs_common
+NewMad_ibverbs_srq: nm_ibverbs_srq.pic.o
 
 NewMad_ibverbs_adaptrdma: MODLIBS += --requires NewMad_ibverbs_common
 NewMad_ibverbs_adaptrdma: nm_ibverbs_adaptrdma.pic.o

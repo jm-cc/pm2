@@ -25,7 +25,7 @@
 
 /* *** method: 'sr' ************************************ */
 
-#define NM_IBVERBS_SRQ_BLOCKSIZE (24 * 1024)
+#define NM_IBVERBS_SRQ_BLOCKSIZE (48 * 1024)
 #define NM_IBVERBS_SRQ_BUFSIZE   ( NM_IBVERBS_SRQ_BLOCKSIZE - sizeof(struct nm_ibverbs_srq_header_s) )
 
 /** header for each packet */
@@ -70,7 +70,6 @@ struct nm_ibverbs_srq_s
   struct
   {
     struct nm_ibverbs_srq_packet_s sbuf;
-    struct nm_ibverbs_srq_packet_s rbuf;
   } buffer;
   
   struct

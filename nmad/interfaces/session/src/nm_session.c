@@ -163,6 +163,15 @@ static void nm_session_init_drivers(void)
 	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_bybuf\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
+	  if(getenv("NMAD_IBVERBS_SRQ") != NULL)
+	    {
+              driver_trk_small =
+                "<puk:composite id=\"nm:minidriver_ibverbs_srq\">"
+                "  <puk:component id=\"0\" name=\"NewMad_ibverbs_srq\"/>"
+                "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+                "</puk:composite>";
+	      NM_DISPF("ibverbs- SRQ forced by environment.\n");
+            }
 	  driver_trk_large =
 	    "<puk:composite id=\"nm:minidriver_ibverbs_lr2\">"
 	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_lr2\"/>"
@@ -188,6 +197,19 @@ static void nm_session_init_drivers(void)
 	  driver_trk_large =
 	    "<puk:composite id=\"nm:minidriver_ibverbs_lr2\">"
 	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_lr2\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	}
+      else if(strcmp(driver_name, "ibsrqrcache") == 0)
+	{
+	  driver_trk_small =
+	    "<puk:composite id=\"nm:minidriver_ibverbs_srq\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_srq\"/>"
+	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
+	    "</puk:composite>";
+	  driver_trk_large =
+	    "<puk:composite id=\"nm:minidriver_ibverbs_rcache\">"
+	    "  <puk:component id=\"0\" name=\"NewMad_ibverbs_rcache\"/>"
 	    "  <puk:entry-point iface=\"NewMad_minidriver\" port=\"minidriver\" provider-id=\"0\" />"
 	    "</puk:composite>";
 	}

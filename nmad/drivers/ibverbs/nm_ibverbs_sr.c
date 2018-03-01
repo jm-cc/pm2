@@ -98,7 +98,6 @@ static void nm_ibverbs_sr_connect(void*_status, const void*p_remote_url, size_t 
 static void nm_ibverbs_sr_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_ibverbs_sr_buf_send_post(void*_status, nm_len_t len);
 static int  nm_ibverbs_sr_send_poll(void*_status);
-static int  nm_ibverbs_sr_recv_cancel(void*_status);
 static int  nm_ibverbs_sr_recv_poll_any(puk_context_t p_context, void**_status);
 static int  nm_ibverbs_sr_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_ibverbs_sr_recv_buf_release(void*_status);
@@ -120,7 +119,7 @@ static const struct nm_minidriver_iface_s nm_ibverbs_sr_minidriver =
     .recv_poll_any    = &nm_ibverbs_sr_recv_poll_any,
     .recv_buf_poll    = &nm_ibverbs_sr_recv_buf_poll,
     .recv_buf_release = &nm_ibverbs_sr_recv_buf_release,
-    .recv_cancel      = &nm_ibverbs_sr_recv_cancel
+    .recv_cancel      = NULL
   };
 
 static void*nm_ibverbs_sr_instantiate(puk_instance_t instance, puk_context_t context);
@@ -190,7 +189,7 @@ static void nm_ibverbs_sr_getprops(puk_context_t context, struct nm_minidriver_p
   assert(context != NULL);
   if(NM_IBVERBS_SR_BLOCKSIZE > UINT16_MAX)
     {
-      NM_FATAL("ibverbs: inconsistency detected in blocksize for 16 bits offsets.");
+      NM_FATAL("ibverbs- inconsistency detected in blocksize for 16 bits offsets.");
     }
   struct nm_ibverbs_sr_context_s*p_ibverbs_sr_context = malloc(sizeof(struct nm_ibverbs_sr_context_s));
 
@@ -211,6 +210,10 @@ static void nm_ibverbs_sr_init(puk_context_t context, const void**p_url, size_t*
 {
   struct nm_ibverbs_sr_context_s*p_ibverbs_sr_context = puk_context_get_status(context);
   const char*url = NULL;
+  if(!p_ibverbs_sr_context->p_ibverbs_context->ib_opts.use_srq)
+    {
+      NM_FATAL("ibverbs- board does not provide SRQ. Cannot use sr driver.\n");
+    }
   p_ibverbs_sr_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_sr_addr_s), &url);
   nm_ibverbs_sr_status_vect_init(&p_ibverbs_sr_context->p_statuses);
   p_ibverbs_sr_context->round_robin = 0;
@@ -244,8 +247,7 @@ static void nm_ibverbs_sr_connect(void*_status, const void*remote_url, size_t ur
   if(p_ibverbs_sr->mr == NULL)
     {
       const int err = errno;
-      NM_FATAL("Infiniband: sr cannot register MR (errno = %d; %s).\n",
-	       err, strerror(err));
+      NM_FATAL("ibverbs- sr cannot register MR (errno = %d; %s).\n", err, strerror(err));
     }
   /* ** exchange addresses */
   const char*local_url = puk_context_getattr(p_ibverbs_sr->context, "local_url");
@@ -259,7 +261,7 @@ static void nm_ibverbs_sr_connect(void*_status, const void*remote_url, size_t ur
   int rc = nm_connector_exchange(local_url, remote_url, &local_addr, &remote_addr);
   if(rc)
     {
-      NM_FATAL("ibverbs: timeout in address exchange.\n");
+      NM_FATAL("ibverbs- timeout in address exchange.\n");
     }
   p_ibverbs_sr->p_cnx->remote_addr = remote_addr.cnx_addr;
   p_ibverbs_sr->rrank = remote_addr.rank;
@@ -383,65 +385,18 @@ static int nm_ibverbs_sr_recv_poll_any(puk_context_t p_context, void**_status)
 
 static int nm_ibverbs_sr_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_len)
 {
-  int err = -NM_EUNKNOWN;
   struct nm_ibverbs_sr_s*__restrict__ p_ibverbs_sr = _status;
-  if(p_ibverbs_sr->p_ibverbs_sr_context->p_ibverbs_context->ib_opts.use_srq)
+  if(p_ibverbs_sr->recv.chunk_len != NM_LEN_UNDEFINED)
     {
-      if(p_ibverbs_sr->recv.chunk_len != NM_LEN_UNDEFINED)
-        {
-          struct nm_ibverbs_sr_packet_s*__restrict__ p_packet = &p_ibverbs_sr->p_ibverbs_sr_context->rbuf;
-          *p_buffer = p_packet->data;
-          *p_len = p_ibverbs_sr->recv.chunk_len;
-          return NM_ESUCCESS;
-        }
-      else
-        {
-          NM_WARN("ibverbs: EAGAIN in recv_buf_poll() with SRQ enabled. It should not happen.\n");
-          return -NM_EAGAIN;
-        }
+      struct nm_ibverbs_sr_packet_s*__restrict__ p_packet = &p_ibverbs_sr->p_ibverbs_sr_context->rbuf;
+      *p_buffer = p_packet->data;
+      *p_len = p_ibverbs_sr->recv.chunk_len;
+      return NM_ESUCCESS;
     }
   else
     {
-      struct nm_ibverbs_sr_packet_s*__restrict__ p_packet = &p_ibverbs_sr->buffer.rbuf;
-      if(p_ibverbs_sr->recv.chunk_len == NM_LEN_UNDEFINED)
-        {
-          struct ibv_sge list =
-            {
-              .addr   = (uintptr_t)p_packet,
-              .length = NM_IBVERBS_SR_BUFSIZE,
-              .lkey   = p_ibverbs_sr->mr->lkey
-            };
-          struct ibv_recv_wr wr =
-            {
-              .wr_id   = NM_IBVERBS_WRID_RECV,
-              .sg_list = &list,
-              .num_sge = 1,
-            };
-          struct ibv_recv_wr*bad_wr = NULL;
-          int rc = ibv_post_recv(p_ibverbs_sr->p_cnx->qp, &wr, &bad_wr);
-          if(rc)
-            {
-              NM_FATAL("ibverbs- post recv failed; rc = %d (%s).\n", rc, strerror(rc));
-            }
-          p_ibverbs_sr->recv.chunk_len = NM_IBVERBS_SR_BUFSIZE;
-        }
-      struct ibv_wc wc;
-      int ne = ibv_poll_cq(p_ibverbs_sr->p_cnx->if_cq, 1, &wc);
-      if(ne < 0)
-        {
-          NM_FATAL("ibverbs- poll in CQ failed (status=%d; %s).\n", wc.status, nm_ibverbs_status_strings[wc.status]);
-        }
-      else if(ne > 0)
-        {
-          *p_buffer = &p_packet->data;
-          *p_len = wc.byte_len;
-          err = NM_ESUCCESS;
-        }
-      else
-        {
-          err = -NM_EAGAIN;
-        }
-      return err;
+      NM_WARN("ibverbs- EAGAIN in recv_buf_poll() with SRQ enabled. It should not happen.\n");
+      return -NM_EAGAIN;
     }
 }
 
@@ -453,8 +408,4 @@ static void nm_ibverbs_sr_recv_buf_release(void*_status)
   nm_ibverbs_sr_refill_srq(p_ibverbs_sr->p_ibverbs_sr_context);
 }
 
-static int nm_ibverbs_sr_recv_cancel(void*_status)
-{
-  struct nm_ibverbs_sr_s*__restrict__ p_ibverbs_sr = _status;
-  return -NM_ENOTIMPL;
-}
+

@@ -130,12 +130,14 @@ struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context)
   struct nm_ibverbs_context_s*p_ibverbs_context = malloc(sizeof(struct nm_ibverbs_context_s));
   memset(p_ibverbs_context, 0, sizeof(struct nm_ibverbs_context_s));
   const char*s_srq = puk_context_getattr(p_context, "ibv_srq");
+  const char*s_comp_channel = puk_context_getattr(p_context, "ibv_comp_channel");
   p_ibverbs_context->p_hca = nm_ibverbs_hca_from_context(p_context);
   p_ibverbs_context->p_srq = NULL;
   if(s_srq != NULL)
     {
       if(p_ibverbs_context->p_hca->ib_caps.max_srq > 0)
         {
+          struct ibv_comp_channel*p_comp_channel = NULL;
           struct ibv_srq_init_attr srq_attr = { .srq_context  = p_ibverbs_context,
                                                 .attr.max_wr  = NM_IBVERBS_RX_DEPTH,
                                                 .attr.max_sge = NM_IBVERBS_MAX_SG_RQ };
@@ -145,8 +147,17 @@ struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context)
               NM_WARN("ibverbs: cannot allocate SRQ.\n");
               p_ibverbs_context->p_srq = NULL;
             }
+          if(s_comp_channel != NULL)
+            {
+              p_comp_channel = ibv_create_comp_channel(p_ibverbs_context->p_hca->context);
+              if(p_comp_channel == NULL)
+                {
+                  NM_FATAL("ibverbs: cannot create comp_channel.\n");
+                }
+              p_ibverbs_context->ib_opts.use_comp_channel = 1;
+            }
           p_ibverbs_context->srq_cq = ibv_create_cq(p_ibverbs_context->p_hca->context, NM_IBVERBS_RX_DEPTH,
-                                                    p_ibverbs_context, NULL, 0);
+                                                    p_ibverbs_context, p_comp_channel, 0);
           if(p_ibverbs_context->srq_cq == NULL)
             {
               NM_FATAL("ibverbs: cannot create CQ.\n");

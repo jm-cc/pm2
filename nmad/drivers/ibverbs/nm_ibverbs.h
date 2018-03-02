@@ -115,6 +115,7 @@ struct nm_ibverbs_context_s
   struct
   {
     int use_srq;                  /**< whether QP will use SRQs for receive */
+    int use_comp_channel;
   } ib_opts;
 };
 

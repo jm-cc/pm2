@@ -101,7 +101,7 @@ static void nm_ibverbs_lr2_getprops(puk_context_t context, struct nm_minidriver_
 static void nm_ibverbs_lr2_init(puk_context_t context, const void**p_url, size_t*p_url_size);
 static void nm_ibverbs_lr2_close(puk_context_t context);
 static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n);
+static void nm_ibverbs_lr2_send_iov_post(void*_status, const struct iovec*v, int n);
 static void nm_ibverbs_lr2_send_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_ibverbs_lr2_send_poll(void*_status);
 static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t size);
@@ -115,7 +115,7 @@ static const struct nm_minidriver_iface_s nm_ibverbs_lr2_minidriver =
     .init           = &nm_ibverbs_lr2_init,
     .close          = &nm_ibverbs_lr2_close,
     .connect        = &nm_ibverbs_lr2_connect,
-    .send_post      = &nm_ibverbs_lr2_send_post,
+    .send_iov_post      = &nm_ibverbs_lr2_send_iov_post,
     .send_data_post      = &nm_ibverbs_lr2_send_data_post,
     .send_poll      = &nm_ibverbs_lr2_send_poll,
     .send_prefetch  = &nm_ibverbs_lr2_send_prefetch,
@@ -248,7 +248,7 @@ static inline void nm_ibverbs_lr2_send_init(struct nm_ibverbs_lr2_s*p_lr2)
   p_lr2->send.nbuffer = 0;
   p_lr2->buffer.rack  = 0;
 }
-static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n)
+static void nm_ibverbs_lr2_send_iov_post(void*_status, const struct iovec*v, int n)
 {
   struct nm_ibverbs_lr2_s*p_lr2 = _status;
   assert(n == 1);

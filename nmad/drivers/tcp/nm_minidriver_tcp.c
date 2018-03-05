@@ -47,7 +47,7 @@ static void nm_tcp_getprops(puk_context_t context, struct nm_minidriver_properti
 static void nm_tcp_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_tcp_close(puk_context_t context);
 static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_tcp_send_post(void*_status, const struct iovec*v, int n);
+static void nm_tcp_send_iov_post(void*_status, const struct iovec*v, int n);
 static int  nm_tcp_send_poll(void*_status);
 static void nm_tcp_recv_iov_post(void*_status,  struct iovec*v, int n);
 static int  nm_tcp_recv_poll_one(void*_status);
@@ -61,7 +61,7 @@ static const struct nm_minidriver_iface_s nm_tcp_minidriver =
     .init            = &nm_tcp_init,
     .close           = &nm_tcp_close,
     .connect         = &nm_tcp_connect,
-    .send_post       = &nm_tcp_send_post,
+    .send_iov_post       = &nm_tcp_send_iov_post,
     .send_data_post       = NULL,
     .send_poll       = &nm_tcp_send_poll,
     .recv_iov_post   = &nm_tcp_recv_iov_post,
@@ -316,7 +316,7 @@ static void nm_tcp_connect(void*_status, const void*remote_url, size_t url_size)
   p_tcp_context->rebuild = 1;
 }
 
-static void nm_tcp_send_post(void*_status, const struct iovec*v, int n)
+static void nm_tcp_send_iov_post(void*_status, const struct iovec*v, int n)
 {
   struct nm_tcp_s*p_status = _status;
   struct iovec send_iov[1 + n];

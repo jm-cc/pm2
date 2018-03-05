@@ -264,7 +264,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 	  vec->iov_base = (void*)buf;
 	  vec->iov_len = p_pw->length;
 	  p_pw->p_data = NULL;
-	  (*r->driver->send_post)(r->_status, p_pw->v, p_pw->v_nb);
+	  (*r->driver->send_iov_post)(r->_status, p_pw->v, p_pw->v_nb);
 	}
       else
 	{
@@ -280,9 +280,9 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 	  assert(p_pw->length <= p_pw->max_len);
 	  (*r->driver->send_buf_post)(r->_status, p_pw->length);
 	}
-      else if(r->driver->send_post)
+      else if(r->driver->send_iov_post)
 	{
-	  (*r->driver->send_post)(r->_status, &p_pw->v[0], p_pw->v_nb);
+	  (*r->driver->send_iov_post)(r->_status, &p_pw->v[0], p_pw->v_nb);
 	}
       else
 	{

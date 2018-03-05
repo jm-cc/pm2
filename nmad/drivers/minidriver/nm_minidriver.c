@@ -310,9 +310,9 @@ static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap_s*__rest
     }
   else
     {
-      if(minidriver->driver->send_post)
+      if(minidriver->driver->send_iov_post)
 	{
-	  (*minidriver->driver->send_post)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
+	  (*minidriver->driver->send_iov_post)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
 	}
       else
 	{
@@ -333,7 +333,7 @@ static int nm_minidriver_poll_send_iov(void*_status, struct nm_pkt_wrap_s*__rest
   struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
   int err = (*minidriver->driver->send_poll)(minidriver->_status);
 #ifdef DEBUG
-  if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && (minidriver->driver->send_post == NULL))
+  if((err == NM_ESUCCESS) && (p_pw->p_data == NULL) && (minidriver->driver->send_iov_post == NULL))
     {
       struct nm_data_s*p_data = &status->trks[p_pw->trk_id].sdata;
       assert(!nm_data_isnull(p_data));

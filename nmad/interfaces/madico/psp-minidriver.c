@@ -188,7 +188,7 @@ static int psp_minidriver_task_send(void*_sreq)
   struct iovec v;
   v.iov_base = sreq->sbuf;
   v.iov_len = status->slot->h_size;
-  (*status->trk[0].r.driver->send_post)(status->trk[0].r._status, &v, 1);
+  (*status->trk[0].r.driver->send_iov_post)(status->trk[0].r._status, &v, 1);
   int rc = -1;
   do
     {
@@ -199,7 +199,7 @@ static int psp_minidriver_task_send(void*_sreq)
   puk_vect_foreach(i, psp_minidriver_iov, &sreq->chunks)
     {
       const int trk = (i->iov_len > status->threshold) ? 1 : 0;
-      (*status->trk[trk].r.driver->send_post)(status->trk[trk].r._status, i, 1);
+      (*status->trk[trk].r.driver->send_iov_post)(status->trk[trk].r._status, i, 1);
       int rc = -1;
       do
 	{

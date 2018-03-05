@@ -112,7 +112,7 @@ struct nm_ibverbs_rcache_s
 static void nm_ibverbs_rcache_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props);
 static void nm_ibverbs_rcache_init(puk_context_t context, const void**p_url, size_t*p_url_size);
 static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int n);
+static void nm_ibverbs_rcache_send_iov_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_rcache_send_poll(void*_status);
 static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_rcache_poll_one(void*_status);
@@ -123,7 +123,7 @@ static const struct nm_minidriver_iface_s nm_ibverbs_rcache_minidriver =
     .init            = &nm_ibverbs_rcache_init,
     .connect         = &nm_ibverbs_rcache_connect,
     .send_data_post       = NULL,
-    .send_post       = &nm_ibverbs_rcache_send_post,
+    .send_iov_post       = &nm_ibverbs_rcache_send_iov_post,
     .send_poll       = &nm_ibverbs_rcache_send_poll,
     .recv_iov_post   = &nm_ibverbs_rcache_recv_init,
     .recv_data_post  = NULL,
@@ -257,7 +257,7 @@ static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_
 
 /* ** reg cache I/O **************************************** */
 
-static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int n)
+static void nm_ibverbs_rcache_send_iov_post(void*_status, const struct iovec*v, int n)
 {
   struct nm_ibverbs_rcache_s*p_rcache = _status;
   char*message = v[0].iov_base;

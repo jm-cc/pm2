@@ -90,9 +90,9 @@ static inline void minidriver_send_iov(struct puk_receptacle_NewMad_minidriver_s
 {
   int rc = -1;
   struct nm_data_s data;
-  if(r->driver->send_post)
+  if(r->driver->send_iov_post)
     {
-      (*r->driver->send_post)(r->_status, v, n);
+      (*r->driver->send_iov_post)(r->_status, v, n);
     }
   else
     {
@@ -119,7 +119,7 @@ static inline void minidriver_send_data_post(struct puk_receptacle_NewMad_minidr
     {
       void*buf = nm_data_baseptr_get(p_data);
       struct iovec v = { .iov_base = buf, .iov_len = len };
-      (*r->driver->send_post)(r->_status, &v, 1);
+      (*r->driver->send_iov_post)(r->_status, &v, 1);
     }
   do
     {
@@ -133,9 +133,9 @@ static inline void minidriver_send(struct puk_receptacle_NewMad_minidriver_s*r, 
   int rc = -1;
   struct iovec v = { .iov_base = buf, .iov_len = len };
   struct nm_data_s data;
-  if(r->driver->send_post)
+  if(r->driver->send_iov_post)
     {
-      (*r->driver->send_post)(r->_status, &v, 1);
+      (*r->driver->send_iov_post)(r->_status, &v, 1);
     }
   else
     {

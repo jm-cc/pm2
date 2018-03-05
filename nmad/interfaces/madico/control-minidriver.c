@@ -89,7 +89,7 @@ static void control_minidriver_send_common(void*_status, padico_na_node_t node, 
   struct puk_receptacle_NewMad_minidriver_s*r = &status->minidriver;
   const struct iovec*v = padico_control_msg_get_iovec(msg);
   const int n = padico_control_msg_get_iovec_size(msg);
-  (*r->driver->send_post)(r->_status, v, n);
+  (*r->driver->send_iov_post)(r->_status, v, n);
   int err = 0;
   do
     {

@@ -42,7 +42,7 @@ static void nm_local_getprops(puk_context_t context, struct nm_minidriver_proper
 static void nm_local_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_local_close(puk_context_t context);
 static void nm_local_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_local_send_post(void*_status, const struct iovec*v, int n);
+static void nm_local_send_iov_post(void*_status, const struct iovec*v, int n);
 static int  nm_local_send_poll(void*_status);
 static void nm_local_recv_iov_post(void*_status,  struct iovec*v, int n);
 static int  nm_local_recv_poll_one(void*_status);
@@ -54,7 +54,7 @@ static const struct nm_minidriver_iface_s nm_local_minidriver =
     .init           = &nm_local_init,
     .close          = &nm_local_close,
     .connect        = &nm_local_connect,
-    .send_post      = &nm_local_send_post,
+    .send_iov_post      = &nm_local_send_iov_post,
     .send_poll      = &nm_local_send_poll,
     .recv_iov_post  = &nm_local_recv_iov_post,
     .recv_data_post = NULL,
@@ -255,7 +255,7 @@ static void nm_local_connect(void*_status, const void*remote_url, size_t url_siz
     }
 }
 
-static void nm_local_send_post(void*_status, const struct iovec*v, int n)
+static void nm_local_send_iov_post(void*_status, const struct iovec*v, int n)
 {
   struct nm_local_s*p_status = _status;
   struct iovec send_iov[1 + n];

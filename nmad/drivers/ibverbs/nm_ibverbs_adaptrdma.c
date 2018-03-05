@@ -76,7 +76,7 @@ struct nm_ibverbs_adaptrdma_s
 static void nm_ibverbs_adaptrdma_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props);
 static void nm_ibverbs_adaptrdma_init(puk_context_t context, const void**p_url, size_t*p_url_size);
 static void nm_ibverbs_adaptrdma_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_ibverbs_adaptrdma_send_post(void*_status, const struct iovec*v, int n);
+static void nm_ibverbs_adaptrdma_send_iov_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_adaptrdma_send_poll(void*_status);
 static void nm_ibverbs_adaptrdma_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_adaptrdma_poll_one(void*_status);
@@ -86,7 +86,7 @@ static const struct nm_minidriver_iface_s nm_ibverbs_adaptrdma_minidriver =
     .getprops       = &nm_ibverbs_adaptrdma_getprops,
     .init           = &nm_ibverbs_adaptrdma_init,
     .connect        = &nm_ibverbs_adaptrdma_connect,
-    .send_post      = &nm_ibverbs_adaptrdma_send_post,
+    .send_iov_post      = &nm_ibverbs_adaptrdma_send_iov_post,
     .send_poll      = &nm_ibverbs_adaptrdma_send_poll,
     .recv_iov_post  = &nm_ibverbs_adaptrdma_recv_init,
     .recv_poll_one  = &nm_ibverbs_adaptrdma_poll_one,
@@ -199,7 +199,7 @@ static inline struct nm_ibverbs_adaptrdma_header_s*nm_ibverbs_adaptrdma_get_head
   return buf + packet_size - sizeof(struct nm_ibverbs_adaptrdma_header_s);
 }
 
-static void nm_ibverbs_adaptrdma_send_post(void*_status, const struct iovec*v, int n)
+static void nm_ibverbs_adaptrdma_send_iov_post(void*_status, const struct iovec*v, int n)
 {
   struct nm_ibverbs_adaptrdma_s*p_adaptrdma = _status;
   assert(n == 1);

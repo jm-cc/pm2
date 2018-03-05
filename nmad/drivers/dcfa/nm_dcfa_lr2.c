@@ -92,7 +92,7 @@ struct nm_dcfa_lr2
 static void nm_dcfa_lr2_getprops(int index, struct nm_minidriver_properties_s*props);
 static void nm_dcfa_lr2_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_dcfa_lr2_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_dcfa_lr2_send_post(void*_status, const struct iovec*v, int n);
+static void nm_dcfa_lr2_send_iov_post(void*_status, const struct iovec*v, int n);
 static int  nm_dcfa_lr2_send_poll(void*_status);
 static void nm_dcfa_lr2_send_prefetch(void*_status, const void*ptr, uint64_t size);
 static void nm_dcfa_lr2_recv_init(void*_status, struct iovec*v, int n);
@@ -103,7 +103,7 @@ static const struct nm_minidriver_iface_s nm_dcfa_lr2_minidriver =
     .getprops    = &nm_dcfa_lr2_getprops,
     .init        = &nm_dcfa_lr2_init,
     .connect     = &nm_dcfa_lr2_connect,
-    .send_post   = &nm_dcfa_lr2_send_post,
+    .send_iov_post   = &nm_dcfa_lr2_send_iov_post,
     .send_poll   = &nm_dcfa_lr2_send_poll,
     .send_prefetch = &nm_dcfa_lr2_send_prefetch,
     .recv_init   = &nm_dcfa_lr2_recv_init,
@@ -198,7 +198,7 @@ static void nm_dcfa_lr2_connect(void*_status, const void*remote_url, size_t url_
 
 /* *** lr2 I/O ********************************************* */
 
-static void nm_dcfa_lr2_send_post(void*_status, const struct iovec*v, int n)
+static void nm_dcfa_lr2_send_iov_post(void*_status, const struct iovec*v, int n)
 {
   struct nm_dcfa_lr2*lr2 = _status;
   assert(n == 1);

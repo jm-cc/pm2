@@ -38,7 +38,7 @@ static void nm_psm2_getprops(puk_context_t context, struct nm_minidriver_propert
 static void nm_psm2_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_psm2_close(puk_context_t context);
 static void nm_psm2_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_psm2_send_post(void*_status, const struct iovec*v, int n);
+static void nm_psm2_send_iov_post(void*_status, const struct iovec*v, int n);
 static int  nm_psm2_send_poll(void*_status);
 static void nm_psm2_recv_iov_post(void*_status,  struct iovec*v, int n);
 static int  nm_psm2_recv_poll_one(void*_status);
@@ -51,7 +51,7 @@ static const struct nm_minidriver_iface_s nm_psm2_minidriver =
     .init            = &nm_psm2_init,
     .close           = &nm_psm2_close,
     .connect         = &nm_psm2_connect,
-    .send_post       = &nm_psm2_send_post,
+    .send_iov_post       = &nm_psm2_send_iov_post,
     .send_data_post       = NULL,
     .send_poll       = &nm_psm2_send_poll,
     .recv_iov_post   = &nm_psm2_recv_iov_post,
@@ -313,7 +313,7 @@ static void nm_psm2_connect(void*_status, const void*_remote_url, size_t url_siz
 
 /* ********************************************************* */
 
-static void nm_psm2_send_post(void*_status, const struct iovec*v, int n)
+static void nm_psm2_send_iov_post(void*_status, const struct iovec*v, int n)
 {
   struct nm_psm2_s*p_status = _status;
   struct nm_psm2_context_s*p_psm2_context = p_status->p_psm2_context;

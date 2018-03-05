@@ -40,9 +40,9 @@ static inline void minidriver_send(struct puk_receptacle_NewMad_minidriver_s*r, 
       memcpy(p_driver_buf, buf, len);
       (*r->driver->send_buf_post)(r->_status, len);
     }
-  else if(r->driver->send_post)
+  else if(r->driver->send_iov_post)
     {
-      (*r->driver->send_post)(r->_status, &v, 1);
+      (*r->driver->send_iov_post)(r->_status, &v, 1);
     }
   else
     {

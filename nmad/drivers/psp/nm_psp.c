@@ -34,7 +34,7 @@ static const struct puk_component_driver_s padico_minipsp_component =
 static void padico_minipsp_getprops(puk_context_t context, struct nm_minidriver_properties_s*props);
 static void padico_minipsp_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void padico_minipsp_connect(void*_status, const void*remote_url, size_t url_size);
-static void padico_minipsp_send_post(void*_status, const struct iovec*v, int n);
+static void padico_minipsp_send_iov_post(void*_status, const struct iovec*v, int n);
 static int  padico_minipsp_send_poll(void*_status);
 static void padico_minipsp_recv_iov_post(void*_status,  struct iovec*v, int n);
 static int  padico_minipsp_recv_poll_one(void*_status);
@@ -45,7 +45,7 @@ static const struct nm_minidriver_iface_s padico_minipsp_minidriver =
     .getprops    = &padico_minipsp_getprops,
     .init        = &padico_minipsp_init,
     .connect     = &padico_minipsp_connect,
-    .send_post   = &padico_minipsp_send_post,
+    .send_iov_post   = &padico_minipsp_send_iov_post,
     .send_poll   = &padico_minipsp_send_poll,
     .recv_iov_post = &padico_minipsp_recv_iov_post,
     .recv_poll_one = &padico_minipsp_recv_poll_one,
@@ -214,7 +214,7 @@ static void padico_minipsp_connect(void*_status, const void*_remote_url, size_t 
   padico_psp_connect(&status->psp, status->remote_node);
 }
 
-static void padico_minipsp_send_post(void*_status, const struct iovec*v, int n)
+static void padico_minipsp_send_iov_post(void*_status, const struct iovec*v, int n)
 {
   struct padico_minipsp_status_s*status = _status;
   if(n == 1)
@@ -230,7 +230,7 @@ static void padico_minipsp_send_post(void*_status, const struct iovec*v, int n)
     }
   else
     {
-      padico_fatal("minipsp: send_post- iovec n > 1 not implemented yet.\n");
+      padico_fatal("minipsp: send_iov_post- iovec n > 1 not implemented yet.\n");
     }
 }
 

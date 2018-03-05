@@ -85,16 +85,16 @@ struct nm_minidriver_iface_s
   /* ** sending primitives */
 
   /** post a send for data described by iovec */
-  void (*send_post)(void*_status, const struct iovec*v, int n);
+  void (*send_iov_post)(void*_status, const struct iovec*v, int n);
   /** post a send for data described by nm_data iterator */
   void (*send_data_post)(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
   /** get a buffer to prepare data for send_buf_post */
   void (*send_buf_get)(void*_status, void**p_buffer, nm_len_t*p_len);
   /** post a send after upper layers have filled-in the buffer */
   void (*send_buf_post)(void*_status, nm_len_t len);
-  /** poll a send operation already posted through send_post, send_data_post, or send_buf_post */
+  /** poll a send operation already posted through send_iov_post, send_data_post, or send_buf_post */
   int  (*send_poll)(void*_status);
-  /** prefetch data in driver buffers before send_post
+  /** prefetch data in driver buffers before send_iov_post
    * @note currently broken; obsoleted by buffer-based send (see above) */
   void (*send_prefetch)(void*_status, const void*ptr, nm_len_t size);
 

@@ -163,6 +163,14 @@ struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context)
               NM_FATAL("ibverbs: cannot create CQ.\n");
             }
           p_ibverbs_context->ib_opts.use_srq = 1;
+          if(p_ibverbs_context->ib_opts.use_comp_channel)
+            {
+              int rc = ibv_req_notify_cq(p_ibverbs_context->srq_cq, 0);
+              if(rc)
+                {
+                  NM_FATAL("ibverbs- couldn't request CQ notification\n");
+                }
+            }
         }
       else
         {
@@ -178,6 +186,30 @@ void nm_ibverbs_context_delete(struct nm_ibverbs_context_s*p_ibverbs_context)
     ibv_destroy_srq(p_ibverbs_context->p_srq);
   nm_ibverbs_hca_release(p_ibverbs_context->p_hca);
   free(p_ibverbs_context);
+}
+
+void nm_ibverbs_context_wait_event(struct nm_ibverbs_context_s*p_ibverbs_context)
+{
+  if(p_ibverbs_context->ib_opts.use_comp_channel)
+    {
+      /* Wait for the completion event */
+      struct ibv_cq*ev_cq = NULL;
+      int rc = ibv_get_cq_event(p_ibverbs_context->comp_channel, &ev_cq, NULL);
+      if(rc)
+        {
+          NM_FATAL("ibverbs- failed to get cq_event\n");
+        }
+      assert(ev_cq == p_ibverbs_context->srq_cq);
+      /* Ack the event */
+      ibv_ack_cq_events(p_ibverbs_context->srq_cq, 1);
+      
+      /* Request notification upon the next completion event */
+      rc = ibv_req_notify_cq(p_ibverbs_context->srq_cq, 0);
+      if(rc)
+        {
+          NM_FATAL("ibverbs- couldn't request CQ notification\n");
+        }
+    }
 }
 
 struct nm_ibverbs_hca_s*nm_ibverbs_hca_from_context(puk_context_t context)

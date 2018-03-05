@@ -109,12 +109,13 @@ struct nm_ibverbs_hca_s
 /** an nmad context for a HCA */
 struct nm_ibverbs_context_s
 {
-  struct nm_ibverbs_hca_s*p_hca;
-  struct ibv_srq*p_srq;           /**< shared receive queue (if supported by device) */
-  struct ibv_cq*srq_cq;           /**< CQ used for SRQs */
+  struct nm_ibverbs_hca_s*p_hca;        /**< global HCA attached to this context */
+  struct ibv_srq*p_srq;                 /**< shared receive queue (if supported by device) */
+  struct ibv_cq*srq_cq;                 /**< CQ used for SRQs */
+  struct ibv_comp_channel*comp_channel; /**< completion channel for blocking calls */
   struct
   {
-    int use_srq;                  /**< whether QP will use SRQs for receive */
+    int use_srq;                        /**< whether QPs will use SRQs for receive */
     int use_comp_channel;
   } ib_opts;
 };
@@ -160,6 +161,8 @@ void nm_ibverbs_cnx_sync(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 void nm_ibverbs_cnx_connect(struct nm_ibverbs_cnx_s*p_ibverbs_cnx);
 
 struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context);
+
+void nm_ibverbs_context_wait_event(struct nm_ibverbs_context_s*p_ibverbs_context);
 
 void nm_ibverbs_context_delete(struct nm_ibverbs_context_s*p_ibverbs_context);
 

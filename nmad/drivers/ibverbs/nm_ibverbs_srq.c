@@ -61,6 +61,7 @@ struct nm_ibverbs_srq_context_s
   struct nm_ibverbs_srq_status_vect_s p_statuses;
   int round_robin;
   int srq_posted;
+  int running;
 };
 
 /** Connection state for tracks sending by copy
@@ -98,8 +99,10 @@ static void nm_ibverbs_srq_send_buf_get(void*_status, void**p_buffer, nm_len_t*p
 static void nm_ibverbs_srq_send_buf_post(void*_status, nm_len_t len);
 static int  nm_ibverbs_srq_send_poll(void*_status);
 static int  nm_ibverbs_srq_recv_poll_any(puk_context_t p_context, void**_status);
+static int  nm_ibverbs_srq_recv_wait_any(puk_context_t p_context, void**_status);
 static int  nm_ibverbs_srq_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_ibverbs_srq_recv_buf_release(void*_status);
+static int  nm_ibverbs_srq_recv_cancel_any(puk_context_t p_context);
 
 static const struct nm_minidriver_iface_s nm_ibverbs_srq_minidriver =
   {
@@ -107,8 +110,8 @@ static const struct nm_minidriver_iface_s nm_ibverbs_srq_minidriver =
     .init             = &nm_ibverbs_srq_init,
     .close            = &nm_ibverbs_srq_close,
     .connect          = &nm_ibverbs_srq_connect,
-    .send_iov_post        = NULL,
-    .send_data_post        = NULL,
+    .send_iov_post    = NULL,
+    .send_data_post   = NULL,
     .send_poll        = &nm_ibverbs_srq_send_poll,
     .send_buf_get     = &nm_ibverbs_srq_send_buf_get,
     .send_buf_post    = &nm_ibverbs_srq_send_buf_post,
@@ -116,9 +119,11 @@ static const struct nm_minidriver_iface_s nm_ibverbs_srq_minidriver =
     .recv_data_post   = NULL,
     .recv_poll_one    = NULL,
     .recv_poll_any    = &nm_ibverbs_srq_recv_poll_any,
+    .recv_wait_any    = &nm_ibverbs_srq_recv_wait_any,
     .recv_buf_poll    = &nm_ibverbs_srq_recv_buf_poll,
     .recv_buf_release = &nm_ibverbs_srq_recv_buf_release,
-    .recv_cancel      = NULL
+    .recv_cancel      = NULL,
+    .recv_cancel_any  = &nm_ibverbs_srq_recv_cancel_any
   };
 
 static void*nm_ibverbs_srq_instantiate(puk_instance_t instance, puk_context_t context);
@@ -201,6 +206,8 @@ static void nm_ibverbs_srq_getprops(puk_context_t context, struct nm_minidriver_
   p_props->capabilities.supports_data     = 0;
   p_props->capabilities.supports_buf_send = 1;
   p_props->capabilities.supports_buf_recv = 1;
+  p_props->capabilities.supports_wait_any = 1;
+  p_props->capabilities.prefers_wait_any  = 0;
   p_props->capabilities.has_recv_any      = 1;
   p_props->capabilities.max_msg_size      = NM_IBVERBS_SRQ_BUFSIZE;
 }
@@ -217,6 +224,7 @@ static void nm_ibverbs_srq_init(puk_context_t context, const void**p_url, size_t
   nm_ibverbs_srq_status_vect_init(&p_ibverbs_srq_context->p_statuses);
   p_ibverbs_srq_context->round_robin = 0;
   p_ibverbs_srq_context->srq_posted = 0;
+  p_ibverbs_srq_context->running = 1;
   p_ibverbs_srq_context->mr = nm_ibverbs_reg_mr(p_ibverbs_srq_context->p_ibverbs_context->p_hca,
                                                &p_ibverbs_srq_context->rbuf, sizeof(p_ibverbs_srq_context->rbuf),
                                                &p_ibverbs_srq_context->seg);
@@ -381,6 +389,22 @@ static int nm_ibverbs_srq_recv_poll_any(puk_context_t p_context, void**_status)
   return -NM_EAGAIN;
 }
 
+static int nm_ibverbs_srq_recv_wait_any(puk_context_t p_context, void**_status)
+{
+  struct nm_ibverbs_srq_context_s*p_ibverbs_srq_context = puk_context_get_status(p_context);
+  int rc = -NM_EUNKNOWN;
+  do
+    {
+      if(!p_ibverbs_srq_context->running)
+        return -NM_ECANCELED;
+      nm_ibverbs_srq_refill(p_ibverbs_srq_context);
+      nm_ibverbs_context_wait_event(p_ibverbs_srq_context->p_ibverbs_context);
+      rc = nm_ibverbs_srq_recv_poll_any(p_context, _status);
+    }
+  while(rc != NM_ESUCCESS);
+  return NM_ESUCCESS;
+}
+
 static int nm_ibverbs_srq_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_len)
 {
   struct nm_ibverbs_srq_s*__restrict__ p_ibverbs_srq = _status;
@@ -406,4 +430,9 @@ static void nm_ibverbs_srq_recv_buf_release(void*_status)
   nm_ibverbs_srq_refill(p_ibverbs_srq->p_ibverbs_srq_context);
 }
 
-
+static int  nm_ibverbs_srq_recv_cancel_any(puk_context_t p_context)
+{
+  struct nm_ibverbs_srq_context_s*p_ibverbs_srq_context = puk_context_get_status(p_context);
+  p_ibverbs_srq_context->running = 0;
+  return NM_ESUCCESS;
+}

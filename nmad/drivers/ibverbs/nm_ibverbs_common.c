@@ -154,6 +154,7 @@ struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context)
                 {
                   NM_FATAL("ibverbs: cannot create comp_channel.\n");
                 }
+              p_ibverbs_context->comp_channel = p_comp_channel;
               p_ibverbs_context->ib_opts.use_comp_channel = 1;
             }
           p_ibverbs_context->srq_cq = ibv_create_cq(p_ibverbs_context->p_hca->context, NM_IBVERBS_RX_DEPTH,
@@ -193,8 +194,9 @@ void nm_ibverbs_context_wait_event(struct nm_ibverbs_context_s*p_ibverbs_context
   if(p_ibverbs_context->ib_opts.use_comp_channel)
     {
       /* Wait for the completion event */
-      struct ibv_cq*ev_cq = NULL;
-      int rc = ibv_get_cq_event(p_ibverbs_context->comp_channel, &ev_cq, NULL);
+      struct ibv_cq*ev_cq = p_ibverbs_context->srq_cq;
+      void*ev_context = NULL;
+      int rc = ibv_get_cq_event(p_ibverbs_context->comp_channel, &ev_cq, &ev_context);
       if(rc)
         {
           NM_FATAL("ibverbs- failed to get cq_event\n");

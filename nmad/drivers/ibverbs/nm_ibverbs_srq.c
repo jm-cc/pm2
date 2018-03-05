@@ -199,6 +199,7 @@ static void nm_ibverbs_srq_getprops(puk_context_t context, struct nm_minidriver_
 
   /* force SRQ for now */
   puk_context_putattr(context, "ibv_srq", "1");
+  puk_context_putattr(context, "ibv_comp_channel", "1");
   
   p_ibverbs_srq_context->p_ibverbs_context = nm_ibverbs_context_new(context);
   puk_context_set_status(context, p_ibverbs_srq_context);

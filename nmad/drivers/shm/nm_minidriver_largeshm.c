@@ -38,7 +38,7 @@ static void nm_minidriver_largeshm_getprops(puk_context_t context, struct nm_min
 static void nm_minidriver_largeshm_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_minidriver_largeshm_close(puk_context_t context);
 static void nm_minidriver_largeshm_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_minidriver_largeshm_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
+static void nm_minidriver_largeshm_send_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_minidriver_largeshm_send_poll(void*_status);
 static void nm_minidriver_largeshm_recv_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_minidriver_largeshm_recv_poll_one(void*_status);
@@ -50,7 +50,7 @@ static const struct nm_minidriver_iface_s nm_minidriver_largeshm_minidriver =
     .init            = &nm_minidriver_largeshm_init,
     .close           = &nm_minidriver_largeshm_close,
     .connect         = &nm_minidriver_largeshm_connect,
-    .send_data       = &nm_minidriver_largeshm_send_data,
+    .send_data_post       = &nm_minidriver_largeshm_send_data_post,
     .send_post       = NULL,
     .send_poll       = &nm_minidriver_largeshm_send_poll,
     .recv_iov_post   = NULL,
@@ -181,7 +181,7 @@ static void nm_minidriver_largeshm_connect(void*_status, const void*remote_url, 
     }
 }
 
-static void nm_minidriver_largeshm_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
+static void nm_minidriver_largeshm_send_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_minidriver_largeshm_s*p_status = _status;
   p_status->send.queue_num = -1;

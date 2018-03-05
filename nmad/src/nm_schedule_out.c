@@ -269,7 +269,7 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
       else
 	{
 	  /* native nm_data support */
-	  (*r->driver->send_data)(r->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
+	  (*r->driver->send_data_post)(r->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
 	}
     }
   else
@@ -286,11 +286,11 @@ void nm_pw_post_send(struct nm_pkt_wrap_s*p_pw)
 	}
       else
 	{
-	  assert(r->driver->send_data);
+	  assert(r->driver->send_data_post);
 	  struct nm_data_s*p_data = &p_pw->p_trk->sdata;
 	  assert(nm_data_isnull(p_data));
 	  nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
-	  (*r->driver->send_data)(r->_status, p_data, 0 /* chunk_offset */, p_pw->length);
+	  (*r->driver->send_data_post)(r->_status, p_data, 0 /* chunk_offset */, p_pw->length);
 	}
     }
   p_pw->flags |= NM_PW_POSTED;

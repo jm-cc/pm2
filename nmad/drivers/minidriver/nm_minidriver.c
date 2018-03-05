@@ -180,8 +180,8 @@ static int nm_minidriver_query(nm_drv_t p_drv, struct nm_driver_query_param *par
 #endif /* PM2_TOPOLOGY */
       (*minidriver_iface->getprops)(conn->context, &p_minidriver_context->trks_array[i].props);
       /* sanity check */
-      assert( ((minidriver_iface->send_data == NULL) && (p_minidriver_context->trks_array[i].props.capabilities.supports_data == 0)) ||
-	      ((minidriver_iface->send_data != NULL) && (p_minidriver_context->trks_array[i].props.capabilities.supports_data != 0)) );
+      assert( ((minidriver_iface->send_data_post == NULL) && (p_minidriver_context->trks_array[i].props.capabilities.supports_data == 0)) ||
+	      ((minidriver_iface->send_data_post != NULL) && (p_minidriver_context->trks_array[i].props.capabilities.supports_data != 0)) );
       
     }
 
@@ -305,8 +305,8 @@ static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap_s*__rest
   struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
   if(p_pw->p_data != NULL)
     {
-      assert(minidriver->driver->send_data != NULL);
-      (*minidriver->driver->send_data)(minidriver->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
+      assert(minidriver->driver->send_data_post != NULL);
+      (*minidriver->driver->send_data_post)(minidriver->_status, p_pw->p_data, p_pw->chunk_offset, p_pw->length);
     }
   else
     {
@@ -316,11 +316,11 @@ static int nm_minidriver_post_send_iov(void*_status, struct nm_pkt_wrap_s*__rest
 	}
       else
 	{
-	  assert(minidriver->driver->send_data);
+	  assert(minidriver->driver->send_data_post);
 	  struct nm_data_s*p_data = &status->trks[p_pw->trk_id].sdata;
 	  assert(nm_data_isnull(p_data));
 	  nm_data_iov_set(p_data, (struct nm_data_iov_s){ .v = &p_pw->v[0], .n = p_pw->v_nb });
-	  (*minidriver->driver->send_data)(minidriver->_status, p_data, 0 /* chunk_offset */, p_pw->length);
+	  (*minidriver->driver->send_data_post)(minidriver->_status, p_data, 0 /* chunk_offset */, p_pw->length);
 	}
     }
   int err = nm_minidriver_poll_send_iov(_status, p_pw);

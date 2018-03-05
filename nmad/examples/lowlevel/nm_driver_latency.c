@@ -47,7 +47,7 @@ static inline void minidriver_send(struct puk_receptacle_NewMad_minidriver_s*r, 
   else
     {
       nm_data_contiguous_build(&data, buf, len);
-      (*r->driver->send_data)(r->_status, &data, 0, len);
+      (*r->driver->send_data_post)(r->_status, &data, 0, len);
     }
   do
     {

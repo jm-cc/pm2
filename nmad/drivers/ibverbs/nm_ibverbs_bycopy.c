@@ -100,7 +100,7 @@ static void nm_ibverbs_bycopy_getprops(puk_context_t context, struct nm_minidriv
 static void nm_ibverbs_bycopy_init(puk_context_t context, const void**p_url, size_t*p_url_size);
 static void nm_ibverbs_bycopy_close(puk_context_t context);
 static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_ibverbs_bycopy_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
+static void nm_ibverbs_bycopy_send_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_ibverbs_bycopy_send_poll(void*_status);
 static void nm_ibverbs_bycopy_recv_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static int  nm_ibverbs_bycopy_recv_poll_one(void*_status);
@@ -113,7 +113,7 @@ static const struct nm_minidriver_iface_s nm_ibverbs_bycopy_minidriver =
     .close           = &nm_ibverbs_bycopy_close,
     .connect         = &nm_ibverbs_bycopy_connect,
     .send_post       = NULL,
-    .send_data       = &nm_ibverbs_bycopy_send_data,
+    .send_data_post       = &nm_ibverbs_bycopy_send_data_post,
     .send_poll       = &nm_ibverbs_bycopy_send_poll,
     .recv_iov_post   = NULL,
     .recv_data_post  = &nm_ibverbs_bycopy_recv_data_post,
@@ -248,7 +248,7 @@ static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_
 
 /* ** bycopy I/O ******************************************* */
 
-static void nm_ibverbs_bycopy_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
+static void nm_ibverbs_bycopy_send_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_ibverbs_bycopy_s*p_bycopy = _status;
   nm_data_slicer_generator_init(&p_bycopy->send.slicer, p_data);

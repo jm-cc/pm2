@@ -98,7 +98,7 @@ static inline void minidriver_send_iov(struct puk_receptacle_NewMad_minidriver_s
     {
       nm_data_iov_build(&data, v, n);
       const nm_len_t len = nm_data_size(&data);
-      (*r->driver->send_data)(r->_status, &data, 0, len);
+      (*r->driver->send_data_post)(r->_status, &data, 0, len);
     }
   do
     {
@@ -107,13 +107,13 @@ static inline void minidriver_send_iov(struct puk_receptacle_NewMad_minidriver_s
   while(rc != 0);
 }
 
-static inline void minidriver_send_data(struct puk_receptacle_NewMad_minidriver_s*r, const struct nm_data_s*p_data)
+static inline void minidriver_send_data_post(struct puk_receptacle_NewMad_minidriver_s*r, const struct nm_data_s*p_data)
 {
   int rc = -1;
   const nm_len_t len = nm_data_size(p_data);
-  if(r->driver->send_data)
+  if(r->driver->send_data_post)
     {
-      (*r->driver->send_data)(r->_status, p_data, 0, len);
+      (*r->driver->send_data_post)(r->_status, p_data, 0, len);
     }
   else
     {
@@ -140,7 +140,7 @@ static inline void minidriver_send(struct puk_receptacle_NewMad_minidriver_s*r, 
   else
     {
       nm_data_contiguous_build(&data, buf, len);
-      (*r->driver->send_data)(r->_status, &data, 0, len);
+      (*r->driver->send_data_post)(r->_status, &data, 0, len);
     }
   do
     {
@@ -233,7 +233,7 @@ static void nm_ns_eager_send_copy(struct nm_trk_s*p_trk_small, struct nm_trk_s*p
     {
       p_pw = nm_pw_alloc_noheader(p_core);
       nm_pw_set_data_raw(p_pw, &data, len, 0);
-      minidriver_send_data(&p_trk_large->receptacle, p_pw->p_data);
+      minidriver_send_data_post(&p_trk_large->receptacle, p_pw->p_data);
     }
   nm_pw_free(p_core, p_pw);
 }
@@ -258,7 +258,7 @@ static void nm_ns_eager_send_iov(struct nm_trk_s*p_trk_small, struct nm_trk_s*p_
     {
       p_pw = nm_pw_alloc_noheader(p_core);
       nm_pw_set_data_raw(p_pw, &data, len, 0);
-      minidriver_send_data(&p_trk_large->receptacle, p_pw->p_data);
+      minidriver_send_data_post(&p_trk_large->receptacle, p_pw->p_data);
     }
   nm_pw_free(p_core, p_pw);
 }

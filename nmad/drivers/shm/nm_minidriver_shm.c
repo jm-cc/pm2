@@ -38,7 +38,7 @@ static void nm_minidriver_shm_getprops(puk_context_t context, struct nm_minidriv
 static void nm_minidriver_shm_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_minidriver_shm_close(puk_context_t context);
 static void nm_minidriver_shm_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_minidriver_shm_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
+static void nm_minidriver_shm_send_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static void nm_minidriver_shm_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_minidriver_shm_send_poll(void*_status);
 static void nm_minidriver_shm_send_buf_get(void*_status, void**p_buffer, nm_len_t*p_len);
@@ -56,7 +56,7 @@ static const struct nm_minidriver_iface_s nm_minidriver_shm_minidriver =
     .init             = &nm_minidriver_shm_init,
     .close            = &nm_minidriver_shm_close,
     .connect          = &nm_minidriver_shm_connect,
-    .send_data        = &nm_minidriver_shm_send_data,
+    .send_data_post        = &nm_minidriver_shm_send_data_post,
     .send_post        = &nm_minidriver_shm_send_post,
     .send_poll        = &nm_minidriver_shm_send_poll,
     .send_buf_get     = &nm_minidriver_shm_send_buf_get,
@@ -193,7 +193,7 @@ static void nm_minidriver_shm_connect(void*_status, const void*remote_url, size_
     }
 }
 
-static void nm_minidriver_shm_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
+static void nm_minidriver_shm_send_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   struct nm_minidriver_shm_s*p_status = _status;
   const int block_num = padico_shm_block_alloc(p_status->p_shm_context->shm);

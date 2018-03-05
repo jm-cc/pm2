@@ -32,13 +32,13 @@ static inline void minidriver_send(struct puk_receptacle_NewMad_minidriver_s*r, 
   int rc = -1;
   struct iovec v = { .iov_base = buf, .iov_len = len };
   struct nm_data_s data;
-  if(r->driver->buf_send_get)
+  if(r->driver->send_buf_get)
     {
       void*p_driver_buf = NULL;
       nm_len_t driver_len = NM_LEN_UNDEFINED;
-      (*r->driver->buf_send_get)(r->_status, &p_driver_buf, &driver_len);
+      (*r->driver->send_buf_get)(r->_status, &p_driver_buf, &driver_len);
       memcpy(p_driver_buf, buf, len);
-      (*r->driver->buf_send_post)(r->_status, len);
+      (*r->driver->send_buf_post)(r->_status, len);
     }
   else if(r->driver->send_post)
     {

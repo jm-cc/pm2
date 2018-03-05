@@ -41,8 +41,8 @@ static void nm_minidriver_shm_connect(void*_status, const void*remote_url, size_
 static void nm_minidriver_shm_send_data(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static void nm_minidriver_shm_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_minidriver_shm_send_poll(void*_status);
-static void nm_minidriver_shm_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len);
-static void nm_minidriver_shm_buf_send_post(void*_status, nm_len_t len);
+static void nm_minidriver_shm_send_buf_get(void*_status, void**p_buffer, nm_len_t*p_len);
+static void nm_minidriver_shm_send_buf_post(void*_status, nm_len_t len);
 static void nm_minidriver_shm_recv_data_post(void*_status, const struct nm_data_s*p_data, nm_len_t chunk_offset, nm_len_t chunk_len);
 static void nm_minidriver_shm_recv_iov_post(void*_status,  struct iovec*v, int n);
 static int  nm_minidriver_shm_recv_poll_one(void*_status);
@@ -59,8 +59,8 @@ static const struct nm_minidriver_iface_s nm_minidriver_shm_minidriver =
     .send_data        = &nm_minidriver_shm_send_data,
     .send_post        = &nm_minidriver_shm_send_post,
     .send_poll        = &nm_minidriver_shm_send_poll,
-    .buf_send_get     = &nm_minidriver_shm_buf_send_get,
-    .buf_send_post    = &nm_minidriver_shm_buf_send_post,
+    .send_buf_get     = &nm_minidriver_shm_send_buf_get,
+    .send_buf_post    = &nm_minidriver_shm_send_buf_post,
     .recv_data_post   = &nm_minidriver_shm_recv_data_post,
     .recv_iov_post    = &nm_minidriver_shm_recv_iov_post,
     .recv_poll_one    = &nm_minidriver_shm_recv_poll_one,
@@ -233,7 +233,7 @@ static void nm_minidriver_shm_send_post(void*_status, const struct iovec*v, int 
   p_status->send.slicer = NM_DATA_SLICER_NULL;
 }
 
-static void nm_minidriver_shm_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len)
+static void nm_minidriver_shm_send_buf_get(void*_status, void**p_buffer, nm_len_t*p_len)
 {
   struct nm_minidriver_shm_s*p_status = _status;
   const int block_num = padico_shm_block_alloc(p_status->p_shm_context->shm);
@@ -243,7 +243,7 @@ static void nm_minidriver_shm_buf_send_get(void*_status, void**p_buffer, nm_len_
   p_status->send.block_num = block_num;
 }
 
-static void nm_minidriver_shm_buf_send_post(void*_status, nm_len_t len)
+static void nm_minidriver_shm_send_buf_post(void*_status, nm_len_t len)
 {
  struct nm_minidriver_shm_s*p_status = _status;
  p_status->send.len = len;

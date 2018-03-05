@@ -101,8 +101,8 @@ static void nm_ibverbs_bybuf_getprops(puk_context_t context, struct nm_minidrive
 static void nm_ibverbs_bybuf_init(puk_context_t context, const void**p_url, size_t*p_url_size);
 static void nm_ibverbs_bybuf_close(puk_context_t context);
 static void nm_ibverbs_bybuf_connect(void*_status, const void*p_remote_url, size_t url_size);
-static void nm_ibverbs_bybuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len);
-static void nm_ibverbs_bybuf_buf_send_post(void*_status, nm_len_t len);
+static void nm_ibverbs_bybuf_send_buf_get(void*_status, void**p_buffer, nm_len_t*p_len);
+static void nm_ibverbs_bybuf_send_buf_post(void*_status, nm_len_t len);
 static int  nm_ibverbs_bybuf_send_poll(void*_status);
 static int  nm_ibverbs_bybuf_recv_cancel(void*_status);
 static int  nm_ibverbs_bybuf_recv_poll_any(puk_context_t p_context, void**_status);
@@ -118,8 +118,8 @@ static const struct nm_minidriver_iface_s nm_ibverbs_bybuf_minidriver =
     .send_post        = NULL,
     .send_data        = NULL,
     .send_poll        = &nm_ibverbs_bybuf_send_poll,
-    .buf_send_get     = &nm_ibverbs_bybuf_buf_send_get,
-    .buf_send_post    = &nm_ibverbs_bybuf_buf_send_post,
+    .send_buf_get     = &nm_ibverbs_bybuf_send_buf_get,
+    .send_buf_post    = &nm_ibverbs_bybuf_send_buf_post,
     .recv_iov_post    = NULL,
     .recv_data_post   = NULL,
     .recv_poll_one    = NULL,
@@ -280,7 +280,7 @@ static void nm_ibverbs_bybuf_connect(void*_status, const void*remote_url, size_t
 
 /* ** bybuf I/O ******************************************* */
 
-static void nm_ibverbs_bybuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len)
+static void nm_ibverbs_bybuf_send_buf_get(void*_status, void**p_buffer, nm_len_t*p_len)
 {
   struct nm_ibverbs_bybuf_s*__restrict__ p_bybuf = _status;
   assert(p_bybuf->send.done == NM_LEN_UNDEFINED);
@@ -290,7 +290,7 @@ static void nm_ibverbs_bybuf_buf_send_get(void*_status, void**p_buffer, nm_len_t
   p_bybuf->send.done = 0;
 }
 
-static void nm_ibverbs_bybuf_buf_send_post(void*_status, nm_len_t len)
+static void nm_ibverbs_bybuf_send_buf_post(void*_status, nm_len_t len)
 {
   struct nm_ibverbs_bybuf_s*__restrict__ p_bybuf = _status;
   p_bybuf->send.chunk_len = len;

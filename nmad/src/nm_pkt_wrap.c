@@ -188,11 +188,11 @@ struct nm_pkt_wrap_s*nm_pw_alloc_global_header(struct nm_core*p_core, struct nm_
       p_pw = nm_pw_nohd_malloc(&p_core->pw_nohd_allocator);
       nm_pw_init(p_pw);
       p_pw->flags = NM_PW_BUF_SEND;
-      assert(r->driver->buf_send_get && r->driver->buf_send_post);
+      assert(r->driver->send_buf_get && r->driver->send_buf_post);
       /* first entry: global header */
       void*p_buffer = NULL;
       nm_len_t len = NM_LEN_UNDEFINED;
-      (*r->driver->buf_send_get)(r->_status, &p_buffer, &len);
+      (*r->driver->send_buf_get)(r->_status, &p_buffer, &len);
       p_pw->v_nb = 1;
       p_pw->v[0].iov_base = p_buffer;
       p_pw->v[0].iov_len = 0;

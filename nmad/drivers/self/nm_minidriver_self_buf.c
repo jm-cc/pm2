@@ -41,8 +41,8 @@ static void nm_selfbuf_getprops(puk_context_t context, struct nm_minidriver_prop
 static void nm_selfbuf_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_selfbuf_close(puk_context_t context);
 static void nm_selfbuf_connect(void*_status, const void*remote_url, size_t url_size);
-static void nm_selfbuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len);
-static void nm_selfbuf_buf_send_post(void*_status, nm_len_t len);
+static void nm_selfbuf_send_buf_get(void*_status, void**p_buffer, nm_len_t*p_len);
+static void nm_selfbuf_send_buf_post(void*_status, nm_len_t len);
 static int  nm_selfbuf_send_poll(void*_status);
 static int  nm_selfbuf_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_len);
 static void nm_selfbuf_recv_buf_release(void*_status);
@@ -57,8 +57,8 @@ static const struct nm_minidriver_iface_s nm_selfbuf_minidriver =
     .connect           = &nm_selfbuf_connect,
     .send_post         = NULL,
     .send_data         = NULL,
-    .buf_send_get      = &nm_selfbuf_buf_send_get,
-    .buf_send_post     = &nm_selfbuf_buf_send_post,
+    .send_buf_get      = &nm_selfbuf_send_buf_get,
+    .send_buf_post     = &nm_selfbuf_send_buf_post,
     .send_poll         = &nm_selfbuf_send_poll,
     .recv_iov_post     = NULL,
     .recv_data_post    = NULL,
@@ -156,7 +156,7 @@ static void nm_selfbuf_connect(void*_status, const void*remote_url, size_t url_s
   /* empty */
 }
 
-static void nm_selfbuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len)
+static void nm_selfbuf_send_buf_get(void*_status, void**p_buffer, nm_len_t*p_len)
 {
   struct nm_selfbuf_s*p_status = _status;
   assert(p_status->posted == 0);
@@ -164,7 +164,7 @@ static void nm_selfbuf_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len
   *p_len = NM_SELFBUF_SIZE;
 }
 
-static void nm_selfbuf_buf_send_post(void*_status, nm_len_t len)
+static void nm_selfbuf_send_buf_post(void*_status, nm_len_t len)
 {
   struct nm_selfbuf_s*p_status = _status;
   p_status->len = len;

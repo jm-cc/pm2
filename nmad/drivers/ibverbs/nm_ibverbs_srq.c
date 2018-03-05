@@ -94,8 +94,8 @@ static void nm_ibverbs_srq_getprops(puk_context_t context, struct nm_minidriver_
 static void nm_ibverbs_srq_init(puk_context_t context, const void**p_url, size_t*p_url_size);
 static void nm_ibverbs_srq_close(puk_context_t context);
 static void nm_ibverbs_srq_connect(void*_status, const void*p_remote_url, size_t url_size);
-static void nm_ibverbs_srq_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len);
-static void nm_ibverbs_srq_buf_send_post(void*_status, nm_len_t len);
+static void nm_ibverbs_srq_send_buf_get(void*_status, void**p_buffer, nm_len_t*p_len);
+static void nm_ibverbs_srq_send_buf_post(void*_status, nm_len_t len);
 static int  nm_ibverbs_srq_send_poll(void*_status);
 static int  nm_ibverbs_srq_recv_poll_any(puk_context_t p_context, void**_status);
 static int  nm_ibverbs_srq_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p_len);
@@ -110,8 +110,8 @@ static const struct nm_minidriver_iface_s nm_ibverbs_srq_minidriver =
     .send_post        = NULL,
     .send_data        = NULL,
     .send_poll        = &nm_ibverbs_srq_send_poll,
-    .buf_send_get     = &nm_ibverbs_srq_buf_send_get,
-    .buf_send_post    = &nm_ibverbs_srq_buf_send_post,
+    .send_buf_get     = &nm_ibverbs_srq_send_buf_get,
+    .send_buf_post    = &nm_ibverbs_srq_send_buf_post,
     .recv_iov_post    = NULL,
     .recv_data_post   = NULL,
     .recv_poll_one    = NULL,
@@ -271,7 +271,7 @@ static void nm_ibverbs_srq_connect(void*_status, const void*remote_url, size_t u
 
 /* ** sr I/O ******************************************* */
 
-static void nm_ibverbs_srq_buf_send_get(void*_status, void**p_buffer, nm_len_t*p_len)
+static void nm_ibverbs_srq_send_buf_get(void*_status, void**p_buffer, nm_len_t*p_len)
 {
   struct nm_ibverbs_srq_s*__restrict__ p_ibverbs_srq = _status;
   struct nm_ibverbs_srq_packet_s*__restrict__ p_packet = &p_ibverbs_srq->buffer.sbuf;
@@ -281,7 +281,7 @@ static void nm_ibverbs_srq_buf_send_get(void*_status, void**p_buffer, nm_len_t*p
   *p_len = NM_IBVERBS_SRQ_BUFSIZE;
 }
 
-static void nm_ibverbs_srq_buf_send_post(void*_status, nm_len_t len)
+static void nm_ibverbs_srq_send_buf_post(void*_status, nm_len_t len)
 {
   struct nm_ibverbs_srq_s*__restrict__ p_ibverbs_srq = _status;
   p_ibverbs_srq->send.chunk_len = len;

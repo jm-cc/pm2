@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014-2015 (see AUTHORS file)
+ * Copyright (C) 2014-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,22 +89,21 @@ nm_comm_t nm_comm_dup(nm_comm_t p_comm)
 nm_comm_t nm_comm_create_group(nm_comm_t p_comm, nm_group_t p_newcomm_group, nm_group_t p_bcast_group)
 {
   nm_session_t p_session = nm_comm_get_session(p_comm);
-  nm_gate_t p_self_gate  = nm_comm_gate_self(p_comm);
-  nm_gate_t p_root_gate  = nm_group_get_gate(p_bcast_group, 0);
-  const int newrank      = nm_group_rank(p_newcomm_group);
+  const int self = nm_group_rank(p_bcast_group);
+  const int root = 0;
+  const int newrank = nm_group_rank(p_newcomm_group);
   struct nm_comm_create_header_s
   {
     int commit;
     char session_name[64];
   } header = { .session_name = { '\0'}, .commit = 0 };
-  assert(p_root_gate != NULL);
   const nm_tag_t tag1 = NM_COLL_TAG_COMM_CREATE_1;
   const nm_tag_t tag2 = NM_COLL_TAG_COMM_CREATE_2;
 
   nm_session_t p_new_session = NULL;
   while(!header.commit)
     {
-      if(p_self_gate == p_root_gate)
+      if(self == root)
 	{
 	  snprintf(&header.session_name[0], 64, "nm_comm-%p%08x", p_newcomm_group, (unsigned)random());
 	  nm_session_open(&p_new_session, header.session_name);
@@ -112,10 +111,10 @@ nm_comm_t nm_comm_create_group(nm_comm_t p_comm, nm_group_t p_newcomm_group, nm_
 	    {
 	      int i;
 	      header.commit = 0;
-	      nm_coll_group_bcast(p_session, p_bcast_group, p_root_gate, p_self_gate, &header, sizeof(header), tag1);
+	      nm_coll_group_bcast(p_session, p_bcast_group, root, self, &header, sizeof(header), tag1);
 	      int*acks = malloc(sizeof(int) * nm_group_size(p_bcast_group));
 	      int ack = 1;
-	      nm_coll_group_gather(p_session, p_bcast_group, p_root_gate, p_self_gate, &ack, sizeof(ack), acks, sizeof(ack), tag2);
+	      nm_coll_group_gather(p_session, p_bcast_group, root, self, &ack, sizeof(ack), acks, sizeof(ack), tag2);
 	      int total_acks = 0;
 	      for(i = 0; i < nm_group_size(p_bcast_group); i++)
 		{
@@ -125,13 +124,13 @@ nm_comm_t nm_comm_create_group(nm_comm_t p_comm, nm_group_t p_newcomm_group, nm_
 	      if(total_acks == nm_group_size(p_bcast_group))
 		{
 		  header.commit = 1;
-		  nm_coll_group_bcast(p_session, p_bcast_group, p_root_gate, p_self_gate, &header, sizeof(header), tag1);
+		  nm_coll_group_bcast(p_session, p_bcast_group, root, self, &header, sizeof(header), tag1);
 		}
 	    }
 	}
       else
 	{
-	  nm_coll_group_bcast(p_session, p_bcast_group, p_root_gate, p_self_gate, &header, sizeof(header), tag1);
+	  nm_coll_group_bcast(p_session, p_bcast_group, root, self, &header, sizeof(header), tag1);
 	  if(header.commit == 0)
 	    {
 	      if(p_new_session != NULL)
@@ -141,7 +140,7 @@ nm_comm_t nm_comm_create_group(nm_comm_t p_comm, nm_group_t p_newcomm_group, nm_
 		}
 	      nm_session_open(&p_new_session, header.session_name);
 	      int ack = (p_new_session != NULL);
-	      nm_coll_group_gather(p_session, p_bcast_group, p_root_gate, p_self_gate, &ack, sizeof(ack), NULL, 0, tag2);
+	      nm_coll_group_gather(p_session, p_bcast_group, root, self, &ack, sizeof(ack), NULL, 0, tag2);
 	    }
 	}
     }

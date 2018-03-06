@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014-2016 (see AUTHORS file)
+ * Copyright (C) 2014-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -601,15 +601,15 @@ int mpi_comm_split(MPI_Comm oldcomm, int color, int key, MPI_Comm*newcomm)
   struct nm_mpi_comm_split_node_s*all_nodes = malloc(group_size * sizeof(struct nm_mpi_comm_split_node_s));
 
   const int tag = NM_MPI_TAG_PRIVATE_COMMSPLIT;
-  const nm_gate_t p_self_gate = nm_comm_gate_self(p_old_comm->p_nm_comm);
-  const nm_gate_t p_root_gate = nm_group_get_gate(p_old_group, 0);
-  nm_coll_group_gather(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, p_root_gate, p_self_gate,
+  const int self = nm_group_rank(p_old_group);
+  const int root = 0;
+  nm_coll_group_gather(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, root, self,
 		       &local_node, sizeof(local_node), all_nodes, sizeof(local_node), tag);
-  if(p_self_gate == p_root_gate)
+  if(self == root)
     {
       qsort(all_nodes, group_size, sizeof(struct nm_mpi_comm_split_node_s), &nodecmp);
     }
-  nm_coll_group_bcast(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, p_root_gate, p_self_gate,
+  nm_coll_group_bcast(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, root, self,
 		      all_nodes, group_size * sizeof(struct nm_mpi_comm_split_node_s), tag);
   nm_group_t p_newgroup = nm_group_new();
   int i;
@@ -728,15 +728,15 @@ int mpi_comm_split_type(MPI_Comm oldcomm, int split_type, int key, MPI_Info info
   struct nm_mpi_comm_split_shared_node_s*all_nodes = malloc(group_size * sizeof(struct nm_mpi_comm_split_shared_node_s));
 
   const int tag = NM_MPI_TAG_PRIVATE_COMMSPLIT;
-  const nm_gate_t p_self_gate = nm_comm_gate_self(p_old_comm->p_nm_comm);
-  const nm_gate_t p_root_gate = nm_group_get_gate(p_old_group, 0);
-  nm_coll_group_gather(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, p_root_gate, p_self_gate,
+  const int self = nm_group_rank(p_old_group);
+  const int root = 0;
+  nm_coll_group_gather(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, root, self,
 		       &local_node, sizeof(local_node), all_nodes, sizeof(local_node), tag);
-  if(p_self_gate == p_root_gate)
+  if(self == root)
     {
       qsort(all_nodes, group_size, sizeof(struct nm_mpi_comm_split_shared_node_s), &nodesharedcmp);
     }
-  nm_coll_group_bcast(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, p_root_gate, p_self_gate,
+  nm_coll_group_bcast(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, root, self,
 		      all_nodes, group_size * sizeof(struct nm_mpi_comm_split_shared_node_s), tag);
   nm_group_t p_newgroup = nm_group_new();
   int i;
@@ -1309,9 +1309,11 @@ static nm_mpi_communicator_t*nm_mpi_intercomm_create(nm_mpi_communicator_t*p_par
       free(local_ranks);
     }  
   /* broadcast groups */
-  nm_coll_group_bcast(p_session, p_local_group, p_local_leader, p_self_gate, &remote_size, sizeof(int), tag);
+  const int root = nm_group_get_dest(p_local_group, p_local_leader);
+  const int self = nm_group_rank(p_local_group);
+  nm_coll_group_bcast(p_session, p_local_group, root, self, &remote_size, sizeof(nm_tag_t), tag);
   assert(remote_size <= parent_size);
-  nm_coll_group_bcast(p_session, p_local_group, p_local_leader, p_self_gate, remote_ranks, sizeof(int) * remote_size, tag);
+  nm_coll_group_bcast(p_session, p_local_group, root, self, remote_ranks, sizeof(nm_tag_t) * remote_size, tag);
   nm_group_t p_remote_group = nm_group_incl(nm_comm_group(p_parent_comm->p_nm_comm), remote_size, remote_ranks);
   const int local0_parent  = nm_comm_get_dest(p_parent_comm->p_nm_comm, nm_group_get_gate(p_local_group, 0));
   const int remote0_parent = remote_ranks[0];

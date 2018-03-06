@@ -42,10 +42,7 @@ int nm_group_rank(nm_group_t group)
 {
   if(group != NULL)
     {
-      int launcher_rank = -1;
-      nm_launcher_get_rank(&launcher_rank);
-      nm_gate_t p_gate = NULL;
-      nm_launcher_get_gate(launcher_rank, &p_gate);
+      nm_gate_t p_gate = nm_launcher_self_gate();
       nm_gate_vect_itor_t pp_self = nm_gate_vect_find(group, p_gate);
       if(pp_self != NULL)
 	{

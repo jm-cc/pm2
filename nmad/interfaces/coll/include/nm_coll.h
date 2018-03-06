@@ -23,15 +23,15 @@
 
 /* ** group-based collectives */
 
-extern void nm_coll_group_barrier(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_self_gate, nm_tag_t tag);
+extern void nm_coll_group_barrier(nm_session_t p_session, nm_group_t p_group, int self, nm_tag_t tag);
 
-extern void nm_coll_group_bcast(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
+extern void nm_coll_group_bcast(nm_session_t p_session, nm_group_t p_group, int root, int self,
 				void*buffer, nm_len_t len, nm_tag_t tag);
 
-extern void nm_coll_group_scatter(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
+extern void nm_coll_group_scatter(nm_session_t p_session, nm_group_t p_group, int root, int self,
 				  const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
 
-extern void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
+extern void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, int root, int self,
 				 const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
 
 /* ** communicator-based collectives */

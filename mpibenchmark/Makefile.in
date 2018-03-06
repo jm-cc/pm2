@@ -3,16 +3,17 @@ VPATH  := $(srcdir)
 
 include @abs_top_builddir@/common_vars.mk
 
-BENCH_BASE     := mpi_bench_sendrecv mpi_bench_bidir mpi_bench_send_overhead mpi_bench_multi mpi_bench_multi_hetero mpi_bench_noncontig mpi_bench_multi_nonblock
-BENCH_OVERLAP  := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_overlap_*.c))
-BENCH_DATATYPE := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_sparse_*.c))
-BENCH_THREAD   := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_thread_*.c))
-BENCH_NOISE    := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_noise_*.c))
-BENCH_RMA      := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_rma_*.c))
+BENCH_BASE       := mpi_bench_sendrecv mpi_bench_bidir mpi_bench_send_overhead mpi_bench_multi mpi_bench_multi_hetero mpi_bench_noncontig mpi_bench_multi_nonblock
+BENCH_OVERLAP    := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_overlap_*.c))
+BENCH_DATATYPE   := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_sparse_*.c))
+BENCH_THREAD     := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_thread_*.c))
+BENCH_NOISE      := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_noise_*.c))
+BENCH_RMA        := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_rma_*.c))
 BENCH_RMAOVERLAP := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_rmaoverlap_*.c))
 BENCH_REQS       := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_reqs_*.c))
+BENCH_COLL       := $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/mpi_bench_coll_*.c))
 
-BENCH_ALL      := $(BENCH_BASE) $(BENCH_OVERLAP) $(BENCH_DATATYPE) $(BENCH_THREAD) $(BENCH_NOISE) $(BENCH_RMA) $(BENCH_RMAOVERLAP) $(BENCH_REQS) 
+BENCH_ALL      := $(BENCH_BASE) $(BENCH_OVERLAP) $(BENCH_DATATYPE) $(BENCH_THREAD) $(BENCH_NOISE) $(BENCH_RMA) $(BENCH_RMAOVERLAP) $(BENCH_REQS) $(BENCH_COLL)
 
 BENCH_SUITES   := mpi_bench_suite_base mpi_bench_suite_overlap mpi_bench_suite_thread mpi_bench_suite_rma mpi_bench_suite_rmaoverlap mpi_bench_suite_reqs
 

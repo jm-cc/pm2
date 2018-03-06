@@ -229,15 +229,16 @@ void mpi_bench_init(int*argc, char***argv, int threads)
     }
 
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_bench_common.size);
-  if(mpi_bench_common.size != 2)
+  if(mpi_bench_common.size % 2 != 0)
     {
-      fprintf(stderr, "# MadMPI benchmark: needs 2 nodes, cannot run on %d nodes.\n", mpi_bench_common.size);
+      fprintf(stderr, "# MadMPI benchmark: needs an even number of nodes, cannot run on %d nodes.\n",
+	      mpi_bench_common.size);
       abort();
     }
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_bench_common.self);
   mpi_bench_common.comm = MPI_COMM_WORLD;
-  mpi_bench_common.is_server = (mpi_bench_common.self == 0);
-  mpi_bench_common.peer = 1 - mpi_bench_common.self;
+  mpi_bench_common.is_server = ((mpi_bench_common.self % 2) == 0);
+  mpi_bench_common.peer = mpi_bench_common.is_server ? (mpi_bench_common.self + 1) : (mpi_bench_common.self - 1);
   if(!mpi_bench_common.is_server)
     {
       char hostname[256];

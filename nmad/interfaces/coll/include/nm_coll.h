@@ -34,7 +34,7 @@ extern void nm_coll_group_scatter(nm_session_t p_session, nm_group_t p_group, nm
 extern void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
 				 const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
 
-/* ** communicator_based collectives */
+/* ** communicator-based collectives */
 
 extern void nm_coll_barrier(nm_comm_t comm, nm_tag_t tag);
 
@@ -43,6 +43,10 @@ extern void nm_coll_bcast(nm_comm_t comm, int root, void*buffer, nm_len_t len, n
 extern void nm_coll_scatter(nm_comm_t comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
 
 extern void nm_coll_gather(nm_comm_t comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag);
+
+/* ** data-based collectives */
+
+extern void nm_coll_data_bcast(nm_comm_t comm, int root, struct nm_data_s*p_data, nm_tag_t tag);
 
 /** @} */
 

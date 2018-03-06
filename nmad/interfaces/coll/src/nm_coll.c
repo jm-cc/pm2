@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014-2016 (see AUTHORS file)
+ * Copyright (C) 2014-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,15 +20,8 @@
 
 /* ********************************************************* */
 
-void nm_coll_group_barrier(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_self_gate, nm_tag_t tag)
-{
-  nm_gate_t p_root_gate = nm_group_get_gate(p_group, 0);
-  nm_coll_group_gather(p_session, p_group, p_root_gate, p_self_gate, NULL, 0, NULL, 0, tag);
-  nm_coll_group_bcast(p_session, p_group, p_root_gate, p_self_gate, NULL, 0, tag);
-}
-
-void nm_coll_group_bcast(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
-			 void*buffer, nm_len_t len, nm_tag_t tag)
+void nm_coll_group_data_bcast(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
+                              struct nm_data_s*p_data, nm_tag_t tag)
 {
   assert(p_root_gate != NULL);
   if(p_self_gate == p_root_gate)
@@ -40,20 +33,47 @@ void nm_coll_group_bcast(nm_session_t p_session, nm_group_t p_group, nm_gate_t p
 	{
 	  nm_gate_t p_gate = nm_group_get_gate(p_group, i);
 	  if(p_gate != p_self_gate)
-	    nm_sr_isend(p_session, p_gate, tag, buffer, len, &requests[i]);
+            {
+              nm_sr_send_init(p_session, &requests[i]);
+              nm_sr_send_pack_data(p_session, &requests[i], p_data);
+              nm_sr_send_isend(p_session, &requests[i], p_gate, tag);
+            }
 	}
       for(i = 0; i < size; i++)
 	{
 	  nm_gate_t p_gate = nm_group_get_gate(p_group, i);
 	  if(p_gate != p_self_gate)
-	    nm_sr_swait(p_session, &requests[i]);
+            {
+              nm_sr_swait(p_session, &requests[i]);
+            }
 	}
       free(requests);
     }
   else
     {
-      nm_sr_recv(p_session, p_root_gate, tag, buffer, len);
+      nm_sr_request_t request;
+      nm_sr_recv_init(p_session, &request);
+      nm_sr_recv_unpack_data(p_session, &request, p_data);
+      nm_sr_recv_irecv(p_session, &request, p_root_gate, tag, NM_TAG_MASK_FULL);
+      nm_sr_rwait(p_session, &request);
     }
+}
+
+/* ********************************************************* */
+
+void nm_coll_group_barrier(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_self_gate, nm_tag_t tag)
+{
+  nm_gate_t p_root_gate = nm_group_get_gate(p_group, 0);
+  nm_coll_group_gather(p_session, p_group, p_root_gate, p_self_gate, NULL, 0, NULL, 0, tag);
+  nm_coll_group_bcast(p_session, p_group, p_root_gate, p_self_gate, NULL, 0, tag);
+}
+
+void nm_coll_group_bcast(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
+			 void*buffer, nm_len_t len, nm_tag_t tag)
+{
+  struct nm_data_s data;
+  nm_data_contiguous_build(&data, (void*)buffer, len);
+  nm_coll_group_data_bcast(p_session, p_group, p_root_gate, p_self_gate, &data, tag);
 }
 
 void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, nm_gate_t p_root_gate, nm_gate_t p_self_gate,
@@ -144,4 +164,13 @@ void nm_coll_gather(nm_comm_t p_comm, int root, const void*sbuf, nm_len_t slen, 
   nm_coll_group_gather(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
 		       nm_comm_get_gate(p_comm, root), nm_comm_gate_self(p_comm),
 		       sbuf, slen, rbuf, rlen, tag);
+}
+
+/* ********************************************************* */
+
+void nm_coll_data_bcast(nm_comm_t p_comm, int root, struct nm_data_s*p_data, nm_tag_t tag)
+{
+  nm_coll_group_data_bcast(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
+                           nm_comm_get_gate(p_comm, root), nm_comm_gate_self(p_comm),
+                           p_data, tag);
 }

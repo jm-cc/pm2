@@ -34,9 +34,7 @@ void nm_coll_group_data_bcast(nm_session_t p_session, nm_group_t p_group, nm_gat
 	  nm_gate_t p_gate = nm_group_get_gate(p_group, i);
 	  if(p_gate != p_self_gate)
             {
-              nm_sr_send_init(p_session, &requests[i]);
-              nm_sr_send_pack_data(p_session, &requests[i], p_data);
-              nm_sr_send_isend(p_session, &requests[i], p_gate, tag);
+              nm_sr_isend_data(p_session, p_gate, tag, p_data, &requests[i]);
             }
 	}
       for(i = 0; i < size; i++)
@@ -52,9 +50,7 @@ void nm_coll_group_data_bcast(nm_session_t p_session, nm_group_t p_group, nm_gat
   else
     {
       nm_sr_request_t request;
-      nm_sr_recv_init(p_session, &request);
-      nm_sr_recv_unpack_data(p_session, &request, p_data);
-      nm_sr_recv_irecv(p_session, &request, p_root_gate, tag, NM_TAG_MASK_FULL);
+      nm_sr_irecv_data(p_session, p_root_gate, tag, p_data, &request);
       nm_sr_rwait(p_session, &request);
     }
 }

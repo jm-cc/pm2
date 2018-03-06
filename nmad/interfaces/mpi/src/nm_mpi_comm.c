@@ -600,7 +600,7 @@ int mpi_comm_split(MPI_Comm oldcomm, int color, int key, MPI_Comm*newcomm)
   const struct nm_mpi_comm_split_node_s local_node = { .color = color, .key = key, .rank = rank};
   struct nm_mpi_comm_split_node_s*all_nodes = malloc(group_size * sizeof(struct nm_mpi_comm_split_node_s));
 
-  const int tag = NM_MPI_TAG_PRIVATE_COMMSPLIT;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_COMMSPLIT;
   const int self = nm_group_rank(p_old_group);
   const int root = 0;
   nm_coll_group_gather(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, root, self,
@@ -727,7 +727,7 @@ int mpi_comm_split_type(MPI_Comm oldcomm, int split_type, int key, MPI_Info info
   memcpy((void*)local_node.hostname, hostname, 1024 * sizeof(char));
   struct nm_mpi_comm_split_shared_node_s*all_nodes = malloc(group_size * sizeof(struct nm_mpi_comm_split_shared_node_s));
 
-  const int tag = NM_MPI_TAG_PRIVATE_COMMSPLIT;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_COMMSPLIT;
   const int self = nm_group_rank(p_old_group);
   const int root = 0;
   nm_coll_group_gather(nm_comm_get_session(p_old_comm->p_nm_comm), p_old_group, root, self,

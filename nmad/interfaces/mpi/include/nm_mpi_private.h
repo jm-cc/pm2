@@ -982,12 +982,12 @@ int nm_mpi_irecv(nm_mpi_request_t *p_req, int source, nm_mpi_communicator_t *p_c
 /**
  * Collective send over the communicator
  */
-nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, int tag, nm_mpi_communicator_t*p_comm);
+nm_mpi_request_t*nm_mpi_coll_isend(const void*buffer, int count, nm_mpi_datatype_t*p_datatype, int dest, nm_tag_t tag, nm_mpi_communicator_t*p_comm);
 
 /**
  * Recieve data sent over the communicator via nm_mpi_coll_isend
  */
-nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int source, int tag, nm_mpi_communicator_t*p_comm);
+nm_mpi_request_t*nm_mpi_coll_irecv(void*buffer, int count, nm_mpi_datatype_t*p_datatype, int source, nm_tag_t tag, nm_mpi_communicator_t*p_comm);
 
 /**
  * Wait for the end of the communication over communicator via nm_mpi_coll_isend

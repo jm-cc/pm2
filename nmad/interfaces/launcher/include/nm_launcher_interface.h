@@ -63,5 +63,14 @@ static inline int nm_launcher_init(int*argc, char**argv)
   return nm_launcher_init_checked(argc, argv, &nm_abi_config);
 }
 
+static inline nm_gate_t nm_launcher_self_gate(void)
+{
+  int rank;
+  nm_launcher_get_rank(&rank);
+  nm_gate_t p_gate;
+  nm_launcher_get_gate(rank, &p_gate);
+  return p_gate;
+}
+
 #endif /* NM_LAUNCHER_INTERFACE_H */
 

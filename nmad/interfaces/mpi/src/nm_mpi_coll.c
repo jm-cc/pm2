@@ -85,6 +85,8 @@ int mpi_barrier(MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_BARRIER;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
   nm_coll_barrier(p_comm->p_nm_comm, tag);
   return MPI_SUCCESS;
 }
@@ -96,6 +98,8 @@ int mpi_bcast(void*buffer, int count, MPI_Datatype datatype, int root, MPI_Comm 
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
     return MPI_ERR_TYPE;
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
   struct nm_data_s data;
   nm_mpi_data_build(&data, buffer, p_datatype, count);
   nm_mpi_datatype_ref_inc(p_datatype);
@@ -107,9 +111,13 @@ int mpi_bcast(void*buffer, int count, MPI_Datatype datatype, int root, MPI_Comm 
 int mpi_gather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_GATHER;
-  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
+  if((p_recv_datatype == NULL) || (p_send_datatype == NULL))
+    return MPI_ERR_TYPE;
   const int size = nm_comm_size(p_comm->p_nm_comm);
   if(nm_comm_rank(p_comm->p_nm_comm) == root)
     {
@@ -147,6 +155,10 @@ int mpi_gatherv(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void*r
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
+  if((p_recv_datatype == NULL) || (p_send_datatype == NULL))
+    return MPI_ERR_TYPE;
   if(nm_comm_rank(p_comm->p_nm_comm) == root)
     {
       nm_mpi_request_t**requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
@@ -187,6 +199,8 @@ int mpi_allgather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void
 #if 0
   int err;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
   mpi_gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, 0, comm);
   // Broadcast the result to all processes
   err = mpi_bcast(recvbuf, nm_comm_size(p_comm->p_nm_comm)*recvcount, recvtype, 0, comm);
@@ -199,6 +213,10 @@ int mpi_allgather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void
   const int rank = nm_comm_rank(p_comm->p_nm_comm);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
+  if((p_recv_datatype == NULL) || (p_send_datatype == NULL))
+    return MPI_ERR_TYPE;
   nm_mpi_request_t**rreqs = malloc(size * sizeof(nm_mpi_request_t*));
   nm_mpi_request_t**sreqs = malloc(size * sizeof(nm_mpi_request_t*));
   int i;
@@ -257,9 +275,13 @@ int mpi_allgatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, vo
 int mpi_scatter(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_SCATTER;
-  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
+  if((p_recv_datatype == NULL) || (p_send_datatype == NULL))
+    return MPI_ERR_TYPE;
   if (nm_comm_rank(p_comm->p_nm_comm) == root)
     {
       int i;
@@ -297,9 +319,13 @@ int mpi_scatterv(const void*sendbuf, const int sendcounts[], const int displs[],
 		 int root, MPI_Comm comm)
 {
   const int tag = NM_MPI_TAG_PRIVATE_SCATTERV;
-  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
+  if((p_recv_datatype == NULL) || (p_send_datatype == NULL))
+    return MPI_ERR_TYPE;
   if (nm_comm_rank(p_comm->p_nm_comm) == root)
     {
       int i;
@@ -336,10 +362,14 @@ int mpi_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void
 {
   const int tag = NM_MPI_TAG_PRIVATE_ALLTOALL;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-  nm_mpi_request_t**send_requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
-  nm_mpi_request_t**recv_requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
+  if((p_recv_datatype == NULL) || (p_send_datatype == NULL))
+    return MPI_ERR_TYPE;
+  nm_mpi_request_t**send_requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
+  nm_mpi_request_t**recv_requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
   int i;
   for(i = 0; i < nm_comm_size(p_comm->p_nm_comm); i++)
     {
@@ -371,10 +401,14 @@ int mpi_alltoallv(const void* sendbuf, const int *sendcounts, const int *sdispls
 {
   int tag = NM_MPI_TAG_PRIVATE_ALLTOALLV;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-  nm_mpi_request_t**send_requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
-  nm_mpi_request_t**recv_requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
+  if((p_recv_datatype == NULL) || (p_send_datatype == NULL))
+    return MPI_ERR_TYPE;
+  nm_mpi_request_t**send_requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
+  nm_mpi_request_t**recv_requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
   int i;
   for(i = 0; i < nm_comm_size(p_comm->p_nm_comm); i++)
     {
@@ -425,6 +459,8 @@ int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatyp
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_operator_t*p_operator = nm_mpi_operator_get(op);
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
   assert(p_datatype->is_contig);
   assert(p_datatype->size == p_datatype->extent);
   const int size = nm_comm_size(p_comm->p_nm_comm);
@@ -488,6 +524,8 @@ int mpi_scan(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype,
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_operator_t*p_operator = nm_mpi_operator_get(op);
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
   assert(p_datatype->is_contig);
   assert(p_datatype->size == p_datatype->extent);
   if(p_operator->function == NULL)
@@ -534,10 +572,14 @@ int mpi_allreduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype data
 
 int mpi_reduce_scatter(const void*sendbuf, void*recvbuf, const int*recvcounts, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
-  int count = 0, i;
-  nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
-  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   const int tag = NM_MPI_TAG_PRIVATE_REDUCESCATTER;
+  int count = 0, i;
+  nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
+  nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
+  if(p_comm == NULL || comm == MPI_COMM_NULL)
+    return MPI_ERR_COMM;
+  if(p_datatype == NULL)
+    return MPI_ERR_TYPE;
   void *reducebuf = NULL;
   assert(p_datatype->is_contig);
   for(i = 0; i < nm_comm_size(p_comm->p_nm_comm) ; i++)

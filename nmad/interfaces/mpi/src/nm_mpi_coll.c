@@ -96,27 +96,11 @@ int mpi_bcast(void*buffer, int count, MPI_Datatype datatype, int root, MPI_Comm 
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
     return MPI_ERR_TYPE;
-  if(nm_comm_rank(p_comm->p_nm_comm) == root)
-    {
-      nm_mpi_request_t**requests = malloc(nm_comm_size(p_comm->p_nm_comm) * sizeof(nm_mpi_request_t*));
-      int i;
-      for(i = 0; i < nm_comm_size(p_comm->p_nm_comm); i++)
-	{
-	  if(i == root) continue;
-	  requests[i] = nm_mpi_coll_isend(buffer, count, p_datatype, i, tag, p_comm);
-	}
-      for(i = 0; i < nm_comm_size(p_comm->p_nm_comm); i++)
-	{
-	  if(i == root) continue;
-	  nm_mpi_coll_wait(requests[i]);
-	}
-      FREE_AND_SET_NULL(requests);
-    }
-  else
-    {
-      nm_mpi_request_t*p_req = nm_mpi_coll_irecv(buffer, count, p_datatype, root, tag, p_comm);
-      nm_mpi_coll_wait(p_req);
-    }
+  struct nm_data_s data;
+  nm_mpi_data_build(&data, buffer, p_datatype, count);
+  nm_mpi_datatype_ref_inc(p_datatype);
+  nm_coll_data_bcast(p_comm->p_nm_comm, root, &data, tag);
+  nm_mpi_datatype_ref_dec(p_datatype);
   return MPI_SUCCESS;
 }
 

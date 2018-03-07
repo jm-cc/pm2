@@ -50,8 +50,9 @@ struct nm_coll_tree_info_s
 {
   enum nm_coll_tree_kind_e kind;
   int max_arity;  /**< maximum number of children in tree */
-  int n;          /**< number of nodes invovled in collective */
+  int n;          /**< number of nodes involved in collective */
   int self;       /**< rank of local node */
+  int root;       /**< root node of the collective */
   int height;     /**< tree height: number of communications steps in the tree (0 for a single node) */
 };
 
@@ -71,12 +72,10 @@ static inline int nm_coll_log2_ceil(int x)
 
 /* ** binomial tree **************************************** */
 
-static inline void nm_coll_binomial_init(struct nm_coll_tree_info_s*p_tree, int n, int self)
+static inline void nm_coll_binomial_init(struct nm_coll_tree_info_s*p_tree)
 {
   p_tree->max_arity = 1;
-  p_tree->n = n;
-  p_tree->self = self;
-  p_tree->height = nm_coll_log2_ceil(n);
+  p_tree->height = nm_coll_log2_ceil(p_tree->n);
 }
 
 /** walk to the leafs of the tree, level numbered from the leafs */
@@ -101,31 +100,47 @@ static inline int nm_coll_binomial_parent(int i, int n, int level)
 
 static inline void nm_coll_binomial_step(const struct nm_coll_tree_info_s*p_tree, int step, int*p_parent, int*p_children, int*n_children)
 {
-  const int child = nm_coll_binomial_child(p_tree->self, p_tree->n, p_tree->height - step - 1);
-  const int parent = nm_coll_binomial_parent(p_tree->self, p_tree->n, p_tree->height - step - 1);
-  *p_parent = parent;
-  p_children[0] = child;
-  *n_children = 1;
+  const int child = nm_coll_binomial_child((p_tree->n + p_tree->self - p_tree->root) % p_tree->n, p_tree->n, p_tree->height - step - 1);
+  const int parent = nm_coll_binomial_parent((p_tree->n + p_tree->self - p_tree->root) % p_tree->n, p_tree->n, p_tree->height - step - 1);
+  if(parent != -1)
+    {
+      *p_parent = (parent + p_tree->root) % p_tree->n;
+    }
+  else
+    {
+      *p_parent = -1;
+    }
+  if(child != -1)
+    {
+      p_children[0] = (child + p_tree->root) % p_tree->n;
+      *n_children = 1;
+    }
+  else
+    {
+      *n_children = 0;
+    }
 }
 
 /* ** flat tree ******************************************** */
 
-static inline void nm_coll_flat_init(struct nm_coll_tree_info_s*p_tree, int n, int self)
+static inline void nm_coll_flat_init(struct nm_coll_tree_info_s*p_tree)
 {
-  p_tree->max_arity = (self == 0) ? n : 0;
-  p_tree->n = n;
-  p_tree->self = self;
+  p_tree->max_arity = (p_tree->self == p_tree->root) ? p_tree->n : 0;
   p_tree->height = 1;
 }
 
 static inline void nm_coll_flat_step(const struct nm_coll_tree_info_s*p_tree, int step, int*p_parent, int*p_children, int*n_children)
 {
-  if(p_tree->self == 0)
+  if(p_tree->self == p_tree->root)
     {
-      int k;
-      for(k = 0; k < p_tree->n - 1; k++)
+      int j, k;
+      for(k = 0, j = 0; k < p_tree->n; k++)
         {
-          p_children[k] = k + 1;
+          if(k != p_tree->root)
+            {
+              p_children[j] = k;
+              j++;
+            }
         }
       p_children[p_tree->n - 1] = -1;
       *n_children = p_tree->n - 1;
@@ -133,7 +148,6 @@ static inline void nm_coll_flat_step(const struct nm_coll_tree_info_s*p_tree, in
     }
   else
     {
-      p_children[0] = -1;
       *n_children = 0;
       *p_parent = 0;
     }
@@ -141,12 +155,10 @@ static inline void nm_coll_flat_step(const struct nm_coll_tree_info_s*p_tree, in
 
 /* ** chain ************************************************ */
 
-static inline void nm_coll_chain_init(struct nm_coll_tree_info_s*p_tree, int n, int self)
+static inline void nm_coll_chain_init(struct nm_coll_tree_info_s*p_tree)
 {
   p_tree->max_arity = 1;
-  p_tree->n = n;
-  p_tree->self = self;
-  p_tree->height = n - 1;
+  p_tree->height = p_tree->n - 1;
 }
 
 static inline void nm_coll_chain_step(const struct nm_coll_tree_info_s*p_tree, int step, int*p_parent, int*p_children, int*n_children)
@@ -173,19 +185,22 @@ static inline void nm_coll_chain_step(const struct nm_coll_tree_info_s*p_tree, i
   
 /* ** generic trees **************************************** */
   
-static inline void nm_coll_tree_init(struct nm_coll_tree_info_s*p_tree, enum nm_coll_tree_kind_e kind, int n, int self)
+static inline void nm_coll_tree_init(struct nm_coll_tree_info_s*p_tree, enum nm_coll_tree_kind_e kind, int n, int self, int root)
 {
   p_tree->kind = kind;
+  p_tree->root = root;
+  p_tree->n = n;
+  p_tree->self = self;
   switch(kind)
     {
     case NM_COLL_TREE_FLAT:
-      nm_coll_flat_init(p_tree, n, self);
+      nm_coll_flat_init(p_tree);
       break;
     case NM_COLL_TREE_CHAIN:
-      nm_coll_chain_init(p_tree, n, self);
+      nm_coll_chain_init(p_tree);
       break;
     case NM_COLL_TREE_BINOMIAL:
-      nm_coll_binomial_init(p_tree, n, self);
+      nm_coll_binomial_init(p_tree);
       break;
     default:
       NM_FATAL("coll- unexpected kind of tree %d.\n", kind);

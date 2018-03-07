@@ -78,6 +78,7 @@ struct mpi_bench_s
   const char*name;
   const enum mpi_bench_rtt_e rtt; /**< whether we should output round-trip time or half-rtt (one way latency) */
   const int threads; /**< whether we need MPI_THREAD_MULTIPLE */
+  const int collective; /**< whether the operaiton is collective (display results only on node 0) */
   void (*server)(void*buf, size_t len);
   void (*client)(void*buf, size_t len);
   void (*init)(void*buf, size_t len); /**< called before a round with a given set of param+size */

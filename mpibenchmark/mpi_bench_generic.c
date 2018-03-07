@@ -406,17 +406,19 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      avg_lat /= iterations;
 	      const double bw_million_byte = len / min_lat;
 	      const double bw_mbyte        = bw_million_byte / 1.048576;
-
-	      printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf",
-		     (long long)len, min_lat, bw_million_byte, bw_mbyte,
-		     med_lat, q1_lat, q3_lat, d1_lat, d9_lat,
-		     avg_lat, max_lat);
-	      if(mpi_bench->setparam)
+	      if((!mpi_bench->collective) || (mpi_bench_common.self == 1))
 		{
-		  printf("\t%d", p);
+		  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf",
+			 (long long)len, min_lat, bw_million_byte, bw_mbyte,
+			 med_lat, q1_lat, q3_lat, d1_lat, d9_lat,
+			 avg_lat, max_lat);
+		  if(mpi_bench->setparam)
+		    {
+		      printf("\t%d", p);
+		    }
+		  printf("\n");
+		  fflush(stdout);
 		}
-	      printf("\n");
-	      fflush(stdout);
 	      free(buf);
 	      MPI_Barrier(mpi_bench_common.comm);
 	    }

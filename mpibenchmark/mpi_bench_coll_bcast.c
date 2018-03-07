@@ -25,6 +25,7 @@ const struct mpi_bench_s mpi_bench_coll_bcast =
     .label   = "mpi_bench_coll_bcast",
     .name    = "MPI bcast",
     .rtt     = MPI_BENCH_RTT_FULL,
+    .collective = 1,
     .server  = &mpi_bench_coll_bcast_func,
     .client  = &mpi_bench_coll_bcast_func
   };

@@ -1,0 +1,33 @@
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @abs_top_builddir@/common_vars.mk
+
+TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/nm_coll_*.c))
+TARGET_LIB =
+SUBDIRS =
+
+INSTALL_BIN     = $(TARGET_BIN)
+INSTALL_LIB     = $(TARGET_LIB)
+INSTALL_MOD     = $(TARGET_MOD)
+INSTALL_INCLUDE = 
+
+INSTALL_PREFIX := @nmad_root@
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
+
+PKG_CONFIG_PATH := @nmad_root@/lib/pkgconfig:@PKG_CONFIG_PATH@
+CFLAGS  += $(shell env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags nmad)
+LDFLAGS +=
+LIBS    += $(shell env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs nmad)
+
+include @abs_top_builddir@/common_rules.mk
+
+$(TARGET_BIN): nm_coll_%: nm_coll_%.pic.o
+
+NMAD_NODES = 8
+
+BENCH +=
+
+include @abs_top_builddir@/nmad-tests.mk
+

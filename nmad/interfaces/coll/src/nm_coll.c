@@ -21,13 +21,122 @@
 
 /* ********************************************************* */
 
+struct nm_coll_req_s
+{
+  nm_cond_status_t status;
+  struct nm_monitor_s monitor;
+  void*_coll;
+};
+
+/** status of a bcast */
+struct nm_coll_bcast_s
+{
+  nm_session_t p_session;
+  nm_group_t p_group;
+  nm_tag_t tag;
+  struct nm_data_s*p_data;
+  struct nm_coll_tree_info_s tree;
+  nm_sr_request_t*children_requests;
+  nm_sr_request_t parent_request;
+  int*children;
+  int s;
+  struct nm_coll_req_s coll_req;
+  int pending_reqs;
+};
+
+static void nm_coll_ibcast_step(struct nm_coll_bcast_s*p_bcast);
+static void nm_coll_ibcast_req_notifier(nm_sr_event_t event, const nm_sr_event_info_t*event_info, void*_ref);
+
+static void nm_coll_ibcast_step(struct nm_coll_bcast_s*p_bcast)
+{
+  assert(p_bcast->pending_reqs == 0);
+  if(p_bcast->s < p_bcast->tree.height)
+    {
+      int parent = -1;
+      int n_children = 0;
+      nm_coll_tree_step(&p_bcast->tree, p_bcast->s, &parent, p_bcast->children, &n_children);
+      p_bcast->s++;
+      if(parent != -1)
+        {
+          nm_gate_t p_parent_gate = nm_group_get_gate(p_bcast->p_group, parent);
+          nm_sr_irecv_data(p_bcast->p_session, p_parent_gate, p_bcast->tag, p_bcast->p_data, &p_bcast->parent_request);
+          nm_atomic_inc(&p_bcast->pending_reqs);
+          nm_sr_request_set_ref(&p_bcast->parent_request, p_bcast);
+          nm_sr_request_monitor(p_bcast->p_session, &p_bcast->parent_request,
+                                NM_SR_EVENT_FINALIZED, &nm_coll_ibcast_req_notifier);
+        }
+      if(n_children > 0)
+        {
+          int i;
+          for(i = 0; i < n_children; i++)
+            {
+              assert(p_bcast->children[i] != -1);
+              nm_gate_t p_gate = nm_group_get_gate(p_bcast->p_group, p_bcast->children[i]);
+              nm_sr_isend_data(p_bcast->p_session, p_gate, p_bcast->tag, p_bcast->p_data, &p_bcast->children_requests[i]);
+              nm_atomic_inc(&p_bcast->pending_reqs);
+              nm_sr_request_set_ref(&p_bcast->children_requests[i], p_bcast);
+              nm_sr_request_monitor(p_bcast->p_session, &p_bcast->children_requests[i],
+                                    NM_SR_EVENT_FINALIZED, &nm_coll_ibcast_req_notifier);
+            }
+        }
+      if((parent == -1) && (n_children == 0))
+        {
+          nm_coll_ibcast_step(p_bcast);
+        }
+    }
+  else
+    {
+      /* notify completion */
+      nm_cond_signal(&p_bcast->coll_req.status, 1);
+    }
+}
+
+static void nm_coll_ibcast_req_notifier(nm_sr_event_t event, const nm_sr_event_info_t*event_info, void*_ref)
+{
+  struct nm_coll_bcast_s*p_bcast = _ref;
+  nm_atomic_dec(&p_bcast->pending_reqs);
+  if(p_bcast->pending_reqs == 0)
+    {
+      nm_coll_ibcast_step(p_bcast);
+    }
+}
+
+void nm_coll_ibcast_wait(struct nm_coll_bcast_s*p_bcast)
+{
+  nm_cond_wait(&p_bcast->coll_req.status, 1, p_bcast->p_session->p_core);
+  free(p_bcast->children_requests);
+  free(p_bcast->children);
+  free(p_bcast);
+}
+
+struct nm_coll_bcast_s*nm_coll_group_data_ibcast(nm_session_t p_session, nm_group_t p_group, int root, int self,
+                                                 struct nm_data_s*p_data, nm_tag_t tag)
+{
+  const enum nm_coll_tree_kind_e kind = NM_COLL_TREE_BINOMIAL;
+  struct nm_coll_bcast_s*p_bcast = malloc(sizeof(struct nm_coll_bcast_s));
+  p_bcast->p_session = p_session;
+  p_bcast->p_group = p_group;
+  p_bcast->tag = tag;
+  p_bcast->p_data = p_data;
+  nm_coll_tree_init(&p_bcast->tree, kind, nm_group_size(p_group), self, root);
+  p_bcast->children_requests = malloc(p_bcast->tree.max_arity * sizeof(nm_sr_request_t));
+  p_bcast->children = malloc(p_bcast->tree.max_arity * sizeof(int));
+  nm_cond_init(&p_bcast->coll_req.status, 0);
+  p_bcast->coll_req.monitor = NM_MONITOR_NULL;
+  p_bcast->pending_reqs = 0;
+  p_bcast->s = 0;
+  nm_coll_ibcast_step(p_bcast);
+  return p_bcast;
+}
+
 void nm_coll_group_data_bcast(nm_session_t p_session, nm_group_t p_group, int root, int self,
                               struct nm_data_s*p_data, nm_tag_t tag)
 {
+  const enum nm_coll_tree_kind_e kind = NM_COLL_TREE_BINOMIAL;
   assert(nm_group_get_gate(p_group, self) == nm_launcher_self_gate());
   const int size = nm_group_size(p_group);
   struct nm_coll_tree_info_s tree;
-  nm_coll_tree_init(&tree, NM_COLL_TREE_BINOMIAL, size, self, root);
+  nm_coll_tree_init(&tree, kind, size, self, root);
   nm_sr_request_t*requests = malloc(tree.max_arity * sizeof(nm_sr_request_t));
   int*children = malloc(sizeof(int) * tree.max_arity);
   int s;

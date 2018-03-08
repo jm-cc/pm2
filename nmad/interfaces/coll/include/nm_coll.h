@@ -48,5 +48,12 @@ extern void nm_coll_gather(nm_comm_t comm, int root, const void*sbuf, nm_len_t s
 
 extern void nm_coll_data_bcast(nm_comm_t comm, int root, struct nm_data_s*p_data, nm_tag_t tag);
 
+/* ** non-blocking collectives */
+
+extern struct nm_coll_bcast_s*nm_coll_group_data_ibcast(nm_session_t p_session, nm_group_t p_group, int root, int self,
+                                                        struct nm_data_s*p_data, nm_tag_t tag);
+extern void nm_coll_ibcast_wait(struct nm_coll_bcast_s*p_bcast);
+
+
 /** @} */
 

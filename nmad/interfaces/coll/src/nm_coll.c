@@ -19,14 +19,8 @@
 #include <Padico/Puk.h>
 #include "nm_coll_private.h"
 
-/* ********************************************************* */
 
-struct nm_coll_req_s
-{
-  nm_cond_status_t status;
-  struct nm_monitor_s monitor;
-  void*_coll;
-};
+/* ** bcast ************************************************ */
 
 /** status of a bcast */
 struct nm_coll_bcast_s
@@ -40,8 +34,8 @@ struct nm_coll_bcast_s
   nm_sr_request_t parent_request;
   int*children;
   int s;
-  struct nm_coll_req_s coll_req;
   int pending_reqs;
+  nm_cond_status_t status;
 };
 
 static void nm_coll_ibcast_step(struct nm_coll_bcast_s*p_bcast);
@@ -87,7 +81,7 @@ static void nm_coll_ibcast_step(struct nm_coll_bcast_s*p_bcast)
   else
     {
       /* notify completion */
-      nm_cond_signal(&p_bcast->coll_req.status, 1);
+      nm_cond_signal(&p_bcast->status, 1);
     }
 }
 
@@ -103,7 +97,7 @@ static void nm_coll_ibcast_req_notifier(nm_sr_event_t event, const nm_sr_event_i
 
 void nm_coll_ibcast_wait(struct nm_coll_bcast_s*p_bcast)
 {
-  nm_cond_wait(&p_bcast->coll_req.status, 1, p_bcast->p_session->p_core);
+  nm_cond_wait(&p_bcast->status, 1, p_bcast->p_session->p_core);
   free(p_bcast->children_requests);
   free(p_bcast->children);
   free(p_bcast);
@@ -121,8 +115,7 @@ struct nm_coll_bcast_s*nm_coll_group_data_ibcast(nm_session_t p_session, nm_grou
   nm_coll_tree_init(&p_bcast->tree, kind, nm_group_size(p_group), self, root);
   p_bcast->children_requests = malloc(p_bcast->tree.max_arity * sizeof(nm_sr_request_t));
   p_bcast->children = malloc(p_bcast->tree.max_arity * sizeof(int));
-  nm_cond_init(&p_bcast->coll_req.status, 0);
-  p_bcast->coll_req.monitor = NM_MONITOR_NULL;
+  nm_cond_init(&p_bcast->status, 0);
   p_bcast->pending_reqs = 0;
   p_bcast->s = 0;
   nm_coll_ibcast_step(p_bcast);
@@ -172,16 +165,6 @@ void nm_coll_group_data_bcast(nm_session_t p_session, nm_group_t p_group, int ro
   free(requests);
 }
 
-/* ********************************************************* */
-
-void nm_coll_group_barrier(nm_session_t p_session, nm_group_t p_group, int self, nm_tag_t tag)
-{
-  assert(nm_group_get_gate(p_group, self) == nm_launcher_self_gate());
-  const int root = 0;
-  nm_coll_group_gather(p_session, p_group, root, self, NULL, 0, NULL, 0, tag);
-  nm_coll_group_bcast(p_session, p_group, root, self, NULL, 0, tag);
-}
-
 void nm_coll_group_bcast(nm_session_t p_session, nm_group_t p_group, int root, int self,
 			 void*buffer, nm_len_t len, nm_tag_t tag)
 {
@@ -190,6 +173,65 @@ void nm_coll_group_bcast(nm_session_t p_session, nm_group_t p_group, int root, i
   nm_data_contiguous_build(&data, (void*)buffer, len);
   nm_coll_group_data_bcast(p_session, p_group, root, self, &data, tag);
 }
+
+void nm_coll_data_bcast(nm_comm_t p_comm, int root, struct nm_data_s*p_data, nm_tag_t tag)
+{
+  nm_coll_group_data_bcast(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
+                           root, nm_comm_rank(p_comm), p_data, tag);
+}
+
+void nm_coll_bcast(nm_comm_t p_comm, int root, void*buffer, nm_len_t len, nm_tag_t tag)
+{
+  nm_coll_group_bcast(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
+                      root, nm_comm_rank(p_comm), buffer, len, tag);
+}
+
+/* ** scatter ********************************************** */
+
+void nm_coll_group_scatter(nm_session_t p_session, nm_group_t p_group, int root, int self,
+			   const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
+{
+  assert(nm_group_get_gate(p_group, self) == nm_launcher_self_gate());
+  if(self == root)
+    {
+      const int size = nm_group_size(p_group);
+      nm_sr_request_t*requests = malloc(size * sizeof(nm_sr_request_t));
+      int i;
+      for(i = 0; i < size; i++)
+	{
+	  if(i != self)
+            {
+              nm_gate_t p_gate = nm_group_get_gate(p_group, i);
+              nm_sr_isend(p_session, p_gate, tag, sbuf + i * slen, slen, &requests[i]);
+            }
+	  else if(slen > 0)
+            {
+              memcpy(rbuf + i * rlen, sbuf, slen);
+            }
+	}
+      for(i = 0; i < size; i++)
+	{
+	  if(i != self)
+            {
+              nm_sr_swait(p_session, &requests[i]);
+            }
+	}
+    }
+  else
+    {
+      nm_gate_t p_root_gate = nm_group_get_gate(p_group, root);
+      nm_sr_recv(p_session, p_root_gate, tag, rbuf, rlen);
+    }
+}
+
+void nm_coll_scatter(nm_comm_t p_comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
+{
+  nm_coll_group_scatter(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
+			root, nm_comm_rank(p_comm), sbuf, slen, rbuf, rlen, tag);
+}
+
+/* ** gather *********************************************** */
+
 
 void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, int root, int self,
 			  const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
@@ -228,72 +270,26 @@ void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, int root, 
     }
 }
 
-void nm_coll_group_scatter(nm_session_t p_session, nm_group_t p_group, int root, int self,
-			   const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
-{
-  assert(nm_group_get_gate(p_group, self) == nm_launcher_self_gate());
-  if(self == root)
-    {
-      const int size = nm_group_size(p_group);
-      nm_sr_request_t*requests = malloc(size * sizeof(nm_sr_request_t));
-      int i;
-      for(i = 0; i < size; i++)
-	{
-	  if(i != self)
-            {
-              nm_gate_t p_gate = nm_group_get_gate(p_group, i);
-              nm_sr_isend(p_session, p_gate, tag, sbuf + i * slen, slen, &requests[i]);
-            }
-	  else if(slen > 0)
-            {
-              memcpy(rbuf + i * rlen, sbuf, slen);
-            }
-	}
-      for(i = 0; i < size; i++)
-	{
-	  if(i != self)
-            {
-              nm_sr_swait(p_session, &requests[i]);
-            }
-	}
-    }
-  else
-    {
-      nm_gate_t p_root_gate = nm_group_get_gate(p_group, root);
-      nm_sr_recv(p_session, p_root_gate, tag, rbuf, rlen);
-    }
-}
-
-
-/* ********************************************************* */
-
-void nm_coll_barrier(nm_comm_t p_comm, nm_tag_t tag)
-{
-  nm_coll_group_barrier(nm_comm_get_session(p_comm), nm_comm_group(p_comm), nm_comm_rank(p_comm), tag);
-}
-
-void nm_coll_bcast(nm_comm_t p_comm, int root, void*buffer, nm_len_t len, nm_tag_t tag)
-{
-  nm_coll_group_bcast(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
-                      root, nm_comm_rank(p_comm), buffer, len, tag);
-}
-
-void nm_coll_scatter(nm_comm_t p_comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
-{
-  nm_coll_group_scatter(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
-			root, nm_comm_rank(p_comm), sbuf, slen, rbuf, rlen, tag);
-}
-
 void nm_coll_gather(nm_comm_t p_comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
 {
   nm_coll_group_gather(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
                        root, nm_comm_rank(p_comm), sbuf, slen, rbuf, rlen, tag);
 }
 
+/* ** barrier ********************************************** */
+
+void nm_coll_group_barrier(nm_session_t p_session, nm_group_t p_group, int self, nm_tag_t tag)
+{
+  assert(nm_group_get_gate(p_group, self) == nm_launcher_self_gate());
+  const int root = 0;
+  nm_coll_group_gather(p_session, p_group, root, self, NULL, 0, NULL, 0, tag);
+  nm_coll_group_bcast(p_session, p_group, root, self, NULL, 0, tag);
+}
+
+void nm_coll_barrier(nm_comm_t p_comm, nm_tag_t tag)
+{
+  nm_coll_group_barrier(nm_comm_get_session(p_comm), nm_comm_group(p_comm), nm_comm_rank(p_comm), tag);
+}
+
 /* ********************************************************* */
 
-void nm_coll_data_bcast(nm_comm_t p_comm, int root, struct nm_data_s*p_data, nm_tag_t tag)
-{
-  nm_coll_group_data_bcast(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
-                           root, nm_comm_rank(p_comm), p_data, tag);
-}

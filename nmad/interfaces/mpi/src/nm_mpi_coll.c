@@ -83,7 +83,7 @@ void nm_mpi_coll_wait(nm_mpi_request_t*p_req)
 
 int mpi_barrier(MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_BARRIER;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_BARRIER;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   if(p_comm == NULL || comm == MPI_COMM_NULL)
     return MPI_ERR_COMM;
@@ -93,7 +93,7 @@ int mpi_barrier(MPI_Comm comm)
 
 int mpi_bcast(void*buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_BCAST;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_BCAST;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);
   if(p_datatype == NULL)
@@ -110,7 +110,7 @@ int mpi_bcast(void*buffer, int count, MPI_Datatype datatype, int root, MPI_Comm 
 
 int mpi_gather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_GATHER;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_GATHER;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
@@ -151,7 +151,7 @@ int mpi_gather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void*re
 
 int mpi_gatherv(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, const int*recvcounts, const int*displs, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_GATHERV;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_GATHERV;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
@@ -207,7 +207,7 @@ int mpi_allgather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void
   return err;
 #else
   /* allgather as a alltoall, as long as gather and bcast are not optimized */
-  const int tag = NM_MPI_TAG_PRIVATE_ALLGATHER;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_ALLGATHER;
   nm_mpi_communicator_t *p_comm = nm_mpi_communicator_get(comm);
   const int size = nm_comm_size(p_comm->p_nm_comm);
   const int rank = nm_comm_rank(p_comm->p_nm_comm);
@@ -274,7 +274,7 @@ int mpi_allgatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, vo
 
 int mpi_scatter(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_SCATTER;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_SCATTER;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
@@ -318,7 +318,7 @@ int mpi_scatterv(const void*sendbuf, const int sendcounts[], const int displs[],
 		 void*recvbuf, int recvcount, MPI_Datatype recvtype,
 		 int root, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_SCATTERV;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_SCATTERV;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
@@ -360,7 +360,7 @@ int mpi_scatterv(const void*sendbuf, const int sendcounts[], const int displs[],
 
 int mpi_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void*recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_ALLTOALL;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_ALLTOALL;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
@@ -399,7 +399,7 @@ int mpi_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void
 
 int mpi_alltoallv(const void* sendbuf, const int *sendcounts, const int *sdispls, MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *rdispls, MPI_Datatype recvtype, MPI_Comm comm)
 {
-  int tag = NM_MPI_TAG_PRIVATE_ALLTOALLV;
+  nm_tag_t tag = NM_MPI_TAG_PRIVATE_ALLTOALLV;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
   nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
@@ -447,7 +447,7 @@ int mpi_alltoallv(const void* sendbuf, const int *sendcounts, const int *sdispls
 
 int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_REDUCE;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_REDUCE;
   if(op == MPI_OP_NULL || op == MPI_REPLACE || op == MPI_NO_OP)
     {
       return MPI_ERR_OP;
@@ -512,7 +512,7 @@ int mpi_reduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatyp
 
 int mpi_scan(const void*sendbuf, void*recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_SCAN;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_SCAN;
   if(op == MPI_OP_NULL || op == MPI_REPLACE || op == MPI_NO_OP)
     {
       return MPI_ERR_OP;
@@ -572,7 +572,7 @@ int mpi_allreduce(const void*sendbuf, void*recvbuf, int count, MPI_Datatype data
 
 int mpi_reduce_scatter(const void*sendbuf, void*recvbuf, const int*recvcounts, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
-  const int tag = NM_MPI_TAG_PRIVATE_REDUCESCATTER;
+  const nm_tag_t tag = NM_MPI_TAG_PRIVATE_REDUCESCATTER;
   int count = 0, i;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
   nm_mpi_datatype_t*p_datatype = nm_mpi_datatype_get(datatype);

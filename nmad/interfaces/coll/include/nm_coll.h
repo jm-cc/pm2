@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2014-2016 (see AUTHORS file)
+ * Copyright (C) 2014-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,8 @@ extern void nm_coll_gather(nm_comm_t comm, int root, const void*sbuf, nm_len_t s
 /* ** data-based collectives */
 
 extern void nm_coll_data_bcast(nm_comm_t comm, int root, struct nm_data_s*p_data, nm_tag_t tag);
+
+extern void nm_coll_data_scatter(nm_comm_t p_comm, int root, struct nm_data_s p_sdata[], struct nm_data_s*p_rdata, nm_tag_t tag);
 
 /* ** non-blocking collectives */
 

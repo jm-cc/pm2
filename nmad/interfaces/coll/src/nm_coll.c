@@ -225,44 +225,34 @@ void nm_coll_group_data_scatter(nm_session_t p_session, nm_group_t p_group, int 
       nm_sr_irecv_data(p_session, p_root_gate, tag, p_rdata, &request);
       nm_sr_rwait(p_session, &request);
     }
-  
 }
 
 void nm_coll_group_scatter(nm_session_t p_session, nm_group_t p_group, int root, int self,
 			   const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
 {
-  assert(nm_group_get_gate(p_group, self) == nm_launcher_self_gate());
-  if(self == root)
+  struct nm_data_s*p_send_data = NULL;
+  struct nm_data_s recv_data;
+  if(rbuf != NULL)
     {
-      const int size = nm_group_size(p_group);
-      nm_sr_request_t*requests = malloc(size * sizeof(nm_sr_request_t));
-      int i;
-      for(i = 0; i < size; i++)
-	{
-	  if(i != self)
-            {
-              nm_gate_t p_gate = nm_group_get_gate(p_group, i);
-              nm_sr_isend(p_session, p_gate, tag, sbuf + i * slen, slen, &requests[i]);
-            }
-	  else if(slen > 0)
-            {
-              memcpy(rbuf + i * rlen, sbuf, slen);
-            }
-	}
-      for(i = 0; i < size; i++)
-	{
-	  if(i != self)
-            {
-              nm_sr_swait(p_session, &requests[i]);
-            }
-	}
-      free(requests);
+      nm_data_contiguous_build(&recv_data, rbuf, rlen);
     }
   else
     {
-      nm_gate_t p_root_gate = nm_group_get_gate(p_group, root);
-      nm_sr_recv(p_session, p_root_gate, tag, rbuf, rlen);
+      nm_data_null_build(&recv_data);
     }
+  if(self == root)
+    {
+      const int size = nm_group_size(p_group);
+      p_send_data = malloc(size * sizeof(struct nm_data_s));
+      int i;
+      for(i = 0; i < size; i++)
+        {
+          nm_data_contiguous_build(&p_send_data[i], (void*)sbuf + i * slen, slen);
+        }
+    }
+  nm_coll_group_data_scatter(p_session, p_group, root, self, p_send_data, &recv_data, tag);
+  if(p_send_data)
+    free(p_send_data);
 }
 
 void nm_coll_data_scatter(nm_comm_t p_comm, int root, struct nm_data_s p_sdata[], struct nm_data_s*p_rdata, nm_tag_t tag)

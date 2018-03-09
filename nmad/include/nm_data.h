@@ -278,6 +278,9 @@ void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t 
 /** copy chunk of data from contiguous buffer to user layout */
 void nm_data_copy_to(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t len, const void*srcbuf);
 
+/** copy from nm_data to another nm_data */
+void nm_data_copy(struct nm_data_s*p_dest, struct nm_data_s*p_from);
+
 typedef struct nm_data_slicer_s
 {
   const struct nm_data_s*p_data;

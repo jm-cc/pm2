@@ -730,6 +730,24 @@ void nm_data_copy_from(const struct nm_data_s*p_data, nm_len_t offset, nm_len_t 
     }
 }
 
+void nm_data_copy(struct nm_data_s*p_dest, struct nm_data_s*p_from)
+{
+  const struct nm_data_properties_s*p_props_from = nm_data_properties_get(p_from);
+  const struct nm_data_properties_s*p_props_dest = nm_data_properties_get(p_dest);
+  assert(nm_data_size(p_from) == nm_data_size(p_dest));
+  if(p_props_from->is_contig && p_props_dest->is_contig)
+    {
+      memcpy(nm_data_baseptr_get(p_dest), nm_data_baseptr_get(p_from), nm_data_size(p_from));
+    }
+  else
+    {
+      void*tmp = malloc(nm_data_size(p_from));
+      nm_data_copy_from(p_from, 0, nm_data_size(p_from), tmp);
+      nm_data_copy_to(p_dest, 0, nm_data_size(p_from), tmp);
+      free(tmp);
+    }
+}
+
 /* ********************************************************* */
 
 /** checksum data

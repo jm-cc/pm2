@@ -269,9 +269,8 @@ void nm_coll_scatter(nm_comm_t p_comm, int root, const void*sbuf, nm_len_t slen,
 
 /* ** gather *********************************************** */
 
-
-void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, int root, int self,
-			  const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
+void nm_coll_group_data_gather(nm_session_t p_session, nm_group_t p_group, int root, int self,
+                               struct nm_data_s*p_sdata, struct nm_data_s p_rdata[], nm_tag_t tag)
 {
   assert(nm_group_get_gate(p_group, self) == nm_launcher_self_gate());
   if(self == root)
@@ -284,11 +283,11 @@ void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, int root, 
 	  if(i != self)
             {
               nm_gate_t p_gate = nm_group_get_gate(p_group, i);
-              nm_sr_irecv(p_session, p_gate, tag, rbuf + i * rlen, rlen, &requests[i]);
+              nm_sr_irecv_data(p_session, p_gate, tag, &p_rdata[i], &requests[i]);
             }
-	  else if(slen > 0)
+	  else if(!nm_data_isnull(p_sdata))
             {
-              memcpy(rbuf + i * rlen, sbuf, slen);
+              nm_data_copy(&p_rdata[i], p_sdata);
             }
 	}
       for(i = 0; i < size; i++)
@@ -303,8 +302,44 @@ void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, int root, 
   else
     {
       nm_gate_t p_root_gate = nm_group_get_gate(p_group, root);
-      nm_sr_send(p_session, p_root_gate, tag, sbuf, slen);
+      nm_sr_request_t request;
+      nm_sr_isend_data(p_session, p_root_gate, tag, p_sdata, &request);
+      nm_sr_swait(p_session, &request);
     }
+}
+
+void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, int root, int self,
+			  const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)
+{
+  struct nm_data_s send_data;
+  struct nm_data_s*p_recv_data = NULL;
+  if(sbuf != NULL)
+    {
+      nm_data_contiguous_build(&send_data, sbuf, slen);
+    }
+  else
+    {
+      nm_data_null_build(&send_data);
+    }
+  if(self == root)
+    {
+      const int size = nm_group_size(p_group);
+      p_recv_data = malloc(size * sizeof(struct nm_data_s));
+      int i;
+      for(i = 0; i < size; i++)
+        {
+          nm_data_contiguous_build(&p_recv_data[i], (void*)rbuf + i * rlen, rlen);
+        }
+    }
+  nm_coll_group_data_gather(p_session, p_group, root, self, &send_data, p_recv_data, tag);
+  if(p_recv_data)
+    free(p_recv_data);
+}
+
+void nm_coll_data_gather(nm_comm_t p_comm, int root, struct nm_data_s*p_sdata, struct nm_data_s p_rdata[], nm_tag_t tag)
+{
+  nm_coll_group_data_gather(nm_comm_get_session(p_comm), nm_comm_group(p_comm),
+                            root, nm_comm_rank(p_comm), p_sdata, p_rdata, tag);
 }
 
 void nm_coll_gather(nm_comm_t p_comm, int root, const void*sbuf, nm_len_t slen, void*rbuf, nm_len_t rlen, nm_tag_t tag)

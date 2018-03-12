@@ -112,40 +112,37 @@ int mpi_gather(const void*sendbuf, int sendcount, MPI_Datatype sendtype, void*re
 {
   const nm_tag_t tag = NM_MPI_TAG_PRIVATE_GATHER;
   nm_mpi_communicator_t*p_comm = nm_mpi_communicator_get(comm);
-  nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
-  nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
   if(p_comm == NULL || comm == MPI_COMM_NULL)
     return MPI_ERR_COMM;
+  nm_mpi_datatype_t*p_recv_datatype = nm_mpi_datatype_get(recvtype);
+  nm_mpi_datatype_t*p_send_datatype = nm_mpi_datatype_get(sendtype);
   if((p_recv_datatype == NULL) || (p_send_datatype == NULL))
     return MPI_ERR_TYPE;
-  const int size = nm_comm_size(p_comm->p_nm_comm);
-  if(nm_comm_rank(p_comm->p_nm_comm) == root)
+  struct nm_data_s send_data;
+  struct nm_data_s*p_recv_data = NULL;
+  if(sendbuf != MPI_IN_PLACE)
     {
-      nm_mpi_request_t**requests = malloc(size * sizeof(nm_mpi_request_t*));
-      int i;
-      for(i = 0; i < size; i++)
-	{
-	  if(i == root) continue;
-	  requests[i] = nm_mpi_coll_irecv(nm_mpi_datatype_get_ptr(recvbuf, (i * recvcount), p_recv_datatype),
-					  recvcount, p_recv_datatype, i, tag, p_comm);
-	}
-      for(i = 0; i < size; i++)
-	{
-	  if(i == root) continue;
-	  nm_mpi_coll_wait(requests[i]);
-	}
-      if(sendbuf != MPI_IN_PLACE)
-	{
-	  nm_mpi_datatype_copy(sendbuf, p_send_datatype, sendcount,
-			       nm_mpi_datatype_get_ptr(recvbuf, nm_comm_rank(p_comm->p_nm_comm) * recvcount, p_recv_datatype), p_send_datatype , sendcount);
-	}
-      FREE_AND_SET_NULL(requests);
+      nm_mpi_data_build(&send_data, (void*)sendbuf, p_send_datatype, sendcount);
     }
   else
     {
-      nm_mpi_request_t*p_req = nm_mpi_coll_isend(sendbuf, sendcount, p_send_datatype, root, tag, p_comm);
-      nm_mpi_coll_wait(p_req);
+      nm_data_null_build(&send_data);
     }
+  if(nm_comm_rank(p_comm->p_nm_comm) == root)
+    {
+      const int size = nm_comm_size(p_comm->p_nm_comm);
+      p_recv_data = malloc(size * sizeof(struct nm_data_s));
+      int i;
+      for(i = 0; i < size; i++)
+	{
+          nm_mpi_data_build(&p_recv_data[i],
+                            nm_mpi_datatype_get_ptr(recvbuf, (i * recvcount), p_recv_datatype),
+                            p_recv_datatype, recvcount);
+	}
+    }
+  nm_coll_data_gather(p_comm->p_nm_comm, root, &send_data, p_recv_data, tag);
+  if(p_recv_data)
+    free(p_recv_data);
   return MPI_SUCCESS;
 }
 

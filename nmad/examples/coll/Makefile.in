@@ -25,9 +25,12 @@ include @abs_top_builddir@/common_rules.mk
 
 $(TARGET_BIN): nm_coll_%: nm_coll_%.pic.o
 
-NMAD_NODES = 8
 
 BENCH +=
+
+test-nm_coll_bcast: NMAD_NODES = 8
+
+test-nm_coll_ibcast: NMAD_NODES = 8
 
 include @abs_top_builddir@/nmad-tests.mk
 

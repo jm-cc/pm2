@@ -40,7 +40,7 @@ int main(int argc, char**argv)
       char*buf = malloc(len);
       if(self == root)
         {
-          fprintf(stderr, "# len = %ld\n", len);
+          printf("len = %ld\n", len);
           memcpy(buf, msg, len);
         }
       else
@@ -52,6 +52,7 @@ int main(int argc, char**argv)
       nm_data_contiguous_build(&data, (void*)buf, len);
       nm_coll_data_bcast(p_comm, root, &data, tag);
       control_buffer(buf, len);
+      printf("ok\n");
       free(msg);
       free(buf);
     }

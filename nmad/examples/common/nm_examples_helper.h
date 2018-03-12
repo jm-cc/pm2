@@ -61,15 +61,12 @@ static void nm_examples_init_topo(int*argc, char*argv[], enum nm_example_topo_e 
       break;
     }
   nm_launcher_get_gate(peer, &p_gate);
+  p_comm = nm_comm_world("nm_example");
 }
 
 /* barrier accross all nodes */
 static inline void nm_examples_barrier(nm_tag_t tag)
 {
-  if(p_comm == NULL)
-    {
-      p_comm = nm_comm_world("nm_example");
-    }
   nm_coll_barrier(p_comm, tag);
 }
 

@@ -28,7 +28,7 @@ int main(int argc, char**argv)
 { 
   nm_examples_init(&argc, argv);
 
-  uint64_t len = 1 + strlen(msg);
+  nm_len_t len = 1 + strlen(msg);
   char*buf = malloc((size_t)len);
   nm_examples_barrier(1);
   nm_group_t p_group = nm_comm_group(p_comm);

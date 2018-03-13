@@ -39,6 +39,7 @@
 #define PARAM_DEFAULT       -1
 
 #define LOOPS_CALIBRATE     10000
+#define USEC_CALIBRATE_BARRIER (1000 * 1000 * 5)
 
 #define LOOPS_TIMEOUT_SECONDS 3
 #define LOOPS_MAX_DATA        ((uint64_t)(512 * 1024 * 1024))
@@ -69,6 +70,7 @@ enum mpi_bench_rtt_e
     MPI_BENCH_RTT_HALF   = 0, /**< display half-roundtrip (supposed to be one-way latency) */
     MPI_BENCH_RTT_FULL   = 1, /**< display full roundtrip (either it is directly meaningfull, or will be post-processed) */
     MPI_BENCH_RTT_SUBLAT = 2, /**< display roundtrip minus ack latency */
+    MPI_BENCH_RTT_SUBBARRIER = 3, /**< display roundtrip time minus barrier latency */
     _MPI_BENCH_RTT_LAST
   };
 

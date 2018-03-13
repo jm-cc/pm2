@@ -15,19 +15,18 @@
 
 #include "mpi_bench_generic.h"
 
-static void mpi_bench_coll_bcast_func(void*buf, size_t len)
+static void mpi_bench_coll_barrier_func(void*buf, size_t len)
 {
-  MPI_Bcast(buf, len, MPI_CHAR, 0, MPI_COMM_WORLD);
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
-const struct mpi_bench_s mpi_bench_coll_bcast =
+const struct mpi_bench_s mpi_bench_coll_barrier =
   {
-    .label   = "mpi_bench_coll_bcast",
-    .name    = "MPI bcast",
-    .rtt     = MPI_BENCH_RTT_SUBBARRIER,
+    .label   = "mpi_bench_coll_barrier",
+    .name    = "MPI barrier",
+    .rtt     = MPI_BENCH_RTT_FULL,
     .collective = 1,
-    .server  = &mpi_bench_coll_bcast_func,
-    .client  = &mpi_bench_coll_bcast_func
+    .server  = &mpi_bench_coll_barrier_func,
+    .client  = &mpi_bench_coll_barrier_func
   };
 

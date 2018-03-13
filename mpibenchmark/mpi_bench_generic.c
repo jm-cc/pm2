@@ -80,6 +80,7 @@ static void clear_buffer(char*buffer, size_t len)
 /* ** ACK latency ****************************************** */
 
 static double mpi_bench_ack_latency = -1.0;
+static double mpi_bench_barrier_latency = -1.0;
 
 void mpi_bench_ack_send(void)
 {
@@ -128,6 +129,31 @@ static void mpi_bench_latency_calibrate(void)
   if(!mpi_bench_common.is_server)
     {
       printf("# ACK latency: %f usec.\n", lat);
+    }
+  if(mpi_bench_common.self == 0)
+    {
+      printf("# Barrier latency calibration (%d)...\n", loops);
+    }
+  mpi_bench_tick_t cal1, cal2;
+  mpi_bench_get_tick(&cal1);
+  lat = -1.0;
+  for(i = 0; i < loops; i++)
+    {
+      mpi_bench_get_tick(&t1);
+      MPI_Barrier(MPI_COMM_WORLD);
+      mpi_bench_get_tick(&t2);
+      const double delay = mpi_bench_timing_delay(&t1, &t2);
+      if((lat < 0) || (delay < lat))
+	lat = delay;
+      mpi_bench_get_tick(&cal2);
+      const double cal_delay = mpi_bench_timing_delay(&cal1, &cal2);
+      if(cal_delay > USEC_CALIBRATE_BARRIER)
+	break;
+    }
+  mpi_bench_barrier_latency = lat;
+  if(mpi_bench_common.self == 0)
+    {
+      printf("# Barrier latency: %f usec.\n", lat);
     }
 }
 
@@ -180,22 +206,37 @@ int mpi_bench_get_threads(void)
 /** barrier that ensures that server will be ready first
  * (when _client_ starts the clock, server is assumed to be ready)
  */
-static void mpi_bench_barrier_client(int stop)
+static void mpi_bench_barrier_client(const struct mpi_bench_s*mpi_bench, int stop)
 {
   static const int tag_barrier = 0x1234;
-  int dummy = 0;
-  assert(!mpi_bench_common.is_server);
-  MPI_Send(&stop, 1, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
-  MPI_Recv(&dummy, 0, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  if(mpi_bench->collective)
+    {
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+  else
+    {
+      int dummy = 0;
+      assert(!mpi_bench_common.is_server);
+      MPI_Send(&stop, 1, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
+      MPI_Recv(&dummy, 0, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
 }
-static int mpi_bench_barrier_server(void)
+static int mpi_bench_barrier_server(const struct mpi_bench_s*mpi_bench)
 {
   static const int tag_barrier = 0x1234;
-  int stop, dummy;
-  assert(mpi_bench_common.is_server);
-  MPI_Recv(&stop, 1, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-  MPI_Send(&dummy, 0, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
-  return stop;
+  if(mpi_bench->collective)
+    {
+      MPI_Barrier(MPI_COMM_WORLD);
+      return 0;
+    }
+  else
+    {
+      int stop, dummy;
+      assert(mpi_bench_common.is_server);
+      MPI_Recv(&stop, 1, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Send(&dummy, 0, MPI_INT, mpi_bench_common.peer, tag_barrier, MPI_COMM_WORLD);
+      return stop;
+    }
 }
 
 /* ** Benchmark ******************************************** */
@@ -257,11 +298,12 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 {
   if(!mpi_bench_common.is_server)
     {
-      static const char*mpi_bench_rtt_labels[3] =
+      static const char*mpi_bench_rtt_labels[_MPI_BENCH_RTT_LAST] =
 	{
 	  [ MPI_BENCH_RTT_HALF ]   = "one-way (half roundtrip)",
 	  [ MPI_BENCH_RTT_FULL ]   = "round-trip",
-	  [ MPI_BENCH_RTT_SUBLAT ] = "full minus ack"
+	  [ MPI_BENCH_RTT_SUBLAT ] = "full minus ack",
+	  [ MPI_BENCH_RTT_SUBBARRIER] = "full minus barrier"
 	};
       printf("# bench: %s begin\n", mpi_bench->label);
       printf("# measured time is: %s\n", (mpi_bench->rtt >= 0 && mpi_bench->rtt < _MPI_BENCH_RTT_LAST) ? mpi_bench_rtt_labels[mpi_bench->rtt] : "<invalid>");
@@ -314,11 +356,11 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      if(mpi_bench->init != NULL)
 		(*mpi_bench->init)(buf, len);
 	      /* warmup */
-	      mpi_bench_barrier_server();
+	      mpi_bench_barrier_server(mpi_bench);
 	      (*mpi_bench->server)(buf, len);
 	      for(k = 0; k < iterations; k++)
 		{
-		  int stop = mpi_bench_barrier_server();
+		  int stop = mpi_bench_barrier_server(mpi_bench);
 		  if(stop)
 		    {
 		      iterations = k;
@@ -355,12 +397,12 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      if(mpi_bench->init != NULL)
 		(*mpi_bench->init)(buf, len);
 	      /* warmup */
-	      mpi_bench_barrier_client(0);
+	      mpi_bench_barrier_client(mpi_bench, 0);
 	      (*mpi_bench->client)(buf, len);
 	      for(k = 0; k < iterations; k++)
 		{
 		  int stop = (total_delay > (LOOPS_TIMEOUT_SECONDS * 1000000.0));
-		  mpi_bench_barrier_client(stop);
+		  mpi_bench_barrier_client(mpi_bench, stop);
 		  if(stop)
 		    {
 		      iterations = k;
@@ -381,6 +423,9 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 		      break;
 		    case MPI_BENCH_RTT_SUBLAT:
 		      t = delay - mpi_bench_latency_get();
+		      break;
+		    case MPI_BENCH_RTT_SUBBARRIER:
+		      t = delay - mpi_bench_barrier_latency;
 		      break;
 		    default:
 		      abort();

@@ -278,8 +278,8 @@ void mpi_bench_init(int*argc, char***argv, int threads)
     }
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_bench_common.self);
   mpi_bench_common.comm = MPI_COMM_WORLD;
-  mpi_bench_common.is_server = ((mpi_bench_common.self % 2) == 0);
-  mpi_bench_common.peer = mpi_bench_common.is_server ? (mpi_bench_common.self + 1) : (mpi_bench_common.self - 1);
+  mpi_bench_common.is_server = ((mpi_bench_common.self % 2) == 1);
+  mpi_bench_common.peer = mpi_bench_common.is_server ? (mpi_bench_common.self - 1) : (mpi_bench_common.self + 1);
   if(!mpi_bench_common.is_server)
     {
       char hostname[256];
@@ -451,7 +451,7 @@ void mpi_bench_run(const struct mpi_bench_s*mpi_bench, const struct mpi_bench_pa
 	      avg_lat /= iterations;
 	      const double bw_million_byte = len / min_lat;
 	      const double bw_mbyte        = bw_million_byte / 1.048576;
-	      if((!mpi_bench->collective) || (mpi_bench_common.self == 1))
+	      if((!mpi_bench->collective) || (mpi_bench_common.self == 0))
 		{
 		  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf",
 			 (long long)len, min_lat, bw_million_byte, bw_mbyte,

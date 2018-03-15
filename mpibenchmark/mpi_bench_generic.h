@@ -225,6 +225,33 @@ static void mpi_bench_compute_vector(void*buf, size_t len)
     }
 }
 
+/* ** non-contiguous datatype ****************************** */
+
+/** default blocksize for non-contiguous datatype */
+#define MPI_BENCH_NONCONTIG_BLOCKSIZE 32
+
+static void*noncontig_buf = NULL;
+static MPI_Datatype noncontig_dtype = MPI_DATATYPE_NULL;
+
+static inline void mpi_bench_noncontig_type_init(int blocksize, size_t len)
+{
+  const int sparse_size = len * 2 + blocksize;
+  noncontig_buf = malloc(sparse_size);
+  memset(noncontig_buf, 0, sparse_size);
+  MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &noncontig_dtype);
+  MPI_Type_commit(&noncontig_dtype);
+}
+
+static inline void mpi_bench_noncontig_type_destroy(void)
+{
+  if(noncontig_dtype != MPI_DATATYPE_NULL)
+    {
+      MPI_Type_free(&noncontig_dtype);
+    }
+  free(noncontig_buf);
+  noncontig_buf = NULL;
+}
+
 /* ** Threads ********************************************** */
 
 #define THREADS_MAX 512

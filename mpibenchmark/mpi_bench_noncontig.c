@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015 (see AUTHORS file)
+ * Copyright (C) 2015-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,6 @@ static const struct mpi_bench_param_bounds_s param_bounds =
     .incr = 0
   };
 
-static void*sparse_buf = NULL;
-static MPI_Datatype dtype = MPI_DATATYPE_NULL;
-
 static const struct mpi_bench_param_bounds_s*mpi_bench_noncontig_getparams(void)
 {
   return &param_bounds;
@@ -41,33 +38,24 @@ static void mpi_bench_noncontig_setparam(int param)
 
 static void mpi_bench_noncontig_init(void*buf, size_t len)
 {
-  const int sparse_size = len * 2 + blocksize;
-  sparse_buf = malloc(sparse_size);
-  memset(sparse_buf, 0, sparse_size);
-  MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &dtype);
-  MPI_Type_commit(&dtype);
+  mpi_bench_noncontig_type_init(blocksize, len);
 }
 
 static void mpi_bench_noncontig_finalize(void)
 {
-  if(dtype != MPI_DATATYPE_NULL)
-    {
-      MPI_Type_free(&dtype);
-    }
-  free(sparse_buf);
-  sparse_buf = NULL;
+  mpi_bench_noncontig_type_destroy();
 }
 
 static void mpi_bench_noncontig_server(void*buf, size_t len)
 {
-  MPI_Recv(sparse_buf, 1, dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-  MPI_Send(sparse_buf, 1, dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD);
+  MPI_Recv(noncontig_buf, 1, noncontig_dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  MPI_Send(noncontig_buf, 1, noncontig_dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD);
 }
 
 static void mpi_bench_noncontig_client(void*buf, size_t len)
 {
-  MPI_Send(sparse_buf, 1, dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD);
-  MPI_Recv(sparse_buf, 1, dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  MPI_Send(noncontig_buf, 1, noncontig_dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD);
+  MPI_Recv(noncontig_buf, 1, noncontig_dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 }
 
 const struct mpi_bench_s mpi_bench_noncontig =

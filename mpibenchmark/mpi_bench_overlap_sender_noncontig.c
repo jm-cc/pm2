@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015 (see AUTHORS file)
+ * Copyright (C) 2015-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +15,7 @@
 
 #include "mpi_bench_generic.h"
 
-#define BLOCKSIZE 32
-
 static int compute = 500;
-static void*sparse_buf = NULL;
-static MPI_Datatype dtype = MPI_DATATYPE_NULL;
 
 static const struct mpi_bench_param_bounds_s param_bounds =
   {
@@ -41,33 +37,25 @@ static void mpi_bench_overlap_sender_noncontig_setparam(int param)
 
 static void mpi_bench_overlap_sender_noncontig_init(void*buf, size_t len)
 {
-  const int blocksize = BLOCKSIZE;
-  sparse_buf = malloc(len * 2 + blocksize);
-  MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &dtype);
-  MPI_Type_commit(&dtype);
+  mpi_bench_noncontig_type_init(MPI_BENCH_NONCONTIG_BLOCKSIZE, len);
 }
 
 static void mpi_bench_overlap_sender_noncontig_finalize(void)
 {
-  if(dtype != MPI_DATATYPE_NULL)
-    {
-      MPI_Type_free(&dtype);
-    }
-  free(sparse_buf);
-  sparse_buf = NULL;
+  mpi_bench_noncontig_type_destroy();
 }
 
 
 static void mpi_bench_overlap_sender_noncontig_server(void*buf, size_t len)
 {
-  MPI_Recv(sparse_buf, 1, dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  MPI_Recv(noncontig_buf, 1, noncontig_dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   mpi_bench_ack_send();
 }
 
 static void mpi_bench_overlap_sender_noncontig_client(void*buf, size_t len)
 {
   MPI_Request sreq;
-  MPI_Isend(sparse_buf, 1, dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, &sreq);
+  MPI_Isend(noncontig_buf, 1, noncontig_dtype, mpi_bench_common.peer, TAG, MPI_COMM_WORLD, &sreq);
   mpi_bench_do_compute(compute);
   MPI_Wait(&sreq, MPI_STATUS_IGNORE);
   mpi_bench_ack_recv();

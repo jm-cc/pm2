@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2016 (see AUTHORS file)
+ * Copyright (C) 2016-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,6 @@
 #include "mpi_bench_generic.h"
 #include <string.h>
 
-#define BLOCKSIZE 32
-
 static int blocksize = 0;
 
 static const struct mpi_bench_param_bounds_s param_bounds =
@@ -30,8 +28,6 @@ static const struct mpi_bench_param_bounds_s param_bounds =
 
 static MPI_Win win;
 static MPI_Request request;
-static void*sparse_buf = NULL;
-static MPI_Datatype dtype = MPI_DATATYPE_NULL;
 
 static const struct mpi_bench_param_bounds_s*mpi_bench_get_noncontig_getparams(void)
 {
@@ -47,26 +43,22 @@ static void mpi_bench_get_noncontig_server(void*buf, size_t len){}
 
 static void mpi_bench_get_noncontig_client(void*buf, size_t len)
 {
-  MPI_Rget(sparse_buf, 1, dtype, mpi_bench_common.peer, 0, 1, dtype, win, &request);
+  MPI_Rget(noncontig_buf, 1, noncontig_dtype, mpi_bench_common.peer, 0, 1, noncontig_dtype, win, &request);
   MPI_Wait(&request, MPI_STATUS_IGNORE);
 }
 
 static void mpi_bench_get_noncontig_init(void*buf, size_t len)
 {
-  const size_t bufsize   = 2 * len + blocksize;
-  sparse_buf = malloc(bufsize);
+  mpi_bench_noncontig_type_init(blocksize, len);
   if(mpi_bench_common.is_server)
     {
-      memcpy(sparse_buf,           buf, len);
-      memcpy(sparse_buf + len,     buf, len);
-      memcpy(sparse_buf + 2 * len, buf, blocksize);
-      MPI_Win_create(sparse_buf, bufsize, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
+      memcpy(noncontig_buf,           buf, len);
+      memcpy(noncontig_buf + len,     buf, len);
+      memcpy(noncontig_buf + 2 * len, buf, blocksize);
+      MPI_Win_create(noncontig_buf, noncontig_bufsize, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
     }
   else
     {
-      memset(sparse_buf, 0, bufsize);
-      MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &dtype);
-      MPI_Type_commit(&dtype);
       MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, mpi_bench_common.comm, &win);
       MPI_Win_lock(MPI_LOCK_EXCLUSIVE, mpi_bench_common.peer, 0, win);
     }
@@ -80,12 +72,7 @@ static void mpi_bench_get_noncontig_finalize(void)
       MPI_Win_unlock(mpi_bench_common.peer, win);
     }
   MPI_Win_free(&win);
-  if(dtype != MPI_DATATYPE_NULL)
-    {
-      MPI_Type_free(&dtype);
-    }
-  free(sparse_buf);
-  sparse_buf = NULL;
+  mpi_bench_noncontig_type_destroy();
 }
 
 const struct mpi_bench_s mpi_bench_rma_get_noncontig =

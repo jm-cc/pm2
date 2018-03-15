@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2015-2017 (see AUTHORS file)
+ * Copyright (C) 2015-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -231,13 +231,14 @@ static void mpi_bench_compute_vector(void*buf, size_t len)
 #define MPI_BENCH_NONCONTIG_BLOCKSIZE 32
 
 static void*noncontig_buf = NULL;
+static size_t noncontig_bufsize = 0;
 static MPI_Datatype noncontig_dtype = MPI_DATATYPE_NULL;
 
 static inline void mpi_bench_noncontig_type_init(int blocksize, size_t len)
 {
-  const int sparse_size = len * 2 + blocksize;
-  noncontig_buf = malloc(sparse_size);
-  memset(noncontig_buf, 0, sparse_size);
+  noncontig_bufsize = len * 2 + blocksize;
+  noncontig_buf = malloc(noncontig_bufsize);
+  memset(noncontig_buf, 0, noncontig_bufsize);
   MPI_Type_vector(len / blocksize, blocksize, 2 * blocksize, MPI_CHAR, &noncontig_dtype);
   MPI_Type_commit(&noncontig_dtype);
 }
@@ -250,6 +251,7 @@ static inline void mpi_bench_noncontig_type_destroy(void)
     }
   free(noncontig_buf);
   noncontig_buf = NULL;
+  noncontig_bufsize = 0;
 }
 
 /* ** Threads ********************************************** */

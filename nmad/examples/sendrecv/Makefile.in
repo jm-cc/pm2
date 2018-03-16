@@ -35,7 +35,5 @@ include @abs_top_builddir@/nmad-tests.mk
 
 test-nm_sr_star: NMAD_NODES = 4
 
-test-nm_sr_event: TEST_FILTER = sort -i
-
 bench-nm_sr_self: NMAD_NODES = 1
 

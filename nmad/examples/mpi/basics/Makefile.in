@@ -37,23 +37,14 @@ test-nm_mpi_star2: NMAD_NODES = 4
 test-nm_mpi_scatter: NMAD_NODES = 4
 
 test-nm_mpi_group: NMAD_NODES = 4
-test-nm_mpi_group: TEST_FILTER = sort --ignore-case
 
 test-nm_mpi_global: NMAD_NODES = 8
-test-nm_mpi_global: TEST_FILTER = sort
 
 test-nm_mpi_gatherv: NMAD_NODES = 4
 
 test-nm_mpi_gather: NMAD_NODES = 4
 
 test-nm_mpi_datatype: NMAD_NODES = 4 
-test-nm_mpi_datatype: TEST_FILTER = sort
-
-test-nm_mpi_freedatatype: TEST_FILTER = sort
-
-test-nm_mpi_persistent: TEST_FILTER = sort
-
-test-nm_mpi_communicator: TEST_FILTER = sort
 
 test-nm_mpi_anysource: NMAD_NODES = 8
 

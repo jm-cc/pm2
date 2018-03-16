@@ -29,4 +29,3 @@ TESTS += nm_launcher_sessions nm_launcher_multi
 include @abs_top_builddir@/nmad-tests.mk
 
 test-nm_launcher_mini: NMAD_NODES = 4
-test-nm_launcher_mini: TEST_FILTER = sort -i

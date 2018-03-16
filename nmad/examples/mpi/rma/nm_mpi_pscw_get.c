@@ -170,7 +170,7 @@ int main(int argc, char**argv){
 }
 
 void mysleep(int n){
-  fprintf(stderr, "Sleeps %d secs...\n", n);
+  printf("Sleeps %d secs...\n", n);
   sleep(n);
 }
 

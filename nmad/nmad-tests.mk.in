@@ -77,8 +77,8 @@ $(TARGET_TESTS): test-%: %
             rc=$$? ; \
             if [ "x$${rc}" != "x0" ]; then \
 	      echo "           FAILED- wrong output" ; \
-              diff  --strip-trailing-cr -u /tmp/result-$${testid} $(srcdir)/$*.out ; \
-              if [ "x$(TESTS_RESULTS)" != "x" -a -w $(TESTS_RESULTS) ]; then \
+              diff  --strip-trailing-cr -u /tmp/result-$${testid} /tmp/expected-$${testid} ; \
+              if [ "x$(TESTS_RESULTS)" != "x" -a -w "$(TESTS_RESULTS)" ]; then \
                 echo "TESTS_FAILED += $*" >> "$(TESTS_RESULTS)" ; \
               fi ; \
             fi ; \

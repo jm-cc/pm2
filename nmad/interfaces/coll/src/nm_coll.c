@@ -315,7 +315,7 @@ void nm_coll_group_gather(nm_session_t p_session, nm_group_t p_group, int root, 
   struct nm_data_s*p_recv_data = NULL;
   if(sbuf != NULL)
     {
-      nm_data_contiguous_build(&send_data, sbuf, slen);
+      nm_data_contiguous_build(&send_data, (void*)sbuf, slen);
     }
   else
     {

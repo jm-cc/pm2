@@ -22,6 +22,12 @@ CFLAGS  += $(shell env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags nm
 LDFLAGS +=
 LIBS    += $(shell env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs nmad)
 
+# flags for using nmad internals
+CPPFLAGS += @NMAD_CORE_CPPFLAGS@
+CFLAGS   += @NMAD_CORE_CFLAGS@
+LDFLAGS  += @NMAD_CORE_LDFLAGS@
+LIBS     += @NMAD_CORE_LIBS@
+
 include @abs_top_builddir@/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o

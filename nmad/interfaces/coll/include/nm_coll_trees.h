@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include <nm_private.h>
+#include <nm_log.h>
 
 /* **********************************************************/
 /* trees description for collective operations */
@@ -61,7 +61,11 @@ static inline void nm_coll_binomial_init(struct nm_coll_tree_info_s*p_tree)
   p_tree->height = nm_coll_log2_ceil(p_tree->n);
 }
 
-/** walk to the leafs of the tree, level numbered from the leafs */
+/** walk to the leafs of the tree
+ * @param i rank of local node
+ * @param n number of leafs
+ * @param level level in tree, numbered from the leafs
+ */
 static inline int nm_coll_binomial_child(int i, int n, int level)
 {
   const int skip = (1 << level);
@@ -79,6 +83,18 @@ static inline int nm_coll_binomial_parent(int i, int n, int level)
     return (i - skip);
   else
     return -1;
+}
+
+/** number of leafs below the vertex */
+static inline int nm_coll_binomial_weight(int i, int n, int level)
+{
+  const int skip = (1 << (level - 1));
+  if(level <= 0)
+    return 0;
+  else if(i + skip > n)
+    return (n - i);
+  else
+    return skip;
 }
 
 static inline void nm_coll_binomial_step(const struct nm_coll_tree_info_s*p_tree, int step, int*p_parent, int*p_children, int*n_children)

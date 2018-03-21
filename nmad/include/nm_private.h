@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2017 (see AUTHORS file)
+ * Copyright (C) 2006-2018 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,9 +31,9 @@
 #define NM_SYS(SYMBOL) SYMBOL
 #endif /* PUKABI */
 
-#ifndef NMAD
-#error "NMAD flag not set while including nm_private.h."
-#endif /* NMAD */
+#ifndef NMAD_BUILD
+#  error "NMAD_BUILD flag not set while including nm_private.h. This header is not part of API and cannot be used outside of nmad."
+#endif /* NMAD_BUILD */
 
 #include <nm_public.h>
 #include <nm_core_interface.h>

@@ -88,9 +88,10 @@ static inline int nm_coll_binomial_parent(int i, int n, int level)
 /** number of leafs below the vertex */
 static inline int nm_coll_binomial_weight(int i, int n, int level)
 {
-  const int skip = (1 << (level - 1));
-  if(level <= 0)
-    return 0;
+  const int skip = (1 << (level));
+  const int parent = nm_coll_binomial_parent(i, n, level);
+  if(parent == -1)
+    return -1;
   else if(i + skip > n)
     return (n - i);
   else

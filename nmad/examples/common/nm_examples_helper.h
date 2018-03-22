@@ -129,8 +129,8 @@ static void control_buffer(const char*buffer, nm_len_t len)
       const char expected = buffer_content(i);
       if(buffer[i] != expected)
 	{
-	  fprintf(stderr, "Bad data at byte %d: expected %c, received %c\n",
-		  i, expected, buffer[i]);
+	  fprintf(stderr, "Bad data at byte %d: expected 0x%x (%c), received 0x%x (%c)\n",
+		  i, expected, expected, buffer[i], buffer[i]);
 	  abort();
 	}
     }

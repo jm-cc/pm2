@@ -21,7 +21,7 @@
 #include "nm_coll_private.h"
 
 
-/* ** bcast ************************************************ */
+/* ** ibcast *********************************************** */
 
 /** status of a bcast */
 struct nm_coll_bcast_s
@@ -122,6 +122,9 @@ struct nm_coll_bcast_s*nm_coll_group_data_ibcast(nm_session_t p_session, nm_grou
   nm_coll_ibcast_step(p_bcast);
   return p_bcast;
 }
+
+
+/* ** bcast ************************************************ */
 
 void nm_coll_group_data_bcast(nm_session_t p_session, nm_group_t p_group, int root, int self,
                               struct nm_data_s*p_data, nm_tag_t tag)

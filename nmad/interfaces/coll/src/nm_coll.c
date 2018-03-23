@@ -121,29 +121,32 @@ static inline nm_len_t nm_coll_gather_data_size(int root, int self, struct nm_da
 static void nm_coll_binomial_gather(nm_session_t p_session, nm_group_t p_group, int root, int self,
                                     struct nm_data_s*p_sdata, struct nm_data_s p_rdata[], nm_tag_t tag)
 {
-  const int size = nm_group_size(p_group);
+  const int size   = nm_group_size(p_group);
   const int height = nm_coll_log2_ceil(size);
+  const int vself  = nm_coll_binomial_r2v(self, size, root);
   const nm_len_t data_size = nm_coll_gather_data_size(root, self, p_sdata, p_rdata);
   void*buf = malloc(data_size * size);
-  nm_data_copy_from(p_sdata, 0, data_size, buf + data_size * self);
+  nm_data_copy_from(p_sdata, 0, data_size, buf + data_size * vself);
   int level;
   for(level = 0; level < height; level++)
     {
-      const int child  = nm_coll_binomial_child(self, size, level);
-      const int parent = nm_coll_binomial_parent(self, size, level);
-      const int weight = nm_coll_binomial_weight(self, size, level);
-      if(parent != -1)
+      const int vchild  = nm_coll_binomial_child(vself, size, level);
+      const int vparent = nm_coll_binomial_parent(vself, size, level);
+      const int weight  = nm_coll_binomial_weight(vself, size, level);
+      if(vparent != -1)
         {
+          const int parent = nm_coll_binomial_v2r(vparent, size, root);
           assert(weight >= 1);
           const nm_gate_t p_parent_gate = nm_group_get_gate(p_group, parent);
-          nm_sr_send(p_session, p_parent_gate, tag, buf + data_size * self, data_size * weight);
+          nm_sr_send(p_session, p_parent_gate, tag, buf + data_size * vself, data_size * weight);
         }
-      if(child != -1)
+      if(vchild != -1)
         {
+          const int child = nm_coll_binomial_v2r(vchild, size, root);
           const nm_gate_t p_child_gate = nm_group_get_gate(p_group, child);
-          const int child_weight = nm_coll_binomial_weight(child, size, level);
+          const int child_weight = nm_coll_binomial_weight(vchild, size, level);
           assert(child_weight >= 1);
-          nm_sr_recv(p_session, p_child_gate, tag, buf + data_size * child, data_size * child_weight);
+          nm_sr_recv(p_session, p_child_gate, tag, buf + data_size * vchild, data_size * child_weight);
         }
     }
   if(self == root)
@@ -151,7 +154,7 @@ static void nm_coll_binomial_gather(nm_session_t p_session, nm_group_t p_group, 
       int i;
       for(i = 0; i < size; i++)
         {
-          nm_data_copy_to(&p_rdata[i], 0, data_size, buf + i * data_size);
+          nm_data_copy_to(&p_rdata[i], 0, data_size, buf + nm_coll_binomial_r2v(i, size, root) * data_size);
         }
     }
 }
@@ -199,7 +202,7 @@ void nm_coll_group_data_gather(nm_session_t p_session, nm_group_t p_group, int r
 {
   assert(nm_group_get_gate(p_group, self) == nm_launcher_self_gate());
   const nm_len_t data_size = nm_coll_gather_data_size(root, self, p_sdata, p_rdata);
-  if((root == 0) && (data_size < 2048))
+  if(data_size < 2048)
     {
       nm_coll_binomial_gather(p_session, p_group, root, self, p_sdata, p_rdata, tag);
     }

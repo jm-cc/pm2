@@ -98,13 +98,25 @@ static inline int nm_coll_binomial_weight(int i, int n, int level)
     return skip;
 }
 
+/** translate real ranks to virtual ranks (with root=0) */
+static inline int nm_coll_binomial_r2v(int i, int n, int root)
+{
+  return ((n + i - root) % n);
+}
+
+/** translate virtual ranks (with root=0) to real ranks */
+static inline int nm_coll_binomial_v2r(int i, int n, int root)
+{
+  return ((root + i) % n);
+}
+
 static inline void nm_coll_binomial_step(const struct nm_coll_tree_info_s*p_tree, int step, int*p_parent, int*p_children, int*n_children)
 {
-  const int child = nm_coll_binomial_child((p_tree->n + p_tree->self - p_tree->root) % p_tree->n, p_tree->n, p_tree->height - step - 1);
-  const int parent = nm_coll_binomial_parent((p_tree->n + p_tree->self - p_tree->root) % p_tree->n, p_tree->n, p_tree->height - step - 1);
+  const int child = nm_coll_binomial_child(nm_coll_binomial_r2v(p_tree->self, p_tree->n, p_tree->root), p_tree->n, p_tree->height - step - 1);
+  const int parent = nm_coll_binomial_parent(nm_coll_binomial_r2v(p_tree->self, p_tree->n, p_tree->root), p_tree->n, p_tree->height - step - 1);
   if(parent != -1)
     {
-      *p_parent = (parent + p_tree->root) % p_tree->n;
+      *p_parent = nm_coll_binomial_v2r(parent, p_tree->n, p_tree->root);
     }
   else
     {
@@ -112,7 +124,7 @@ static inline void nm_coll_binomial_step(const struct nm_coll_tree_info_s*p_tree
     }
   if(child != -1)
     {
-      p_children[0] = (child + p_tree->root) % p_tree->n;
+      p_children[0] = nm_coll_binomial_v2r(child, p_tree->n, p_tree->root);
       *n_children = 1;
     }
   else

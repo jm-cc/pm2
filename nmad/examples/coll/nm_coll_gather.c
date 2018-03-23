@@ -28,9 +28,9 @@ int main(int argc, char**argv)
 { 
   nm_examples_init(&argc, argv);
 
-  const int root = 0;
   const int self = nm_comm_rank(p_comm);
   const int size = nm_comm_size(p_comm);
+  const int root = size - 1;
   const nm_tag_t tag = 0x42;
   void*rbuf = NULL;
   if(self == root)

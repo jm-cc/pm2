@@ -32,5 +32,9 @@ test-nm_coll_bcast: NMAD_NODES = 8
 
 test-nm_coll_ibcast: NMAD_NODES = 8
 
+test-nm_coll_scatter: NMAD_NODES = 8
+
+test-nm_coll_gather: NMAD_NODES = 8
+
 include @abs_top_builddir@/nmad-tests.mk
 

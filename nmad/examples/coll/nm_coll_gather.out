@@ -1,0 +1,200 @@
+len = 1
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 2
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 4
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 8
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 16
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 32
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 64
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 128
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 256
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 512
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 1024
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 2048
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 4096
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 8192
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 16384
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 32768
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 65536
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 131072
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 262144
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok
+len = 524288
+  checking chunk #0
+  checking chunk #1
+  checking chunk #2
+  checking chunk #3
+  checking chunk #4
+  checking chunk #5
+  checking chunk #6
+  checking chunk #7
+ok

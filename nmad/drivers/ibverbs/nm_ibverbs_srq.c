@@ -25,6 +25,7 @@
 
 /* *** method: 'sr' ************************************ */
 
+#define NM_IBVERBS_SRQ_NBUFS     4
 #define NM_IBVERBS_SRQ_BLOCKSIZE (48 * 1024)
 #define NM_IBVERBS_SRQ_BUFSIZE   ( NM_IBVERBS_SRQ_BLOCKSIZE - sizeof(struct nm_ibverbs_srq_header_s) )
 
@@ -32,6 +33,8 @@
 struct nm_ibverbs_srq_header_s
 {
   uint32_t rank; /**< the rank this packet comes from */
+  uint32_t csum;
+  uint64_t len;
 } __attribute__((packed));
 
 /** An "on the wire" packet for 'sr' minidriver */
@@ -53,15 +56,15 @@ PUK_VECT_TYPE(nm_ibverbs_srq_status, struct nm_ibverbs_srq_s*);
 /** context for ibverbs sr */
 struct nm_ibverbs_srq_context_s
 {
-  struct nm_ibverbs_srq_packet_s rbuf; /**< buffer for SRQ */
+  struct nm_ibverbs_srq_packet_s rbuf[NM_IBVERBS_SRQ_NBUFS]; /**< buffer for SRQ */
   struct ibv_mr*mr;                   /**< MR used for rbuf in context */
   struct nm_ibverbs_segment_s seg;    /**< MR segment for local SRQ buffer */
   struct nm_ibverbs_context_s*p_ibverbs_context;
   struct nm_connector_s*p_connector;
   struct nm_ibverbs_srq_status_vect_s p_statuses;
-  int round_robin;
-  int srq_posted;
-  int running;
+  int srq_posted[NM_IBVERBS_SRQ_NBUFS];  /**< whether a SRQ request is posted for each buffer */
+  uint32_t ready_buf;                    /**< pending received buffer, ready for next recv_poll_any */
+  int running;                           /**< whether the driver is running */
 };
 
 /** Connection state for tracks sending by copy
@@ -199,7 +202,7 @@ static void nm_ibverbs_srq_getprops(puk_context_t context, struct nm_minidriver_
 
   /* force SRQ for now */
   puk_context_putattr(context, "ibv_srq", "1");
-  puk_context_putattr(context, "ibv_comp_channel", "1");
+  /*  puk_context_putattr(context, "ibv_comp_channel", "1"); */
   
   p_ibverbs_srq_context->p_ibverbs_context = nm_ibverbs_context_new(context);
   puk_context_set_status(context, p_ibverbs_srq_context);
@@ -223,12 +226,16 @@ static void nm_ibverbs_srq_init(puk_context_t context, const void**p_url, size_t
     }
   p_ibverbs_srq_context->p_connector = nm_connector_create(sizeof(struct nm_ibverbs_srq_addr_s), &url);
   nm_ibverbs_srq_status_vect_init(&p_ibverbs_srq_context->p_statuses);
-  p_ibverbs_srq_context->round_robin = 0;
-  p_ibverbs_srq_context->srq_posted = 0;
+  int i;
+  for(i = 0; i < NM_IBVERBS_SRQ_NBUFS; i++)
+    {
+      p_ibverbs_srq_context->srq_posted[i] = 0;
+    }
+  p_ibverbs_srq_context->ready_buf = -1;
   p_ibverbs_srq_context->running = 1;
-  p_ibverbs_srq_context->mr = nm_ibverbs_reg_mr(p_ibverbs_srq_context->p_ibverbs_context->p_hca,
-                                               &p_ibverbs_srq_context->rbuf, sizeof(p_ibverbs_srq_context->rbuf),
-                                               &p_ibverbs_srq_context->seg);
+  p_ibverbs_srq_context->mr = nm_ibverbs_reg_mr(p_ibverbs_srq_context->p_ibverbs_context->p_hca, p_ibverbs_srq_context->rbuf,
+                                                sizeof(struct nm_ibverbs_srq_packet_s) * NM_IBVERBS_SRQ_NBUFS,
+                                                &p_ibverbs_srq_context->seg);
   puk_context_putattr(context, "local_url", url);
   *p_url = url;
   *p_url_size = strlen(url);
@@ -295,7 +302,9 @@ static void nm_ibverbs_srq_send_buf_post(void*_status, nm_len_t len)
   struct nm_ibverbs_srq_s*__restrict__ p_ibverbs_srq = _status;
   p_ibverbs_srq->send.chunk_len = len;
   assert(len <= NM_IBVERBS_SRQ_BUFSIZE);
- 
+  const uint32_t csum = nm_ibverbs_checksum(&p_ibverbs_srq->buffer.sbuf.data[0], len);
+  p_ibverbs_srq->buffer.sbuf.header.csum = csum;
+  p_ibverbs_srq->buffer.sbuf.header.len = len;
   struct ibv_sge list =
     {
       .addr   = (uintptr_t)&p_ibverbs_srq->buffer.sbuf,
@@ -343,34 +352,41 @@ static int nm_ibverbs_srq_send_poll(void*_status)
 
 static inline void nm_ibverbs_srq_refill(struct nm_ibverbs_srq_context_s*p_ibverbs_srq_context)
 {
-  if(!p_ibverbs_srq_context->srq_posted)
+  int i;
+  for(i = 0; i < NM_IBVERBS_SRQ_NBUFS; i++)
     {
-      struct ibv_sge list =
+      assert(p_ibverbs_srq_context->srq_posted[i] == 0 || p_ibverbs_srq_context->srq_posted[i] == 1);
+      if(!p_ibverbs_srq_context->srq_posted[i])
         {
-          .addr   = (uintptr_t)&p_ibverbs_srq_context->rbuf,
-          .length = NM_IBVERBS_SRQ_BUFSIZE,
-          .lkey   = p_ibverbs_srq_context->mr->lkey
-        };
-      struct ibv_recv_wr wr =
-        {
-          .wr_id   = NM_IBVERBS_WRID_RECV,
-          .sg_list = &list,
-          .num_sge = 1,
-        };
-      struct ibv_recv_wr*bad_wr = NULL;
-      int rc = ibv_post_srq_recv(p_ibverbs_srq_context->p_ibverbs_context->p_srq, &wr, &bad_wr);
-      if(rc)
-        {
-          NM_FATAL("ibverbs- ibv_post_srq_recv failed rc=%d (%s).\n", rc, strerror(rc));
+          const int nbuf = i;
+          p_ibverbs_srq_context->rbuf[nbuf].header.len = NM_LEN_UNDEFINED;
+          struct ibv_sge list =
+            {
+              .addr   = (uintptr_t)&p_ibverbs_srq_context->rbuf[nbuf],
+              .length = NM_IBVERBS_SRQ_BLOCKSIZE,
+              .lkey   = p_ibverbs_srq_context->mr->lkey
+            };
+          struct ibv_recv_wr wr =
+            {
+              .wr_id   = nbuf,
+              .sg_list = &list,
+              .num_sge = 1,
+            };
+          struct ibv_recv_wr*bad_wr = NULL;
+          int rc = ibv_post_srq_recv(p_ibverbs_srq_context->p_ibverbs_context->p_srq, &wr, &bad_wr);
+          if(rc)
+            {
+              NM_FATAL("ibverbs- ibv_post_srq_recv failed rc=%d (%s).\n", rc, strerror(rc));
+            }
+          p_ibverbs_srq_context->srq_posted[i] = 1;
         }
-      p_ibverbs_srq_context->srq_posted = 1;
     }
 }
 
 static int nm_ibverbs_srq_recv_poll_any(puk_context_t p_context, void**_status)
 {
   struct nm_ibverbs_srq_context_s*p_ibverbs_srq_context = puk_context_get_status(p_context);
-  struct nm_ibverbs_srq_packet_s*__restrict__ p_packet = &p_ibverbs_srq_context->rbuf;
+  assert(p_ibverbs_srq_context->ready_buf == -1);
   nm_ibverbs_srq_refill(p_ibverbs_srq_context);
   struct ibv_wc wc;
   int ne = ibv_poll_cq(p_ibverbs_srq_context->p_ibverbs_context->srq_cq, 1, &wc);
@@ -380,10 +396,18 @@ static int nm_ibverbs_srq_recv_poll_any(puk_context_t p_context, void**_status)
     }
   else if(ne > 0)
     {
+      const uint64_t wrid = wc.wr_id;
+      const uint32_t nbuf = (wrid);
+      struct nm_ibverbs_srq_packet_s*__restrict__ p_packet = &p_ibverbs_srq_context->rbuf[nbuf];
       struct nm_ibverbs_srq_s*p_ibverbs_srq = nm_ibverbs_srq_status_vect_at(&p_ibverbs_srq_context->p_statuses, p_packet->header.rank);
-      p_ibverbs_srq->recv.chunk_len = wc.byte_len - sizeof(struct nm_ibverbs_srq_header_s);
+      const nm_len_t chunk_len = wc.byte_len - sizeof(struct nm_ibverbs_srq_header_s);
+      assert(p_packet->header.len != NM_LEN_UNDEFINED);
+      assert(chunk_len == p_packet->header.len);
+      const uint32_t csum = nm_ibverbs_checksum(p_packet->data, chunk_len);
+      assert(p_packet->header.csum == csum);
+      p_ibverbs_srq->recv.chunk_len = chunk_len;
       *_status = p_ibverbs_srq;
-      p_ibverbs_srq_context->srq_posted = 0;
+      p_ibverbs_srq_context->ready_buf = nbuf;
       return NM_ESUCCESS;
     }
   *_status = NULL;
@@ -411,7 +435,8 @@ static int nm_ibverbs_srq_recv_buf_poll(void*_status, void**p_buffer, nm_len_t*p
   struct nm_ibverbs_srq_s*__restrict__ p_ibverbs_srq = _status;
   if(p_ibverbs_srq->recv.chunk_len != NM_LEN_UNDEFINED)
     {
-      struct nm_ibverbs_srq_packet_s*__restrict__ p_packet = &p_ibverbs_srq->p_ibverbs_srq_context->rbuf;
+      struct nm_ibverbs_srq_packet_s*__restrict__ p_packet =
+        &p_ibverbs_srq->p_ibverbs_srq_context->rbuf[p_ibverbs_srq->p_ibverbs_srq_context->ready_buf];
       *p_buffer = p_packet->data;
       *p_len = p_ibverbs_srq->recv.chunk_len;
       return NM_ESUCCESS;
@@ -427,7 +452,11 @@ static void nm_ibverbs_srq_recv_buf_release(void*_status)
 {
   struct nm_ibverbs_srq_s*__restrict__ p_ibverbs_srq = _status;
   assert(p_ibverbs_srq->recv.chunk_len != NM_LEN_UNDEFINED);
+  const int nbuf = p_ibverbs_srq->p_ibverbs_srq_context->ready_buf;
   p_ibverbs_srq->recv.chunk_len = NM_LEN_UNDEFINED;
+  p_ibverbs_srq->p_ibverbs_srq_context->rbuf[nbuf].header.len = NM_LEN_UNDEFINED;
+  p_ibverbs_srq->p_ibverbs_srq_context->srq_posted[nbuf] = 0;
+  p_ibverbs_srq->p_ibverbs_srq_context->ready_buf = -1;
   nm_ibverbs_srq_refill(p_ibverbs_srq->p_ibverbs_srq_context);
 }
 

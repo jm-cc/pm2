@@ -325,7 +325,7 @@ static void nm_ibverbs_srq_send_buf_post(void*_status, nm_len_t len)
   int rc = ibv_post_send(p_ibverbs_srq->p_cnx->qp, &wr, &bad_wr);
   if(rc)
     {
-      NM_FATAL("ibverbs- post send failed.\n");
+      NM_FATAL("ibverbs- post send failed rc = %d (%s).\n", rc, strerror(rc));
     }
 }
 
@@ -337,7 +337,7 @@ static int nm_ibverbs_srq_send_poll(void*_status)
   int ne = ibv_poll_cq(p_ibverbs_srq->p_cnx->of_cq, 1, &wc);
   if(ne < 0)
     {
-      NM_FATAL("ibverbs- poll out CQ failed.\n");
+      NM_FATAL("ibverbs- poll out CQ failed rc = %d (%s).\n", ne, strerror(-ne));
     }
   if(ne > 0)
     {
@@ -376,7 +376,7 @@ static inline void nm_ibverbs_srq_refill(struct nm_ibverbs_srq_context_s*p_ibver
           int rc = ibv_post_srq_recv(p_ibverbs_srq_context->p_ibverbs_context->p_srq, &wr, &bad_wr);
           if(rc)
             {
-              NM_FATAL("ibverbs- ibv_post_srq_recv failed rc=%d (%s).\n", rc, strerror(rc));
+              NM_FATAL("ibverbs- ibv_post_srq_recv failed rc = %d (%s).\n", rc, strerror(rc));
             }
           p_ibverbs_srq_context->srq_posted[i] = 1;
         }

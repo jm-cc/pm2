@@ -157,7 +157,7 @@ struct nm_ibverbs_context_s*nm_ibverbs_context_new(puk_context_t p_context)
               p_ibverbs_context->comp_channel = p_comp_channel;
               p_ibverbs_context->ib_opts.use_comp_channel = 1;
             }
-          p_ibverbs_context->srq_cq = ibv_create_cq(p_ibverbs_context->p_hca->context, NM_IBVERBS_RX_DEPTH,
+          p_ibverbs_context->srq_cq = ibv_create_cq(p_ibverbs_context->p_hca->context, NM_IBVERBS_SRQ_DEPTH,
                                                     p_ibverbs_context, p_comp_channel, 0);
           if(p_ibverbs_context->srq_cq == NULL)
             {

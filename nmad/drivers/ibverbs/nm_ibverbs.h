@@ -25,7 +25,8 @@
 /* *** global IB parameters ******************************** */
 
 #define NM_IBVERBS_TX_DEPTH     4
-#define NM_IBVERBS_RX_DEPTH     2
+#define NM_IBVERBS_RX_DEPTH     4
+#define NM_IBVERBS_SRQ_DEPTH    8
 #define NM_IBVERBS_RDMA_DEPTH   4
 #define NM_IBVERBS_MAX_SG_SQ    1
 #define NM_IBVERBS_MAX_SG_RQ    1

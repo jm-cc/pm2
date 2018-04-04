@@ -193,6 +193,7 @@ static void nm_ibverbs_srq_destroy(void*_status)
 
 static void nm_ibverbs_srq_getprops(puk_context_t context, struct nm_minidriver_properties_s*p_props)
 {
+  int use_comp_channel = 0;
   assert(context != NULL);
   if(NM_IBVERBS_SRQ_BLOCKSIZE > UINT16_MAX)
     {
@@ -200,9 +201,14 @@ static void nm_ibverbs_srq_getprops(puk_context_t context, struct nm_minidriver_
     }
   struct nm_ibverbs_srq_context_s*p_ibverbs_srq_context = malloc(sizeof(struct nm_ibverbs_srq_context_s));
 
-  /* force SRQ for now */
+  /* force SRQ since this is an SRQ driver */
   puk_context_putattr(context, "ibv_srq", "1");
-  /*  puk_context_putattr(context, "ibv_comp_channel", "1"); */
+  if(getenv("NMAD_IBVERBS_COMP_CHANNEL") != NULL)
+    {
+      puk_context_putattr(context, "ibv_comp_channel", "1");
+      use_comp_channel = 1;
+      NM_DISPF("ibverbs- comp channel forced by environment.\n");
+    }
   
   p_ibverbs_srq_context->p_ibverbs_context = nm_ibverbs_context_new(context);
   puk_context_set_status(context, p_ibverbs_srq_context);
@@ -211,7 +217,7 @@ static void nm_ibverbs_srq_getprops(puk_context_t context, struct nm_minidriver_
   p_props->capabilities.supports_buf_send = 1;
   p_props->capabilities.supports_buf_recv = 1;
   p_props->capabilities.supports_wait_any = 1;
-  p_props->capabilities.prefers_wait_any  = 0;
+  p_props->capabilities.prefers_wait_any  = use_comp_channel;
   p_props->capabilities.has_recv_any      = 1;
   p_props->capabilities.max_msg_size      = NM_IBVERBS_SRQ_BUFSIZE;
 }

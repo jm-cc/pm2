@@ -306,9 +306,11 @@ static void nm_ibverbs_srq_send_buf_get(void*_status, void**p_buffer, nm_len_t*p
 static void nm_ibverbs_srq_send_buf_post(void*_status, nm_len_t len)
 {
   struct nm_ibverbs_srq_s*__restrict__ p_ibverbs_srq = _status;
+  int do_inline = 0; /* (len < p_ibverbs_srq->p_cnx->max_inline); */
   p_ibverbs_srq->send.chunk_len = len;
   assert(len <= NM_IBVERBS_SRQ_BUFSIZE);
   const uint32_t csum = nm_ibverbs_checksum(&p_ibverbs_srq->buffer.sbuf.data[0], len);
+ retry:
   p_ibverbs_srq->buffer.sbuf.header.csum = csum;
   p_ibverbs_srq->buffer.sbuf.header.len = len;
   struct ibv_sge list =
@@ -323,15 +325,24 @@ static void nm_ibverbs_srq_send_buf_post(void*_status, nm_len_t len)
       .sg_list    = &list,
       .num_sge    = 1,
       .opcode     = IBV_WR_SEND,
-      .send_flags = (len > p_ibverbs_srq->p_cnx->max_inline ? 
-                     IBV_SEND_SIGNALED : (IBV_SEND_SIGNALED | IBV_SEND_INLINE)),
+      .send_flags = (do_inline ? 
+                     IBV_SEND_SIGNALED : (IBV_SEND_SIGNALED /* | IBV_SEND_INLINE */ )),
       .next       = NULL
     };
   struct ibv_send_wr*bad_wr = NULL;
   int rc = ibv_post_send(p_ibverbs_srq->p_cnx->qp, &wr, &bad_wr);
   if(rc)
     {
-      NM_FATAL("ibverbs- post send failed rc = %d (%s).\n", rc, strerror(rc));
+      if(do_inline && (rc == ENOMEM))
+        {
+          NM_WARN("ibverbs- post send failed len = %d; rc = %d (%s).\n", len, rc, strerror(rc));
+          do_inline = 0;
+          goto retry;
+        }
+      else
+        {
+          NM_FATAL("ibverbs- post send failed len = %d; rc = %d (%s).\n", len, rc, strerror(rc));
+        }
     }
 }
 
